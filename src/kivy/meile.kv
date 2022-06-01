@@ -1,0 +1,156 @@
+#: import SlideTransition kivy.uix.screenmanager.SlideTransition
+
+WindowManager:
+
+
+<MainWindow>:
+    name: "main"
+    MDBoxLayout:
+        orientation: 'vertical'
+        
+        MDToolbar:
+            title: app.title
+            md_bg_color: 0,0,0,1
+            height: "100dp"
+            
+            FitImage:
+                source: "./src/imgs/logo.png"
+                size_hint: None, None
+                height: "100dp"
+                pos: self.pos
+    
+        
+        MDTabs:
+            id: android_tabs
+            on_tab_switch: root.on_tab_switch(*args)
+            size_hint_y: None
+            height: "48dp"
+            tab_indicator_anim: True
+            color: 0,0,0,1
+            background_color: 0,0,0,1
+            
+        RecycleView:
+            id: rv
+            key_viewclass: "viewclass"
+            key_size: "height"
+    
+            RecycleBoxLayout:
+                default_size: None, dp(48)
+                default_size_hint: 1, None
+                size_hint_y: None
+                height: self.minimum_height
+                orientation: "vertical"
+    
+        MDToolbar:
+            title: "Subscriptions"
+            md_bg_color: 0,0,0,1
+            height: "30dp"
+
+<PreLoadWindow>:
+    name: "preload"
+    status_text: "Loading..."
+    title: app.title
+    MDBoxLayout:
+        md_bg_color: 0,0,0,1
+        orientation: "vertical"
+        AnchorLayout:
+            anchor_x: 'center'
+            anchor_y: 'center'
+    
+            Image:
+                source: "./src/imgs/logo_hd.png"
+                size_hint: None, None
+                size: 400, 400
+                # size: self.texture_size[0] / 2, self.texture_size[1] / 2
+                # opacity: 0.1
+        
+        MDLabel:
+            id: status_label
+            bold: True
+            text: root.status_text
+            color: 1,1,1,1
+            halign: "center"
+            pos_hint: {"center_x": .5, "center_y": .5}
+
+        MDRaisedButton:
+            text: "Let's Go"
+            pos_hint: {"center_x": .5, "center_y": .5}
+            on_press: root.switch_window()
+
+<Tab>
+
+<SelectableLabel>:
+    # Draw a background to indicate selection
+    text1: "GLARGLY"
+    text2: "BLARGLY"
+    text3: "SHIMARGLY"
+    canvas.before:
+
+        Color:
+            rgba: (.0, 0.9, .1, .3) if self.selected else (0, 0, 0, 1)
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+<RV>:
+    viewclass: 'SelectableLabel'
+    RecycleBoxLayout:
+        default_size: None, dp(48)
+        default_size_hint: 1, None
+        size_hint_y: None
+        height: self.minimum_height
+        orientation: "vertical"
+
+<MD3Card>
+    
+    orientation: "vertical"
+    height: node_box.height 
+    focus_behavior: True
+    ripple_behavior: True
+
+    moniker_text:  "BLARGLY"
+    moniker2_text: "GLARGLY"
+    moniker3_text: "SHLARMLY"
+    moniker4_text: "GBILAGY"
+    on_release: root.show_alert_dialog()
+    source_image: "TESST"
+    background_color: 98.8,71.8,6.7,1
+
+    BoxLayout:
+        id: node_box
+        size_hint_y: None
+        height: "50dp"
+    
+        canvas:
+            Rectangle:
+                pos: self.pos
+                size: self.size
+                
+        MDLabel:
+            id: label_box
+            bold: True
+            text: root.moniker_text
+        MDLabel:
+            id: label_box
+            font_size: "10dp"
+            text: root.moniker2_text
+        MDLabel:
+            id: label_box
+            font_size: "10dp"
+            text: root.moniker3_text
+        MDLabel:
+            id: label_box
+            font_size: "7dp"
+            text_size: 50,10
+            text: root.moniker4_text
+                
+        FitImage:
+            source: root.source_image
+            size_hint: None, None
+            height: "30dp"
+            width: "50dp"
+            pos: self.pos
+
+        
+    MDSeparator:
+
