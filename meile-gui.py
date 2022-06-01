@@ -1,7 +1,6 @@
 from kivy.lang import Builder
 from kivy.utils import get_color_from_hex
 from kivy.properties import ListProperty, StringProperty
-
 from kivymd.color_definitions import colors
 from kivymd.uix.tab import MDTabsBase
 from kivymd.uix.boxlayout import MDBoxLayout
@@ -16,11 +15,20 @@ from kivy.uix.recycleboxlayout import RecycleBoxLayout
 from kivy.uix.recyclegridlayout import RecycleGridLayout
 from kivy.uix.behaviors import FocusBehavior
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
-
-from src.cli.sentinel import get_nodes, NodesInfoKeys
+from kivymd.uix.button import MDFlatButton, MDRaisedButton
+from kivymd.uix.dialog import MDDialog
 from kivymd.uix.list import ThreeLineAvatarIconListItem, ImageLeftWidget
-import awoc
+from kivy.uix.screenmanager import ScreenManager, Screen, RiseInTransition, SlideTransition
+from kivyoav.delayed import delayable
 
+from kivy.clock import Clock
+
+
+
+import threading
+from src.cli.sentinel import get_nodes, NodesInfoKeys
+import awoc
+from time import sleep
 our_world = awoc.AWOC()
 
 CONTINENTS   = our_world.get_continents_list()
@@ -32,131 +40,61 @@ NorthAmerica = our_world.get_countries_list_of(CONTINENTS[4])
 Oceania      = our_world.get_countries_list_of(CONTINENTS[5])
 SouthAmerica = our_world.get_countries_list_of(CONTINENTS[6])
 
+ConNodes = []
 
-canvas = '''
-<Root@MDBoxLayout>
-    orientation: 'vertical'
-
-    MDToolbar:
-        title: app.title
-        md_bg_color: 0,0,0,1
-        height: "100dp"
-        
-        FitImage:
-            source: "./src/imgs/logo.png"
-            size_hint: None, None
-            height: "100dp"
-            pos: self.pos
-
-    
-    MDTabs:
-        id: android_tabs
-        on_tab_switch: app.on_tab_switch(*args)
-        size_hint_y: None
-        height: "48dp"
-        tab_indicator_anim: True
-        color: 0,0,0,1
-        md_bg_color: 0,0,0,1
-        
-    RecycleView:
-        id: rv
-        key_viewclass: "viewclass"
-        key_size: "height"
-
-        RecycleBoxLayout:
-            default_size: None, dp(48)
-            default_size_hint: 1, None
-            size_hint_y: None
-            height: self.minimum_height
-            orientation: "vertical"
-
-
-
-<Tab>
-
-<SelectableLabel>:
-    # Draw a background to indicate selection
-    text1: "GLARGLY"
-    text2: "BLARGLY"
-    text3: "SHIMARGLY"
-    canvas.before:
-
-        Color:
-            rgba: (.0, 0.9, .1, .3) if self.selected else (0, 0, 0, 1)
-        Rectangle:
-            pos: self.pos
-            size: self.size
-
-<RV>:
-    viewclass: 'SelectableLabel'
-    RecycleBoxLayout:
-        default_size: None, dp(48)
-        default_size_hint: 1, None
-        size_hint_y: None
-        height: self.minimum_height
-        orientation: "vertical"
-
-<MD3Card>
-    
-    orientation: "vertical"
-    height: node_box.height 
-    focus_behavior: True
-    ripple_behavior: True
-
-    moniker_text:  "BLARGLY"
-    moniker2_text: "GLARGLY"
-    moniker3_text: "SHLARMLY"
-    
-    source_image: "TESST"
-    
-    BoxLayout:
-        id: node_box
-        size_hint_y: None
-        height: "50dp"
-    
-        canvas:
-            Rectangle:
-                pos: self.pos
-                size: self.size
-                
-        MDLabel:
-            id: label_box
-            
-            text: root.moniker_text
-        MDLabel:
-            id: label_box
-            
-            text: root.moniker2_text
-        MDLabel:
-            id: label_box
-            
-            text: root.moniker3_text
-        FitImage:
-            source: root.source_image
-            size_hint: None, None
-            height: "30dp"
-            width: "50dp"
-            pos: self.pos
-
-        
-    MDSeparator:
-
-
-'''
 
 from kivy.factory import Factory
 
 from kivymd.app import MDApp
+
+#class MainWindow(Screen):
+    
+#    pass
+
+#class PreLoadWindow(Screen):
+#    pass
+
+class WindowManager(ScreenManager):
+    pass
 
 
 class Tab(MDBoxLayout, MDTabsBase):
     pass
 
 class MD3Card(MDCard):
-    Moniker = None
+    dialog = None
     
     def set_moniker(self, name):
         self.Moniker = name
+        
+    def show_alert_dialog(self):
+        if not self.dialog:
+            self.dialog = MDDialog(
+                text="Subscribe to Node?",
+                buttons=[
+                    MDFlatButton(
+                        text="CANCEL",
+                        theme_text_color="Custom",
+                        text_color=self.theme_cls.primary_color,
+                        on_release=self.closeDialog,
+                    ),
+                    MDRaisedButton(
+                        text="SUBSCRIBE",
+                        theme_text_color="Custom",
+                        text_color=(1,1,1,1),
+                        on_release= self.subscribeME
+                    ),
+                ],
+            )
+        self.dialog.open()
+
+    def closeDialog(self, inst):
+        self.dialog.dismiss()
+        
+    def subscribeME(self, inst):
+        self.dialog.dismiss()
+        print("SUBSCRIBED!")
+
 class RV(RecycleView):
     def __init__(self, **kwargs):
         super(RV, self).__init__(**kwargs)
@@ -203,174 +141,173 @@ class SelectableLabel(RecycleDataViewBehavior, Label):
             print("selection removed for {0}".format(rv.data[index]))
 
 
-class Palette(MDApp):
+class MainWindow(Screen):
     title = "Meile dVPN"
-    ConNodes = []
     
-    def build(self):
-        Builder.load_string(canvas)
-        self.screen = Factory.Root()
+    def __init__(self, **kwargs):
+        #Builder.load_file("./src/kivy/meile.kv")
+        super(MainWindow, self).__init__()
+        Clock.schedule_once(self.build, 2)
+
         
+
+    def build(self, dt):
+        print("ADDING TABS")
         for name_tab in CONTINENTS:
             tab = Tab(text=name_tab)
-            self.screen.ids.android_tabs.add_widget(tab)
+            self.manager.get_screen("main").ids.android_tabs.add_widget(tab)
         
-        self.ConNodes = get_nodes()
-        
-        return self.screen
-
-    def on_tab_switch(self, instance_tabs, instance_tab, instance_tabs_label, tab_text):
-        
-        rv = RV()
-        floc = "./src/imgs/"
-        self.screen.ids.rv.data = []
-
-        if not tab_text:
-            tab_text = CONTINENTS[0]
-            
-        for node in self.ConNodes:
-            if tab_text == CONTINENTS[0]:
-                if node[NodesInfoKeys[4]].lstrip().rstrip() in Africa:
-                    
-                    #rv.populate_rv(node)
-                    iso2 = our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
-                    flagloc = floc + iso2 + ".png"
-                    
-                    self.screen.ids.rv.data.append(
-                        {
-                            "viewclass": "MD3Card",
-                            "moniker_text": node[NodesInfoKeys[0]].lstrip().rstrip(),
-                            "moniker2_text" : node[NodesInfoKeys[3]].lstrip().rstrip(),
-                            "moniker3_text" : node[NodesInfoKeys[4]].lstrip().rstrip(),
-                            "source_image" : flagloc
-                            
-                        },
-                    )
-                    
-            elif tab_text == CONTINENTS[1]:
-                if node[NodesInfoKeys[4]].lstrip().rstrip() in Anarctica:
-                    
-                       #rv.populate_rv(node)
-                    iso2 = our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
-                    flagloc = floc + iso2 + ".png"
-                    
-                    self.screen.ids.rv.data.append(
-                        {
-                            "viewclass": "MD3Card",
-                            "moniker_text": node[NodesInfoKeys[0]].lstrip().rstrip(),
-                            "moniker2_text" : node[NodesInfoKeys[3]].lstrip().rstrip(),
-                            "moniker3_text" : node[NodesInfoKeys[4]].lstrip().rstrip(),
-                            "source_image" : flagloc
-                            
-                        },
-                    )
-                    
-                    #rv.populate_rv(node)
-            elif tab_text == CONTINENTS[2]:
-                if node[NodesInfoKeys[4]].lstrip().rstrip() in Asia:
-                    
-                    #rv.populate_rv(node)
-                    iso2 = our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
-                    flagloc = floc + iso2 + ".png"
-                    
-                    self.screen.ids.rv.data.append(
-                        {
-                            "viewclass": "MD3Card",
-                            "moniker_text": node[NodesInfoKeys[0]].lstrip().rstrip(),
-                            "moniker2_text" : node[NodesInfoKeys[3]].lstrip().rstrip(),
-                            "moniker3_text" : node[NodesInfoKeys[4]].lstrip().rstrip(),
-                            "source_image" : flagloc
-                            
-                        },
-                    )
-                    
-                    #rv.populate_rv(node)
-            elif tab_text == CONTINENTS[3]:
-                if node[NodesInfoKeys[4]].lstrip().rstrip() in Europe:
-                    
-                    #rv.populate_rv(node)
-                    iso2 = our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
-                    flagloc = floc + iso2 + ".png"
-                    
-                    self.screen.ids.rv.data.append(
-                        {
-                            "viewclass": "MD3Card",
-                            "moniker_text": node[NodesInfoKeys[0]].lstrip().rstrip(),
-                            "moniker2_text" : node[NodesInfoKeys[3]].lstrip().rstrip(),
-                            "moniker3_text" : node[NodesInfoKeys[4]].lstrip().rstrip(),
-                            "source_image" : flagloc
-                            
-                        },
-                    )
-                    
-                    #rv.populate_rv(node)
-            elif tab_text == CONTINENTS[4]:
-                if node[NodesInfoKeys[4]].lstrip().rstrip() in NorthAmerica:
-                    
-                      #rv.populate_rv(node)
-                    iso2 = our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
-                    flagloc = floc + iso2 + ".png"
-                    
-                    self.screen.ids.rv.data.append(
-                        {
-                            "viewclass": "MD3Card",
-                            "moniker_text": node[NodesInfoKeys[0]].lstrip().rstrip(),
-                            "moniker2_text" : node[NodesInfoKeys[3]].lstrip().rstrip(),
-                            "moniker3_text" : node[NodesInfoKeys[4]].lstrip().rstrip(),
-                            "source_image" : flagloc
-                            
-                        },
-                    )
-                    
-                    #rv.populate_rv(node)
-            elif tab_text == CONTINENTS[5]:
-                if node[NodesInfoKeys[4]].lstrip().rstrip() in Oceania:
-                    
-                    #rv.populate_rv(node)
-                    iso2 = our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
-                    flagloc = floc + iso2 + ".png"
-                    
-                    self.screen.ids.rv.data.append(
-                        {
-                            "viewclass": "MD3Card",
-                            "moniker_text": node[NodesInfoKeys[0]].lstrip().rstrip(),
-                            "moniker2_text" : node[NodesInfoKeys[3]].lstrip().rstrip(),
-                            "moniker3_text" : node[NodesInfoKeys[4]].lstrip().rstrip(),
-                            "source_image" : flagloc
-                            
-                        },
-                    )
-                    #rv.populate_rv(node)
-            else: 
-                if node[NodesInfoKeys[4]].lstrip().rstrip() in SouthAmerica:
-                    
-                    #rv.populate_rv(node)
-                    iso2 = our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
-                    flagloc = floc + iso2 + ".png"
-                    
-                    self.screen.ids.rv.data.append(
-                        {
-                            "viewclass": "MD3Card",
-                            "moniker_text": node[NodesInfoKeys[0]].lstrip().rstrip(),
-                            "moniker2_text" : node[NodesInfoKeys[3]].lstrip().rstrip(),
-                            "moniker3_text" : node[NodesInfoKeys[4]].lstrip().rstrip(),
-                            "source_image" : flagloc
-                            
-                        },
-                    )
-                    
-                    #rv.populate_rv(node)
-                  
-            
-    def on_start(self):
-        
-        
+        print("ON START")
+        '''
         self.on_tab_switch(
             None,
             None,
             None,
-            self.screen.ids.android_tabs.ids.layout.children[-1].text
+            self.manager.get_screen("main").ids.android_tabs.ids.layout.children[-1].text
         )
+        '''
+    def add_rv_data(self, node, flagloc):
+        print("Adding Data...")
+        self.manager.get_screen("main").ids.rv.data.append(
+            {
+                "viewclass": "MD3Card",
+                "moniker_text": node[NodesInfoKeys[0]].lstrip().rstrip(),
+                "moniker2_text" : node[NodesInfoKeys[3]].lstrip().rstrip(),
+                "moniker3_text" : node[NodesInfoKeys[4]].lstrip().rstrip(),
+                "moniker4_text" : node[NodesInfoKeys[1]].lstrip().rstrip(),
+                "source_image" : flagloc
+                
+            },
+        )
+        
+    def on_tab_switch(self, instance_tabs, instance_tab, instance_tabs_label, tab_text):
+        print("ON TAB SWITCCH")
+        print(ConNodes)
+        rv = RV()
+        floc = "./src/imgs/"
+        self.manager.get_screen("main").ids.rv.data = []
+
+        if not tab_text:
+            tab_text = CONTINENTS[0]
+            
+        for node in ConNodes:
+            if tab_text == CONTINENTS[0]:
+                if node[NodesInfoKeys[4]].lstrip().rstrip() in Africa:
+                    
+                    #rv.populate_rv(node)
+                    print("ADDING AFRICA")
+                    iso2 = our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
+                    flagloc = floc + iso2 + ".png"
+                    self.add_rv_data(node, flagloc)
+        
+                    
+            elif tab_text == CONTINENTS[1]:
+                if node[NodesInfoKeys[4]].lstrip().rstrip() in Anarctica:
+                    print("ADDING ANTARCTICA")
+                       #rv.populate_rv(node)
+                    iso2 = our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
+                    flagloc = floc + iso2 + ".png"
+                    
+                    self.add_rv_data(node, flagloc)
+                    #rv.populate_rv(node)
+            elif tab_text == CONTINENTS[2]:
+                if node[NodesInfoKeys[4]].lstrip().rstrip() in Asia:
+                    print("ADDING ASIA")
+                    #rv.populate_rv(node)
+                    iso2 = our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
+                    flagloc = floc + iso2 + ".png"
+                    
+                    self.add_rv_data(node, flagloc)
+            elif tab_text == CONTINENTS[3]:
+                if node[NodesInfoKeys[4]].lstrip().rstrip() in Europe:
+                    print("ADDING EUROPE")
+                    #rv.populate_rv(node)
+                    iso2 = our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
+                    flagloc = floc + iso2 + ".png"
+                    
+                    self.add_rv_data(node, flagloc)
+            elif tab_text == CONTINENTS[4]:
+                if node[NodesInfoKeys[4]].lstrip().rstrip() in NorthAmerica:
+                    print("ADDING NA")
+                      #rv.populate_rv(node)
+                    iso2 = our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
+                    flagloc = floc + iso2 + ".png"
+                    
+                    self.add_rv_data(node, flagloc)
+            elif tab_text == CONTINENTS[5]:
+                if node[NodesInfoKeys[4]].lstrip().rstrip() in Oceania:
+                    print("ADDING OCEANIA")
+                    #rv.populate_rv(node)
+                    iso2 = our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
+                    flagloc = floc + iso2 + ".png"
+                    
+                    self.add_rv_data(node, flagloc)
+            else: 
+                if node[NodesInfoKeys[4]].lstrip().rstrip() in SouthAmerica:
+                    print("ADDING SA")
+                    #rv.populate_rv(node)
+                    iso2 = our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
+                    flagloc = floc + iso2 + ".png"
+                    
+                    self.add_rv_data(node, flagloc)
+                  
+            
 
 
-Palette().run()
+
+def GetSentinelNodes(dt):
+    print("Getting Nodes...")
+    global ConNodes
+    ConNodes = get_nodes()
+    print("Nodes begotten and not made")
+
+class PreLoadWindow(Screen):   
+    StatusMessages = ["Calculating π...", "Squaring the Circle...", "Solving the Riemann Hypothesis...", "Done"]
+    title = "Meile dVPN"
+    k = 0
+    j = 0
+    
+    def __init__(self, **kwargs):
+        super(PreLoadWindow, self).__init__()
+        
+        # Schedule the functions to be called every n seconds
+        Clock.schedule_once(GetSentinelNodes, 6)
+        Clock.schedule_interval(self.update_status_text, 1)
+        
+
+    @delayable
+    def update_status_text(self, dt):
+        yield 1.0
+        if self.j == 2:
+            self.manager.get_screen('preload').status_text = self.StatusMessages[3]
+            return
+            
+        if self.k == 3:
+            self.k = 0
+            self.j += 1
+        else:
+            self.manager.get_screen('preload').status_text = self.StatusMessages[self.k]
+            self.k += 1
+ 
+    def switch_window(self):
+        app.root.transition = SlideTransition(direction = "up")
+        app.root.current = "main"
+
+class MyMainApp(MDApp):
+    title = "Meile dVPN"
+
+    def build(self):
+        kv = Builder.load_file("./src/kivy/meile.kv")
+
+        manager = WindowManager()
+        manager.add_widget(PreLoadWindow(name='preload'))
+        manager.add_widget(MainWindow(name='main'))
+        return manager
+    
+   
+
+
+if __name__ == "__main__":
+    app = MyMainApp()
+    app.run()
+#Palette().run()
