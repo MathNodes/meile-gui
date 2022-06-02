@@ -73,6 +73,9 @@ WindowManager:
             pos_hint: {"center_x": .5, "center_y": .5}
 
         MDRaisedButton:
+            id: go_button
+            opacity: 0
+            disabled: True
             text: "Let's Go"
             pos_hint: {"center_x": .5, "center_y": .5}
             on_press: root.switch_window()
@@ -114,7 +117,9 @@ WindowManager:
     moniker4_text: "GBILAGY"
     on_release: root.show_alert_dialog()
     source_image: "TESST"
+    speed_image: "FAZSAT"
     background_color: 98.8,71.8,6.7,1
+    md_bg_color: .988,.718,.67,1
 
     BoxLayout:
         id: node_box
@@ -138,12 +143,21 @@ WindowManager:
             id: label_box
             font_size: "10dp"
             text: root.moniker3_text
+
+        FitImage:
+            source: root.speed_image
+            size_hint: None, None
+            height: "30dp"
+            width: "40dp"
+            pos: self.pos 
+            
         MDLabel:
             id: label_box
             font_size: "7dp"
             text_size: 50,10
             text: root.moniker4_text
-                
+    
+                       
         FitImage:
             source: root.source_image
             size_hint: None, None
