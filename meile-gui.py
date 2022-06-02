@@ -10,7 +10,7 @@ from kivymd.uix.card import MDCard
 from kivy.uix.recycleview import RecycleView
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.label import Label
-from kivy.properties import BooleanProperty
+from kivy.properties import BooleanProperty, ObjectProperty
 from kivy.uix.recycleboxlayout import RecycleBoxLayout
 from kivy.uix.recyclegridlayout import RecycleGridLayout
 from kivy.uix.behaviors import FocusBehavior
@@ -41,7 +41,7 @@ Oceania      = our_world.get_countries_list_of(CONTINENTS[5])
 SouthAmerica = our_world.get_countries_list_of(CONTINENTS[6])
 
 ConNodes = []
-
+SentinelValue = False
 
 from kivy.factory import Factory
 
@@ -168,6 +168,32 @@ class MainWindow(Screen):
         '''
     def add_rv_data(self, node, flagloc):
         print("Adding Data...")
+        floc = "./src/imgs/"
+        speed = node[NodesInfoKeys[5]].lstrip().rstrip().split('+')
+        
+        if "MB" in speed[0]:
+            speed[0] = float(speed[0].replace("MB", ''))
+        elif "KB" in speed[0]:
+            speed[0] = float(float(speed[0].replace("KB", '')) / 1024 )
+        else:
+            speed[0] = 10
+            
+        if "MB" in speed[1]:
+            speed[1] = float(speed[1].replace("MB", ''))
+        elif "KB" in speed[1]:
+            speed[1] = float(float(speed[1].replace("KB", '')) / 1024 )
+        else:
+            speed[1] = 10
+        
+        total = float(speed[0] + speed[1])
+        if total >= 200:
+            speedimage = floc + "fast.png"
+        elif 100 <= total < 200:
+            speedimage = floc + "fastavg.png"
+        elif 50 <= total < 100:
+            speedimage = floc + "slowavg.png"
+        else:
+            speedimage = floc + "slow.png"
         self.manager.get_screen("main").ids.rv.data.append(
             {
                 "viewclass": "MD3Card",
@@ -175,6 +201,7 @@ class MainWindow(Screen):
                 "moniker2_text" : node[NodesInfoKeys[3]].lstrip().rstrip(),
                 "moniker3_text" : node[NodesInfoKeys[4]].lstrip().rstrip(),
                 "moniker4_text" : node[NodesInfoKeys[1]].lstrip().rstrip(),
+                "speed_image"   : speedimage,
                 "source_image" : flagloc
                 
             },
@@ -260,12 +287,14 @@ def GetSentinelNodes(dt):
     global ConNodes
     ConNodes = get_nodes()
     print("Nodes begotten and not made")
-
+    global SentinelValue
+    SentinelValue = True
 class PreLoadWindow(Screen):   
     StatusMessages = ["Calculating π...", "Squaring the Circle...", "Solving the Riemann Hypothesis...", "Done"]
     title = "Meile dVPN"
     k = 0
     j = 0
+    go_button = ObjectProperty()
     
     def __init__(self, **kwargs):
         super(PreLoadWindow, self).__init__()
@@ -274,12 +303,22 @@ class PreLoadWindow(Screen):
         Clock.schedule_once(GetSentinelNodes, 6)
         Clock.schedule_interval(self.update_status_text, 1)
         
+        
+        
+        
 
     @delayable
     def update_status_text(self, dt):
+        go_button = self.manager.get_screen('preload').ids.go_button
+
+
         yield 1.0
+        
         if self.j == 2:
             self.manager.get_screen('preload').status_text = self.StatusMessages[3]
+            go_button.opacity = 1
+            go_button.disabled = False
+
             return
             
         if self.k == 3:
@@ -288,6 +327,11 @@ class PreLoadWindow(Screen):
         else:
             self.manager.get_screen('preload').status_text = self.StatusMessages[self.k]
             self.k += 1
+            
+
+        
+        
+        
  
     def switch_window(self):
         app.root.transition = SlideTransition(direction = "up")
