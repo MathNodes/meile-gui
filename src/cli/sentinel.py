@@ -18,7 +18,16 @@ APIURL   = "https://api.sentinel.mathnodes.com"
 NodesInfoKeys = ["Moniker","Address","Provider","Price","Country","Speed","Latency","Peers","Handshake","Version","Status"]
 dash = "-"
 
+global ConNodes
+ConNodes = []
 
+def GetSentinelNodes(dt):
+    print("Getting Nodes...")
+    global ConNodes
+    ConNodes = get_nodes()
+    print(ConNodes)
+    print("Nodes begotten and not made")
+    
 def get_nodes():
     AllNodesInfo = []
     nodeCMD = ["sentinelcli", "query", "nodes", "--node", "https://rpc.mathnodes.com:4444", "--limit", "20000"]

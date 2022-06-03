@@ -13,6 +13,12 @@ WindowManager:
             md_bg_color: 0,0,0,1
             height: "100dp"
             
+            MDRaisedButton:
+                id: wallet_button
+                text: "Wallet"
+                pos_hint: {"center_x": .5, "center_y": .5}
+                on_press: root.wallet_dialog()
+                
             FitImage:
                 source: "./src/imgs/logo.png"
                 size_hint: None, None
@@ -40,12 +46,57 @@ WindowManager:
                 size_hint_y: None
                 height: self.minimum_height
                 orientation: "vertical"
+                md_bg_color: .988,.718,.67,1
+                
     
         MDToolbar:
             title: "Subscriptions"
             md_bg_color: 0,0,0,1
             height: "30dp"
+            
+            
+<MySeedBox>
 
+<ClickableTextFieldRound>:
+    size_hint_y: None
+    height: text_field.height
+
+    MDTextField:
+        id: text_field
+        hint_text: root.hint_text
+        text: root.text
+        password: True
+        icon_left: "key-variant"
+        mode: "rectangle"
+
+    MDIconButton:
+        icon: "eye-off"
+        pos_hint: {"center_y": .5}
+        pos: text_field.width - self.width + dp(8), 0
+        theme_text_color: "Hint"
+        on_release:
+            self.icon = "eye" if self.icon == "eye-off" else "eye-off"
+            text_field.password = False if text_field.password is True else True
+
+
+<WalletRestore>:
+    name: "walletrestore"
+    title: app.title
+     
+    ClickableTextFieldRound:
+        size_hint_x: None
+        width: "300dp"
+        height: "300dp"
+        hint_text: "Seed Phrase"
+        pos_hint: {"center_x": .5, "center_y": .75}
+        
+    MDRaisedButton:
+        id: restore_wallet_button
+        text: "Restore"
+        pos_hint: {"center_x": .5, "center_y": .5}
+        on_press: root.restore_wallet_from_seed_phrase()
+        
+    
 <PreLoadWindow>:
     name: "preload"
     status_text: "Loading..."
@@ -119,7 +170,6 @@ WindowManager:
     source_image: "TESST"
     speed_image: "FAZSAT"
     background_color: 98.8,71.8,6.7,1
-    md_bg_color: .988,.718,.67,1
 
     BoxLayout:
         id: node_box
