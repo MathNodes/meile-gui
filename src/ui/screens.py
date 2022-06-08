@@ -14,7 +14,37 @@ from kivy.properties import ObjectProperty
 
 
 class WalletRestore(Screen):
-    pass
+    dialog = None
+    def restore_wallet_from_seed_phrase(self):
+        if not self.dialog:
+            self.dialog = MDDialog(
+                text="Seed: %s \n Name: %s \n: Password: %s" %
+                (self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.seed_phrase.text,
+                 self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.wallet_name.text,
+                 self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.wallet_password.text),
+            
+                
+                buttons=[
+                    MDFlatButton(
+                        text="Cancel",
+                        theme_text_color="Custom",
+                        text_color=Meile.app.theme_cls.primary_color,
+                        on_release=self.cancel,
+                    ),
+                    MDRaisedButton(
+                        text="Restore",
+                        theme_text_color="Custom",
+                        text_color=(1,1,1,1),
+                        on_release= self.wallet_restore
+                    ),
+                ],
+            )
+            self.dialog.open()
+    def cancel(self):
+        self.dialog.dismiss()
+        
+    def wallet_restore(self):
+        pass
 
 class PreLoadWindow(Screen):   
     StatusMessages = ["Calculating π...", "Squaring the Circle...", "Solving the Riemann Hypothesis...", "Done"]
@@ -160,11 +190,11 @@ class MainWindow(Screen):
             speedimage = floc + "slow.png"
         self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.rv.data.append(
             {
-                "viewclass": "MD3Card",
                 "moniker_text": node[NodesInfoKeys[0]].lstrip().rstrip(),
-                "moniker2_text" : node[NodesInfoKeys[3]].lstrip().rstrip(),
-                "moniker3_text" : node[NodesInfoKeys[4]].lstrip().rstrip(),
-                "moniker4_text" : node[NodesInfoKeys[1]].lstrip().rstrip(),
+                "price_text" : node[NodesInfoKeys[3]].lstrip().rstrip(),
+                "country_text" : node[NodesInfoKeys[4]].lstrip().rstrip(),
+                "address_text" : node[NodesInfoKeys[1]].lstrip().rstrip(),
+                "speed_text" : node[NodesInfoKeys[5]].lstrip().rstrip(),
                 "speed_image"   : speedimage,
                 "source_image" : flagloc
                 

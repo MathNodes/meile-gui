@@ -6,7 +6,7 @@ from kivy.properties import  StringProperty
 from kivy.uix.behaviors import FocusBehavior
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.recyclegridlayout import RecycleGridLayout
-
+from kivy.uix.image import Image
 
 
 class Tab(MDBoxLayout, MDTabsBase):
@@ -15,7 +15,15 @@ class Tab(MDBoxLayout, MDTabsBase):
 class WindowManager(ScreenManager):
     pass
 
-class ClickableTextFieldRound(MDRelativeLayout):
+class ClickableTextFieldRoundSeed(MDRelativeLayout):
+    text = StringProperty()
+    hint_text = StringProperty()
+    
+class ClickableTextFieldRoundName(MDRelativeLayout):
+    text = StringProperty()
+    hint_text = StringProperty()
+    
+class ClickableTextFieldRoundPass(MDRelativeLayout):
     text = StringProperty()
     hint_text = StringProperty()
 
@@ -23,4 +31,7 @@ class SelectableRecycleGridLayout(FocusBehavior, LayoutSelectionBehavior,
                                 RecycleGridLayout):
     ''' Adds selection and focus behaviour to the view. '''
 
-
+class FullImage(Image):
+    pass
+class FullImage2(Image):
+    pass
