@@ -5,11 +5,16 @@ from os import path
 import re
 import requests
 import json
+from urllib3.exceptions import InsecureRequestWarning
 
 # IBC Tokens
 IBCSCRT  = 'ibc/31FEE1A2A9F9C01113F90BD0BBCCE8FD6BBB8585FAF109A2101827DD1D5B95B8'
-IBCDEC   = 'ibc/9BCB27203424535B6230D594553F1659C77EC173E36D9CF4759E7186EE747E84'
-IBCUNKWN   = 'ibc/B1C0DDB14F25279A2026BC8794E12B259F8BDA546A3C5132CCAEE4431CE36783'
+IBCATOM  = 'ibc/A8C2D23A1E6F95DA4E48BA349667E322BD7A6C996D8A4AAE8BA72E190F3D1477'
+IBCDEC   = 'ibc/B1C0DDB14F25279A2026BC8794E12B259F8BDA546A3C5132CCAEE4431CE36783'
+IBCOSMO  = 'ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518'
+IBCUNKWN = 'ibc/9BCB27203424535B6230D594553F1659C77EC173E36D9CF4759E7186EE747E84'
+
+IBCCOINS = [{'uscrt' : IBCSCRT}, {'uatom' : IBCATOM}, {'udec' : IBCDEC}, {'uosmo' : IBCOSMO}, {'uknwn' :IBCUNKWN}]
 
 SATOSHI = 1000000
 
@@ -66,6 +71,11 @@ def get_nodes():
     #get = input("Blah: ")
     AllNodesInfoSorted = sorted(AllNodesInfo, key=lambda d: d[NodesInfoKeys[4]])
     #result = collections.defaultdict(list)
+    AllNodesInfoSorted2 = []
+    for d in AllNodesInfoSorted:
+        d[NodesInfoKeys[3]] = return_denom(d[NodesInfoKeys[3]])
+        #d["City"] = get_city_of_node(d[NodesInfoKeys[1]])
+        AllNodesInfoSorted2.append(d)
     '''
     for d in AllNodesInfoSorted:
         for k, v in d.items():
@@ -113,8 +123,16 @@ def get_nodes():
     return NodeData,result
     '''
             
-    return AllNodesInfoSorted
+    return AllNodesInfoSorted2
 
+def return_denom(tokens):
+    for ibc_coin in IBCCOINS:
+        for denom,ibc in ibc_coin.items():
+            if ibc in tokens:
+                tokens = tokens.replace(ibc, denom)
+    
+
+    return tokens
 
 def get_subscriptions(result, ADDRESS):
     SubsNodesInfo = []

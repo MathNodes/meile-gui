@@ -1,4 +1,5 @@
 #: import SlideTransition kivy.uix.screenmanager.SlideTransition
+#: import get_color_from_hex kivy.utils.get_color_from_hex
 
 WindowManager:
 
@@ -9,8 +10,8 @@ WindowManager:
         orientation: 'vertical'
         
         MDToolbar:
-            title: app.title
-            md_bg_color: 0,0,0,1
+            title: "Sentinel dVPN"
+            md_bg_color: get_color_from_hex("#0d021b")
             height: "100dp"
             
             MDRaisedButton:
@@ -35,34 +36,136 @@ WindowManager:
             color: 0,0,0,1
             background_color: 0,0,0,1
             
-        RecycleView:
+        NodeRV:
             id: rv
-            key_viewclass: "viewclass"
-            key_size: "height"
-    
-            RecycleBoxLayout:
-                default_size: None, dp(48)
-                default_size_hint: 1, None
-                size_hint_y: None
-                height: self.minimum_height
-                orientation: "vertical"
-                md_bg_color: .988,.718,.67,1
-                
+               
     
         MDToolbar:
             title: "Subscriptions"
             md_bg_color: 0,0,0,1
             height: "30dp"
             
+<NodeRV>:
+    viewclass: 'RecycleViewRow'
+    RecycleGridLayout:
+        cols:1
+        default_size: dp(200), dp(180)
+        default_size_hint: 1, None
+        size_hint_y: None
+        height: self.minimum_height
+        orientation: 'lr-tb' 
+        
+<-FullImage>:
+    canvas:
+        Rectangle:
+            texture: self.texture
+            size: self.width-45 , self.height +30
+            pos: self.x - 150, self.y - 30             
+<-FullImage2>:
+    canvas:
+        Rectangle:
+            texture: self.texture
+            size: self.width - 170, self.height -25
+            pos: self.x + 80 , self.y           
+                
+<RecycleViewRow>:
+    size_hint_y: None
+    size: "180dp", "180dp"
+    pos_hint: {"center_x": .5, "center_y": .5}
+    orientation: "vertical"
+    padding: 10
+    border_radius: 20
+    radius: [15]
+    elevation:0
+    md_bg_color: get_color_from_hex("#0d021b")
+    moniker_text: "."
+    country_text: "."
+    price_text: "."
+    address_text: "."
+    city_text: " "
+    source_image: " "
+    speed_image: " "
+    speed_text: " "
+    MDGridLayout:
+        cols: 3
+        rows: 2
+        padding: 40,0,0,0
+        MDLabel:
+            text: root.moniker_text
+            theme_text_color: "Custom"
+            font_style: "H6"
+            font_size: "24sp"
+            text_color: get_color_from_hex("#fcb711")
+            width: "350dp"
+            size_hint_x: None
+        FullImage:
+            source: root.source_image
             
+        MDLabel:    
+            text: root.country_text
+            theme_text_color: "Custom"
+            font_style: "H6"
+            font_size: "22sp"
+            text_color: (1,1,1,1)  
+        MDLabel:
+            text: root.address_text
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "9sp"
+            text_color: (0/255.0,141/255.0,155/255.0,255/255.0)
+        MDLabel:
+            text: " "
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "14sp"
+            text_color: (0/255.0,141/255.0,155/255.0,255/255.0)
+        MDLabel:
+            text: " "
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "14sp"
+            text_color: (0/255.0,141/255.0,155/255.0,255/255.0)                                    
+    MDGridLayout:
+        cols: 3
+        padding: 40,0,0,0
+        MDLabel:
+            text: root.price_text
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "14sp"
+            text_color: get_color_from_hex("#fcb711")
+        FullImage2:
+            source: root.speed_image
+        MDBoxLayout:
+            padding: 80,30,0,0
+            MDLabel:
+                text: root.speed_text
+                theme_text_color: "Custom"
+                font_style: "Subtitle2"
+                font_size: "12sp"
+                text_color: 1,1,1,1
+                
+
+
+
+    MDRaisedButton:
+        text: "Get Details"
+        md_bg_color: get_color_from_hex("#fcb711")
+        text_color: 0,0,0,1
+        on_press: root.get_city_of_node(root.address_text)
+        
+        
+    MDSeparator:
+        color: 1,1,1,1
+       
 <MySeedBox>
 
-<ClickableTextFieldRound>:
+<ClickableTextFieldRoundSeed>:
     size_hint_y: None
-    height: text_field.height
+    height: seed_phrase.height
 
     MDTextField:
-        id: text_field
+        id: seed_phrase
         hint_text: root.hint_text
         text: root.text
         password: True
@@ -72,23 +175,81 @@ WindowManager:
     MDIconButton:
         icon: "eye-off"
         pos_hint: {"center_y": .5}
-        pos: text_field.width - self.width + dp(8), 0
+        pos: seed_phrase.width - self.width + dp(8), 0
         theme_text_color: "Hint"
         on_release:
             self.icon = "eye" if self.icon == "eye-off" else "eye-off"
-            text_field.password = False if text_field.password is True else True
+            seed_phrase.password = False if seed_phrase.password is True else True
+
+
+<ClickableTextFieldRoundName>:
+    size_hint_y: None
+    height: wallet_name.height
+
+    MDTextField:
+        id: wallet_name
+        hint_text: root.hint_text
+        text: root.text
+        password: True
+        icon_left: "key-variant"
+        mode: "rectangle"
+
+    MDIconButton:
+        icon: "eye-off"
+        pos_hint: {"center_y": .5}
+        pos: wallet_name.width - self.width + dp(8), 0
+        theme_text_color: "Hint"
+        on_release:
+            self.icon = "eye" if self.icon == "eye-off" else "eye-off"
+            wallet_name.password = False if wallet_name.password is True else True
+            
+<ClickableTextFieldRoundPass>:
+    size_hint_y: None
+    height: wallet_password.height
+
+    MDTextField:
+        id: wallet_password
+        hint_text: root.hint_text
+        text: root.text
+        password: True
+        icon_left: "key-variant"
+        mode: "rectangle"
+
+    MDIconButton:
+        icon: "eye-off"
+        pos_hint: {"center_y": .5}
+        pos: wallet_password.width - self.width + dp(8), 0
+        theme_text_color: "Hint"
+        on_release:
+            self.icon = "eye" if self.icon == "eye-off" else "eye-off"
+            wallet_password.password = False if wallet_password.password is True else True
 
 
 <WalletRestore>:
     name: "walletrestore"
     title: app.title
-     
-    ClickableTextFieldRound:
+    
+    ClickableTextFieldRoundSeed:
         size_hint_x: None
         width: "300dp"
         height: "300dp"
         hint_text: "Seed Phrase"
-        pos_hint: {"center_x": .5, "center_y": .75}
+        pos_hint: {"center_x": .5, "center_y": .80}
+     
+    ClickableTextFieldRoundName:
+        size_hint_x: None
+        width: "300dp"
+        height: "300dp"
+        hint_text: "Wallet Name"
+        pos_hint: {"center_x": .5, "center_y": .70}
+    
+    ClickableTextFieldRoundPass:
+        size_hint_x: None
+        width: "300dp"
+        height: "300dp"
+        hint_text: "Wallet Password"
+        pos_hint: {"center_x": .5, "center_y": .60}
+    
         
     MDRaisedButton:
         id: restore_wallet_button
@@ -171,7 +332,7 @@ WindowManager:
     speed_image: "FAZSAT"
     background_color: 98.8,71.8,6.7,1
 
-    BoxLayout:
+    FloatLayout:
         id: node_box
         size_hint_y: None
         height: "50dp"
@@ -180,40 +341,42 @@ WindowManager:
             Rectangle:
                 pos: self.pos
                 size: self.size
-                
+        FitImage:
+            source: root.source_image
+            size_hint: None, None
+            height: "30dp"
+            width: "50dp"
+         
         MDLabel:
             id: label_box
             bold: True
             text: root.moniker_text
+            pos: 60,0
         MDLabel:
             id: label_box
             font_size: "10dp"
             text: root.moniker2_text
+            pos: 60,20
         MDLabel:
             id: label_box
             font_size: "10dp"
             text: root.moniker3_text
-
+            pos: 120,20
         FitImage:
             source: root.speed_image
             size_hint: None, None
             height: "30dp"
             width: "40dp"
-            pos: self.pos 
+            pos: 150, 0 
             
         MDLabel:
             id: label_box
             font_size: "7dp"
             text_size: 50,10
             text: root.moniker4_text
-    
+            pos: 180,20
                        
-        FitImage:
-            source: root.source_image
-            size_hint: None, None
-            height: "30dp"
-            width: "50dp"
-            pos: self.pos
+
 
         
     MDSeparator:

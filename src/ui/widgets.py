@@ -1,4 +1,4 @@
-from kivy.properties import BooleanProperty
+from kivy.properties import BooleanProperty, StringProperty
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.label import Label
 from kivymd.uix.card import MDCard
@@ -6,7 +6,8 @@ from kivymd.uix.dialog import MDDialog
 from kivymd.uix.button import MDFlatButton, MDRaisedButton
 from kivy.uix.recycleview import RecycleView
 
-
+from urllib3.exceptions import InsecureRequestWarning
+import requests
 from src.cli.sentinel import NodesInfoKeys
 
 class SelectableLabel(RecycleDataViewBehavior, Label):
@@ -70,19 +71,60 @@ class MD3Card(MDCard):
         self.dialog.dismiss()
         print("SUBSCRIBED!")
 
-class RV(RecycleView):
-    def __init__(self, **kwargs):
-        super(RV, self).__init__(**kwargs)
+class NodeRV(RecycleView):    
+    pass
+class RecycleViewRow(MDCard):
+    text = StringProperty()
+    dialog = None
     
-    def populate_rv(self, node):
-        self.data.append(
-                {           
-                    "text1" : node[NodesInfoKeys[0]].lstrip().rstrip(),
-                    "text2" : node[NodesInfoKeys[3]].lstrip().rstrip(),
-                    "text3" : node[NodesInfoKeys[4]].lstrip().rstrip(),           
-                }
-            )
+    def get_city_of_node(self, naddress):   
+        APIURL   = "https://api.sentinel.mathnodes.com"
 
+        endpoint = "/nodes/" + naddress.lstrip().rstrip()
+        print(APIURL + endpoint)
+        r = requests.get(APIURL + endpoint)
+        remote_url = r.json()['result']['node']['remote_url']
+        r = requests.get(remote_url + "/status", verify=False)
+        print(remote_url)
+        requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
+
+        NodeInfoJSON = r.json()
+        NodeInfoDict = {}
+        
+        NodeInfoDict['connected_peers'] = NodeInfoJSON['result']['peers']
+        NodeInfoDict['max_peers']       = NodeInfoJSON['result']['qos']['max_peers']
+        NodeInfoDict['version']         = NodeInfoJSON['result']['version']
+        NodeInfoDict['city']            = NodeInfoJSON['result']['location']['city']
+
+
+
+
+        if not self.dialog:
+            self.dialog = MDDialog(
+                text='''
+City: %s
+Connected Peers:  %s  
+Max Peers: %s  
+Node Version: %s 
+                    ''' % (NodeInfoDict['city'], NodeInfoDict['connected_peers'],NodeInfoDict['max_peers'],NodeInfoDict['version']),
+  
+                buttons=[
+                    MDRaisedButton(
+                        text="OKAY",
+                        theme_text_color="Custom",
+                        text_color=(1,1,1,1),
+                        on_release= self.closeDialog,
+                    )
+                ],
+            )
+        self.dialog.open()
+
+    
+
+    def closeDialog(self, inst):
+        self.dialog.dismiss()
+        
+   
 
 
 # In case I go for word wrapping bigger textfield.
