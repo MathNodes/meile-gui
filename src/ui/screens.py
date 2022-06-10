@@ -4,6 +4,7 @@ from src.typedef.win import WindowNames
 from src.cli.sentinel import GetSentinelNodes, NodesInfoKeys
 import src.main.main as Meile
 from src.ui.widgets import MD3Card
+from src.cli.wallet import HandleWalletFunctions
  
 from kivy.uix.screenmanager import Screen, SlideTransition
 from kivymd.uix.button import MDFlatButton, MDRaisedButton
@@ -14,15 +15,18 @@ from kivy.properties import ObjectProperty
 
 
 class WalletRestore(Screen):
+    screemanager = ObjectProperty()
+    
     dialog = None
     def restore_wallet_from_seed_phrase(self):
         if not self.dialog:
             self.dialog = MDDialog(
-                text="Seed: %s \n Name: %s \n: Password: %s" %
-                (self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.seed_phrase.text,
-                 self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.wallet_name.text,
-                 self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.wallet_password.text),
-            
+                text="Seed: %s \n\nName: %s \nPassword: %s" %
+                
+                 (self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.seed.ids.seed_phrase.text,
+                 self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.name.ids.wallet_name.text,
+                 self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.password.ids.wallet_password.text
+                 ),
                 
                 buttons=[
                     MDFlatButton(
@@ -40,11 +44,45 @@ class WalletRestore(Screen):
                 ],
             )
             self.dialog.open()
+            
+    def set_previous_screen(self, inst):
+        if self.screemanager.current != WindowNames.MAIN_WINDOW:
+            self.screemanager.transition.direction = "down"
+            self.screemanager.current = self.screemanager.previous()
+        
     def cancel(self):
         self.dialog.dismiss()
         
-    def wallet_restore(self):
-        pass
+    def wallet_restore(self, inst):
+        self.dialog.dismiss()
+        seed_phrase  = self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.seed.ids.seed_phrase.text
+        wallet_name = self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.name.ids.wallet_name.text
+        keyring_passphrase = self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.password.ids.wallet_password.text
+        if seed_phrase:
+            Wallet = HandleWalletFunctions.create(self, wallet_name, keyring_passphrase, seed_phrase)
+        else:
+            Wallet = HandleWalletFunctions.create(self, wallet_name, keyring_passphrase, None)
+        
+        self.dialog = MDDialog(
+                text="Wallet created!\n\n Seed: %s\nAddress: %s\nWallet Name: %s\nWallet Password: %s" %
+                
+                 (Wallet['seed'],
+                 Wallet['address'],
+                 wallet_name,
+                 keyring_passphrase
+                 ),
+                
+                buttons=[
+                    MDRaisedButton(
+                        text="I saved this",
+                        theme_text_color="Custom",
+                        text_color=(1,1,1,1),
+                        on_release= self.set_previous_screen
+                    ),
+                ],
+            )
+        self.dialog.open()
+        
 
 class PreLoadWindow(Screen):   
     StatusMessages = ["Calculating π...", "Squaring the Circle...", "Solving the Riemann Hypothesis...", "Done"]

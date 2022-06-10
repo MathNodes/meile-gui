@@ -168,7 +168,7 @@ WindowManager:
         id: seed_phrase
         hint_text: root.hint_text
         text: root.text
-        password: True
+        password: False
         icon_left: "key-variant"
         mode: "rectangle"
 
@@ -190,7 +190,7 @@ WindowManager:
         id: wallet_name
         hint_text: root.hint_text
         text: root.text
-        password: True
+        password: False
         icon_left: "key-variant"
         mode: "rectangle"
 
@@ -211,7 +211,7 @@ WindowManager:
         id: wallet_password
         hint_text: root.hint_text
         text: root.text
-        password: True
+        password: False
         icon_left: "key-variant"
         mode: "rectangle"
 
@@ -228,8 +228,16 @@ WindowManager:
 <WalletRestore>:
     name: "walletrestore"
     title: app.title
+    ActionBar:
+        ActionView:
+            ActionPrevious:
+                title: 'Go Back'
+                with_previous: True
+                on_release: root.set_previous_screen(None) 
+    
     
     ClickableTextFieldRoundSeed:
+        id: seed
         size_hint_x: None
         width: "300dp"
         height: "300dp"
@@ -237,6 +245,7 @@ WindowManager:
         pos_hint: {"center_x": .5, "center_y": .80}
      
     ClickableTextFieldRoundName:
+        id: name
         size_hint_x: None
         width: "300dp"
         height: "300dp"
@@ -244,6 +253,7 @@ WindowManager:
         pos_hint: {"center_x": .5, "center_y": .70}
     
     ClickableTextFieldRoundPass:
+        id: password
         size_hint_x: None
         width: "300dp"
         height: "300dp"
@@ -256,7 +266,7 @@ WindowManager:
         text: "Restore"
         pos_hint: {"center_x": .5, "center_y": .5}
         on_press: root.restore_wallet_from_seed_phrase()
-        
+    
     
 <PreLoadWindow>:
     name: "preload"
