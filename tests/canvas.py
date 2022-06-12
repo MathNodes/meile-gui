@@ -56,7 +56,12 @@ canvas = '''
             size_hint_y: None
             height: self.minimum_height
             orientation: "vertical"
-
+    MDRaisedButton:
+        id: wallet_button
+        text: "Wallet"
+        pos_hint: {"center_x": .5, "center_y": .5}
+        on_press: app.change_tab()
+        
 
 
 <Tab>
@@ -130,6 +135,13 @@ class Tab(MDBoxLayout, MDTabsBase):
 class Palette(MDApp):
     title = "Meile dVPN"
     ConNodes = []
+    
+    def change_tab(self):
+        
+        tab = Tab(text="Antarctica")
+        self.screen.ids.android_tabs.remove_widget(tab)
+        tab = Tab(text="Subscriptions")
+        self.screen.ids.android_tabs.add_widget(tab)
     
     def build(self):
         Builder.load_string(canvas)
