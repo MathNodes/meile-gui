@@ -35,7 +35,8 @@ WindowManager:
             tab_indicator_anim: True
             color: 0,0,0,1
             background_color: 0,0,0,1
-            
+        
+                
         NodeRV:
             id: rv
                
@@ -46,7 +47,7 @@ WindowManager:
             height: "30dp"
             
 <NodeRV>:
-    viewclass: 'RecycleViewRow'
+    key_viewclass: "viewclass"
     RecycleGridLayout:
         cols:1
         default_size: dp(200), dp(180)
@@ -54,6 +55,8 @@ WindowManager:
         size_hint_y: None
         height: self.minimum_height
         orientation: 'lr-tb' 
+
+
         
 <-FullImage>:
     canvas:
@@ -157,7 +160,108 @@ WindowManager:
         
     MDSeparator:
         color: 1,1,1,1
-       
+
+<RecycleViewSubRow>:
+    size_hint_y: None
+    size: "180dp", "180dp"
+    pos_hint: {"center_x": .5, "center_y": .5}
+    orientation: "vertical"
+    padding: 10
+    border_radius: 20
+    radius: [15]
+    elevation:0
+    md_bg_color: get_color_from_hex("#0d021b")
+    moniker_text: "."
+    sub_id_text: " "
+    country_text: "."
+    price_text: "."
+    address_text: "."
+    city_text: " "
+    allocated_text: "10GB"
+    consumed_text: "10GB"
+    source_image: " "
+    speed_image: " "
+    speed_text: " "
+    MDGridLayout:
+        cols: 3
+        rows: 2
+        padding: 40,0,0,0
+        MDLabel:
+            text: root.moniker_text
+            theme_text_color: "Custom"
+            font_style: "H6"
+            font_size: "24sp"
+            text_color: get_color_from_hex("#fcb711")
+            width: "350dp"
+            size_hint_x: None
+        FullImage:
+            source: root.source_image
+            
+        MDLabel:    
+            text: root.country_text
+            theme_text_color: "Custom"
+            font_style: "H6"
+            font_size: "22sp"
+            text_color: (1,1,1,1)  
+        MDLabel:
+            text: root.address_text
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "9sp"
+            text_color: (0/255.0,141/255.0,155/255.0,255/255.0)
+        MDLabel:
+            text: root.sub_id_text
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "14sp"
+            text_color: (0/255.0,141/255.0,155/255.0,255/255.0)
+        MDLabel:
+            text: " "
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "14sp"
+            text_color: (0/255.0,141/255.0,155/255.0,255/255.0)                                    
+    MDGridLayout:
+        cols: 2
+        rows: 2
+        padding: 40,0,0,0
+        MDLabel:
+            text: root.price_text
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "14sp"
+            text_color: get_color_from_hex("#fcb711")
+        MDBoxLayout:
+            padding: 80,30,0,0
+            MDLabel:
+                text: root.allocated_text
+                theme_text_color: "Custom"
+                font_style: "Subtitle2"
+                font_size: "12sp"
+                text_color: 1,1,1,1
+            MDLabel:
+                text: root.consumed_text
+                theme_text_color: "Custom"
+                font_style: "Subtitle2"
+                font_size: "12sp"
+                text_color: 1,1,1,1
+        MDProgressBar:
+            value: root.get_data_used(root.allocated_text, root.consumed_text)
+            back_color: get_color_from_hex("#ffffff")
+                
+
+
+
+    MDRaisedButton:
+        text: "Connect"
+        md_bg_color: get_color_from_hex("#fcb711")
+        text_color: 0,0,0,1
+        on_press: root.get_city_of_node(root.address_text)
+        
+        
+    MDSeparator:
+        color: 1,1,1,1
+         
 <MySeedBox>
 
 <ClickableTextFieldRoundSeed>:

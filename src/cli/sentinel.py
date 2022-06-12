@@ -1,11 +1,11 @@
 from subprocess import Popen, PIPE, STDOUT
 import collections
-from prettytable import PrettyTable
 from os import path
 import re
 import requests
-import json
+
 from urllib3.exceptions import InsecureRequestWarning
+
 
 # IBC Tokens
 IBCSCRT  = 'ibc/31FEE1A2A9F9C01113F90BD0BBCCE8FD6BBB8585FAF109A2101827DD1D5B95B8'
@@ -21,23 +21,29 @@ SATOSHI = 1000000
 BASEDIR  = path.join(path.expanduser('~'), '.sentinelcli')
 APIURL   = "https://api.sentinel.mathnodes.com"
 NodesInfoKeys = ["Moniker","Address","Provider","Price","Country","Speed","Latency","Peers","Handshake","Version","Status"]
+SubsInfoKeys = ["ID", "Owner", "Plan", "Expiry", "Denom", "Node", "Price", "Deposit", "Free", "Status"]
+FinalSubsKeys = [SubsInfoKeys[0], NodesInfoKeys[0],SubsInfoKeys[5], SubsInfoKeys[6], SubsInfoKeys[7], NodesInfoKeys[4], "Allocated", "Consumed" ]
+
+
 dash = "-"
 
 global ConNodes
 ConNodes = []
+global NodesDictList
+NodesDictList = collections.defaultdict(list)
+
 
 def GetSentinelNodes(dt):
     print("Getting Nodes...")
     global ConNodes
-    ConNodes = get_nodes()
-    print(ConNodes)
+    global NodesDictList
+    ConNodes,NodesDictList = get_nodes()
     print("Nodes begotten and not made")
     
 def get_nodes():
     AllNodesInfo = []
     nodeCMD = ["sentinelcli", "query", "nodes", "--node", "https://rpc.mathnodes.com:4444", "--limit", "20000"]
 
-    NodeTable = PrettyTable()    
     proc = Popen(nodeCMD, stdout=PIPE)
     
     k=1
@@ -70,60 +76,22 @@ def get_nodes():
     
     #get = input("Blah: ")
     AllNodesInfoSorted = sorted(AllNodesInfo, key=lambda d: d[NodesInfoKeys[4]])
-    #result = collections.defaultdict(list)
     AllNodesInfoSorted2 = []
+    result = collections.defaultdict(list)
+
     for d in AllNodesInfoSorted:
         d[NodesInfoKeys[3]] = return_denom(d[NodesInfoKeys[3]])
         #d["City"] = get_city_of_node(d[NodesInfoKeys[1]])
         AllNodesInfoSorted2.append(d)
-    '''
+        
     for d in AllNodesInfoSorted:
         for k, v in d.items():
-            if IBCSCRT in v:
-                v = v.replace(IBCSCRT,'uscrt')
-            elif IBCUNKWN in v:
-                v = v.replace(IBCUNKWN,'unkwn')
-            elif IBCDEC in v:
-                v = v.replace(IBCDEC, 'udec')
+            v=return_denom(v)
             result[k].append(v.lstrip().rstrip())
             
     
-    
-    #country = input("Country: ")
-    
-    #pos = [i for i,val in enumerate(result[NodesInfoKeys[4]]) if val.upper() == country.upper()]
-            
-    #pos = list(locate(result[NodesInfoKeys[4]], lambda x: x.upper() == country.upper()))
-    
-    
-    pos = len(result[NodesInfoKeys[4]])
-    
-    NodeTable.field_names = [NodesInfoKeys[0],NodesInfoKeys[1], NodesInfoKeys[3],NodesInfoKeys[4],
-                                                                                NodesInfoKeys[5],
-                                                                                NodesInfoKeys[6],
-                                                                                NodesInfoKeys[7],
-                                                                                "HS",
-                                                                                NodesInfoKeys[9]]
-   
-    #NodeData.append(173*dash)
-    for e in range(pos):
-        NodeTable.add_row([result[NodesInfoKeys[0]][e],result[NodesInfoKeys[1]][e],result[NodesInfoKeys[3]][e],
-                                                                                result[NodesInfoKeys[4]][e],
-                                                                                result[NodesInfoKeys[5]][e],
-                                                                                result[NodesInfoKeys[6]][e],
-                                                                                result[NodesInfoKeys[7]][e],
-                                                                                result[NodesInfoKeys[8]][e],
-                                                                                result[NodesInfoKeys[9]][e]])
-                           
- 
-    NodeTableString = NodeTable.get_string()
-    
-    NodeData = NodeTableString.split('\n')
-    
-    return NodeData,result
-    '''
-            
-    return AllNodesInfoSorted2
+
+    return AllNodesInfoSorted2, result
 
 def return_denom(tokens):
     for ibc_coin in IBCCOINS:
@@ -136,9 +104,8 @@ def return_denom(tokens):
 
 def get_subscriptions(result, ADDRESS):
     SubsNodesInfo = []
-    SubsInfoKeys = ["ID", "Owner", "Plan", "Expiry", "Denom", "Node", "Price", "Deposit", "Free", "Status"]
+    SubsFinalResult    = []
     subsCMD = ["sentinelcli", "query", "subscriptions", "--node", "https://rpc.mathnodes.com:4444", "--status", "Active", "--limit", "100", "--address" ,ADDRESS]
-    SubsTable = PrettyTable()
     proc = Popen(subsCMD, stdout=PIPE)
 
     k=1
@@ -155,10 +122,7 @@ def get_subscriptions(result, ADDRESS):
     
     for d in SubsNodesInfo:
         for k, v in d.items():
-            if IBCSCRT in v:
-                v = v.replace(IBCSCRT,'uscrt')
-            elif IBCUNKWN in v:
-                v = v.replace(IBCUNKWN, 'unkwn')
+            v = return_denom(v)
             SubsResult[k].append(v.lstrip().rstrip())
             
     SubsAddressSet = set(SubsResult[SubsInfoKeys[5]])
@@ -174,17 +138,7 @@ def get_subscriptions(result, ADDRESS):
     #print(Subspos)
     #print(SubsResult[SubsInfoKeys[5]])
     
-    SubsTable.field_names = [SubsInfoKeys[0],
-                            "Moniker",
-                            SubsInfoKeys[5],
-                            SubsInfoKeys[6],
-                            SubsInfoKeys[7],
-                            "Country",
-                            "Allocated",
-                            "Consumed"]
-
-    #SubsData.append(173*dash)
-    
+  
     k=0
     j=0
     # This would be the more efficent algorithm. Not a fan of O(n^2)
@@ -212,14 +166,16 @@ def get_subscriptions(result, ADDRESS):
                         if allotted == consumed:
                             break
                         else:
-                            SubsTable.add_row([SubsResult[SubsInfoKeys[0]][k],
-                                                result[NodesInfoKeys[0]][Nodespos[j]],
-                                                SubsResult[SubsInfoKeys[5]][k],
-                                                SubsResult[SubsInfoKeys[6]][k],
-                                                SubsResult[SubsInfoKeys[7]][k],
-                                                result[NodesInfoKeys[4]][Nodespos[j]],
-                                                nodeQuota[0],
-                                                nodeQuota[1]])
+                            SubsFinalResult.append({
+                                                FinalSubsKeys[0] : SubsResult[SubsInfoKeys[0]][k],
+                                                FinalSubsKeys[1] : result[NodesInfoKeys[0]][Nodespos[j]],
+                                                FinalSubsKeys[2] : SubsResult[SubsInfoKeys[5]][k],
+                                                FinalSubsKeys[3] : SubsResult[SubsInfoKeys[6]][k],
+                                                FinalSubsKeys[4] : SubsResult[SubsInfoKeys[7]][k],
+                                                FinalSubsKeys[5] : result[NodesInfoKeys[4]][Nodespos[j]],
+                                                FinalSubsKeys[6] : nodeQuota[0],
+                                                FinalSubsKeys[7] : nodeQuota[1]
+                                                })
 
                 break
             else:
@@ -227,11 +183,9 @@ def get_subscriptions(result, ADDRESS):
                 continue
         j=0
         k += 1
-    SubsTableString = SubsTable.get_string()
-    
-    SubsData = SubsTableString.split('\n')
+
      
-    return SubsData
+    return SubsFinalResult
 
 def get_balance(address):
     endpoint = "/bank/balances/" + address

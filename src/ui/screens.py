@@ -1,11 +1,14 @@
 from src.geography.continents import OurWorld
 from src.ui.interfaces import Tab
 from src.typedef.win import WindowNames
-from src.cli.sentinel import GetSentinelNodes, NodesInfoKeys
+from src.cli.sentinel import GetSentinelNodes, NodesInfoKeys, get_subscriptions,FinalSubsKeys
 import src.main.main as Meile
 from src.ui.widgets import MD3Card
 from src.cli.wallet import HandleWalletFunctions
- 
+from src.conf.meile_config import MeileGuiConfig
+
+
+from kivymd.uix.spinner import MDSpinner  
 from kivy.uix.screenmanager import Screen, SlideTransition
 from kivymd.uix.button import MDFlatButton, MDRaisedButton
 from kivymd.uix.dialog import MDDialog
@@ -19,6 +22,8 @@ class WalletRestore(Screen):
     
     dialog = None
     def restore_wallet_from_seed_phrase(self):
+        
+        
         if not self.dialog:
             self.dialog = MDDialog(
                 text="Seed: %s \n\nName: %s \nPassword: %s" %
@@ -45,23 +50,38 @@ class WalletRestore(Screen):
             )
             self.dialog.open()
             
-    def set_previous_screen(self, inst):
-        if self.screemanager.current != WindowNames.MAIN_WINDOW:
-            self.screemanager.transition.direction = "down"
-            self.screemanager.current = self.screemanager.previous()
-        
+
+            
+    def switch_window(self, inst):
+        self.dialog.dismiss()
+        self.dialog = None
+        Meile.app.root.transition = SlideTransition(direction = "down")
+        Meile.app.root.current = WindowNames.MAIN_WINDOW
+
+       
     def cancel(self):
         self.dialog.dismiss()
         
     def wallet_restore(self, inst):
+        CONFIG = MeileGuiConfig.read_configuration(MeileGuiConfig, MeileGuiConfig.CONFFILE)
+
         self.dialog.dismiss()
         seed_phrase  = self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.seed.ids.seed_phrase.text
         wallet_name = self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.name.ids.wallet_name.text
         keyring_passphrase = self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.password.ids.wallet_password.text
         if seed_phrase:
-            Wallet = HandleWalletFunctions.create(self, wallet_name, keyring_passphrase, seed_phrase)
+            Wallet = HandleWalletFunctions.create(HandleWalletFunctions, wallet_name, keyring_passphrase, seed_phrase)
         else:
-            Wallet = HandleWalletFunctions.create(self, wallet_name, keyring_passphrase, None)
+            Wallet = HandleWalletFunctions.create(HandleWalletFunctions, wallet_name, keyring_passphrase, None)
+            
+        FILE = open(MeileGuiConfig.CONFFILE,'w')
+
+        CONFIG.set('wallet', 'keyname', wallet_name)
+        CONFIG.set('wallet', 'address', Wallet['address'])
+        CONFIG.set('wallet', 'password', keyring_passphrase)
+        
+        CONFIG.write(FILE)
+        FILE.close()
         
         self.dialog = MDDialog(
                 text="Wallet created!\n\n Seed: %s\nAddress: %s\nWallet Name: %s\nWallet Password: %s" %
@@ -77,7 +97,7 @@ class WalletRestore(Screen):
                         text="I saved this",
                         theme_text_color="Custom",
                         text_color=(1,1,1,1),
-                        on_release= self.set_previous_screen
+                        on_release= self.switch_window
                     ),
                 ],
             )
@@ -147,6 +167,9 @@ class MainWindow(Screen):
 
     def build(self, dt):
         print("ADDING TABS")
+        OurWorld.CONTINENTS.remove(OurWorld.CONTINENTS[1])
+        OurWorld.CONTINENTS.append("Subscriptions")
+        OurWorld.CONTINENTS.append("Search")
         for name_tab in OurWorld.CONTINENTS:
             tab = Tab(text=name_tab)
             self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.android_tabs.add_widget(tab)
@@ -228,26 +251,61 @@ class MainWindow(Screen):
             speedimage = floc + "slow.png"
         self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.rv.data.append(
             {
-                "moniker_text": node[NodesInfoKeys[0]].lstrip().rstrip(),
-                "price_text" : node[NodesInfoKeys[3]].lstrip().rstrip(),
+                "viewclass"    : "RecycleViewRow",
+                "moniker_text" : node[NodesInfoKeys[0]].lstrip().rstrip(),
+                "price_text"   : node[NodesInfoKeys[3]].lstrip().rstrip(),
                 "country_text" : node[NodesInfoKeys[4]].lstrip().rstrip(),
                 "address_text" : node[NodesInfoKeys[1]].lstrip().rstrip(),
-                "speed_text" : node[NodesInfoKeys[5]].lstrip().rstrip(),
-                "speed_image"   : speedimage,
+                "speed_text"   : node[NodesInfoKeys[5]].lstrip().rstrip(),
+                "speed_image"  : speedimage,
                 "source_image" : flagloc
                 
             },
         )
         
+    def add_sub_rv_data(self, node, flagloc):
+        self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.rv.data.append(
+            {
+                "viewclass"      : "RecycleViewSubRow",
+                "moniker_text"   : node[FinalSubsKeys[1]].lstrip().rstrip(),
+                "sub_id_text"    : node[FinalSubsKeys[0]].lstrip().rstrip(),
+                "price_text"     : node[FinalSubsKeys[3]].lstrip().rstrip(),
+                "country_text"   : node[FinalSubsKeys[5]].lstrip().rstrip(),
+                "address_text"   : node[FinalSubsKeys[2]].lstrip().rstrip(),
+                "allocated_text" : node[FinalSubsKeys[6]].lstrip().rstrip(),
+                "consumed_text"  : node[FinalSubsKeys[7]].lstrip().rstrip(),
+                "source_image"   : flagloc
+                
+            },
+        )
+        
     def on_tab_switch(self, instance_tabs, instance_tab, instance_tabs_label, tab_text):
-        from src.cli.sentinel import ConNodes
+        from src.cli.sentinel import ConNodes, NodesDictList
         
         floc = "./src/imgs/"
         self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.rv.data = []
 
         if not tab_text:
             tab_text = OurWorld.CONTINENTS[0]
-
+            
+        # Subscriptions
+        print(OurWorld.CONTINENTS[6])
+        if tab_text == OurWorld.CONTINENTS[6]:
+            CONFIG = MeileGuiConfig.read_configuration(MeileGuiConfig, MeileGuiConfig.CONFFILE)
+            address = CONFIG['wallet'].get("address")
+            if address:
+                Subscriptions = get_subscriptions(NodesDictList, address)
+                for sub in Subscriptions:
+                    if sub[FinalSubsKeys[5]] == "Czechia":
+                        sub[FinalSubsKeys[5]] = "Czech Republic"
+                    try: 
+                        iso2 = OurWorld.our_world.get_country_ISO2(sub[FinalSubsKeys[5]].lstrip().rstrip()).lower()
+                    except:
+                        iso2 = "sc"
+                    flagloc = floc + iso2 + ".png"
+                    self.add_sub_rv_data(sub, flagloc)
+                return 
+            
         for node in ConNodes:
             #print(node)
             if tab_text == OurWorld.CONTINENTS[0]:
@@ -256,49 +314,49 @@ class MainWindow(Screen):
                     iso2 = OurWorld.our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
                     flagloc = floc + iso2 + ".png"
                     self.add_rv_data(node, flagloc)
+
             elif tab_text == OurWorld.CONTINENTS[1]:
-                if node[NodesInfoKeys[4]].lstrip().rstrip() in OurWorld.Anarctica:
-                    
-                    iso2 = OurWorld.our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
-                    flagloc = floc + iso2 + ".png"
-                    
-                    self.add_rv_data(node, flagloc)
-            elif tab_text == OurWorld.CONTINENTS[2]:
                 if node[NodesInfoKeys[4]].lstrip().rstrip() in OurWorld.Asia:
                     
                     iso2 = OurWorld.our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
                     flagloc = floc + iso2 + ".png"
                     
                     self.add_rv_data(node, flagloc)
-            elif tab_text == OurWorld.CONTINENTS[3]:
+            elif tab_text == OurWorld.CONTINENTS[2]:
                 if node[NodesInfoKeys[4]].lstrip().rstrip() in OurWorld.Europe:
                     
                     iso2 = OurWorld.our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
                     flagloc = floc + iso2 + ".png"
                     
                     self.add_rv_data(node, flagloc)
-            elif tab_text == OurWorld.CONTINENTS[4]:
+            elif tab_text == OurWorld.CONTINENTS[3]:
                 if node[NodesInfoKeys[4]].lstrip().rstrip() in OurWorld.NorthAmerica:
                     
                     iso2 = OurWorld.our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
                     flagloc = floc + iso2 + ".png"
                     
                     self.add_rv_data(node, flagloc)
-            elif tab_text == OurWorld.CONTINENTS[5]:
+            elif tab_text == OurWorld.CONTINENTS[4]:
                 if node[NodesInfoKeys[4]].lstrip().rstrip() in OurWorld.Oceania:
                     
                     iso2 = OurWorld.our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
                     flagloc = floc + iso2 + ".png"
                     
                     self.add_rv_data(node, flagloc)
-            else: 
+            elif tab_text == OurWorld.CONTINENTS[5]: 
                 if node[NodesInfoKeys[4]].lstrip().rstrip() in OurWorld.SouthAmerica:
                     
                     iso2 = OurWorld.our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
                     flagloc = floc + iso2 + ".png"
                     
                     self.add_rv_data(node, flagloc)
-                  
+            
+            
+                
+                
+            # Search Criteria
+            else:
+                pass      
             
     def switch_window(self, window):
         Meile.app.root.transition = SlideTransition(direction = "up")

@@ -8,7 +8,9 @@ from kivy.uix.recycleview import RecycleView
 
 from urllib3.exceptions import InsecureRequestWarning
 import requests
+
 from src.cli.sentinel import NodesInfoKeys
+
 
 class SelectableLabel(RecycleDataViewBehavior, Label):
     ''' Add selection support to the Label '''
@@ -119,13 +121,32 @@ Node Version: %s
             )
         self.dialog.open()
 
-    
-
+  
+        
     def closeDialog(self, inst):
         self.dialog.dismiss()
+        self.dialog = None
         
    
-
+class RecycleViewSubRow(MDCard):
+    text = StringProperty()
+    dialog = None
+    
+        
+    def get_data_used(self, allocated, consumed):
+        try:         
+            allocated = float(allocated.replace('GB',''))
+            if "MB" in consumed:
+                consumed = float(float(consumed.replace('MB', '')) / 1024)
+            else:
+                consumed  = float(consumed.replace('GB', ''))
+                
+            return float(float(consumed/allocated)*100)
+        except Exception as e:
+            print(str(e))
+            return float(50)
+      
+    
 
 # In case I go for word wrapping bigger textfield.
 '''

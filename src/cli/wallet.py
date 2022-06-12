@@ -1,7 +1,7 @@
 from os import path, remove
 import pexpect
 
-KEYRINGDIR = path.join(path.expanduser('~'), '.meile')
+KEYRINGDIR = path.join(path.expanduser('~'), '.meile-gui')
 WALLETINFO = path.join(KEYRINGDIR, "infos.txt")
     
 class HandleWalletFunctions():
