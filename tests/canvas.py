@@ -6,6 +6,9 @@ from kivy.factory import Factory
 from kivymd.app import MDApp
 from kivymd.uix.tab import MDTabsBase
 from kivymd.uix.boxlayout import MDBoxLayout
+from kivy.uix.popup import Popup
+from kivy.uix.label import Label
+from kivymd.uix.spinner import MDSpinner
 
 our_world = awoc.AWOC()
 
@@ -138,11 +141,14 @@ class Palette(MDApp):
     
     def change_tab(self):
         
-        tab = Tab(text="Antarctica")
-        self.screen.ids.android_tabs.remove_widget(tab)
-        tab = Tab(text="Subscriptions")
-        self.screen.ids.android_tabs.add_widget(tab)
-    
+        popup = Popup(title='Loading...',
+                      size_hint=(None, None), size=(120, 120),
+                      pos_hint={"center_x": .5, "center_y": 0})
+        spinner = MDSpinner(size_hint=(None, None),
+        size=("46dp", "46dp"),
+        pos_hint={'center_x': 1, 'center_y': .5})
+        popup.add_widget(spinner)
+        self.screen.add_widget(popup)
     def build(self):
         Builder.load_string(canvas)
         self.screen = Factory.Root()

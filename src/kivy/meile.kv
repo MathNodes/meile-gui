@@ -10,6 +10,7 @@ WindowManager:
         orientation: 'vertical'
         
         MDToolbar:
+            id: toolbar
             title: "Sentinel dVPN"
             md_bg_color: get_color_from_hex("#0d021b")
             height: "100dp"
@@ -36,15 +37,22 @@ WindowManager:
             color: 0,0,0,1
             background_color: 0,0,0,1
         
-                
+        
         NodeRV:
             id: rv
-               
+            
+
+        MDSpinner:
+            id: spinnuh
+            height: dp(23)
+            size_hint: None, None
+            size: dp(23), dp(23)
+            pos_hint: {'center_x': .5, 'center_y': .5}
+            active: False
+            opacity: 0
+                   
     
-        MDToolbar:
-            title: "Subscriptions"
-            md_bg_color: 0,0,0,1
-            height: "30dp"
+
             
 <NodeRV>:
     key_viewclass: "viewclass"
@@ -89,6 +97,9 @@ WindowManager:
     source_image: " "
     speed_image: " "
     speed_text: " "
+    focus_behavior: True
+    ripple_behavior: True
+    on_press: root.subscribe_to_node(root.price_text, root.address_text, root.moniker_text)
     MDGridLayout:
         cols: 3
         rows: 2
@@ -494,4 +505,52 @@ WindowManager:
 
         
     MDSeparator:
+    
+
+<SubscribeContent>
+    orientation: "vertical"
+    spacing: "5dp"
+    size_hint_y: None
+    height: "180dp"
+    price_text: "1dvpn"
+    MDBoxLayout:
+        orientation: "horizontal"
+        MDSlider:
+            
+            id: slider1
+            min: 1
+            max: 314
+            value: 40
+            
+        MDLabel:
+            text: str(int(slider1.value)) + " GB" 
+            size_hint_x: None
+            width: 75
+    MDBoxLayout:
+        orientation: "horizontal"
+        size_hint_x: .8
+        spacing: 20
+        
+        MDTextField:
+            id: deposit
+            hint_text: "Deposit"
+            mode: "fill"
+            text: str(round(int(slider1.value)*int(glargy.text.split('udvpn')[0])/1000000,3)) + "dvpn/GB"
+            size_hint_y: .65
+            width: "50dp"
+            height: "30dp"
+            readonly: True
+        
+        MDTextField:
+            id: glargy
+            hint_text: "Price"
+            mode: "fill"
+            text: root.price_text
+            size_hint_y: .65
+            width: "50dp"
+            height: "30dp"
+            readonly: True
+        
+    
+
 
