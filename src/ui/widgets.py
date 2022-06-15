@@ -10,6 +10,7 @@ from urllib3.exceptions import InsecureRequestWarning
 import requests
 
 from src.cli.sentinel import NodesInfoKeys
+from src.ui.interfaces import SubscribeContent
 
 
 class SelectableLabel(RecycleDataViewBehavior, Label):
@@ -76,7 +77,7 @@ class MD3Card(MDCard):
 class NodeRV(RecycleView):    
     pass
 class RecycleViewRow(MDCard):
-    text = StringProperty()
+    text = StringProperty()    
     dialog = None
     
     def get_city_of_node(self, naddress):   
@@ -121,7 +122,29 @@ Node Version: %s
             )
         self.dialog.open()
 
-  
+    def subscribe_to_node(self, price, naddress, moniker):
+        subscribe_dialog = SubscribeContent(price)
+        
+        if not self.dialog:
+            self.dialog = MDDialog(
+                title="Address:",
+                type="custom",
+                content_cls=Content(),
+                buttons=[
+                    MDFlatButton(
+                        text="CANCEL",
+                        theme_text_color="Custom",
+                        text_color=self.theme_cls.primary_color,
+                    ),
+                    MDFlatButton(
+                        text="OK",
+                        theme_text_color="Custom",
+                        text_color=self.theme_cls.primary_color,
+                    ),
+                ],
+            )
+        self.dialog.open()
+        
         
     def closeDialog(self, inst):
         self.dialog.dismiss()

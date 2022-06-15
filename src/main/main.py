@@ -6,7 +6,7 @@ from src.conf.meile_config import MeileGuiConfig
 from kivy.lang import Builder
 from kivymd.app import MDApp
 
-
+import asyncio 
 
 class MyMainApp(MDApp):
     title = "Meile dVPN"

@@ -7,10 +7,18 @@ from kivy.uix.behaviors import FocusBehavior
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.recyclegridlayout import RecycleGridLayout
 from kivy.uix.image import Image
-
+from kivy.uix.boxlayout import BoxLayout
 
 class Tab(MDBoxLayout, MDTabsBase):
     pass
+
+class SubscribeContent(BoxLayout):
+    price_text = StringProperty()
+    
+    def __init_ (self, price):
+        self.price_text = price
+
+    
 
 class WindowManager(ScreenManager):
     pass

@@ -1,21 +1,26 @@
 from src.geography.continents import OurWorld
 from src.ui.interfaces import Tab
 from src.typedef.win import WindowNames
-from src.cli.sentinel import GetSentinelNodes, NodesInfoKeys, get_subscriptions,FinalSubsKeys
+from src.cli.sentinel import GetSentinelNodes, NodesInfoKeys, get_subscriptions,FinalSubsKeys,\
+    NodesDictList
 import src.main.main as Meile
 from src.ui.widgets import MD3Card
 from src.cli.wallet import HandleWalletFunctions
 from src.conf.meile_config import MeileGuiConfig
 
-
+from kivy.uix.popup import Popup
 from kivymd.uix.spinner import MDSpinner  
 from kivy.uix.screenmanager import Screen, SlideTransition
 from kivymd.uix.button import MDFlatButton, MDRaisedButton
 from kivymd.uix.dialog import MDDialog
-from kivy.clock import Clock
+from kivy.clock import Clock, mainthread
 from kivyoav.delayed import delayable
 from kivy.properties import ObjectProperty
 
+from functools import partial
+
+import asyncio
+from save_thread_result import ThreadWithResult
 
 class WalletRestore(Screen):
     screemanager = ObjectProperty()
@@ -158,10 +163,14 @@ class PreLoadWindow(Screen):
 class MainWindow(Screen):
     title = "Meile dVPN"
     dialog = None
+    Subscriptions = []
+    address = None
     def __init__(self, **kwargs):
         #Builder.load_file("./src/kivy/meile.kv")
         super(MainWindow, self).__init__()
         Clock.schedule_once(self.build, 2)
+        CONFIG = MeileGuiConfig.read_configuration(MeileGuiConfig, MeileGuiConfig.CONFFILE)
+        self.address = CONFIG['wallet'].get("address")
 
         
 
@@ -278,34 +287,63 @@ class MainWindow(Screen):
                 
             },
         )
+    @mainthread        
+    def add_loading_popup(self):
+        spinnuh = self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.spinnuh
+        spinnuh.active = True
+        spinnuh.opacity = 1
+    @mainthread
+    def remove_loading_widget(self):
+        spinnuh = self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.spinnuh
+        spinnuh.active = False
+        spinnuh.opacity = 0
+
+    
+    @delayable
+    def subs_callback(self, dt):
+        from src.cli.sentinel import NodesDictList
         
+        floc = "./src/imgs/"
+        yield 1.0
+        
+        thread = ThreadWithResult(target=get_subscriptions, args=(NodesDictList, self.address))
+        thread.start()
+        thread.join()    
+            
+        #self.Subscriptions = get_subscriptions(NodesDictList, self.address)
+        for sub in thread.result:
+            print(sub)
+            if sub[FinalSubsKeys[5]] == "Czechia":
+                sub[FinalSubsKeys[5]] = "Czech Republic"
+            try: 
+                iso2 = OurWorld.our_world.get_country_ISO2(sub[FinalSubsKeys[5]].lstrip().rstrip()).lower()
+            except:
+                iso2 = "sc"
+            flagloc = floc + iso2 + ".png"
+            self.add_sub_rv_data(sub, flagloc)
+        self.remove_loading_widget()
+
+    @mainthread
     def on_tab_switch(self, instance_tabs, instance_tab, instance_tabs_label, tab_text):
         from src.cli.sentinel import ConNodes, NodesDictList
         
         floc = "./src/imgs/"
         self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.rv.data = []
-
         if not tab_text:
             tab_text = OurWorld.CONTINENTS[0]
             
         # Subscriptions
         print(OurWorld.CONTINENTS[6])
         if tab_text == OurWorld.CONTINENTS[6]:
-            CONFIG = MeileGuiConfig.read_configuration(MeileGuiConfig, MeileGuiConfig.CONFFILE)
-            address = CONFIG['wallet'].get("address")
-            if address:
-                Subscriptions = get_subscriptions(NodesDictList, address)
-                for sub in Subscriptions:
-                    if sub[FinalSubsKeys[5]] == "Czechia":
-                        sub[FinalSubsKeys[5]] = "Czech Republic"
-                    try: 
-                        iso2 = OurWorld.our_world.get_country_ISO2(sub[FinalSubsKeys[5]].lstrip().rstrip()).lower()
-                    except:
-                        iso2 = "sc"
-                    flagloc = floc + iso2 + ".png"
-                    self.add_sub_rv_data(sub, flagloc)
-                return 
+            self.add_loading_popup()
+
+            if self.address:
             
+                Clock.schedule_once(self.subs_callback, 2)
+                #Subscriptions = get_subscriptions(NodesDictList, address)
+                
+                return 
+        
         for node in ConNodes:
             #print(node)
             if tab_text == OurWorld.CONTINENTS[0]:

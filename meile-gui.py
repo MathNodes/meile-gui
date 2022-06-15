@@ -1,8 +1,9 @@
 import src.main.main as Meile
+import asyncio
 
 
 if __name__ == "__main__":
-    Meile.app.run()
+    asyncio.run(Meile.app.run())
 
 
 
