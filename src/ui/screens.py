@@ -102,7 +102,7 @@ class WalletRestore(Screen):
                         text="I saved this",
                         theme_text_color="Custom",
                         text_color=(1,1,1,1),
-                        on_release= self.switch_window
+                        on_release=self.switch_window
                     ),
                 ],
             )

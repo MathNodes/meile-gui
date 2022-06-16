@@ -5,14 +5,50 @@ from kivymd.uix.card import MDCard
 from kivymd.uix.dialog import MDDialog
 from kivymd.uix.button import MDFlatButton, MDRaisedButton
 from kivy.uix.recycleview import RecycleView
+from kivy.uix.boxlayout import BoxLayout
+from kivymd.uix.menu import MDDropdownMenu
+from kivymd.uix.list import OneLineIconListItem
+from kivy.metrics import dp
 
 from urllib3.exceptions import InsecureRequestWarning
 import requests
 
 from src.cli.sentinel import NodesInfoKeys
 from src.ui.interfaces import SubscribeContent
+from src.typedef.win import CoinsList
 
+class SubscribeContent(BoxLayout):
+    
+    
+    price_text = StringProperty()
+    menu = None
+    def __init__ (self, price):
+        super(SubscribeContent, self).__init__()
+        self.price_text = price
+        
+        
+        menu_items = [
+            {
+                "viewclass": "IconListItem",
+                "icon": "circle-multiple",
+                "text": f"{i}",
+                "height": dp(56),
+                "on_release": lambda x=f"{i}": self.set_item(x),
+            } for i in CoinsList.Coins
+        ]
+        self.menu = MDDropdownMenu(
+            caller=self.ids.drop_item,
+            items=menu_items,
+            position="center",
+            width_mult=4,
+        )
+        self.menu.bind()
 
+    def set_item(self, text_item):
+        self.ids.drop_item.set_item(text_item)
+        self.menu.dismiss()
+
+   
 class SelectableLabel(RecycleDataViewBehavior, Label):
     ''' Add selection support to the Label '''
     index = None
@@ -124,27 +160,26 @@ Node Version: %s
 
     def subscribe_to_node(self, price, naddress, moniker):
         subscribe_dialog = SubscribeContent(price)
-        
         if not self.dialog:
             self.dialog = MDDialog(
-                title="Address:",
-                type="custom",
-                content_cls=Content(),
-                buttons=[
-                    MDFlatButton(
-                        text="CANCEL",
-                        theme_text_color="Custom",
-                        text_color=self.theme_cls.primary_color,
-                    ),
-                    MDFlatButton(
-                        text="OK",
-                        theme_text_color="Custom",
-                        text_color=self.theme_cls.primary_color,
-                    ),
-                ],
-            )
-        self.dialog.open()
-        
+                    title="%s: %s" %(moniker, naddress),
+                    type="custom",
+                    content_cls=subscribe_dialog,
+                    buttons=[
+                        MDFlatButton(
+                            text="CANCEL",
+                            theme_text_color="Custom",
+                            text_color=self.theme_cls.primary_color,
+                            on_release=self.closeDialog
+                        ),
+                        MDFlatButton(
+                            text="Subscribe",
+                            theme_text_color="Custom",
+                            text_color=self.theme_cls.primary_color,
+                        ),
+                    ],
+                )
+            self.dialog.open()
         
     def closeDialog(self, inst):
         self.dialog.dismiss()
