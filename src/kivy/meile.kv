@@ -512,7 +512,7 @@ WindowManager:
     spacing: "5dp"
     size_hint_y: None
     height: "180dp"
-    price_text: "1dvpn"
+    price_text: "5udvpn"
     MDBoxLayout:
         orientation: "horizontal"
         MDSlider:
@@ -535,7 +535,7 @@ WindowManager:
             id: deposit
             hint_text: "Deposit"
             mode: "fill"
-            text: str(round(int(slider1.value)*int(glargy.text.split('udvpn')[0])/1000000,3)) + "dvpn/GB"
+            text: str(round(int(slider1.value)*int(glargy.text.split('udvpn')[0])/1000000,3)) + root.ids.drop_item.current_item + "/GB"
             size_hint_y: .65
             width: "50dp"
             height: "30dp"
@@ -550,7 +550,9 @@ WindowManager:
             width: "50dp"
             height: "30dp"
             readonly: True
-        
-    
-
-
+            
+        MDDropDownItem:
+            id: drop_item
+            pos_hint: {'center_x': .5, 'center_y': .5}
+            text: 'dvpn'
+            on_release: root.menu.open()
