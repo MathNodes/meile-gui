@@ -97,7 +97,6 @@ WindowManager:
     source_image: " "
     speed_image: " "
     speed_text: " "
-    focus_behavior: True
     ripple_behavior: True
     on_press: root.subscribe_to_node(root.price_text, root.address_text, root.moniker_text)
     MDGridLayout:
@@ -507,12 +506,25 @@ WindowManager:
     MDSeparator:
     
 
+<IconListItem>
+
+    IconLeftWidget:
+        icon: root.icon
+
 <SubscribeContent>
     orientation: "vertical"
-    spacing: "5dp"
+    spacing: "1dp"
     size_hint_y: None
-    height: "180dp"
-    price_text: "5udvpn"
+    height: "260dp"
+    price_text: ""
+    naddress: " "
+    
+    MDBoxLayout:
+        orientation: "vertical"
+        MDLabel:
+            id: moniker_text
+            text: root.naddress
+    
     MDBoxLayout:
         orientation: "horizontal"
         MDSlider:
@@ -520,7 +532,8 @@ WindowManager:
             id: slider1
             min: 1
             max: 314
-            value: 40
+            value: 34
+            on_value: root.parse_coin_deposit(root.ids.drop_item.current_item)
             
         MDLabel:
             text: str(int(slider1.value)) + " GB" 
@@ -535,14 +548,14 @@ WindowManager:
             id: deposit
             hint_text: "Deposit"
             mode: "fill"
-            text: str(round(int(slider1.value)*int(glargy.text.split('udvpn')[0])/1000000,3)) + root.ids.drop_item.current_item + "/GB"
+            text: ""
             size_hint_y: .65
             width: "50dp"
             height: "30dp"
             readonly: True
         
         MDTextField:
-            id: glargy
+            id: price
             hint_text: "Price"
             mode: "fill"
             text: root.price_text
@@ -554,5 +567,5 @@ WindowManager:
         MDDropDownItem:
             id: drop_item
             pos_hint: {'center_x': .5, 'center_y': .5}
-            text: 'dvpn'
+            text: "udvpn"
             on_release: root.menu.open()

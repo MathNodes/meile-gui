@@ -5,6 +5,9 @@ import re
 import requests
 import asyncio 
 from urllib3.exceptions import InsecureRequestWarning
+import pexpect
+
+from src.conf.meile_config import MeileGuiConfig
 
 
 # IBC Tokens
@@ -249,17 +252,5 @@ def connect(ID, address, keyname):
         
     return proc.returncode, CONNECTED
 
-def subscribe(KEYNAME, NODE, DEPOSIT):
 
-    subscribeCMD = ["sentinelcli", "tx", "subscription", "subscribe-to-node", "--home", BASEDIR,  "--yes",
-                    "--keyring-backend", "os", "--gas-prices", "0.1udvpn", "--chain-id", "sentinelhub-2",
-                    "--node", "https://rpc.mathnodes.com:4444", "--from", "%s" % KEYNAME, NODE, DEPOSIT]
-    
-    subproc = Popen(subscribeCMD, stdout=PIPE, stderr=PIPE)
-    proc_out,proc_err = subproc.communicate()
-    #print(proc_out+proc_err)
-    return subproc.returncode
-    
-    
-    
     

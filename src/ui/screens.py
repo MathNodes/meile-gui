@@ -1,8 +1,7 @@
 from src.geography.continents import OurWorld
 from src.ui.interfaces import Tab
 from src.typedef.win import WindowNames
-from src.cli.sentinel import GetSentinelNodes, NodesInfoKeys, get_subscriptions,FinalSubsKeys,\
-    NodesDictList
+from src.cli.sentinel import GetSentinelNodes, NodesInfoKeys, get_subscriptions,FinalSubsKeys,NodesDictList
 import src.main.main as Meile
 from src.ui.widgets import MD3Card
 from src.cli.wallet import HandleWalletFunctions
