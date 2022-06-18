@@ -9,23 +9,39 @@ from kivy.uix.boxlayout import BoxLayout
 from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.list import OneLineIconListItem
 from kivy.metrics import dp
+from kivyoav.delayed import delayable
 
+
+from functools import partial
 from urllib3.exceptions import InsecureRequestWarning
 import requests
+import re
+
 
 from src.cli.sentinel import NodesInfoKeys
 from src.ui.interfaces import SubscribeContent
 from src.typedef.win import CoinsList
+from src.conf.meile_config import MeileGuiConfig
+from src.cli.wallet import HandleWalletFunctions
+
+
+
 
 class SubscribeContent(BoxLayout):
     
     
     price_text = StringProperty()
+    moniker = StringProperty()
+    naddress = StringProperty()
+    
     menu = None
-    def __init__ (self, price):
+    def __init__ (self, price, moniker, naddress):
         super(SubscribeContent, self).__init__()
-        self.price_text = price
         
+        self.price_text = price
+        self.moniker = moniker
+        self.naddress = naddress
+        self.parse_coin_deposit("udvpn")
         
         menu_items = [
             {
@@ -34,7 +50,7 @@ class SubscribeContent(BoxLayout):
                 "text": f"{i}",
                 "height": dp(56),
                 "on_release": lambda x=f"{i}": self.set_item(x),
-            } for i in CoinsList.Coins
+            } for i in CoinsList.ibc_mu_coins
         ]
         self.menu = MDDropdownMenu(
             caller=self.ids.drop_item,
@@ -43,10 +59,36 @@ class SubscribeContent(BoxLayout):
             width_mult=4,
         )
         self.menu.bind()
+        self.ids.drop_item.current_item = CoinsList.ibc_mu_coins[0]
+        self.parse_coin_deposit(self.ids.drop_item.current_item)
+
 
     def set_item(self, text_item):
         self.ids.drop_item.set_item(text_item)
+        self.ids.deposit.text = self.parse_coin_deposit(text_item)
         self.menu.dismiss()
+        
+    def parse_coin_deposit(self, mu_coin):
+        try:
+            mu_coin_amt = re.findall(r'[0-9]+' + mu_coin, self.price_text)[0]
+            if mu_coin_amt:
+                self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(int(mu_coin_amt.split(mu_coin)[0])/1000000)),3)) + self.ids.drop_item.current_item.replace('u','') 
+                return self.ids.deposit.text
+            else:
+                self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(int(self.ids.price.text.split("udvpn")[0])/1000000)),3)) + self.ids.drop_item.current_item.replace('u','')
+                return self.ids.deposit.text
+        except IndexError as e:
+            print(str(e))
+            self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(int(self.ids.price.text.split("udvpn")[0])/1000000)),3)) + CoinsList.ibc_mu_coins[0].replace('u','')
+            return self.ids.deposit.text
+        
+        
+
+    def return_deposit_text(self):
+        return (self.ids.deposit.text, self.naddress)
+    
+class IconListItem(OneLineIconListItem):
+    icon = StringProperty()
 
    
 class SelectableLabel(RecycleDataViewBehavior, Label):
@@ -159,10 +201,10 @@ Node Version: %s
         self.dialog.open()
 
     def subscribe_to_node(self, price, naddress, moniker):
-        subscribe_dialog = SubscribeContent(price)
+        subscribe_dialog = SubscribeContent(price, moniker , naddress )
         if not self.dialog:
             self.dialog = MDDialog(
-                    title="%s: %s" %(moniker, naddress),
+                    title="Address:",
                     type="custom",
                     content_cls=subscribe_dialog,
                     buttons=[
@@ -176,11 +218,64 @@ Node Version: %s
                             text="Subscribe",
                             theme_text_color="Custom",
                             text_color=self.theme_cls.primary_color,
+                            on_release=partial(self.subscribe, subscribe_dialog)
                         ),
                     ],
                 )
             self.dialog.open()
+    @delayable
+    def subscribe(self, subscribe_dialog, *kwargs):
+        sub_node = subscribe_dialog.return_deposit_text()
+        deposit = self.reparse_coin_deposit(sub_node[0])
+        self.dialog.dismiss()
+        self.dialog = None
+        self.dialog = MDDialog(title="Subscribing...\n\n%s\n %s" %( deposit, sub_node[1]))
+        self.dialog.open()
+        yield 2.0
+
+        CONFIG = MeileGuiConfig.read_configuration(MeileGuiConfig, MeileGuiConfig.CONFFILE)        
+        KEYNAME = CONFIG['wallet'].get('keyname', '')
         
+        returncode = HandleWalletFunctions.subscribe(HandleWalletFunctions, KEYNAME, sub_node[1], deposit)
+        
+        if returncode[0]:
+            self.dialog.dismiss()
+            self.dialog = MDDialog(
+                title="Successful!",
+                buttons=[
+                        MDFlatButton(
+                            text="OK",
+                            theme_text_color="Custom",
+                            text_color=self.theme_cls.primary_color,
+                            on_release=self.closeDialog
+                        ),])
+            self.dialog.open()
+
+        else:
+            self.dialog.dismiss()
+            self.dialog = MDDialog(
+                title="Error: %s" % returncode[1],
+                buttons=[
+                        MDFlatButton(
+                            text="OK",
+                            theme_text_color="Custom",
+                            text_color=self.theme_cls.primary_color,
+                            on_release=self.closeDialog
+                        ),])
+            self.dialog.open()
+
+    
+    def reparse_coin_deposit(self, deposit):
+        
+        for k,v in CoinsList.ibc_coins.items():
+            try: 
+                coin = re.findall(k,deposit)[0]
+                deposit = deposit.replace(coin, v)
+                mu_deposit_amt = int(float(re.findall(r'[0-9]+\.[0-9]+', deposit)[0])*CoinsList.SATOSHI)
+                tru_mu_deposit = str(mu_deposit_amt) + v
+                return tru_mu_deposit
+            except:
+                pass
     def closeDialog(self, inst):
         self.dialog.dismiss()
         self.dialog = None

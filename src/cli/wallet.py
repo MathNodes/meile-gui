@@ -1,13 +1,17 @@
 from os import path, remove
 import pexpect
+import json
+from src.conf.meile_config import MeileGuiConfig
 
 KEYRINGDIR = path.join(path.expanduser('~'), '.meile-gui')
 WALLETINFO = path.join(KEYRINGDIR, "infos.txt")
+SUBSCRIBEINFO = path.join(KEYRINGDIR, "subscribe.infos")
+
     
 class HandleWalletFunctions():
     
     def create(self, wallet_name, keyring_passphrase, seed_phrase):
-        SCMD = 'sentinelcli keys add ' +  wallet_name +  " -i --keyring-backend file --keyring-dir " +  KEYRINGDIR
+        SCMD = 'sentinelcli keys add "%s" -i --keyring-backend file --keyring-dir %s' % (wallet_name, KEYRINGDIR)
         DUPWALLET = False 
         line_numbers = [11, 21]
         ofile =  open(WALLETINFO, "wb")    
@@ -64,7 +68,57 @@ class HandleWalletFunctions():
                 addy_seed = [lines[x] for x in line_numbers]
                 WalletDict['address'] = addy_seed[0].split(":")[-1].lstrip().rstrip()
                 WalletDict['seed']    = addy_seed[1].lstrip().rstrip().replace('\n', '')
+                remove(WALLETINFO)
+                return WalletDict
+    
+        else:
+            remove(WALLETINFO)
+            return None
+
+    
+    
+    def subscribe(self, KEYNAME, NODE, DEPOSIT):
+        CONFIG = MeileGuiConfig.read_configuration(MeileGuiConfig, MeileGuiConfig.CONFFILE)
+        PASSWORD = CONFIG['wallet'].get('password', '')
+    
+        ofile =  open(SUBSCRIBEINFO, "wb")    
         
-        remove(WALLETINFO)
-        return WalletDict
+        SCMD = "sentinelcli tx subscription subscribe-to-node --yes --keyring-backend file --keyring-dir %s --gas-prices 0.1udvpn --chain-id sentinelhub-2 --node https://rpc-sentinel.keplr.app:443 --from '%s' '%s' %s"  % (KEYRINGDIR, KEYNAME, NODE, DEPOSIT)    
+     
+        child = pexpect.spawn(SCMD)
+        child.logfile = ofile
+        
+        child.expect(".*")
+        child.sendline(PASSWORD)
+        child.expect(pexpect.EOF)
+        
+        ofile.flush()
+        ofile.close()
+        
+        return self.ParseSubscribe(self)
+        
+        
+            
+    def ParseSubscribe(self):
+        SUBSCRIBEINFO = path.join(KEYRINGDIR, "subscribe.infos")
+        with open(SUBSCRIBEINFO, 'r') as sub_file:
+                lines = sub_file.readlines()
+                tx_json = json.loads(lines[2])
+                if tx_json['data']:
+                    try: 
+                        sub_id = tx_json['logs'][0]['events'][4]['attributes'][0]['value']
+                        if sub_id:
+                            remove(SUBSCRIBEINFO)
+                            return (True,0)
+                        else:
+                            remove(SUBSCRIBEINFO)
+                            return (False,2.71828) 
+                    except:
+                        remove(SUBSCRIBEINFO)
+                        return (False, 3.14159)
+                elif 'insufficient' in tx_json['raw_log']:
+                    remove(SUBSCRIBEINFO)
+                    return (False, tx_json['raw_log'])
+                
+    
         
