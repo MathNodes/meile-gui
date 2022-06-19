@@ -42,17 +42,6 @@ WindowManager:
             id: rv
             
 
-        MDSpinner:
-            id: spinnuh
-            height: dp(23)
-            size_hint: None, None
-            size: dp(23), dp(23)
-            pos_hint: {'center_x': .5, 'center_y': .5}
-            active: False
-            opacity: 0
-                   
-    
-
             
 <NodeRV>:
     key_viewclass: "viewclass"
@@ -67,17 +56,23 @@ WindowManager:
 
         
 <-FullImage>:
+    keep_ratio: True
+    allow_stretch: False
     canvas:
         Rectangle:
             texture: self.texture
-            size: self.width-45 , self.height +30
-            pos: self.x - 150, self.y - 30             
-<-FullImage2>:
+            size: self.width - 150 , self.height 
+            pos: self.x - 150, self.y           
+            
+<-FulImage2>:
+    keep_ratio: True
+    allow_stretch: False
+    
     canvas:
         Rectangle:
             texture: self.texture
-            size: self.width - 170, self.height -25
-            pos: self.x + 80 , self.y           
+            size: self.width - 120, self.height - 60
+            pos: self.x , self.y + 10           
                 
 <RecycleViewRow>:
     size_hint_y: None
@@ -86,7 +81,6 @@ WindowManager:
     orientation: "vertical"
     padding: 10
     border_radius: 20
-    radius: [15]
     elevation:0
     md_bg_color: get_color_from_hex("#0d021b")
     moniker_text: "."
@@ -101,7 +95,7 @@ WindowManager:
     on_press: root.subscribe_to_node(root.price_text, root.address_text, root.moniker_text)
     MDGridLayout:
         cols: 3
-        rows: 2
+        rows: 3
         padding: 40,0,0,0
         MDLabel:
             text: root.moniker_text
@@ -113,6 +107,7 @@ WindowManager:
             size_hint_x: None
         FullImage:
             source: root.source_image
+
             
         MDLabel:    
             text: root.country_text
@@ -138,25 +133,23 @@ WindowManager:
             font_style: "Subtitle2"
             font_size: "14sp"
             text_color: (0/255.0,141/255.0,155/255.0,255/255.0)                                    
-    MDGridLayout:
-        cols: 3
-        padding: 40,0,0,0
+
         MDLabel:
             text: root.price_text
             theme_text_color: "Custom"
             font_style: "Subtitle2"
             font_size: "14sp"
             text_color: get_color_from_hex("#fcb711")
+            width: "350dp"
+
         FullImage2:
             source: root.speed_image
-        MDBoxLayout:
-            padding: 80,30,0,0
-            MDLabel:
-                text: root.speed_text
-                theme_text_color: "Custom"
-                font_style: "Subtitle2"
-                font_size: "12sp"
-                text_color: 1,1,1,1
+        MDLabel:
+            text: root.speed_text
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "12sp"
+            text_color: 1,1,1,1
                 
 
 
@@ -178,7 +171,6 @@ WindowManager:
     orientation: "vertical"
     padding: 10
     border_radius: 20
-    radius: [15]
     elevation:0
     md_bg_color: get_color_from_hex("#0d021b")
     moniker_text: "."
@@ -257,6 +249,7 @@ WindowManager:
                 text_color: 1,1,1,1
         MDProgressBar:
             value: root.get_data_used(root.allocated_text, root.consumed_text)
+            color: app.theme_cls.accent_color
             back_color: get_color_from_hex("#ffffff")
                 
 

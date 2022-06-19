@@ -224,6 +224,7 @@ class MainWindow(Screen):
         
     def wallet_restore(self, inst):
         self.dialog.dismiss()
+        self.dialog = None
         self.switch_window(WindowNames.WALLET_RESTORE)
         
     
@@ -251,9 +252,11 @@ class MainWindow(Screen):
         total = float(speed[0] + speed[1])
         if total >= 200:
             speedimage = floc + "fast.png"
-        elif 100 <= total < 200:
+        elif 125 <= total < 200:
             speedimage = floc + "fastavg.png"
-        elif 50 <= total < 100:
+        elif 75 <= total < 125:
+            speedimage = floc + "avg.png"
+        elif 30 <= total < 75:
             speedimage = floc + "slowavg.png"
         else:
             speedimage = floc + "slow.png"
@@ -288,14 +291,13 @@ class MainWindow(Screen):
         )
     @mainthread        
     def add_loading_popup(self):
-        spinnuh = self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.spinnuh
-        spinnuh.active = True
-        spinnuh.opacity = 1
+        self.dialog = None
+        self.dialog = MDDialog(title="Loading..." )
+        self.dialog.open()
     @mainthread
     def remove_loading_widget(self):
-        spinnuh = self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.spinnuh
-        spinnuh.active = False
-        spinnuh.opacity = 0
+        self.dialog.dismiss()
+        self.dialog = None
 
     
     @delayable

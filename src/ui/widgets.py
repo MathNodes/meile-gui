@@ -289,10 +289,17 @@ class RecycleViewSubRow(MDCard):
     def get_data_used(self, allocated, consumed):
         try:         
             allocated = float(allocated.replace('GB',''))
-            if "MB" in consumed:
-                consumed = float(float(consumed.replace('MB', '')) / 1024)
-            else:
+            
+            if "GB" in consumed:
                 consumed  = float(consumed.replace('GB', ''))
+            elif "MB" in consumed:
+                consumed = float(float(consumed.replace('MB', '')) / 1024)
+            elif "KB" in consumed:
+                consumed = float(float(consumed.replace('KB', '')) / (1024*1024))
+            elif "0.00B" in consumed:
+                consumed = 0.0
+            else:
+                consumed = float(float(re.findall(r'[0-9]+\.[0-9]+', consumed)[0].replace('B', '')) / (1024*1024*1024))
                 
             return float(float(consumed/allocated)*100)
         except Exception as e:
