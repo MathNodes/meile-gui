@@ -1,7 +1,8 @@
 from src.geography.continents import OurWorld
 from src.ui.interfaces import Tab
-from src.typedef.win import WindowNames
+from src.typedef.win import WindowNames, ICANHAZURL
 from src.cli.sentinel import GetSentinelNodes, NodesInfoKeys, get_subscriptions,FinalSubsKeys,NodesDictList
+from src.cli.sentinel import disconnect as Disconnect
 import src.main.main as Meile
 from src.ui.widgets import MD3Card
 from src.cli.wallet import HandleWalletFunctions
@@ -20,6 +21,7 @@ from functools import partial
 
 import asyncio
 from save_thread_result import ThreadWithResult
+import requests
 
 class WalletRestore(Screen):
     screemanager = ObjectProperty()
@@ -164,6 +166,10 @@ class MainWindow(Screen):
     dialog = None
     Subscriptions = []
     address = None
+    old_ip = ""
+    ip = ""
+    CONNECTED = False
+    
     def __init__(self, **kwargs):
         #Builder.load_file("./src/kivy/meile.kv")
         super(MainWindow, self).__init__()
@@ -183,6 +189,7 @@ class MainWindow(Screen):
             self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.android_tabs.add_widget(tab)
         
         print("ON START")
+        self.get_ip_address()
         '''
         self.on_tab_switch(
             None,
@@ -191,7 +198,38 @@ class MainWindow(Screen):
             self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.android_tabs.ids.layout.children[-1].text
         )
         '''
+    def get_ip_address(self):
+        self.old_ip = self.ip
+        req = requests.get(ICANHAZURL)
+        self.ip = req.text
+    
+        self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.new_ip.text = "New IP: " + self.ip
+        self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.old_ip.text = "Old IP: " + self.old_ip
         
+    def disconnect_from_node(self):
+        try:
+            if not self.CONNECTED:
+                return
+            else:
+                returncode, self.CONNECTED = Disconnect()
+                if returncode == 0 and not self.CONNECTED:
+                    self.get_ip_address()
+        except:
+            self.dialog = None
+            self.dialog = MDDialog(
+            text="Error disconnecting from node",
+            buttons=[
+                MDFlatButton(
+                    text="Okay",
+                    theme_text_color="Custom",
+                    text_color=Meile.app.theme_cls.primary_color,
+                    on_release=self.get_ip_address,
+                ),
+                ]
+            )
+            self.dialog.open()
+            
+                    
         
     def wallet_dialog(self):
         
@@ -290,9 +328,9 @@ class MainWindow(Screen):
             },
         )
     @mainthread        
-    def add_loading_popup(self):
+    def add_loading_popup(self, title_text):
         self.dialog = None
-        self.dialog = MDDialog(title="Loading..." )
+        self.dialog = MDDialog(title=title_text)
         self.dialog.open()
     @mainthread
     def remove_loading_widget(self):
@@ -305,7 +343,7 @@ class MainWindow(Screen):
         from src.cli.sentinel import NodesDictList
         
         floc = "./src/imgs/"
-        yield 1.0
+        yield 0.314
         
         thread = ThreadWithResult(target=get_subscriptions, args=(NodesDictList, self.address))
         thread.start()
@@ -313,7 +351,6 @@ class MainWindow(Screen):
             
         #self.Subscriptions = get_subscriptions(NodesDictList, self.address)
         for sub in thread.result:
-            print(sub)
             if sub[FinalSubsKeys[5]] == "Czechia":
                 sub[FinalSubsKeys[5]] = "Czech Republic"
             try: 
@@ -336,7 +373,7 @@ class MainWindow(Screen):
         # Subscriptions
         print(OurWorld.CONTINENTS[6])
         if tab_text == OurWorld.CONTINENTS[6]:
-            self.add_loading_popup()
+            self.add_loading_popup("Loading...")
 
             if self.address:
             

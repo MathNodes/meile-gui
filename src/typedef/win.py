@@ -1,3 +1,4 @@
+ICANHAZURL = "https://icanhazip.com"
 
 class WindowNames():
     WALLET_RESTORE = "walletrestore"

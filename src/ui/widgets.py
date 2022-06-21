@@ -20,9 +20,10 @@ import re
 
 from src.cli.sentinel import NodesInfoKeys
 from src.ui.interfaces import SubscribeContent
-from src.typedef.win import CoinsList
+from src.typedef.win import CoinsList, WindowNames
 from src.conf.meile_config import MeileGuiConfig
 from src.cli.wallet import HandleWalletFunctions
+import src.main.main as Meile
 
 
 
@@ -285,7 +286,7 @@ class RecycleViewSubRow(MDCard):
     text = StringProperty()
     dialog = None
     
-        
+    
     def get_data_used(self, allocated, consumed):
         try:         
             allocated = float(allocated.replace('GB',''))
@@ -305,8 +306,59 @@ class RecycleViewSubRow(MDCard):
         except Exception as e:
             print(str(e))
             return float(50)
-      
-    
+        
+    def add_loading_popup(self, title_text):
+        self.dialog = None
+        self.dialog = MDDialog(title=title_text)
+        self.dialog.open()
+    def remove_loading_widget(self):
+        self.dialog.dismiss()
+        self.dialog = None
+
+    @delayable
+    def connect_to_node(self, ID, naddress):
+        self.add_loading_popup("Connecting...")
+        
+        yield 1.8
+        
+        connected = HandleWalletFunctions.connect(HandleWalletFunctions, ID, naddress)
+        
+        if connected:
+            self.remove_loading_widget()
+            self.dialog = MDDialog(
+                title="Connected!",
+                buttons=[
+                        MDFlatButton(
+                            text="OK",
+                            theme_text_color="Custom",
+                            text_color=self.theme_cls.primary_color,
+                            on_release=partial(self.call_ip_get, True)
+                        ),])
+            self.dialog.open()
+            
+        else:
+            self.remove_loading_widget()
+            self.dialog = MDDialog(
+                title="Something went wrong. Not connected",
+                buttons=[
+                        MDFlatButton(
+                            text="OK",
+                            theme_text_color="Custom",
+                            text_color=self.theme_cls.primary_color,
+                            on_release=partial(self.call_ip_get, False)
+                        ),])
+            self.dialog.open()
+            
+    def call_ip_get(self,result, *kwargs):
+        if result:
+            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).CONNECTED = True
+        else:
+            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).CONNECTED = False
+            
+        Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).get_ip_address()
+        self.remove_loading_widget()
+            
+            
 
 # In case I go for word wrapping bigger textfield.
 '''

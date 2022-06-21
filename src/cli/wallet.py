@@ -6,7 +6,8 @@ from src.conf.meile_config import MeileGuiConfig
 KEYRINGDIR = path.join(path.expanduser('~'), '.meile-gui')
 WALLETINFO = path.join(KEYRINGDIR, "infos.txt")
 SUBSCRIBEINFO = path.join(KEYRINGDIR, "subscribe.infos")
-
+CONNECTIONINFO = path.join(KEYRINGDIR, "connection.infos")
+BASEDIR  = path.join(path.expanduser('~'), '.sentinelcli')
     
 class HandleWalletFunctions():
     
@@ -119,6 +120,34 @@ class HandleWalletFunctions():
                 elif 'insufficient' in tx_json['raw_log']:
                     remove(SUBSCRIBEINFO)
                     return (False, tx_json['raw_log'])
+    def connect(self, ID, address):
+
+        CONFIG = MeileGuiConfig.read_configuration(MeileGuiConfig, MeileGuiConfig.CONFFILE)
+        PASSWORD = CONFIG['wallet'].get('password', '')
+        KEYNAME = CONFIG['wallet'].get('keyname', '')
+        connCMD = "sentinelcli connect --keyring-backend file --keyring-dir %s --chain-id sentinelhub-2 --node https://rpc.mathnodes.com:443 --gas-prices 0.1udvpn --yes --from %s %s %s" % (KEYRINGDIR, KEYNAME, ID, address)
+        
+        ofile =  open(CONNECTIONINFO, "wb")    
+
+
+        child = pexpect.spawn(connCMD)
+        child.logfile = ofile
+
+        child.expect(".*")
+        child.sendline(PASSWORD)
+        child.expect(pexpect.EOF)
+        
+        ofile.flush()
+        ofile.close()
+        
+        if path.isfile(path.join(BASEDIR, "status.json")):
+            CONNECTED = True
+        else:
+            CONNECTED = False
+            
+        return CONNECTED
+
+
                 
     
         
