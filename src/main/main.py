@@ -13,7 +13,6 @@ import threading
 class MyMainApp(MDApp):
     title = "Meile dVPN"
     def __init__(self,**kwargs):
-        threading.Thread.__init__(self)
         super(MyMainApp,self).__init__(**kwargs)
         from kivy.config import Config
         from kivy.core.window import Window
