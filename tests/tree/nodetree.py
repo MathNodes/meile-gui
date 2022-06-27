@@ -82,7 +82,7 @@ class NodeTreeData():
         
         #get = input("Blah: ")
         AllNodesInfoSorted = sorted(AllNodesInfo, key=lambda d: d[NodesInfoKeys[4]])
-        AllNodesInfoSorted2 = []
+        
         result = collections.defaultdict(list)
         
         NodeTree = self.CreateNodeTreeStructure(self)
@@ -106,14 +106,16 @@ class NodeTreeData():
             except:
                 pass
             try:
-                NodeTree.create_node(d[NodesInfoKeys[0]], d[NodesInfoKeys[0]],parent=d[NodesInfoKeys[4]], data=d )
+                NodeTree.create_node(d[NodesInfoKeys[1]], d[NodesInfoKeys[1]],parent=d[NodesInfoKeys[4]], data=d )
             except:
                 pass
         NodeTree.show()
         NodeTree.save2file("nodedata.txt")
-        print(NodeTree.get_node("Schrödinger's Cat").data)
-        for node in NodeTree.children("South America"):
+        print(NodeTree.get_node("sentnode1w25tyg0ghmsdzcuufep3lfxe6t8puv89jftr3s").data)
+        for node in NodeTree.children(OurWorld.CONTINENTS[0]):
             print(node.tag)
+            print(len(NodeTree.children(node.tag)))
+        print(len(NodeTree.children(OurWorld.CONTINENTS[0])))
         '''    
         #d["City"] = get_city_of_node(d[NodesInfoKeys[1]])
         AllNodesInfoSorted2.append(d)
@@ -127,6 +129,8 @@ class NodeTreeData():
     
         return AllNodesInfoSorted2, result
         '''
+            
+        return NodeTree
     
     def CreateNodeTreeStructure(self):
         NodeTreeBase = Tree()

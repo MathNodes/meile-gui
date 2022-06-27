@@ -31,7 +31,7 @@ class MyMainApp(MDApp):
         
         manager = WindowManager()
         manager.add_widget(PreLoadWindow(name=WindowNames.PRELOAD))
-        manager.add_widget(MainWindow(name=WindowNames.MAIN_WINDOW))
+        #manager.add_widget(MainWindow(name=WindowNames.MAIN_WINDOW))
         manager.add_widget(WalletRestore(name=WindowNames.WALLET_RESTORE))
         MeileGuiConfig.read_configuration(MeileGuiConfig, MeileGuiConfig.CONFFILE)
         return manager

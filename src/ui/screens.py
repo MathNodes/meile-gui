@@ -1,10 +1,13 @@
 from src.geography.continents import OurWorld
+from kivy.properties import BooleanProperty, StringProperty
 from src.ui.interfaces import Tab
 from src.typedef.win import WindowNames, ICANHAZURL
-from src.cli.sentinel import GetSentinelNodes, NodesInfoKeys, get_subscriptions,FinalSubsKeys,NodesDictList
+from src.cli.sentinel import  NodeTreeData
+from src.cli.sentinel import NodesInfoKeys, FinalSubsKeys
 from src.cli.sentinel import disconnect as Disconnect
 import src.main.main as Meile
-from src.ui.widgets import MD3Card
+from src.ui.widgets import  NodeRV
+
 from src.cli.wallet import HandleWalletFunctions
 from src.conf.meile_config import MeileGuiConfig
 
@@ -16,12 +19,13 @@ from kivymd.uix.dialog import MDDialog
 from kivy.clock import Clock, mainthread
 from kivyoav.delayed import delayable
 from kivy.properties import ObjectProperty
-
+from kivymd.uix.card import MDCard
 from functools import partial
 
 import asyncio
 from save_thread_result import ThreadWithResult
 import requests
+import collections
 
 class WalletRestore(Screen):
     screemanager = ObjectProperty()
@@ -116,12 +120,14 @@ class PreLoadWindow(Screen):
     k = 0
     j = 0
     go_button = ObjectProperty()
-    
+    NodeTree = None
     def __init__(self, **kwargs):
         super(PreLoadWindow, self).__init__()
         
+        self.NodeTree = NodeTreeData(None)
+        
         # Schedule the functions to be called every n seconds
-        Clock.schedule_once(GetSentinelNodes, 6)
+        Clock.schedule_once(self.NodeTree.get_nodes, 6)
         Clock.schedule_interval(self.update_status_text, 1)
         
         
@@ -155,7 +161,7 @@ class PreLoadWindow(Screen):
         
  
     def switch_window(self):
-        
+        Meile.app.root.add_widget(MainWindow(name=WindowNames.MAIN_WINDOW, node_tree=self.NodeTree))
         Meile.app.root.transition = SlideTransition(direction = "up")
         Meile.app.root.current = WindowNames.MAIN_WINDOW
 
@@ -169,10 +175,15 @@ class MainWindow(Screen):
     old_ip = ""
     ip = ""
     CONNECTED = False
+    NodeTree = None
+    SubResult = None
     
-    def __init__(self, **kwargs):
+    def __init__(self, node_tree, **kwargs):
         #Builder.load_file("./src/kivy/meile.kv")
         super(MainWindow, self).__init__()
+        
+        self.NodeTree = node_tree
+        
         Clock.schedule_once(self.build, 2)
         CONFIG = MeileGuiConfig.read_configuration(MeileGuiConfig, MeileGuiConfig.CONFFILE)
         self.address = CONFIG['wallet'].get("address")
@@ -180,25 +191,27 @@ class MainWindow(Screen):
         
 
     def build(self, dt):
-        print("ADDING TABS")
         OurWorld.CONTINENTS.remove(OurWorld.CONTINENTS[1])
         OurWorld.CONTINENTS.append("Subscriptions")
-        OurWorld.CONTINENTS.append("Search")
+        #OurWorld.CONTINENTS.append("Search")
+        
         for name_tab in OurWorld.CONTINENTS:
             tab = Tab(text=name_tab)
             self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.android_tabs.add_widget(tab)
         
-        print("ON START")
         self.get_ip_address()
-        '''
+        
         self.on_tab_switch(
             None,
             None,
             None,
             self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.android_tabs.ids.layout.children[-1].text
         )
-        '''
+        
     def get_ip_address(self):
+        if self.dialog:
+            self.dialog.dismiss()
+            
         self.old_ip = self.ip
         req = requests.get(ICANHAZURL)
         self.ip = req.text
@@ -269,6 +282,245 @@ class MainWindow(Screen):
     def wallet_create(self, inst):
         pass
         
+    
+    def add_sub_rv_data(self, node, flagloc):
+        self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.rv.data.append(
+            {
+                "viewclass"      : "RecycleViewSubRow",
+                "moniker_text"   : node[FinalSubsKeys[1]].lstrip().rstrip(),
+                "sub_id_text"    : node[FinalSubsKeys[0]].lstrip().rstrip(),
+                "price_text"     : node[FinalSubsKeys[3]].lstrip().rstrip(),
+                "country_text"   : node[FinalSubsKeys[5]].lstrip().rstrip(),
+                "address_text"   : node[FinalSubsKeys[2]].lstrip().rstrip(),
+                "allocated_text" : node[FinalSubsKeys[6]].lstrip().rstrip(),
+                "consumed_text"  : node[FinalSubsKeys[7]].lstrip().rstrip(),
+                "source_image"   : flagloc
+                
+            },
+        )
+        
+    def add_country_rv_data(self, NodeCountries):
+        self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.rv.data.append(
+            {
+                "viewclass"      : "RecycleViewCountryRow",
+                "num_text"       : str(NodeCountries['number']) + " Nodes",
+                "country_text"   : NodeCountries['country'],
+                "source_image"   : NodeCountries['flagloc']
+            },
+        )
+            
+    @mainthread        
+    def add_loading_popup(self, title_text):
+        self.dialog = None
+        self.dialog = MDDialog(title=title_text)
+        self.dialog.open()
+        
+    @mainthread
+    def remove_loading_widget(self):
+        self.dialog.dismiss()
+        self.dialog = None
+
+    
+    @delayable
+    def subs_callback(self, dt):
+        #from src.cli.sentinel import NodesDictList
+        
+        floc = "./src/imgs/"
+        yield 0.314
+        if not self.SubResult:
+            thread = ThreadWithResult(target=self.NodeTree.get_subscriptions, args=(self.address,))
+            thread.start()
+            thread.join()    
+            self.SubResult = thread.result
+        #self.Subscriptions = get_subscriptions(NodesDictList, self.address)
+        for sub in self.SubResult:
+            if sub[FinalSubsKeys[5]] == "Czechia":
+                sub[FinalSubsKeys[5]] = "Czech Republic"
+            try: 
+                iso2 = OurWorld.our_world.get_country_ISO2(sub[FinalSubsKeys[5]].lstrip().rstrip()).lower()
+            except:
+                iso2 = "sc"
+            flagloc = floc + iso2 + ".png"
+            self.add_sub_rv_data(sub, flagloc)
+        self.remove_loading_widget()
+
+    @mainthread
+    def on_tab_switch(self, instance_tabs, instance_tab, instance_tabs_label, tab_text):
+        #from src.cli.sentinel import ConNodes, NodesDictList
+        
+        floc = "./src/imgs/"
+        self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.rv.data = []
+        if not tab_text:
+            tab_text = OurWorld.CONTINENTS[0]
+            
+        # Subscriptions
+        print(self.NodeTree.NodeTree.show())
+        if tab_text == OurWorld.CONTINENTS[6]:
+            self.add_loading_popup("Loading...")
+
+            if self.address:
+            
+                Clock.schedule_once(self.subs_callback, 2)
+                #Subscriptions = get_subscriptions(NodesDictList, address)
+                
+                return 
+        
+        NodeCountries = {}
+        
+        if tab_text == OurWorld.CONTINENTS[0]:
+             
+            for ncountry in self.NodeTree.NodeTree.children(OurWorld.CONTINENTS[0]):
+                print("AFRICA")
+                print(ncountry.tag)
+                iso2 = OurWorld.our_world.get_country_ISO2(ncountry.tag.lstrip().rstrip()).lower()
+                print(iso2)
+                flagloc = floc + iso2 + ".png"
+                print(flagloc)
+                NodeCountries['number']  = len(self.NodeTree.NodeTree.children(ncountry.tag)) 
+                NodeCountries['country'] = ncountry.tag
+                NodeCountries['flagloc'] = flagloc
+                
+                self.add_country_rv_data(NodeCountries)
+            
+            '''
+            if node[NodesInfoKeys[4]].lstrip().rstrip() in OurWorld.Africa:
+                
+                iso2 = OurWorld.our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
+                flagloc = floc + iso2 + ".png"
+                self.add_rv_data(node, flagloc)
+            '''
+        elif tab_text == OurWorld.CONTINENTS[1]:
+            print("ASIA")
+            for ncountry in self.NodeTree.NodeTree.children(OurWorld.CONTINENTS[1]):
+                print(ncountry.tag)
+                iso2 = OurWorld.our_world.get_country_ISO2(ncountry.tag.lstrip().rstrip()).lower()
+                print(iso2)
+                flagloc = floc + iso2 + ".png"
+                print(flagloc)
+                NodeCountries['number']  = len(self.NodeTree.NodeTree.children(ncountry.tag)) 
+                NodeCountries['country'] = ncountry.tag
+                NodeCountries['flagloc'] = flagloc
+                
+                self.add_country_rv_data(NodeCountries)
+            
+            '''
+            if node[NodesInfoKeys[4]].lstrip().rstrip() in OurWorld.Asia:
+                
+                iso2 = OurWorld.our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
+                flagloc = floc + iso2 + ".png"
+                
+                self.add_rv_data(node, flagloc)
+            '''
+        elif tab_text == OurWorld.CONTINENTS[2]:
+            for ncountry in self.NodeTree.NodeTree.children(OurWorld.CONTINENTS[2]):
+                iso2 = OurWorld.our_world.get_country_ISO2(ncountry.tag.lstrip().rstrip()).lower()
+                print(iso2)
+                flagloc = floc + iso2 + ".png"
+                print(flagloc)
+                NodeCountries['number']  = len(self.NodeTree.NodeTree.children(ncountry.tag)) 
+                NodeCountries['country'] = ncountry.tag
+                NodeCountries['flagloc'] = flagloc
+                
+                self.add_country_rv_data(NodeCountries)
+            
+            '''
+            if node[NodesInfoKeys[4]].lstrip().rstrip() in OurWorld.Europe:
+                
+                iso2 = OurWorld.our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
+                flagloc = floc + iso2 + ".png"
+                
+                self.add_rv_data(node, flagloc)
+            '''
+        elif tab_text == OurWorld.CONTINENTS[3]:
+            for ncountry in self.NodeTree.NodeTree.children(OurWorld.CONTINENTS[3]):
+                iso2 = OurWorld.our_world.get_country_ISO2(ncountry.tag.lstrip().rstrip()).lower()
+                print(iso2)
+                flagloc = floc + iso2 + ".png"
+                print(flagloc)
+                NodeCountries['number']  = len(self.NodeTree.NodeTree.children(ncountry.tag)) 
+                NodeCountries['country'] = ncountry.tag
+                NodeCountries['flagloc'] = flagloc
+                
+                self.add_country_rv_data(NodeCountries)
+            
+            '''
+            if node[NodesInfoKeys[4]].lstrip().rstrip() in OurWorld.NorthAmerica:
+                
+                iso2 = OurWorld.our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
+                flagloc = floc + iso2 + ".png"
+                
+                self.add_rv_data(node, flagloc)
+            '''
+        elif tab_text == OurWorld.CONTINENTS[4]:
+            for ncountry in self.NodeTree.NodeTree.children(OurWorld.CONTINENTS[4]):
+                iso2 = OurWorld.our_world.get_country_ISO2(ncountry.tag.lstrip().rstrip()).lower()
+                print(iso2)
+                flagloc = floc + iso2 + ".png"
+                print(flagloc)
+                NodeCountries['number']  = len(self.NodeTree.NodeTree.children(ncountry.tag)) 
+                NodeCountries['country'] = ncountry.tag
+                NodeCountries['flagloc'] = flagloc
+                
+                self.add_country_rv_data(NodeCountries)
+            
+            '''
+            if node[NodesInfoKeys[4]].lstrip().rstrip() in OurWorld.Oceania:
+                
+                iso2 = OurWorld.our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
+                flagloc = floc + iso2 + ".png"
+                
+                self.add_rv_data(node, flagloc)
+            '''
+        elif tab_text == OurWorld.CONTINENTS[5]:
+            for ncountry in self.NodeTree.NodeTree.children(OurWorld.CONTINENTS[5]):
+                iso2 = OurWorld.our_world.get_country_ISO2(ncountry.tag.lstrip().rstrip()).lower()
+                print(iso2)
+                flagloc = floc + iso2 + ".png"
+                print(flagloc)
+                NodeCountries['number']  = len(self.NodeTree.NodeTree.children(ncountry.tag)) 
+                NodeCountries['country'] = ncountry.tag
+                NodeCountries['flagloc'] = flagloc
+                
+                self.add_country_rv_data(NodeCountries)
+            
+            ''' 
+            if node[NodesInfoKeys[4]].lstrip().rstrip() in OurWorld.SouthAmerica:
+                
+                iso2 = OurWorld.our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
+                flagloc = floc + iso2 + ".png"
+                
+                self.add_rv_data(node, flagloc)
+            '''
+            
+                
+                
+        # Search Criteria
+        else:
+            pass      
+    
+    def switch_window(self, window):
+        Meile.app.root.transition = SlideTransition(direction = "up")
+        Meile.app.root.current = window
+
+
+class NodeScreen(Screen):
+    NodeTree = None
+    Country = None
+    def __init__(self, node_tree, country, **kwargs):
+        super(NodeScreen, self).__init__()
+        
+        self.NodeTree = node_tree
+        floc = "./src/imgs/"
+
+        for node_child in self.NodeTree.NodeTree.children(country):
+            node = node_child.data
+            iso2 = OurWorld.our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
+            flagloc = floc + iso2 + ".png"
+            self.add_rv_data(node, flagloc)
+        
+        
+        
+        
     def add_rv_data(self, node, flagloc):
         floc = "./src/imgs/"
         speed = node[NodesInfoKeys[5]].lstrip().rstrip().split('+')
@@ -298,7 +550,7 @@ class MainWindow(Screen):
             speedimage = floc + "slowavg.png"
         else:
             speedimage = floc + "slow.png"
-        self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.rv.data.append(
+        self.ids.rv.data.append(
             {
                 "viewclass"    : "RecycleViewRow",
                 "moniker_text" : node[NodesInfoKeys[0]].lstrip().rstrip(),
@@ -310,131 +562,28 @@ class MainWindow(Screen):
                 "source_image" : flagloc
                 
             },
-        )
+        )   
         
-    def add_sub_rv_data(self, node, flagloc):
-        self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.rv.data.append(
-            {
-                "viewclass"      : "RecycleViewSubRow",
-                "moniker_text"   : node[FinalSubsKeys[1]].lstrip().rstrip(),
-                "sub_id_text"    : node[FinalSubsKeys[0]].lstrip().rstrip(),
-                "price_text"     : node[FinalSubsKeys[3]].lstrip().rstrip(),
-                "country_text"   : node[FinalSubsKeys[5]].lstrip().rstrip(),
-                "address_text"   : node[FinalSubsKeys[2]].lstrip().rstrip(),
-                "allocated_text" : node[FinalSubsKeys[6]].lstrip().rstrip(),
-                "consumed_text"  : node[FinalSubsKeys[7]].lstrip().rstrip(),
-                "source_image"   : flagloc
-                
-            },
-        )
-    @mainthread        
-    def add_loading_popup(self, title_text):
-        self.dialog = None
-        self.dialog = MDDialog(title=title_text)
-        self.dialog.open()
-    @mainthread
-    def remove_loading_widget(self):
-        self.dialog.dismiss()
-        self.dialog = None
+    def set_previous_screen(self):
+        
+        Meile.app.root.remove_widget(self)
+        Meile.app.root.transistion = SlideTransition(direction="down")
+        Meile.app.root.current = WindowNames.MAIN_WINDOW
 
+        
+class RecycleViewCountryRow(MDCard):
+    text = StringProperty()
     
-    @delayable
-    def subs_callback(self, dt):
-        from src.cli.sentinel import NodesDictList
+    def show_country_nodes(self, country):
+        print(country)
+        self.switch_window(country)
         
-        floc = "./src/imgs/"
-        yield 0.314
-        
-        thread = ThreadWithResult(target=get_subscriptions, args=(NodesDictList, self.address))
-        thread.start()
-        thread.join()    
-            
-        #self.Subscriptions = get_subscriptions(NodesDictList, self.address)
-        for sub in thread.result:
-            if sub[FinalSubsKeys[5]] == "Czechia":
-                sub[FinalSubsKeys[5]] = "Czech Republic"
-            try: 
-                iso2 = OurWorld.our_world.get_country_ISO2(sub[FinalSubsKeys[5]].lstrip().rstrip()).lower()
-            except:
-                iso2 = "sc"
-            flagloc = floc + iso2 + ".png"
-            self.add_sub_rv_data(sub, flagloc)
-        self.remove_loading_widget()
+    def switch_window(self, country):
+        NodeTree = NodeTreeData(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeTree.NodeTree)
+        Meile.app.root.add_widget(NodeScreen(name="nodes", node_tree=NodeTree, country=country))
 
-    @mainthread
-    def on_tab_switch(self, instance_tabs, instance_tab, instance_tabs_label, tab_text):
-        from src.cli.sentinel import ConNodes, NodesDictList
-        
-        floc = "./src/imgs/"
-        self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.rv.data = []
-        if not tab_text:
-            tab_text = OurWorld.CONTINENTS[0]
-            
-        # Subscriptions
-        print(OurWorld.CONTINENTS[6])
-        if tab_text == OurWorld.CONTINENTS[6]:
-            self.add_loading_popup("Loading...")
-
-            if self.address:
-            
-                Clock.schedule_once(self.subs_callback, 2)
-                #Subscriptions = get_subscriptions(NodesDictList, address)
-                
-                return 
-        
-        for node in ConNodes:
-            #print(node)
-            if tab_text == OurWorld.CONTINENTS[0]:
-                if node[NodesInfoKeys[4]].lstrip().rstrip() in OurWorld.Africa:
-                    
-                    iso2 = OurWorld.our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
-                    flagloc = floc + iso2 + ".png"
-                    self.add_rv_data(node, flagloc)
-
-            elif tab_text == OurWorld.CONTINENTS[1]:
-                if node[NodesInfoKeys[4]].lstrip().rstrip() in OurWorld.Asia:
-                    
-                    iso2 = OurWorld.our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
-                    flagloc = floc + iso2 + ".png"
-                    
-                    self.add_rv_data(node, flagloc)
-            elif tab_text == OurWorld.CONTINENTS[2]:
-                if node[NodesInfoKeys[4]].lstrip().rstrip() in OurWorld.Europe:
-                    
-                    iso2 = OurWorld.our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
-                    flagloc = floc + iso2 + ".png"
-                    
-                    self.add_rv_data(node, flagloc)
-            elif tab_text == OurWorld.CONTINENTS[3]:
-                if node[NodesInfoKeys[4]].lstrip().rstrip() in OurWorld.NorthAmerica:
-                    
-                    iso2 = OurWorld.our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
-                    flagloc = floc + iso2 + ".png"
-                    
-                    self.add_rv_data(node, flagloc)
-            elif tab_text == OurWorld.CONTINENTS[4]:
-                if node[NodesInfoKeys[4]].lstrip().rstrip() in OurWorld.Oceania:
-                    
-                    iso2 = OurWorld.our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
-                    flagloc = floc + iso2 + ".png"
-                    
-                    self.add_rv_data(node, flagloc)
-            elif tab_text == OurWorld.CONTINENTS[5]: 
-                if node[NodesInfoKeys[4]].lstrip().rstrip() in OurWorld.SouthAmerica:
-                    
-                    iso2 = OurWorld.our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
-                    flagloc = floc + iso2 + ".png"
-                    
-                    self.add_rv_data(node, flagloc)
-            
-            
-                
-                
-            # Search Criteria
-            else:
-                pass      
-            
-    def switch_window(self, window):
         Meile.app.root.transition = SlideTransition(direction = "up")
-        Meile.app.root.current = window
-
+        Meile.app.root.current = WindowNames.NODES
+           
+        
+    

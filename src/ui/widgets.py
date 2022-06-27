@@ -1,7 +1,7 @@
 from kivy.properties import BooleanProperty, StringProperty
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.label import Label
-from kivymd.uix.card import MDCard
+from kivymd.uix.card import MDCard, MDCardSwipe
 from kivymd.uix.dialog import MDDialog
 from kivymd.uix.button import MDFlatButton, MDRaisedButton
 from kivy.uix.recycleview import RecycleView
@@ -10,6 +10,7 @@ from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.list import OneLineIconListItem
 from kivy.metrics import dp
 from kivyoav.delayed import delayable
+from kivy.uix.screenmanager import Screen, SlideTransition
 
 
 from functools import partial
@@ -19,6 +20,7 @@ import re
 
 
 from src.cli.sentinel import NodesInfoKeys
+from src.cli.sentinel import NodeTreeData
 from src.ui.interfaces import SubscribeContent
 from src.typedef.win import CoinsList, WindowNames
 from src.conf.meile_config import MeileGuiConfig
@@ -119,42 +121,11 @@ class SelectableLabel(RecycleDataViewBehavior, Label):
         else:
             print("selection removed for {0}".format(rv.data[index]))
 
-class MD3Card(MDCard):
-    dialog = None
-    
-    def set_moniker(self, name):
-        self.Moniker = name
-        
-    def show_alert_dialog(self):
-        if not self.dialog:
-            self.dialog = MDDialog(
-                text="Subscribe to Node?",
-                buttons=[
-                    MDFlatButton(
-                        text="CANCEL",
-                        theme_text_color="Custom",
-                        text_color=self.theme_cls.primary_color,
-                        on_release=self.closeDialog,
-                    ),
-                    MDRaisedButton(
-                        text="SUBSCRIBE",
-                        theme_text_color="Custom",
-                        text_color=(1,1,1,1),
-                        on_release= self.subscribeME
-                    ),
-                ],
-            )
-        self.dialog.open()
-
-    def closeDialog(self, inst):
-        self.dialog.dismiss()
-        
-    def subscribeME(self, inst):
-        self.dialog.dismiss()
-        print("SUBSCRIBED!")
 
 class NodeRV(RecycleView):    
     pass
+
+
 class RecycleViewRow(MDCard):
     text = StringProperty()    
     dialog = None
@@ -255,14 +226,14 @@ Node Version: %s
         else:
             self.dialog.dismiss()
             self.dialog = MDDialog(
-                title="Error: %s" % returncode[1],
-                buttons=[
-                        MDFlatButton(
-                            text="OK",
-                            theme_text_color="Custom",
-                            text_color=self.theme_cls.primary_color,
-                            on_release=self.closeDialog
-                        ),])
+            title="Error: %s" % returncode[1],
+            buttons=[
+                    MDFlatButton(
+                        text="OK",
+                        theme_text_color="Custom",
+                        text_color=self.theme_cls.primary_color,
+                        on_release=self.closeDialog
+                    ),])
             self.dialog.open()
 
     
@@ -281,7 +252,9 @@ Node Version: %s
         self.dialog.dismiss()
         self.dialog = None
         
-   
+ 
+        
+    
 class RecycleViewSubRow(MDCard):
     text = StringProperty()
     dialog = None

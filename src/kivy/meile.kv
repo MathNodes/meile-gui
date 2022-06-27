@@ -61,19 +61,43 @@ WindowManager:
         
         
         NodeRV:
+            md_bg_color: get_color_from_hex("#0d021b")    
             id: rv
             
+<NodeScreen>
+    name: "nodes"
+    MDBoxLayout:
+        orientation: "vertical"
+        NodeRV:
+            id: rv
+    ActionBar:
+        ActionView:
+            ActionPrevious:
+                title: 'Go Back'
+                with_previous: True
+                on_release: root.set_previous_screen() 
+    
 
-            
+    
 <NodeRV>:
     key_viewclass: "viewclass"
+    canvas.before:
+        Color:
+            rgba: get_color_from_hex("#fccf62")
+        Rectangle:
+            pos: self.pos
+            size: self.size
     RecycleGridLayout:
+        md_bg_color: get_color_from_hex("#0d021b")
         cols:1
         default_size: dp(200), dp(150)
         default_size_hint: 1, None
         size_hint_y: None
         height: self.minimum_height
         orientation: 'lr-tb' 
+        spacing: 15
+        padding: 4,4,4,4
+        
 
 
         
@@ -94,16 +118,67 @@ WindowManager:
         Rectangle:
             texture: self.texture
             size: self.width - 120, self.height - 60
-            pos: self.x , self.y + 10           
-                
+            pos: self.x , self.y + 10
+            
+                       
+<RecycleViewCountryRow>:
+    size_hint_y: None
+    height: self.height
+    size: "180dp", "150dp"
+    type_swipe: "hand"
+    pos_hint: {"center_x": .5, "center_y": .5}
+    padding: 10,10
+    border_radius: 20
+    radius: [10]
+    shadow_pos: 0,0
+    elevation: 42
+    num_text: ""
+    country_text: " "
+    source_image: " "
+    on_press: root.show_country_nodes(root.country_text)
+    md_bg_color: get_color_from_hex("#0d021b")
+    MDGridLayout:
+        cols: 1
+        padding: 20,0,0,0
+        MDFloatLayout:
+            MDLabel:
+                text: root.country_text
+                id: country
+                theme_text_color: "Custom"
+                font_style: "H6"
+                font_size: "24sp"
+                text_color: get_color_from_hex("#fcb711")
+                pos_hint: {"x" : 0, "top" : 1.3}
+                size_hint_x: None
+                width: "200dp"
+            MDLabel:
+                text: root.num_text
+                id: country
+                theme_text_color: "Custom"
+                font_style: "H6"
+                font_size: "18sp"
+                text_color: get_color_from_hex("#ffffff")
+                pos_hint: {"x" : 0, "top" : 1.0}
+                size_hint_x: None
+                width: "200dp"
+            Image:
+                source: root.source_image
+                # {"x", "y", "top", "bottom", "left", "right" }
+                pos_hint: {"x" : .3, "top" : 1 }
+            
+    MDSeparator:
+        color: 1,1,1,1
+                    
 <RecycleViewRow>:
     size_hint_y: None
     size: "180dp", "180dp"
     pos_hint: {"center_x": .5, "center_y": .5}
     orientation: "vertical"
-    padding: 10
+    padding: 10,10
     border_radius: 20
-    elevation:0
+    radius: [10]
+    shadow_pos: 0,0
+    elevation: 42
     md_bg_color: get_color_from_hex("#0d021b")
     moniker_text: "."
     country_text: "."
@@ -124,15 +199,30 @@ WindowManager:
                 text: root.moniker_text
                 theme_text_color: "Custom"
                 font_style: "H6"
-                font_size: "24sp"
+                font_size: "22sp"
                 text_color: get_color_from_hex("#fcb711")
                 pos_hint: {"x" : 0, "top" : 1.3}
                 size_hint_x: None
-                width: "300dp"
+                width: "400dp"
+            MDLabel:
+                text: root.address_text
+                theme_text_color: "Custom"
+                font_style: "Subtitle2"
+                font_size: "10sp"
+                text_color: (0/255.0,141/255.0,155/255.0,255/255.0)
+                pos_hint: {"x" : 0, "top" : 1.1}
+            MDLabel:
+                text: root.price_text
+                theme_text_color: "Custom"
+                font_style: "Subtitle2"
+                font_size: "13sp"
+                text_color: get_color_from_hex("#fcb711")
+                pos_hint: {"x" : 0, "top" : .85}
+                
             Image:
                 source: root.source_image
                 # {"x", "y", "top", "bottom", "left", "right" }
-                pos_hint: {"x" : .3, "top" : 1 }
+                pos_hint: {"x" : .3, "top" : 1.3 }
 
             MDLabel:
                 text: root.speed_text
@@ -140,7 +230,11 @@ WindowManager:
                 font_style: "Subtitle2"
                 font_size: "12sp"
                 text_color: 1,1,1,1
-                pos_hint: {"x" : .42 , "top": .9 }
+                pos_hint: {"x" : .43 , "top": .86 }
+            Image:
+                source: root.speed_image
+                pos_hint: {"x" : .44 , "top": .95 }
+                size_hint: None, .525
                 
             MDLabel:    
                 text: root.country_text
@@ -148,28 +242,7 @@ WindowManager:
                 font_style: "H6"
                 font_size: "22sp"
                 text_color: (1,1,1,1)  
-                pos_hint: {"right" : 1.75 , "top": 0 }  
-            MDLabel:
-                text: root.address_text
-                theme_text_color: "Custom"
-                font_style: "Subtitle2"
-                font_size: "10sp"
-                text_color: (0/255.0,141/255.0,155/255.0,255/255.0)
-                pos_hint: {"x" : 0, "top" : .85}
-                
-    MDGridLayout:
-        cols: 3
-        padding: 0,0,0,10
-        MDLabel:
-            text: root.price_text
-            theme_text_color: "Custom"
-            font_style: "Subtitle2"
-            font_size: "13sp"
-            text_color: get_color_from_hex("#fcb711")
-        Image:
-            source: root.speed_image
-        MDBoxLayout:
-            padding: 80,30,0,0                                
+                pos_hint: {"right" : 1.75 , "top": .8 }  
 
     MDRaisedButton:
         text: "Get Details"
@@ -186,9 +259,11 @@ WindowManager:
     size: "180dp", "180dp"
     pos_hint: {"center_x": .5, "center_y": .5}
     orientation: "vertical"
-    padding: 10
+    padding: 10,10
     border_radius: 20
-    elevation:0
+    radius: [10]
+    shadow_pos: 0,0
+    elevation: 42
     md_bg_color: get_color_from_hex("#0d021b")
     moniker_text: "."
     sub_id_text: " "

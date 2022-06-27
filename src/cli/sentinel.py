@@ -9,6 +9,9 @@ import pexpect
 
 from src.conf.meile_config import MeileGuiConfig
 
+from treelib import Node, Tree
+from src.geography.continents import OurWorld
+
 
 # IBC Tokens
 IBCSCRT  = 'ibc/31FEE1A2A9F9C01113F90BD0BBCCE8FD6BBB8585FAF109A2101827DD1D5B95B8'
@@ -30,165 +33,266 @@ FinalSubsKeys = [SubsInfoKeys[0], NodesInfoKeys[0],SubsInfoKeys[5], SubsInfoKeys
 
 dash = "-"
 
-global ConNodes
-ConNodes = []
-global NodesDictList
-NodesDictList = collections.defaultdict(list)
+#global ConNodes
+#ConNodes = []
+#global NodesDictList
+#NodesDictList = collections.defaultdict(list)
 
 
-def GetSentinelNodes(dt):
+'''
+def GetSentinelNodes(self):
     print("Getting Nodes...")
-    global ConNodes
-    global NodesDictList
-    ConNodes,NodesDictList = get_nodes()
+    global NodeTree
+    NodeTree = NodeTreeData.get_nodes(NodeTreeData)
     print("Nodes begotten and not made")
-    
-def get_nodes():
-    AllNodesInfo = []
-    nodeCMD = ["sentinelcli", "query", "nodes", "--node", "https://rpc.mathnodes.com:4444", "--limit", "20000"]
+ 
+'''
 
-    proc = Popen(nodeCMD, stdout=PIPE)
+class NodeTreeData():
+    NodeTree = None
+
+    def __init__(self, node_tree):
+        if not node_tree:
+            self.NodeTree = Tree()
+        else:
+            self.NodeTree = node_tree
+   
+    def get_nodes(self, dt):
+        AllNodesInfo = []
+        nodeCMD = ["sentinelcli", "query", "nodes", "--node", "https://rpc.mathnodes.com:4444", "--limit", "20000"]
     
-    k=1
-    
-    print()
-    for line in proc.stdout.readlines():
-        #print(line)
-        if k < 4:  
-            k += 1 
-            continue
-        if k >=4 and '+-------+' in str(line.decode('utf-8')):
-            break
-        elif "freak12techno" in str(line.decode('utf-8')):
-            ninfos = []
-            ninfos.append(str(line.decode('utf-8')).split('|')[1])
-            for ninf in str(line.decode('utf-8')).split('|')[3:-1]:
-                ninfos.append(ninf)
-            AllNodesInfo.append(dict(zip(NodesInfoKeys, ninfos)))
-        elif "Testserver" in str(line.decode('utf-8')):
-            continue
-        else: 
-            ninfos = str(line.decode('utf-8')).split('|')[1:-1]
-            if ninfos[0].isspace():
+        proc = Popen(nodeCMD, stdout=PIPE)
+        
+        k=1
+        
+        print()
+        for line in proc.stdout.readlines():
+            #print(line)
+            if k < 4:  
+                k += 1 
                 continue
-            elif ninfos[1].isspace():
-                continue
-            else:
+            if k >=4 and '+-------+' in str(line.decode('utf-8')):
+                break
+            elif "freak12techno" in str(line.decode('utf-8')):
+                ninfos = []
+                ninfos.append(str(line.decode('utf-8')).split('|')[1])
+                for ninf in str(line.decode('utf-8')).split('|')[3:-1]:
+                    ninfos.append(ninf)
                 AllNodesInfo.append(dict(zip(NodesInfoKeys, ninfos)))
-            #print(ninfos, end='\n')
-    
-    #get = input("Blah: ")
-    AllNodesInfoSorted = sorted(AllNodesInfo, key=lambda d: d[NodesInfoKeys[4]])
-    AllNodesInfoSorted2 = []
-    result = collections.defaultdict(list)
-
-    for d in AllNodesInfoSorted:
-        d[NodesInfoKeys[3]] = return_denom(d[NodesInfoKeys[3]])
+            elif "Testserver" in str(line.decode('utf-8')):
+                continue
+            else: 
+                ninfos = str(line.decode('utf-8')).split('|')[1:-1]
+                if ninfos[0].isspace():
+                    continue
+                elif ninfos[1].isspace():
+                    continue
+                else:
+                    AllNodesInfo.append(dict(zip(NodesInfoKeys, ninfos)))
+                #print(ninfos, end='\n')
+        
+        #get = input("Blah: ")
+        AllNodesInfoSorted = sorted(AllNodesInfo, key=lambda d: d[NodesInfoKeys[4]])
+        
+        #result = collections.defaultdict(list)
+        
+        self.NodeTree = self.CreateNodeTreeStructure()
+        
+        AllNodesSortedStripped = []
+        for d in AllNodesInfoSorted:
+            for key in NodesInfoKeys:
+                d[key] = d[key].lstrip().rstrip()
+            AllNodesSortedStripped.append(d)
+        
+        for d in AllNodesSortedStripped:
+            
+            d[NodesInfoKeys[3]] = self.return_denom(d[NodesInfoKeys[3]])
+            
+            if "Czechia" in d[NodesInfoKeys[4]]:
+                d[NodesInfoKeys[4]] = "Czech Republic"
+           
+            d_continent = OurWorld.our_world.get_country_continent_name(d[NodesInfoKeys[4]])
+            try:
+                self.NodeTree.create_node(d[NodesInfoKeys[4]],d[NodesInfoKeys[4]], parent=d_continent)
+            except:
+                pass
+            try:
+                self.NodeTree.create_node(d[NodesInfoKeys[1]], d[NodesInfoKeys[1]],parent=d[NodesInfoKeys[4]], data=d )
+            except:
+                pass
+        #NodeTree.show()
+        #NodeTree.save2file("nodedata.txt")
+        #print(NodeTree.get_node("Schrödinger's Cat").data)
+        #for node in NodeTree.children("South America"):
+        #    print(node.tag)
+        '''    
         #d["City"] = get_city_of_node(d[NodesInfoKeys[1]])
         AllNodesInfoSorted2.append(d)
-        
-    for d in AllNodesInfoSorted:
-        for k, v in d.items():
-            v=return_denom(v)
-            result[k].append(v.lstrip().rstrip())
             
-    
-
-    return AllNodesInfoSorted2, result
-
-def return_denom(tokens):
-    for ibc_coin in IBCCOINS:
-        for denom,ibc in ibc_coin.items():
-            if ibc in tokens:
-                tokens = tokens.replace(ibc, denom)
-    
-
-    return tokens
-
-def get_subscriptions(result, ADDRESS):
-    SubsNodesInfo = []
-    SubsFinalResult    = []
-    subsCMD = ["sentinelcli", "query", "subscriptions", "--node", "https://rpc.mathnodes.com:4444", "--status", "Active", "--limit", "100", "--address" ,ADDRESS]
-    proc = Popen(subsCMD, stdout=PIPE)
-
-    k=1
-    for line in proc.stdout.readlines():
-        #print(line)
-        if k < 4:
-            k += 1 
-            continue
-        else: 
-            ninfos = str(line.decode('utf-8')).lstrip().rstrip().split('|')[1:-1]
-            SubsNodesInfo.append(dict(zip(SubsInfoKeys, ninfos)))
-            
-    SubsResult = collections.defaultdict(list)
-    
-    for d in SubsNodesInfo:
-        for k, v in d.items():
-            v = return_denom(v)
-            SubsResult[k].append(v.lstrip().rstrip())
-            
-    SubsAddressSet = set(SubsResult[SubsInfoKeys[5]])
-    #NodesAddressSet = set(result[NodesInfoKeys[1]])
-    
-    # The Index of Subscription Address in All Data
-    Nodespos = [i for i,val in enumerate(result[NodesInfoKeys[1]]) if val in SubsAddressSet]
-    NodeAddys = [val for i,val in enumerate(result[NodesInfoKeys[1]]) if val in SubsAddressSet]
-    
-    # Available Subscriptions
-    #Subspos = [i for i,val in enumerate(SubsResult[SubsInfoKeys[5]]) if val in NodesAddressSet]
-    #SubsAddys = [val for i,val in enumerate(SubsResult[SubsInfoKeys[5]]) if val in NodesAddressSet]
-    #print(Subspos)
-    #print(SubsResult[SubsInfoKeys[5]])
-    
-  
-    k=0
-    j=0
-    # This would be the more efficent algorithm. Not a fan of O(n^2)
-    #for e1,e2 in zip(Nodespos,Subspos):
-    for sub in SubsResult[SubsInfoKeys[5]]:
-        for node in NodeAddys:
-            if sub == node:
-                quotaCMD = ['sentinelcli', 'query', 'quotas', '--node', 'https://rpc.mathnodes.com:4444', '--page', '1', SubsResult[SubsInfoKeys[0]][k]]
-        
-                proc = Popen(quotaCMD, stdout=PIPE)
+        for d in AllNodesInfoSorted:
+            for k, v in d.items():
+                v=self.return_denom(v)
+                result[k].append(v.lstrip().rstrip())
                 
-                h=1
-                for line in proc.stdout.readlines():
-                    #print(line)
-                    if h < 4:
-                        h += 1 
-                        continue
-                    if h >=4 and '+-----------+' in str(line.decode('utf-8')):
+        
+    
+        return AllNodesInfoSorted2, result
+        '''
+            
+        #return NodeTree
+    
+    def CreateNodeTreeStructure(self, **kwargs):
+        NodeTreeBase = Tree()
+        RootTag = "CONTINENTS"
+        RootIdentifier = RootTag.lower()
+        NodeTreeBase.create_node(RootTag, RootIdentifier)
+        
+        for c in OurWorld.CONTINENTS:
+            NodeTreeBase.create_node(c, c, parent=RootIdentifier)
+            
+        NodeTreeBase.show()
+        return NodeTreeBase
+    
+    def return_denom(self, tokens):
+        for ibc_coin in IBCCOINS:
+            for denom,ibc in ibc_coin.items():
+                if ibc in tokens:
+                    tokens = tokens.replace(ibc, denom)
+        
+    
+        return tokens
+    def get_subscriptions(self, ADDRESS):
+        SubsNodesInfo = []
+        SubsFinalResult    = []
+        print("Geting Subscriptions... %s" % ADDRESS)
+        subsCMD = ["sentinelcli", "query", "subscriptions", "--node", "https://rpc.mathnodes.com:4444", "--status", "Active", "--limit", "100", "--address" ,ADDRESS]
+        proc = Popen(subsCMD, stdout=PIPE)
+    
+        k=1
+        for line in proc.stdout.readlines():
+            if k < 4:
+                k += 1 
+                continue
+            else: 
+                ninfos = str(line.decode('utf-8')).lstrip().rstrip().split('|')[1:-1]
+                # List of Dictionaries
+                SubsNodesInfo.append(dict(zip(SubsInfoKeys, ninfos)))
+        
+        # A Dictionary of Lists
+        SubsResult = collections.defaultdict(list)
+        
+        
+        # Create IBC Denoms
+        for d in SubsNodesInfo:
+            for k, v in d.items():
+                v = self.return_denom(v)
+                SubsResult[k].append(v.lstrip().rstrip())
+                
+        #SubsAddressSet = set(SubsResult[SubsInfoKeys[5]])
+        #NodesAddressSet = set(result[NodesInfoKeys[1]])
+        
+        # The Index of Subscription Address in All Data
+        #Nodespos = [i for i,val in enumerate(result[NodesInfoKeys[1]]) if val in SubsAddressSet]
+        #NodeAddys = [val for i,val in enumerate(result[NodesInfoKeys[1]]) if val in SubsAddressSet]
+        
+        # Available Subscriptions
+        #Subspos = [i for i,val in enumerate(SubsResult[SubsInfoKeys[5]]) if val in NodesAddressSet]
+        #SubsAddys = [val for i,val in enumerate(SubsResult[SubsInfoKeys[5]]) if val in NodesAddressSet]
+        #print(Subspos)
+        #print(SubsResult[SubsInfoKeys[5]])
+        
+      
+        
+        # This would be the more efficent algorithm. Not a fan of O(n^2)
+        #for e1,e2 in zip(Nodespos,Subspos):
+        
+        k=0
+        for snaddress in SubsResult[SubsInfoKeys[5]]:
+            #print("SHOWING NODE TREE")
+            #print(snaddress)
+            #print(self.NodeTree.show())
+            try:
+                NodeData = self.NodeTree.get_node(snaddress).data
+            except AttributeError:
+                print("Sub not found in list")
+                continue   
+            quotaCMD = ['sentinelcli', 'query', 'quotas', '--node', 'https://rpc.mathnodes.com:4444', '--page', '1', SubsResult[SubsInfoKeys[0]][k]]
+            proc = Popen(quotaCMD, stdout=PIPE)
+                    
+            h=1
+            for line in proc.stdout.readlines():
+                #print(line)
+                if h < 4:
+                    h += 1 
+                    continue
+                if h >=4 and '+-----------+' in str(line.decode('utf-8')):
+                    break
+                else:
+                    nodeQuota = str(line.decode('utf-8')).split("|")[2:-1]
+                    allotted = float(re.findall(r'[0-9]+\.[0-9]+', nodeQuota[0])[0])
+                    consumed = float(re.findall(r'[0-9]+\.[0-9]+', nodeQuota[1])[0])
+                    
+                    if allotted == consumed:
                         break
                     else:
-                        nodeQuota = str(line.decode('utf-8')).split("|")[2:-1]
-                        allotted = float(re.findall(r'[0-9]+\.[0-9]+', nodeQuota[0])[0])
-                        consumed = float(re.findall(r'[0-9]+\.[0-9]+', nodeQuota[1])[0])
                         
-                        if allotted == consumed:
+                            
+                        SubsFinalResult.append({
+                                            FinalSubsKeys[0] : SubsResult[SubsInfoKeys[0]][k],
+                                            FinalSubsKeys[1] : NodeData[NodesInfoKeys[0]],
+                                            FinalSubsKeys[2] : SubsResult[SubsInfoKeys[5]][k],
+                                            FinalSubsKeys[3] : SubsResult[SubsInfoKeys[6]][k],
+                                            FinalSubsKeys[4] : SubsResult[SubsInfoKeys[7]][k],
+                                            FinalSubsKeys[5] : NodeData[NodesInfoKeys[4]],
+                                            FinalSubsKeys[6] : nodeQuota[0],
+                                            FinalSubsKeys[7] : nodeQuota[1]
+                                            })
+           
+            k += 1 
+                
+            '''
+            for node in NodeAddys:
+                if sub == node:
+                    quotaCMD = ['sentinelcli', 'query', 'quotas', '--node', 'https://rpc.mathnodes.com:4444', '--page', '1', SubsResult[SubsInfoKeys[0]][k]]
+            
+                    proc = Popen(quotaCMD, stdout=PIPE)
+                    
+                    h=1
+                    for line in proc.stdout.readlines():
+                        #print(line)
+                        if h < 4:
+                            h += 1 
+                            continue
+                        if h >=4 and '+-----------+' in str(line.decode('utf-8')):
                             break
                         else:
-                            SubsFinalResult.append({
-                                                FinalSubsKeys[0] : SubsResult[SubsInfoKeys[0]][k],
-                                                FinalSubsKeys[1] : result[NodesInfoKeys[0]][Nodespos[j]],
-                                                FinalSubsKeys[2] : SubsResult[SubsInfoKeys[5]][k],
-                                                FinalSubsKeys[3] : SubsResult[SubsInfoKeys[6]][k],
-                                                FinalSubsKeys[4] : SubsResult[SubsInfoKeys[7]][k],
-                                                FinalSubsKeys[5] : result[NodesInfoKeys[4]][Nodespos[j]],
-                                                FinalSubsKeys[6] : nodeQuota[0],
-                                                FinalSubsKeys[7] : nodeQuota[1]
-                                                })
-
-                break
-            else:
-                j += 1
-                continue
-        j=0
-        k += 1
-
-     
-    return SubsFinalResult
+                            nodeQuota = str(line.decode('utf-8')).split("|")[2:-1]
+                            allotted = float(re.findall(r'[0-9]+\.[0-9]+', nodeQuota[0])[0])
+                            consumed = float(re.findall(r'[0-9]+\.[0-9]+', nodeQuota[1])[0])
+                            
+                            if allotted == consumed:
+                                break
+                            else:
+                                SubsFinalResult.append({
+                                                    FinalSubsKeys[0] : SubsResult[SubsInfoKeys[0]][k],
+                                                    FinalSubsKeys[1] : result[NodesInfoKeys[0]][Nodespos[j]],
+                                                    FinalSubsKeys[2] : SubsResult[SubsInfoKeys[5]][k],
+                                                    FinalSubsKeys[3] : SubsResult[SubsInfoKeys[6]][k],
+                                                    FinalSubsKeys[4] : SubsResult[SubsInfoKeys[7]][k],
+                                                    FinalSubsKeys[5] : result[NodesInfoKeys[4]][Nodespos[j]],
+                                                    FinalSubsKeys[6] : nodeQuota[0],
+                                                    FinalSubsKeys[7] : nodeQuota[1]
+                                                    })
+    
+                    break
+                else:
+                    j += 1
+                    continue
+            j=0
+            k += 1
+        '''
+         
+        return SubsFinalResult
 
 def get_balance(address):
     endpoint = "/bank/balances/" + address

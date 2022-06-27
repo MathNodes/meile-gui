@@ -4,6 +4,7 @@ class WindowNames():
     WALLET_RESTORE = "walletrestore"
     MAIN_WINDOW    = "main"
     PRELOAD        = "preload"
+    NODES          = "nodes"
     
     
 class CoinsList():
