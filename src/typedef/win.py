@@ -5,6 +5,7 @@ class WindowNames():
     MAIN_WINDOW    = "main"
     PRELOAD        = "preload"
     NODES          = "nodes"
+    WALLET         = "wallet"
     
     
 class CoinsList():

@@ -215,6 +215,7 @@ class NodeTreeData():
                 NodeData = self.NodeTree.get_node(snaddress).data
             except AttributeError:
                 print("Sub not found in list")
+                k += 1
                 continue   
             quotaCMD = ['sentinelcli', 'query', 'quotas', '--node', 'https://rpc.mathnodes.com:4444', '--page', '1', SubsResult[SubsInfoKeys[0]][k]]
             proc = Popen(quotaCMD, stdout=PIPE)
@@ -294,22 +295,7 @@ class NodeTreeData():
          
         return SubsFinalResult
 
-def get_balance(address):
-    endpoint = "/bank/balances/" + address
-    CoinDict = {}
-    r = requests.get(APIURL + endpoint)
-    
-    coinJSON = r.json()
-    
-    for coin in coinJSON['result']:
-        if "udvpn" in coin['denom']:
-            CoinDict['dvpn'] = round(float(float(coin['amount']) / SATOSHI),4)
-        elif IBCSCRT in coin['denom']:
-            CoinDict['scrt'] = round(float(float(coin['amount']) / SATOSHI),4)
-        elif IBCDEC in coin['denom']:
-            CoinDict['dec'] = round(float(float(coin['amount']) / SATOSHI),4)
-            
-    return CoinDict
+
 
 def get_node_infos(naddress):
     endpoint = "/nodes/" + naddress

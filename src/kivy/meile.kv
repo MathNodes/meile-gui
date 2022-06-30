@@ -1,5 +1,6 @@
 #: import SlideTransition kivy.uix.screenmanager.SlideTransition
 #: import get_color_from_hex kivy.utils.get_color_from_hex
+#: import Gradient kivy_gradient.Gradient
 
 WindowManager:
 
@@ -15,33 +16,19 @@ WindowManager:
             md_bg_color: get_color_from_hex("#0d021b")
             height: "100dp"
             padding: 10,0,0,10
+            spacing: 10
+            right_action_items:
+                [
+                ["lan-disconnect", lambda x: root.disconnect_from_node(), "Disconnect"],
+                ["wallet", lambda x: root.wallet_dialog(), "Wallet"],
+                ]
             MDLabel:
                 id: new_ip
                 text: "New IP: " 
-                font_size: "10dp"
+                font_size: "15dp"
                 pos_hint: {'x': 0, 'y': 0}
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex("#ffffff")
-            MDLabel:
-                id: old_ip
-                pos_hint: {'x': 0, 'y': 50}
-                text: "Old IP: " 
-                font_size: "10dp"
-                theme_text_color: "Custom"
-                text_color: get_color_from_hex("#ffffff")
-            MDRaisedButton:
-                id: wallet_button
-                text: "Disconnect"
-                pos_hint: {"center_x": .5, "center_y": .5}
-                on_press: root.disconnect_from_node()
-            
-                    
-            
-            MDRaisedButton:
-                id: wallet_button
-                text: "Wallet"
-                pos_hint: {"center_x": .5, "center_y": .5}
-                on_press: root.wallet_dialog()
                 
             FitImage:
                 source: "./src/imgs/logo.png"
@@ -423,6 +410,98 @@ WindowManager:
             self.icon = "eye" if self.icon == "eye-off" else "eye-off"
             wallet_password.password = False if wallet_password.password is True else True
 
+<WalletScreen>:
+    canvas.before:
+        Rectangle:
+            size: self.size
+            pos: self.pos
+            texture: Gradient.horizontal(get_color_from_hex("#fcb711"), get_color_from_hex("#ffffff"))
+    name: "wallet"
+    wallet_name: ""
+    address_qrcode: ""
+    sentinel_logo: "./src/imgs/dvpn.png"
+    secret_logo: "./src/imgs/scrt.png"
+    osmosis_logo: "./src/imgs/osmo.png"
+    cosmos_logo: "./src/imgs/atom.png"
+    decentr_logo: "./src/imgs/dec.png"
+    dec_text: ""
+    scrt_text: " "
+    atom_text: " "
+    dvpn_text: " "
+    osmo_text: " "
+    MDBoxLayout:
+        orientation: "vertical"
+        MDToolbar:
+            id: toolbar
+            title: "Wallet"
+            md_bg_color: get_color_from_hex("#0d021b")
+            height: "100dp"
+            padding: 10,0,0,10
+    
+            MDLabel:
+                text: root.wallet_name
+                theme_text_color: "Custom"
+                text_color: get_color_from_hex("#FFFFFF")
+        MDFloatLayout:
+            
+            Image:
+                source: root.get_qr_code_address()
+                pos_hint: {'x': 0, 'top': 1}
+                size_hint_y: .5
+            
+            Image:
+                source: root.sentinel_logo
+                pos_hint: {'x': -.2, 'top': .9}
+            MDLabel:
+                text: root.dvpn_text
+                theme_text_color: "Custom"
+                text_color: get_color_from_hex("#000000")
+                pos_hint: {'x': .35, 'top': .905}
+
+            Image:
+                source: root.secret_logo
+                pos_hint: {'x': -.2, 'top': .77}
+                
+            MDLabel:
+                text: root.scrt_text
+                theme_text_color: "Custom"
+                text_color: get_color_from_hex("#000000")
+                pos_hint: {'x': .35, 'top': .7695}
+            Image:
+                source: root.osmosis_logo
+                pos_hint: {'x': -.2, 'top': .63}
+                
+            MDLabel:
+                text: root.osmo_text
+                theme_text_color: "Custom"
+                text_color: get_color_from_hex("#000000")
+                pos_hint: {'x': .35, 'top': .6295}
+            Image:
+                source: root.cosmos_logo
+                pos_hint: {'x': .25, 'top': .89}
+                
+            MDLabel:
+                text: root.atom_text
+                theme_text_color: "Custom"
+                text_color: get_color_from_hex("#000000")
+                pos_hint: {'x': .8, 'top': .89}
+            Image:
+                source: root.decentr_logo
+                pos_hint: {'x': .25, 'top': .76}
+                
+            MDLabel:
+                text: root.dec_text
+                theme_text_color: "Custom"
+                text_color: get_color_from_hex("#000000")
+                pos_hint: {'x': .8, 'top': .76}
+    ActionBar:
+        ActionView:
+            ActionPrevious:
+                title: 'Go Back'
+                with_previous: True
+                on_release: root.set_previous_screen() 
+
+    
 
 <WalletRestore>:
     name: "walletrestore"

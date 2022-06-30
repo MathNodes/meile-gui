@@ -19,7 +19,7 @@ import requests
 import re
 
 
-from src.cli.sentinel import NodesInfoKeys
+from src.cli.sentinel import NodesInfoKeys, IBCCOINS,IBCSCRT, IBCATOM, IBCDEC, IBCOSMO
 from src.cli.sentinel import NodeTreeData
 from src.ui.interfaces import SubscribeContent
 from src.typedef.win import CoinsList, WindowNames
@@ -242,12 +242,30 @@ Node Version: %s
         for k,v in CoinsList.ibc_coins.items():
             try: 
                 coin = re.findall(k,deposit)[0]
+                print(coin)
                 deposit = deposit.replace(coin, v)
+                print(deposit)
                 mu_deposit_amt = int(float(re.findall(r'[0-9]+\.[0-9]+', deposit)[0])*CoinsList.SATOSHI)
+                print(mu_deposit_amt)
                 tru_mu_deposit = str(mu_deposit_amt) + v
-                return tru_mu_deposit
+                print(tru_mu_deposit)
+                tru_mu_ibc_deposit = self.check_ibc_denom(tru_mu_deposit)
+                print(tru_mu_ibc_deposit)
+                return tru_mu_ibc_deposit
             except:
                 pass
+            
+    def check_ibc_denom(self, tru_mu_deposit):
+        for ibc_coin in IBCCOINS:
+            k = ibc_coin.keys()
+            v = ibc_coin.values()
+            for coin,ibc in zip(k,v):
+                print(coin)
+                print(ibc)
+                if coin in tru_mu_deposit:
+                    tru_mu_deposit = tru_mu_deposit.replace(coin, ibc)
+                    print(tru_mu_deposit)
+        return tru_mu_deposit
     def closeDialog(self, inst):
         self.dialog.dismiss()
         self.dialog = None
