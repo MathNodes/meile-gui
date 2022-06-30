@@ -7,7 +7,7 @@ from src.cli.sentinel import NodesInfoKeys, FinalSubsKeys
 from src.cli.sentinel import disconnect as Disconnect
 import src.main.main as Meile
 from src.ui.widgets import  NodeRV
-
+from src.utils.qr import QRCode
 from src.cli.wallet import HandleWalletFunctions
 from src.conf.meile_config import MeileGuiConfig
 
@@ -26,6 +26,9 @@ import asyncio
 from save_thread_result import ThreadWithResult
 import requests
 import collections
+
+
+from os import path
 
 class WalletRestore(Screen):
     screemanager = ObjectProperty()
@@ -216,8 +219,8 @@ class MainWindow(Screen):
         req = requests.get(ICANHAZURL)
         self.ip = req.text
     
-        self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.new_ip.text = "New IP: " + self.ip
-        self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.old_ip.text = "Old IP: " + self.old_ip
+        self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.new_ip.text = "IP: " + self.ip
+        #self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.old_ip.text = "Old IP: " + self.old_ip
         
     def disconnect_from_node(self):
         try:
@@ -253,25 +256,26 @@ class MainWindow(Screen):
         # Eventually, I'd like to add multiple wallet support. 
         # That will be after v1.0
         
-        
-        self.dialog = MDDialog(
-            text="Wallet Restore/Create",
-            buttons=[
-                MDFlatButton(
-                    text="Create",
-                    theme_text_color="Custom",
-                    text_color=Meile.app.theme_cls.primary_color,
-                    on_release=self.wallet_create,
-                ),
-                MDRaisedButton(
-                    text="Restore",
-                    theme_text_color="Custom",
-                    text_color=(1,1,1,1),
-                    on_release= self.wallet_restore
-                ),
-            ],
-        )
-        self.dialog.open()
+        if not self.address:
+            self.dialog = MDDialog(
+                text="Wallet Restore/Create",
+                buttons=[
+                    MDRaisedButton(
+                        text="Restore/Create",
+                        theme_text_color="Custom",
+                        text_color=(1,1,1,1),
+                        on_release= self.wallet_restore
+                    ),
+                ],
+            )
+            self.dialog.open()
+        else:
+            self.build_wallet_interface()
+            
+    def build_wallet_interface(self):
+        Meile.app.root.add_widget(WalletScreen(name=WindowNames.WALLET, ADDRESS=self.address))
+        Meile.app.root.transition = SlideTransition(direction = "up")
+        Meile.app.root.current = WindowNames.WALLET
         
     def wallet_restore(self, inst):
         self.dialog.dismiss()
@@ -501,7 +505,41 @@ class MainWindow(Screen):
     def switch_window(self, window):
         Meile.app.root.transition = SlideTransition(direction = "up")
         Meile.app.root.current = window
+        
+class WalletScreen(Screen):
+    text = StringProperty()
+    ADDRESS = None
+    def __init__(self, ADDRESS,  **kwargs):
+        super(WalletScreen, self).__init__(**kwargs)
+        self.ADDRESS = ADDRESS 
+        Clock.schedule_once(self.build)
+        
+        
+    def build(self, dt):
+        Wallet = HandleWalletFunctions()
+        self.SetBalances(Wallet.get_balance(self.ADDRESS))
+        
+        
+    def get_qr_code_address(self):
+        CONFIG = MeileGuiConfig()
+        QRcode = QRCode()
+        if not path.isfile(path.join(CONFIG.IMGDIR, "dvpn.png")):
+            QRcode.generate_qr_code(self.ADDRESS)
+            
+        return path.join(CONFIG.IMGDIR, "dvpn.png")
+    
+    def SetBalances(self, CoinDict):
+        self.dec_text = str(CoinDict['dec']) + " dec"
+        self.scrt_text = str(CoinDict['scrt']) + " scrt"
+        self.atom_text = str(CoinDict['atom']) + " atom" 
+        self.osmo_text = str(CoinDict['osmo']) + " osmo"
+        self.dvpn_text = str(CoinDict['dvpn']) + " dvpn"       
 
+    def set_previous_screen(self):
+        
+        Meile.app.root.remove_widget(self)
+        Meile.app.root.transistion = SlideTransition(direction="down")
+        Meile.app.root.current = WindowNames.MAIN_WINDOW
 
 class NodeScreen(Screen):
     NodeTree = None

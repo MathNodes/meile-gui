@@ -1,7 +1,10 @@
 from os import path, remove
 import pexpect
 import json
+import requests
+
 from src.conf.meile_config import MeileGuiConfig
+from src.cli.sentinel import IBCATOM, IBCDEC, IBCOSMO, IBCSCRT, SATOSHI, APIURL
 
 KEYRINGDIR = path.join(path.expanduser('~'), '.meile-gui')
 WALLETINFO = path.join(KEYRINGDIR, "infos.txt")
@@ -147,6 +150,31 @@ class HandleWalletFunctions():
             
         return CONNECTED
 
+    def get_balance(self, address):
+        endpoint = "/bank/balances/" + address
+        CoinDict = {'dvpn' : 0, 'scrt' : 0, 'dec'  : 0, 'atom' : 0, 'osmo' : 0}
+        try:
+            r = requests.get(APIURL + endpoint)
+        except:
+            return None
+            
+        
+        coinJSON = r.json()
+        
+        for coin in coinJSON['result']:
+            if "udvpn" in coin['denom']:
+                CoinDict['dvpn'] = round(float(float(coin['amount']) / SATOSHI),4)
+            elif IBCSCRT in coin['denom']:
+                CoinDict['scrt'] = round(float(float(coin['amount']) / SATOSHI),4)
+            elif IBCDEC in coin['denom']:
+                CoinDict['dec'] = round(float(float(coin['amount']) / SATOSHI),4)
+            elif IBCATOM in coin['denom']:
+                CoinDict['atom'] = round(float(float(coin['amount']) / SATOSHI),4)
+            elif IBCOSMO in coin['denom']:
+                CoinDict['osmo'] = round(float(float(coin['amount']) / SATOSHI),4)
+                
+        return CoinDict
+    
 
                 
     
