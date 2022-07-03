@@ -21,15 +21,33 @@ from kivymd.uix.relativelayout import MDRelativeLayout
 
 
 Builder.load_string('''
+#: import get_color_from_hex kivy.utils.get_color_from_hex
+
 <WalletRestore>:
     name: "walletrestore"
     title: "Blargy"
-    ActionBar:
-        ActionView:
-            ActionPrevious:
-                title: 'Go Back'
-                with_previous: True
-                on_release: root.set_previous_screen() 
+    wallet_address: "secret1uhwwgwc7x5cm5xdmn99xnucxz296lyua688wjj"
+    MDBoxLayout:
+        orientation: "vertical"
+        MDToolbar:
+            id: toolbar
+            title: "Wallet"
+            md_bg_color: get_color_from_hex("#FFB908")
+            height: "100dp"
+            type: "top"
+    
+            MDTextField:
+                hint_text: "Address"
+                mode: "fill"
+                size_hint_x: 1.2
+                pos_hint: {"center_x" : .5, "center_y": .5}
+                text: root.wallet_address
+                readonly: True
+                opacity: 1
+                theme_text_color: "Custom"
+                text_color: get_color_from_hex("#000000")
+                normal_color: app.theme_cls.accent_color
+            
 
     ClickableTextFieldRoundSeed:
         id: seed
@@ -38,6 +56,14 @@ Builder.load_string('''
         height: "300dp"
         hint_text: "Seed Phrase"
         pos_hint: {"center_x": .5, "center_y": .80}
+ 
+    MDLabel:
+        text: "Leave blank if creating a new wallet"
+        theme_text_color: "Custom"
+        text_color: get_color_from_hex("#4a4545")
+        pos_hint: {"x": .47, "center_y": .74}
+        font_size: "12dp"
+     
      
     ClickableTextFieldRoundName:
         id: name
@@ -45,21 +71,38 @@ Builder.load_string('''
         width: "300dp"
         height: "300dp"
         hint_text: "Wallet Name"
-        pos_hint: {"center_x": .5, "center_y": .70}
-    
+        pos_hint: {"center_x": .5, "center_y": .67}
+    MDLabel:
+        id: wallet_name_warning
+        opacity: 0
+        text: "You must give the wallet a name"
+        theme_text_color: "Custom"
+        text_color: get_color_from_hex("f42121")
+        pos_hint: {"x": .47, "center_y": .61}
+        font_size: "12dp"
+        
     ClickableTextFieldRoundPass:
         id: password
         size_hint_x: None
         width: "300dp"
         height: "300dp"
         hint_text: "Wallet Password"
-        pos_hint: {"center_x": .5, "center_y": .60}
+        pos_hint: {"center_x": .5, "center_y": .55}
+        
+    MDLabel:
+        id: wallet_password_warning
+        opacity: 0
+        text: "Cannot be blank"
+        theme_text_color: "Custom"
+        text_color: get_color_from_hex("f42121")
+        pos_hint: {"x": .47, "center_y": .49}
+        font_size: "12dp"
     
         
     MDRaisedButton:
         id: restore_wallet_button
         text: "Restore"
-        pos_hint: {"center_x": .5, "center_y": .5}
+        pos_hint: {"center_x": .5, "center_y": .4}
         on_press: root.restore_wallet_from_seed_phrase()
         
 <ClickableTextFieldRoundSeed>:
@@ -126,8 +169,48 @@ Builder.load_string('''
             self.icon = "eye" if self.icon == "eye-off" else "eye-off"
             wallet_password.password = False if wallet_password.password is True else True
 
+<WalletInfoContent>
+    orientation: "vertical"
+    spacing: "4dp"
+    size_hint_y: None
+    height: "260dp"
+    seed_phrase: ""
+    wallet_address: ""
+    wallet_password: ""
+    wallet_name: ""
+
+    MDTextField:
+        multiline: True
+        hint_text: "Mnemonic Seed"
+        text: root.seed_phrase
+    MDTextField:
+        hint_text: "Wallet"
+        mode: "rectangle"
+        text: root.wallet_name
+    
+    MDTextField:
+        hint_text: "Address"
+        mode: "rectangle"
+        text: root.wallet_address
+    
+    MDTextField:
+        hint_text: "Password"
+        mode: "rectangle"
+        text: root.wallet_password
+
+
                     
 ''')
+
+
+class WalletInfoContent(BoxLayout):
+    def __init__(self, seed_phrase, name, address, password, **kwargs):
+        super(WalletInfoContent, self).__init__()
+        self.seed_phrase = seed_phrase
+        self.wallet_address = address
+        self.wallet_password = password
+        self.wallet_name = name
+        
 class WindowManager(ScreenManager):
     pass
 class ClickableTextFieldRoundSeed(MDRelativeLayout):
@@ -149,31 +232,44 @@ class WalletRestore(Screen):
         
        
     def restore_wallet_from_seed_phrase(self):
-        if not self.dialog:
-            self.dialog = MDDialog(
-                text="Seed: %s \n Name: %s \n Password: %s" %
-                
-                (self.manager.get_screen("walletrestore").ids.seed.ids.seed_phrase.text,
-                 self.manager.get_screen("walletrestore").ids.name.ids.wallet_name.text,
-                 self.manager.get_screen("walletrestore").ids.password.ids.wallet_password.text
-                 ),
-                
-                buttons=[
-                    MDFlatButton(
-                        text="Cancel",
-                        theme_text_color="Custom",
-                        text_color=(1,1,1,1),
-                        on_release=self.cancel,
-                    ),
-                    MDRaisedButton(
-                        text="Restore",
-                        theme_text_color="Custom",
-                        text_color=(1,1,1,1),
-                        on_release= self.wallet_restore
-                    ),
-                ],
-            )
-            self.dialog.open()
+        print(self.manager.get_screen("walletrestore").ids.wallet_name_warning.text)
+        print(self.manager.get_screen("walletrestore").ids.wallet_password_warning.text)
+        if not self.manager.get_screen("walletrestore").ids.name.ids.wallet_name.text and not self.manager.get_screen("walletrestore").ids.password.ids.wallet_password.text:
+            self.manager.get_screen("walletrestore").ids.wallet_name_warning.opacity = 1
+            self.manager.get_screen("walletrestore").ids.wallet_password_warning.opacity = 1
+            return
+        elif not self.manager.get_screen("walletrestore").ids.password.ids.wallet_password.text:
+            self.manager.get_screen("walletrestore").ids.wallet_password_warning.opacity = 1
+            return
+        elif not self.manager.get_screen("walletrestore").ids.name.ids.wallet_name.text:
+            self.manager.get_screen("walletrestore").ids.wallet_name_warning.opacity = 1
+            return 
+        else:
+            if not self.dialog:
+                WalletInfo = WalletInfoContent(self.manager.get_screen("walletrestore").ids.seed.ids.seed_phrase.text,
+                                               self.manager.get_screen("walletrestore").ids.name.ids.wallet_name.text,
+                                               "sent1hfkgxzrkhxdxdwjy8d74jhc4dcw5e9zm7vfzh4", 
+                                               self.manager.get_screen("walletrestore").ids.password.ids.wallet_password.text)
+                self.dialog = MDDialog(
+                    type="custom",
+                    content_cls=WalletInfo,
+                    
+                    buttons=[
+                        MDFlatButton(
+                            text="Cancel",
+                            theme_text_color="Custom",
+                            text_color=(1,1,1,1),
+                            on_release=self.cancel,
+                        ),
+                        MDRaisedButton(
+                            text="Restore",
+                            theme_text_color="Custom",
+                            text_color=(1,1,1,1),
+                            on_release= self.wallet_restore
+                        ),
+                    ],
+                )
+                self.dialog.open()
     def cancel(self):
         self.dialog.dismiss()
         

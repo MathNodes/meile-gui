@@ -26,14 +26,15 @@ class MyMainApp(MDApp):
         
           
     def build(self):
-        kv = Builder.load_file("./src/kivy/meile.kv")
+        MeileConfig = MeileGuiConfig()
+        kv = Builder.load_file(MeileConfig.resource_path("../kivy/meile.kv"))
         
         
         manager = WindowManager()
         manager.add_widget(PreLoadWindow(name=WindowNames.PRELOAD))
         #manager.add_widget(MainWindow(name=WindowNames.MAIN_WINDOW))
         manager.add_widget(WalletRestore(name=WindowNames.WALLET_RESTORE))
-        MeileGuiConfig.read_configuration(MeileGuiConfig, MeileGuiConfig.CONFFILE)
+        #MeileConfig.read_configuration(MeileGuiConfig, MeileGuiConfig.CONFFILE)
         return manager
 
     

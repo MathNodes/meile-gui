@@ -65,7 +65,7 @@ class NodeTreeData():
         
         k=1
         
-        print()
+        
         for line in proc.stdout.readlines():
             #print(line)
             if k < 4:  
@@ -331,7 +331,7 @@ def disconnect():
 
 def connect(ID, address, keyname):
     connCMD = ["sentinelcli", "connect", "--keyring-backend", "os", "--chain-id", "sentinelhub-2",
-               "--node", "https://rpc.mathnodes.com:4444", "--gas-prices", "0.1udvpn", "--yes", "--from",keyname, ID, address]
+               "--node", "https://rpc.mathnodes.com:4444", "--gas-prices", "0.1udvpn", "--yes", "--from '%s'" % keyname, ID, address]
     proc = Popen(connCMD, stdout=PIPE, stderr=PIPE)
     proc_out,proc_err = proc.communicate()
     

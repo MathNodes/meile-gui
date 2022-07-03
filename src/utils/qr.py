@@ -9,20 +9,23 @@ from os import path
 
 from src.conf.meile_config import MeileGuiConfig
 
+from src.typedef.win import CoinsList
+
 class QRCode():
     IMGDIR = None
     BASEDIR = None
+    MeileConfig = None
 
     def __init__(self):
-        self.BASEDIR   = MeileGuiConfig.BASEDIR
-        self.IMGDIR    = MeileGuiConfig.IMGDIR
-
+        self.BASEDIR     = MeileGuiConfig.BASEDIR
+        self.IMGDIR      = MeileGuiConfig.IMGDIR
+        self.MeileConfig = MeileGuiConfig()
 
     def generate_qr_code(self, ADDRESS):
-        DepositCoin    = "dvpn"
+        DepositCoin    = CoinsList.coins[2]
         DepositAddress = ADDRESS 
-    
-        coinLogo = pkg_resources.resource_filename(__name__, path.join('coinimg', DepositCoin + '.png'))
+        
+        coinLogo = self.MeileConfig.resource_path('../utils/coinimg/' + DepositCoin + '.png')
         logo = Image.open(coinLogo)
         basewidth = 100
          
@@ -52,15 +55,15 @@ class QRCode():
         # Creating a background a little larger and pasting the QR
         # Image onto it with the text
         if len(DepositAddress) <= 50:
-            fontSize = 12
+            fontSize = 13
         elif len(DepositAddress) <=75:
-            fontSize = 11
+            fontSize = 12
         else:
-            fontSize = 10
+            fontSize = 11
             
         background = Image.new('RGBA', (QRimg.size[0], QRimg.size[1] + 15), (255,255,255,255))
         #robotoFont = ImageFont.truetype(pkg_resources.resource_filename(__name__, os.path.join('fonts', 'Roboto-BoldItalic.ttf')), fontSize)
-        robotoFont = ImageFont.truetype(pkg_resources.resource_filename(__name__, path.join('fonts','Roboto-BoldItalic.ttf')), fontSize)
+        robotoFont = ImageFont.truetype(self.MeileConfig.resource_path('../utils/fonts/Roboto-BoldItalic.ttf'), fontSize)
     
         draw = ImageDraw.Draw(background)
         w,h  = draw.textsize(DepositAddress)

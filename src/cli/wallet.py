@@ -128,7 +128,7 @@ class HandleWalletFunctions():
         CONFIG = MeileGuiConfig.read_configuration(MeileGuiConfig, MeileGuiConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
         KEYNAME = CONFIG['wallet'].get('keyname', '')
-        connCMD = "sentinelcli connect --keyring-backend file --keyring-dir %s --chain-id sentinelhub-2 --node https://rpc.mathnodes.com:443 --gas-prices 0.1udvpn --yes --from %s %s %s" % (KEYRINGDIR, KEYNAME, ID, address)
+        connCMD = "sentinelcli connect --keyring-backend file --keyring-dir %s --chain-id sentinelhub-2 --node https://rpc.mathnodes.com:443 --gas-prices 0.1udvpn --yes --from '%s' %s %s" % (KEYRINGDIR, KEYNAME, ID, address)
         
         ofile =  open(CONNECTIONINFO, "wb")    
 
