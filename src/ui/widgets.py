@@ -27,7 +27,14 @@ from src.conf.meile_config import MeileGuiConfig
 from src.cli.wallet import HandleWalletFunctions
 import src.main.main as Meile
 
-
+class WalletInfoContent(BoxLayout):
+    def __init__(self, seed_phrase, name, address, password, **kwargs):
+        super(WalletInfoContent, self).__init__()
+        self.seed_phrase = seed_phrase
+        self.wallet_address = address
+        self.wallet_password = password
+        self.wallet_name = name
+        
 
 
 class SubscribeContent(BoxLayout):

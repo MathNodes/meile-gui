@@ -12,3 +12,4 @@ class CoinsList():
     SATOSHI = 1000000
     ibc_mu_coins = ["udvpn", "uscrt", "uosmo", "uatom", "udec"]
     ibc_coins  = { "dvpn" : "udvpn", "scrt" : "uscrt", "osmo": "uosmo", "atom" : "uatom", "dec" : "udec"}
+    coins = ["atom", "dec", "dvpn", "osmo", "scrt"]

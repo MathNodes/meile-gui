@@ -6,10 +6,11 @@ from src.cli.sentinel import  NodeTreeData
 from src.cli.sentinel import NodesInfoKeys, FinalSubsKeys
 from src.cli.sentinel import disconnect as Disconnect
 import src.main.main as Meile
-from src.ui.widgets import  NodeRV
+from src.ui.widgets import  NodeRV, WalletInfoContent
 from src.utils.qr import QRCode
 from src.cli.wallet import HandleWalletFunctions
 from src.conf.meile_config import MeileGuiConfig
+from src.typedef.win import CoinsList
 
 from kivy.uix.popup import Popup
 from kivymd.uix.spinner import MDSpinner  
@@ -35,39 +36,60 @@ class WalletRestore(Screen):
     
     dialog = None
     def restore_wallet_from_seed_phrase(self):
-        
-        
-        if not self.dialog:
-            self.dialog = MDDialog(
-                text="Seed: %s \n\nName: %s \nPassword: %s" %
-                
-                 (self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.seed.ids.seed_phrase.text,
-                 self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.name.ids.wallet_name.text,
-                 self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.password.ids.wallet_password.text
-                 ),
-                
-                buttons=[
-                    MDFlatButton(
-                        text="Cancel",
-                        theme_text_color="Custom",
-                        text_color=Meile.app.theme_cls.primary_color,
-                        on_release=self.cancel,
-                    ),
-                    MDRaisedButton(
-                        text="Restore",
-                        theme_text_color="Custom",
-                        text_color=(1,1,1,1),
-                        on_release= self.wallet_restore
-                    ),
-                ],
-            )
-            self.dialog.open()
+        if not self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.name.ids.wallet_name.text and not self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.password.ids.wallet_password.text:
+            self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.wallet_name_warning.opacity = 1
+            self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.wallet_password_warning.opacity = 1
+            return
+        elif not self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.password.ids.wallet_password.text:
+            self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.wallet_password_warning.opacity = 1
+            return
+        elif not self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.name.ids.wallet_name.text:
+            self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.wallet_name_warning.opacity = 1
+            return 
+        elif len(self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.password.ids.wallet_password.text) < 8:
+            self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.wallet_password_warning.opacity = 1
+            return
+        else:
+            if not self.dialog:
+                if not self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.seed.ids.seed_phrase.text:
+                    seed_text = "Creating a new wallet..."
+                else: 
+                    seed_text = self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.seed.ids.seed_phrase.text
+                self.dialog = MDDialog(
+                    text="Seed: %s\n\nName: %s\nPassword: %s" %
+                     (
+                     seed_text,
+                     self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.name.ids.wallet_name.text,
+                     self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.password.ids.wallet_password.text
+                     ),
+                    
+                    buttons=[
+                        MDFlatButton(
+                            text="Cancel",
+                            theme_text_color="Custom",
+                            text_color=Meile.app.theme_cls.primary_color,
+                            on_release=self.cancel,
+                        ),
+                        MDRaisedButton(
+                            text="Restore",
+                            theme_text_color="Custom",
+                            text_color=(1,1,1,1),
+                            on_release= self.wallet_restore
+                        ),
+                    ],
+                )
+                self.dialog.open()
             
-
+    def set_previous_screen(self):
+        self.switch_window(None)
             
     def switch_window(self, inst):
-        self.dialog.dismiss()
-        self.dialog = None
+        try: 
+            self.dialog.dismiss()
+            self.dialog = None
+        except AttributeError:
+            pass
+        
         Meile.app.root.transition = SlideTransition(direction = "down")
         Meile.app.root.current = WindowNames.MAIN_WINDOW
 
@@ -76,16 +98,23 @@ class WalletRestore(Screen):
         self.dialog.dismiss()
         
     def wallet_restore(self, inst):
-        CONFIG = MeileGuiConfig.read_configuration(MeileGuiConfig, MeileGuiConfig.CONFFILE)
+        MeileConfig = MeileGuiConfig()
+        CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
 
         self.dialog.dismiss()
         seed_phrase  = self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.seed.ids.seed_phrase.text
         wallet_name = self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.name.ids.wallet_name.text
         keyring_passphrase = self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.password.ids.wallet_password.text
         if seed_phrase:
-            Wallet = HandleWalletFunctions.create(HandleWalletFunctions, wallet_name, keyring_passphrase, seed_phrase)
+            Wallet = HandleWalletFunctions.create(HandleWalletFunctions,
+                                                  wallet_name.lstrip().rstrip(),
+                                                  keyring_passphrase.lstrip().rstrip(),
+                                                  seed_phrase.lstrip().rstrip())
         else:
-            Wallet = HandleWalletFunctions.create(HandleWalletFunctions, wallet_name, keyring_passphrase, None)
+            Wallet = HandleWalletFunctions.create(HandleWalletFunctions, 
+                                                  wallet_name.lstrip().rstrip(), 
+                                                  keyring_passphrase.lstrip().rstrip(), 
+                                                  None)
             
         FILE = open(MeileGuiConfig.CONFFILE,'w')
 
@@ -95,16 +124,11 @@ class WalletRestore(Screen):
         
         CONFIG.write(FILE)
         FILE.close()
-        
+        WalletInfo = WalletInfoContent(seed_phrase, wallet_name, Wallet['address'], keyring_passphrase)
         self.dialog = MDDialog(
-                text="Wallet created!\n\n Seed: %s\nAddress: %s\nWallet Name: %s\nWallet Password: %s" %
-                
-                 (Wallet['seed'],
-                 Wallet['address'],
-                 wallet_name,
-                 keyring_passphrase
-                 ),
-                
+                type="custom",
+                content_cls=WalletInfo,
+
                 buttons=[
                     MDRaisedButton(
                         text="I saved this",
@@ -134,7 +158,9 @@ class PreLoadWindow(Screen):
         Clock.schedule_interval(self.update_status_text, 1)
         
         
-        
+    def get_logo(self):
+        Config = MeileGuiConfig()
+        return Config.resource_path("../imgs/logo_hd.png")
         
 
     @delayable
@@ -180,6 +206,7 @@ class MainWindow(Screen):
     CONNECTED = False
     NodeTree = None
     SubResult = None
+    MeileConfig = None
     
     def __init__(self, node_tree, **kwargs):
         #Builder.load_file("./src/kivy/meile.kv")
@@ -187,11 +214,17 @@ class MainWindow(Screen):
         
         self.NodeTree = node_tree
         
-        Clock.schedule_once(self.build, 2)
-        CONFIG = MeileGuiConfig.read_configuration(MeileGuiConfig, MeileGuiConfig.CONFFILE)
-        self.address = CONFIG['wallet'].get("address")
-
+        print("MAINSCREEN, NodeTree: %s" % self.NodeTree)
+        self.NodeTree.NodeTree.show()
         
+        Clock.schedule_once(self.get_config,1)     
+        Clock.schedule_once(self.build, 2)
+
+
+    def get_config(self, dt):
+        MeileConfig = MeileGuiConfig()
+        CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
+        self.address = CONFIG['wallet'].get("address")  
 
     def build(self, dt):
         OurWorld.CONTINENTS.remove(OurWorld.CONTINENTS[1])
@@ -210,6 +243,10 @@ class MainWindow(Screen):
             None,
             self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.android_tabs.ids.layout.children[-1].text
         )
+
+    def get_logo(self):
+        self.MeileConfig = MeileGuiConfig()
+        return self.MeileConfig.resource_path("../imgs/logo.png")
         
     def get_ip_address(self):
         if self.dialog:
@@ -255,7 +292,7 @@ class MainWindow(Screen):
         #
         # Eventually, I'd like to add multiple wallet support. 
         # That will be after v1.0
-        
+        self.get_config(None)
         if not self.address:
             self.dialog = MDDialog(
                 text="Wallet Restore/Create",
@@ -298,7 +335,7 @@ class MainWindow(Screen):
                 "address_text"   : node[FinalSubsKeys[2]].lstrip().rstrip(),
                 "allocated_text" : node[FinalSubsKeys[6]].lstrip().rstrip(),
                 "consumed_text"  : node[FinalSubsKeys[7]].lstrip().rstrip(),
-                "source_image"   : flagloc
+                "source_image"   : self.MeileConfig.resource_path(flagloc)
                 
             },
         )
@@ -309,7 +346,7 @@ class MainWindow(Screen):
                 "viewclass"      : "RecycleViewCountryRow",
                 "num_text"       : str(NodeCountries['number']) + " Nodes",
                 "country_text"   : NodeCountries['country'],
-                "source_image"   : NodeCountries['flagloc']
+                "source_image"   : self.MeileConfig.resource_path(NodeCountries['flagloc'])
             },
         )
             
@@ -320,16 +357,30 @@ class MainWindow(Screen):
         self.dialog.open()
         
     @mainthread
-    def remove_loading_widget(self):
+    def remove_loading_widget(self,dt):
         self.dialog.dismiss()
         self.dialog = None
 
+    def sub_address_error(self):
+        self.dialog = MDDialog(
+            text="Error Loading Subscriptions... No wallet found",
+            buttons=[
+                MDRaisedButton(
+                    text="Okay",
+                    theme_text_color="Custom",
+                    text_color=(1,1,1,1),
+                    on_release= self.remove_loading_widget
+                ),
+            ],
+        )
+        self.dialog.open()
     
     @delayable
     def subs_callback(self, dt):
         #from src.cli.sentinel import NodesDictList
+         
         
-        floc = "./src/imgs/"
+        floc = "../imgs/"
         yield 0.314
         if not self.SubResult:
             thread = ThreadWithResult(target=self.NodeTree.get_subscriptions, args=(self.address,))
@@ -346,161 +397,72 @@ class MainWindow(Screen):
                 iso2 = "sc"
             flagloc = floc + iso2 + ".png"
             self.add_sub_rv_data(sub, flagloc)
-        self.remove_loading_widget()
+        self.remove_loading_widget(None)
 
     @mainthread
     def on_tab_switch(self, instance_tabs, instance_tab, instance_tabs_label, tab_text):
         #from src.cli.sentinel import ConNodes, NodesDictList
         
-        floc = "./src/imgs/"
         self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.rv.data = []
         if not tab_text:
             tab_text = OurWorld.CONTINENTS[0]
             
         # Subscriptions
-        print(self.NodeTree.NodeTree.show())
+        #print(self.NodeTree.NodeTree.show())
         if tab_text == OurWorld.CONTINENTS[6]:
             self.add_loading_popup("Loading...")
-
+            self.get_config(None)
             if self.address:
             
                 Clock.schedule_once(self.subs_callback, 2)
                 #Subscriptions = get_subscriptions(NodesDictList, address)
                 
                 return 
-        
-        NodeCountries = {}
-        
+            else:
+                self.remove_loading_widget(None)
+                self.sub_address_error()
+                return
+
+        # use lambda in future
         if tab_text == OurWorld.CONTINENTS[0]:
-             
             for ncountry in self.NodeTree.NodeTree.children(OurWorld.CONTINENTS[0]):
-                print("AFRICA")
-                print(ncountry.tag)
-                iso2 = OurWorld.our_world.get_country_ISO2(ncountry.tag.lstrip().rstrip()).lower()
-                print(iso2)
-                flagloc = floc + iso2 + ".png"
-                print(flagloc)
-                NodeCountries['number']  = len(self.NodeTree.NodeTree.children(ncountry.tag)) 
-                NodeCountries['country'] = ncountry.tag
-                NodeCountries['flagloc'] = flagloc
-                
-                self.add_country_rv_data(NodeCountries)
+                self.add_country_rv_data(self.build_node_data(ncountry))
             
-            '''
-            if node[NodesInfoKeys[4]].lstrip().rstrip() in OurWorld.Africa:
-                
-                iso2 = OurWorld.our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
-                flagloc = floc + iso2 + ".png"
-                self.add_rv_data(node, flagloc)
-            '''
         elif tab_text == OurWorld.CONTINENTS[1]:
-            print("ASIA")
             for ncountry in self.NodeTree.NodeTree.children(OurWorld.CONTINENTS[1]):
-                print(ncountry.tag)
-                iso2 = OurWorld.our_world.get_country_ISO2(ncountry.tag.lstrip().rstrip()).lower()
-                print(iso2)
-                flagloc = floc + iso2 + ".png"
-                print(flagloc)
-                NodeCountries['number']  = len(self.NodeTree.NodeTree.children(ncountry.tag)) 
-                NodeCountries['country'] = ncountry.tag
-                NodeCountries['flagloc'] = flagloc
-                
-                self.add_country_rv_data(NodeCountries)
+                self.add_country_rv_data(self.build_node_data(ncountry))
             
-            '''
-            if node[NodesInfoKeys[4]].lstrip().rstrip() in OurWorld.Asia:
-                
-                iso2 = OurWorld.our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
-                flagloc = floc + iso2 + ".png"
-                
-                self.add_rv_data(node, flagloc)
-            '''
         elif tab_text == OurWorld.CONTINENTS[2]:
             for ncountry in self.NodeTree.NodeTree.children(OurWorld.CONTINENTS[2]):
-                iso2 = OurWorld.our_world.get_country_ISO2(ncountry.tag.lstrip().rstrip()).lower()
-                print(iso2)
-                flagloc = floc + iso2 + ".png"
-                print(flagloc)
-                NodeCountries['number']  = len(self.NodeTree.NodeTree.children(ncountry.tag)) 
-                NodeCountries['country'] = ncountry.tag
-                NodeCountries['flagloc'] = flagloc
-                
-                self.add_country_rv_data(NodeCountries)
-            
-            '''
-            if node[NodesInfoKeys[4]].lstrip().rstrip() in OurWorld.Europe:
-                
-                iso2 = OurWorld.our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
-                flagloc = floc + iso2 + ".png"
-                
-                self.add_rv_data(node, flagloc)
-            '''
+                self.add_country_rv_data(self.build_node_data(ncountry))
+
         elif tab_text == OurWorld.CONTINENTS[3]:
             for ncountry in self.NodeTree.NodeTree.children(OurWorld.CONTINENTS[3]):
-                iso2 = OurWorld.our_world.get_country_ISO2(ncountry.tag.lstrip().rstrip()).lower()
-                print(iso2)
-                flagloc = floc + iso2 + ".png"
-                print(flagloc)
-                NodeCountries['number']  = len(self.NodeTree.NodeTree.children(ncountry.tag)) 
-                NodeCountries['country'] = ncountry.tag
-                NodeCountries['flagloc'] = flagloc
-                
-                self.add_country_rv_data(NodeCountries)
-            
-            '''
-            if node[NodesInfoKeys[4]].lstrip().rstrip() in OurWorld.NorthAmerica:
-                
-                iso2 = OurWorld.our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
-                flagloc = floc + iso2 + ".png"
-                
-                self.add_rv_data(node, flagloc)
-            '''
+                self.add_country_rv_data(self.build_node_data(ncountry))
+
         elif tab_text == OurWorld.CONTINENTS[4]:
             for ncountry in self.NodeTree.NodeTree.children(OurWorld.CONTINENTS[4]):
-                iso2 = OurWorld.our_world.get_country_ISO2(ncountry.tag.lstrip().rstrip()).lower()
-                print(iso2)
-                flagloc = floc + iso2 + ".png"
-                print(flagloc)
-                NodeCountries['number']  = len(self.NodeTree.NodeTree.children(ncountry.tag)) 
-                NodeCountries['country'] = ncountry.tag
-                NodeCountries['flagloc'] = flagloc
-                
-                self.add_country_rv_data(NodeCountries)
-            
-            '''
-            if node[NodesInfoKeys[4]].lstrip().rstrip() in OurWorld.Oceania:
-                
-                iso2 = OurWorld.our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
-                flagloc = floc + iso2 + ".png"
-                
-                self.add_rv_data(node, flagloc)
-            '''
+                self.add_country_rv_data(self.build_node_data(ncountry))            
+
         elif tab_text == OurWorld.CONTINENTS[5]:
             for ncountry in self.NodeTree.NodeTree.children(OurWorld.CONTINENTS[5]):
-                iso2 = OurWorld.our_world.get_country_ISO2(ncountry.tag.lstrip().rstrip()).lower()
-                print(iso2)
-                flagloc = floc + iso2 + ".png"
-                print(flagloc)
-                NodeCountries['number']  = len(self.NodeTree.NodeTree.children(ncountry.tag)) 
-                NodeCountries['country'] = ncountry.tag
-                NodeCountries['flagloc'] = flagloc
-                
-                self.add_country_rv_data(NodeCountries)
-            
-            ''' 
-            if node[NodesInfoKeys[4]].lstrip().rstrip() in OurWorld.SouthAmerica:
-                
-                iso2 = OurWorld.our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
-                flagloc = floc + iso2 + ".png"
-                
-                self.add_rv_data(node, flagloc)
-            '''
-            
-                
-                
+                self.add_country_rv_data(self.build_node_data(ncountry))            
         # Search Criteria
         else:
             pass      
+    
+    def build_node_data(self, ncountry):
+        floc = "../imgs/"
+        NodeCountries = {}
+        
+        iso2 = OurWorld.our_world.get_country_ISO2(ncountry.tag.lstrip().rstrip()).lower()
+        flagloc = floc + iso2 + ".png"
+        
+        NodeCountries['number']  = len(self.NodeTree.NodeTree.children(ncountry.tag)) 
+        NodeCountries['country'] = ncountry.tag
+        NodeCountries['flagloc'] = flagloc
+        
+        return NodeCountries
     
     def switch_window(self, window):
         Meile.app.root.transition = SlideTransition(direction = "up")
@@ -509,9 +471,13 @@ class MainWindow(Screen):
 class WalletScreen(Screen):
     text = StringProperty()
     ADDRESS = None
+    MeileConfig = None
     def __init__(self, ADDRESS,  **kwargs):
-        super(WalletScreen, self).__init__(**kwargs)
-        self.ADDRESS = ADDRESS 
+        super(WalletScreen, self).__init__()
+        self.ADDRESS = ADDRESS
+        print("WalletScreen, ADDRESS: %s" % self.ADDRESS)
+        self.wallet_address = self.ADDRESS
+        
         Clock.schedule_once(self.build)
         
         
@@ -519,9 +485,22 @@ class WalletScreen(Screen):
         Wallet = HandleWalletFunctions()
         self.SetBalances(Wallet.get_balance(self.ADDRESS))
         
+    def return_coin_logo(self, coin):
+        self.MeileConfig = MeileGuiConfig() 
+
+        predir = "../imgs/"
+        logoDict = {} 
+        for c in CoinsList.coins:
+            logoDict[c] = predir + c + ".png"
+        
+        for c in CoinsList.coins:
+            if c == coin:
+                return self.MeileConfig.resource_path(logoDict[c])
         
     def get_qr_code_address(self):
         CONFIG = MeileGuiConfig()
+        conf = CONFIG.read_configuration(MeileGuiConfig.CONFFILE)
+        self.ADDRESS = conf['wallet'].get("address")  
         QRcode = QRCode()
         if not path.isfile(path.join(CONFIG.IMGDIR, "dvpn.png")):
             QRcode.generate_qr_code(self.ADDRESS)
@@ -544,11 +523,14 @@ class WalletScreen(Screen):
 class NodeScreen(Screen):
     NodeTree = None
     Country = None
+    MeileConfig = None
     def __init__(self, node_tree, country, **kwargs):
         super(NodeScreen, self).__init__()
         
         self.NodeTree = node_tree
-        floc = "./src/imgs/"
+        
+        
+        floc = "../imgs/"
 
         for node_child in self.NodeTree.NodeTree.children(country):
             node = node_child.data
@@ -560,7 +542,9 @@ class NodeScreen(Screen):
         
         
     def add_rv_data(self, node, flagloc):
-        floc = "./src/imgs/"
+        self.MeileConfig = MeileGuiConfig()
+
+        floc = "../imgs/"
         speed = node[NodesInfoKeys[5]].lstrip().rstrip().split('+')
         
         if "MB" in speed[0]:
@@ -596,8 +580,8 @@ class NodeScreen(Screen):
                 "country_text" : node[NodesInfoKeys[4]].lstrip().rstrip(),
                 "address_text" : node[NodesInfoKeys[1]].lstrip().rstrip(),
                 "speed_text"   : node[NodesInfoKeys[5]].lstrip().rstrip(),
-                "speed_image"  : speedimage,
-                "source_image" : flagloc
+                "speed_image"  : self.MeileConfig.resource_path(speedimage),
+                "source_image" : self.MeileConfig.resource_path(flagloc)
                 
             },
         )   
