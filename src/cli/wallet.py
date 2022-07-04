@@ -11,11 +11,13 @@ WALLETINFO = path.join(KEYRINGDIR, "infos.txt")
 SUBSCRIBEINFO = path.join(KEYRINGDIR, "subscribe.infos")
 CONNECTIONINFO = path.join(KEYRINGDIR, "connection.infos")
 BASEDIR  = path.join(path.expanduser('~'), '.sentinelcli')
-    
+MeileConfig = MeileGuiConfig()
+sentinelcli = MeileConfig.resource_path("../bin/sentinelcli")
+
 class HandleWalletFunctions():
     
     def create(self, wallet_name, keyring_passphrase, seed_phrase):
-        SCMD = 'sentinelcli keys add "%s" -i --keyring-backend file --keyring-dir %s' % (wallet_name, KEYRINGDIR)
+        SCMD = '%s keys add "%s" -i --keyring-backend file --keyring-dir %s' % (sentinelcli, wallet_name, KEYRINGDIR)
         DUPWALLET = False 
         line_numbers = [11, 21]
         ofile =  open(WALLETINFO, "wb")    
@@ -87,7 +89,7 @@ class HandleWalletFunctions():
     
         ofile =  open(SUBSCRIBEINFO, "wb")    
         
-        SCMD = "sentinelcli tx subscription subscribe-to-node --yes --keyring-backend file --keyring-dir %s --gas-prices 0.1udvpn --chain-id sentinelhub-2 --node https://rpc-sentinel.keplr.app:443 --from '%s' '%s' %s"  % (KEYRINGDIR, KEYNAME, NODE, DEPOSIT)    
+        SCMD = "%s tx subscription subscribe-to-node --yes --keyring-backend file --keyring-dir %s --gas-prices 0.1udvpn --chain-id sentinelhub-2 --node https://rpc.mathnodes.com:443 --from '%s' '%s' %s"  % (sentinelcli, KEYRINGDIR, KEYNAME, NODE, DEPOSIT)    
      
         child = pexpect.spawn(SCMD)
         child.logfile = ofile
@@ -128,7 +130,7 @@ class HandleWalletFunctions():
         CONFIG = MeileGuiConfig.read_configuration(MeileGuiConfig, MeileGuiConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
         KEYNAME = CONFIG['wallet'].get('keyname', '')
-        connCMD = "sentinelcli connect --keyring-backend file --keyring-dir %s --chain-id sentinelhub-2 --node https://rpc.mathnodes.com:443 --gas-prices 0.1udvpn --yes --from '%s' %s %s" % (KEYRINGDIR, KEYNAME, ID, address)
+        connCMD = "%s connect --keyring-backend file --keyring-dir %s --chain-id sentinelhub-2 --node https://rpc.mathnodes.com:443 --gas-prices 0.1udvpn --yes --from '%s' %s %s" % (sentinelcli, KEYRINGDIR, KEYNAME, ID, address)
         
         ofile =  open(CONNECTIONINFO, "wb")    
 

@@ -1,9 +1,12 @@
 import src.main.main as Meile
 import asyncio
+from threading import Thread
 
 
 if __name__ == "__main__":
-    asyncio.run(Meile.app.run())
+    meilethread = Thread(target=Meile.app.run())
+    meilethread.start()
+    
 
 
 
