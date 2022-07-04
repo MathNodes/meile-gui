@@ -203,7 +203,7 @@ class MainWindow(Screen):
     address = None
     old_ip = ""
     ip = ""
-    CONNECTED = False
+    CONNECTED = None
     NodeTree = None
     SubResult = None
     MeileConfig = None
@@ -261,7 +261,11 @@ class MainWindow(Screen):
         
     def disconnect_from_node(self):
         try:
-            if not self.CONNECTED:
+            if self.CONNECTED == None:
+                returncode, self.CONNECTED = Disconnect()
+                if returncode == 0 and not self.CONNECTED:
+                    self.get_ip_address()
+            elif self.CONNECTED == False:
                 return
             else:
                 returncode, self.CONNECTED = Disconnect()

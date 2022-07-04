@@ -3,13 +3,11 @@ import collections
 from os import path
 import re
 import requests
-import asyncio 
 from urllib3.exceptions import InsecureRequestWarning
-import pexpect
 
 from src.conf.meile_config import MeileGuiConfig
 
-from treelib import Node, Tree
+from treelib import  Tree
 from src.geography.continents import OurWorld
 
 
@@ -33,33 +31,21 @@ FinalSubsKeys = [SubsInfoKeys[0], NodesInfoKeys[0],SubsInfoKeys[5], SubsInfoKeys
 
 dash = "-"
 
-#global ConNodes
-#ConNodes = []
-#global NodesDictList
-#NodesDictList = collections.defaultdict(list)
-
-
-'''
-def GetSentinelNodes(self):
-    print("Getting Nodes...")
-    global NodeTree
-    NodeTree = NodeTreeData.get_nodes(NodeTreeData)
-    print("Nodes begotten and not made")
- 
-'''
-
+MeileConfig = MeileGuiConfig()
+sentinelcli = MeileConfig.resource_path("../bin/sentinelcli")
 class NodeTreeData():
     NodeTree = None
-
+    
     def __init__(self, node_tree):
         if not node_tree:
             self.NodeTree = Tree()
         else:
             self.NodeTree = node_tree
+            
    
     def get_nodes(self, dt):
         AllNodesInfo = []
-        nodeCMD = ["sentinelcli", "query", "nodes", "--node", "https://rpc.mathnodes.com:4444", "--limit", "20000"]
+        nodeCMD = [sentinelcli, "query", "nodes", "--node", "https://rpc.mathnodes.com:443", "--limit", "20000", "--timeout", "21s"]
     
         proc = Popen(nodeCMD, stdout=PIPE)
         
@@ -120,26 +106,7 @@ class NodeTreeData():
                 self.NodeTree.create_node(d[NodesInfoKeys[1]], d[NodesInfoKeys[1]],parent=d[NodesInfoKeys[4]], data=d )
             except:
                 pass
-        #NodeTree.show()
-        #NodeTree.save2file("nodedata.txt")
-        #print(NodeTree.get_node("Schrödinger's Cat").data)
-        #for node in NodeTree.children("South America"):
-        #    print(node.tag)
-        '''    
-        #d["City"] = get_city_of_node(d[NodesInfoKeys[1]])
-        AllNodesInfoSorted2.append(d)
-            
-        for d in AllNodesInfoSorted:
-            for k, v in d.items():
-                v=self.return_denom(v)
-                result[k].append(v.lstrip().rstrip())
-                
-        
-    
-        return AllNodesInfoSorted2, result
-        '''
-            
-        #return NodeTree
+
     
     def CreateNodeTreeStructure(self, **kwargs):
         NodeTreeBase = Tree()
@@ -165,7 +132,7 @@ class NodeTreeData():
         SubsNodesInfo = []
         SubsFinalResult    = []
         print("Geting Subscriptions... %s" % ADDRESS)
-        subsCMD = ["sentinelcli", "query", "subscriptions", "--node", "https://rpc.mathnodes.com:4444", "--status", "Active", "--limit", "100", "--address" ,ADDRESS]
+        subsCMD = [sentinelcli, "query", "subscriptions", "--node", "https://rpc.mathnodes.com:4444", "--status", "Active", "--limit", "100", "--address" ,ADDRESS]
         proc = Popen(subsCMD, stdout=PIPE)
     
         k=1
@@ -181,43 +148,21 @@ class NodeTreeData():
         # A Dictionary of Lists
         SubsResult = collections.defaultdict(list)
         
-        
         # Create IBC Denoms
         for d in SubsNodesInfo:
             for k, v in d.items():
                 v = self.return_denom(v)
                 SubsResult[k].append(v.lstrip().rstrip())
                 
-        #SubsAddressSet = set(SubsResult[SubsInfoKeys[5]])
-        #NodesAddressSet = set(result[NodesInfoKeys[1]])
-        
-        # The Index of Subscription Address in All Data
-        #Nodespos = [i for i,val in enumerate(result[NodesInfoKeys[1]]) if val in SubsAddressSet]
-        #NodeAddys = [val for i,val in enumerate(result[NodesInfoKeys[1]]) if val in SubsAddressSet]
-        
-        # Available Subscriptions
-        #Subspos = [i for i,val in enumerate(SubsResult[SubsInfoKeys[5]]) if val in NodesAddressSet]
-        #SubsAddys = [val for i,val in enumerate(SubsResult[SubsInfoKeys[5]]) if val in NodesAddressSet]
-        #print(Subspos)
-        #print(SubsResult[SubsInfoKeys[5]])
-        
-      
-        
-        # This would be the more efficent algorithm. Not a fan of O(n^2)
-        #for e1,e2 in zip(Nodespos,Subspos):
-        
         k=0
         for snaddress in SubsResult[SubsInfoKeys[5]]:
-            #print("SHOWING NODE TREE")
-            #print(snaddress)
-            #print(self.NodeTree.show())
             try:
                 NodeData = self.NodeTree.get_node(snaddress).data
             except AttributeError:
                 print("Sub not found in list")
                 k += 1
                 continue   
-            quotaCMD = ['sentinelcli', 'query', 'quotas', '--node', 'https://rpc.mathnodes.com:4444', '--page', '1', SubsResult[SubsInfoKeys[0]][k]]
+            quotaCMD = [sentinelcli, 'query', 'quotas', '--node', 'https://rpc.mathnodes.com:443', '--page', '1', SubsResult[SubsInfoKeys[0]][k]]
             proc = Popen(quotaCMD, stdout=PIPE)
                     
             h=1
@@ -250,49 +195,7 @@ class NodeTreeData():
                                             })
            
             k += 1 
-                
-            '''
-            for node in NodeAddys:
-                if sub == node:
-                    quotaCMD = ['sentinelcli', 'query', 'quotas', '--node', 'https://rpc.mathnodes.com:4444', '--page', '1', SubsResult[SubsInfoKeys[0]][k]]
-            
-                    proc = Popen(quotaCMD, stdout=PIPE)
-                    
-                    h=1
-                    for line in proc.stdout.readlines():
-                        #print(line)
-                        if h < 4:
-                            h += 1 
-                            continue
-                        if h >=4 and '+-----------+' in str(line.decode('utf-8')):
-                            break
-                        else:
-                            nodeQuota = str(line.decode('utf-8')).split("|")[2:-1]
-                            allotted = float(re.findall(r'[0-9]+\.[0-9]+', nodeQuota[0])[0])
-                            consumed = float(re.findall(r'[0-9]+\.[0-9]+', nodeQuota[1])[0])
-                            
-                            if allotted == consumed:
-                                break
-                            else:
-                                SubsFinalResult.append({
-                                                    FinalSubsKeys[0] : SubsResult[SubsInfoKeys[0]][k],
-                                                    FinalSubsKeys[1] : result[NodesInfoKeys[0]][Nodespos[j]],
-                                                    FinalSubsKeys[2] : SubsResult[SubsInfoKeys[5]][k],
-                                                    FinalSubsKeys[3] : SubsResult[SubsInfoKeys[6]][k],
-                                                    FinalSubsKeys[4] : SubsResult[SubsInfoKeys[7]][k],
-                                                    FinalSubsKeys[5] : result[NodesInfoKeys[4]][Nodespos[j]],
-                                                    FinalSubsKeys[6] : nodeQuota[0],
-                                                    FinalSubsKeys[7] : nodeQuota[1]
-                                                    })
-    
-                    break
-                else:
-                    j += 1
-                    continue
-            j=0
-            k += 1
-        '''
-         
+
         return SubsFinalResult
 
 
@@ -311,7 +214,7 @@ def get_node_infos(naddress):
 def disconnect():
     ifCMD = ["ifconfig", "-a"]
     ifgrepCMD = ["grep", "-oE", "wg[0-9]+"]
-    partCMD = ["sentinelcli", "disconnect"]
+    partCMD = [sentinelcli, "disconnect"]
     
     ifoutput = Popen(ifCMD,stdin=PIPE, stdout=PIPE, stderr=STDOUT)
     grepoutput = Popen(ifgrepCMD, stdin=ifoutput.stdout, stdout=PIPE, stderr=STDOUT)
@@ -328,19 +231,6 @@ def disconnect():
     proc_out,proc_err = proc.communicate()
     
     return proc.returncode, False
-
-def connect(ID, address, keyname):
-    connCMD = ["sentinelcli", "connect", "--keyring-backend", "os", "--chain-id", "sentinelhub-2",
-               "--node", "https://rpc.mathnodes.com:4444", "--gas-prices", "0.1udvpn", "--yes", "--from '%s'" % keyname, ID, address]
-    proc = Popen(connCMD, stdout=PIPE, stderr=PIPE)
-    proc_out,proc_err = proc.communicate()
-    
-    if path.isfile(path.join(BASEDIR, "status.json")):
-        CONNECTED = True
-    else:
-        CONNECTED = False
-        
-    return proc.returncode, CONNECTED
 
 
     
