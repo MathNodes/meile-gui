@@ -45,7 +45,7 @@ class NodeTreeData():
    
     def get_nodes(self, dt):
         AllNodesInfo = []
-        nodeCMD = [sentinelcli, "query", "nodes", "--node", "https://rpc.mathnodes.com:443", "--limit", "20000", "--timeout", "21s"]
+        nodeCMD = [sentinelcli, "query", "nodes", "--node", "https://rpc.mathnodes.com:443", "--limit", "20000", "--timeout", "24s"]
     
         proc = Popen(nodeCMD, stdout=PIPE)
         
