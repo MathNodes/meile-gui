@@ -362,9 +362,13 @@ class MainWindow(Screen):
         
     @mainthread
     def remove_loading_widget(self,dt):
-        self.dialog.dismiss()
-        self.dialog = None
-
+    	try:
+    	    self.dialog.dismiss()
+    	    self.dialog = None
+    	except:
+    	    pass
+        
+    @mainthread
     def sub_address_error(self):
         self.dialog = MDDialog(
             text="Error Loading Subscriptions... No wallet found",
