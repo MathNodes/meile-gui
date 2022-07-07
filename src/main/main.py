@@ -6,7 +6,9 @@ from src.conf.meile_config import MeileGuiConfig
 from kivy.lang import Builder
 from kivymd.app import MDApp
 
-import tkinter as tk
+#import tkinter as tk
+
+from AppKit import NSScreen
 
 import asyncio 
 import threading
@@ -18,8 +20,13 @@ class MyMainApp(MDApp):
         from kivy.core.window import Window
         Window.size = (1010, 710)
         
-        dim = self.get_curr_screen_geometry()
+        # Tkinter error on OS X
+        #dim = self.get_curr_screen_geometry()
         
+        dim = []
+        dim.append(NSScreen.mainScreen().frame().size.width)
+        dim.append(NSScreen.mainScreen().frame().size.height)
+
         Window.left = int((dim[0] - 1010)/2)
         Window.top = int((dim[1] - 710)/2)
         
