@@ -1,6 +1,6 @@
 from src.geography.continents import OurWorld
 from kivy.properties import BooleanProperty, StringProperty
-from src.ui.interfaces import Tab
+from src.ui.interfaces import Tab, OSXPasswordDialog
 from src.typedef.win import WindowNames, ICANHAZURL
 from src.cli.sentinel import  NodeTreeData
 from src.cli.sentinel import NodesInfoKeys, FinalSubsKeys
@@ -30,6 +30,7 @@ import collections
 
 
 from os import path
+from kivy.utils import get_color_from_hex
 
 class WalletRestore(Screen):
     screemanager = ObjectProperty()
@@ -258,18 +259,31 @@ class MainWindow(Screen):
     
         self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.new_ip.text = "IP: " + self.ip
         #self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.old_ip.text = "Old IP: " + self.old_ip
+    @delayable
+    def DisconnectDialog(self):
+        self.dialog.dismiss()
+        self.dialog = None
+        self.add_loading_popup("Disconnecting...")
         
+        yield .5
+
+  
     def disconnect_from_node(self):
+        self.DisconnectDialog()
         try:
             if self.CONNECTED == None:
                 returncode, self.CONNECTED = Disconnect()
-                if returncode == 0 and not self.CONNECTED:
+                if not self.CONNECTED and returncode == 0:
+                    self.remove_loading_widget(None)
                     self.get_ip_address()
+                else:
+                    self.remove_loading_widget(None)
             elif self.CONNECTED == False:
                 return
             else:
                 returncode, self.CONNECTED = Disconnect()
-                if returncode == 0 and not self.CONNECTED:
+                if not self.CONNECTED and returncodxe == 0:
+                    self.remove_loading_widget(None)
                     self.get_ip_address()
         except:
             self.dialog = None
@@ -280,13 +294,14 @@ class MainWindow(Screen):
                     text="Okay",
                     theme_text_color="Custom",
                     text_color=Meile.app.theme_cls.primary_color,
-                    on_release=self.get_ip_address,
+                    on_release=self.get_ip_callback,
                 ),
                 ]
             )
             self.dialog.open()
             
-                    
+    def get_ip_callback(self, dt):
+        self.get_ip_address()
         
     def wallet_dialog(self):
         

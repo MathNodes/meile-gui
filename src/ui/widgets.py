@@ -21,11 +21,12 @@ import re
 
 from src.cli.sentinel import NodesInfoKeys, IBCCOINS,IBCSCRT, IBCATOM, IBCDEC, IBCOSMO
 from src.cli.sentinel import NodeTreeData
-from src.ui.interfaces import SubscribeContent
+from src.ui.interfaces import SubscribeContent, OSXPasswordDialog
 from src.typedef.win import CoinsList, WindowNames
 from src.conf.meile_config import MeileGuiConfig
 from src.cli.wallet import HandleWalletFunctions
 import src.main.main as Meile
+
 
 class WalletInfoContent(BoxLayout):
     def __init__(self, seed_phrase, name, address, password, **kwargs):
@@ -312,14 +313,19 @@ class RecycleViewSubRow(MDCard):
     def remove_loading_widget(self):
         self.dialog.dismiss()
         self.dialog = None
-
+        
+    # Non sudo implementation
+    '''
     @delayable
-    def connect_to_node(self, ID, naddress):
+    def set_osx_password(self, passdialog, ID, naddress, dt):
+        print("OS X PASSWORD: %s" % passdialog.return_password())
+        self.dialog.dismiss()
+        self.dialog = None
         self.add_loading_popup("Connecting...")
         
-        yield 1.8
+        yield 1
         
-        connected = HandleWalletFunctions.connect(HandleWalletFunctions, ID, naddress)
+        connected = HandleWalletFunctions.connect(HandleWalletFunctions, ID, naddress, passdialog.return_password())
         
         if connected:
             self.remove_loading_widget()
@@ -346,6 +352,62 @@ class RecycleViewSubRow(MDCard):
                             on_release=partial(self.call_ip_get, False)
                         ),])
             self.dialog.open()
+    '''   
+    
+    @delayable
+    def connect_to_node(self, ID, naddress):
+        self.dialog = None
+        self.add_loading_popup("Connecting...")
+        yield 0.5
+                
+        connected = HandleWalletFunctions.connect(HandleWalletFunctions, ID, naddress, None)
+        
+        if connected:
+            self.remove_loading_widget()
+            self.dialog = MDDialog(
+                title="Connected!",
+                buttons=[
+                        MDFlatButton(
+                            text="OK",
+                            theme_text_color="Custom",
+                            text_color=self.theme_cls.primary_color,
+                            on_release=partial(self.call_ip_get, True)
+                        ),])
+            self.dialog.open()
+            
+        else:
+            self.remove_loading_widget()
+            self.dialog = MDDialog(
+                title="Something went wrong. Not connected",
+                buttons=[
+                        MDFlatButton(
+                            text="OK",
+                            theme_text_color="Custom",
+                            text_color=self.theme_cls.primary_color,
+                            on_release=partial(self.call_ip_get, False)
+                        ),])
+            self.dialog.open()
+    
+        # For when it is not run with sudo
+        '''
+        if not self.dialog:
+            PasswordDialog = OSXPasswordDialog()
+            self.dialog = MDDialog(
+                    title="OA X Password",
+                    type="custom",
+                    content_cls=PasswordDialog,
+                    buttons=[
+                        
+                        MDFlatButton(
+                            text="Continue",
+                            theme_text_color="Custom",
+                            text_color=self.theme_cls.primary_color,
+                            on_release=partial(self.set_osx_password, PasswordDialog, ID, naddress)
+                        ),
+                    ],
+                )
+            self.dialog.open()
+        '''
             
     def call_ip_get(self,result, *kwargs):
         if result:

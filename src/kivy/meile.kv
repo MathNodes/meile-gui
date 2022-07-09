@@ -192,7 +192,20 @@ WindowManager:
                 with_previous: True
                 on_release: root.set_previous_screen() 
 
-    
+<OSXPasswordDialog>
+	name: "osx_password"
+	title: "OS X Password"
+
+    MDTextField:
+	    id: osx
+	    size_hint_x: None
+	    width: "300dp"
+	    height: "300dp"
+	    text: ""
+	    hint_text: "OS X Password"
+	    pos_hint: {"center_x": .5, "center_y": .80}
+        mode: "rectangle"
+   
 
 <WalletRestore>:
     name: "walletrestore"
@@ -473,7 +486,7 @@ WindowManager:
             text_color: get_color_from_hex("#fcb711")
             width: "350dp"
             size_hint_x: None
-        FullImage:
+        Image:
             source: root.source_image
             
         MDLabel:    
