@@ -10,6 +10,7 @@ from src.conf.meile_config import MeileGuiConfig
 from treelib import  Tree
 from src.geography.continents import OurWorld
 
+import pexpect
 
 # IBC Tokens
 IBCSCRT  = 'ibc/31FEE1A2A9F9C01113F90BD0BBCCE8FD6BBB8585FAF109A2101827DD1D5B95B8'
@@ -45,7 +46,7 @@ class NodeTreeData():
    
     def get_nodes(self, dt):
         AllNodesInfo = []
-        nodeCMD = [sentinelcli, "query", "nodes", "--node", "https://rpc.mathnodes.com:443", "--limit", "4000", "--timeout", "24s"]
+        nodeCMD = [sentinelcli, "query", "nodes", "--node", "https://rpc.mathnodes.com:443", "--limit", "5000", "--timeout", "18s"]
     
         proc = Popen(nodeCMD, stdout=PIPE)
         
@@ -88,10 +89,10 @@ class NodeTreeData():
         for d in AllNodesInfoSorted:
             for key in NodesInfoKeys:
                 d[key] = d[key].lstrip().rstrip()
-            AllNodesSortedStripped.append(d)
-        
-        for d in AllNodesSortedStripped:
-            
+            version = d[NodesInfoKeys[9]].replace('.','')
+            if version not in ('030', '031', '032'):
+                print(version)
+                continue
             d[NodesInfoKeys[3]] = self.return_denom(d[NodesInfoKeys[3]])
             
             if "Czechia" in d[NodesInfoKeys[4]]:
@@ -216,13 +217,19 @@ def disconnect():
     ifgrepCMD = ["grep", "-oE", "wg[0-9]+"]
     partCMD = [sentinelcli, "disconnect"]
     
+    
+    # Not OS X Friendly
+    '''
     ifoutput = Popen(ifCMD,stdin=PIPE, stdout=PIPE, stderr=STDOUT)
     grepoutput = Popen(ifgrepCMD, stdin=ifoutput.stdout, stdout=PIPE, stderr=STDOUT)
     wgif = grepoutput.communicate()[0]
     wgif_file = str(wgif.decode('utf-8')).replace("\n", '') + ".conf"
-
+    '''
+    
+    wgif_file = "wg99.conf"
+    
     CONFFILE = path.join(BASEDIR, wgif_file)
-    wg_downCMD = ['wg-quick', 'down', CONFFILE]
+    wg_downCMD = 'wg-quick down %s' % CONFFILE
         
     proc1 = Popen(partCMD)
     proc1.wait(timeout=10)

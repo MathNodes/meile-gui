@@ -3,13 +3,20 @@ import pexpect
 import json
 import requests
 
+from time import sleep
+
 from src.conf.meile_config import MeileGuiConfig
 from src.cli.sentinel import IBCATOM, IBCDEC, IBCOSMO, IBCSCRT, SATOSHI, APIURL
+
+import subprocess
+
+from subprocess import PIPE
 
 KEYRINGDIR = path.join(path.expanduser('~'), '.meile-gui')
 WALLETINFO = path.join(KEYRINGDIR, "infos.txt")
 SUBSCRIBEINFO = path.join(KEYRINGDIR, "subscribe.infos")
 CONNECTIONINFO = path.join(KEYRINGDIR, "connection.infos")
+WIREGUARDINFO = path.join(KEYRINGDIR, "wg.infos")
 BASEDIR  = path.join(path.expanduser('~'), '.sentinelcli')
 MeileConfig = MeileGuiConfig()
 sentinelcli = MeileConfig.resource_path("../bin/sentinelcli")
@@ -125,12 +132,31 @@ class HandleWalletFunctions():
                 elif 'insufficient' in tx_json['raw_log']:
                     remove(SUBSCRIBEINFO)
                     return (False, tx_json['raw_log'])
-    def connect(self, ID, address):
+    def connect(self, ID, address, osx_password):
 
         CONFIG = MeileGuiConfig.read_configuration(MeileGuiConfig, MeileGuiConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
         KEYNAME = CONFIG['wallet'].get('keyname', '')
         connCMD = "%s connect --keyring-backend file --keyring-dir %s --chain-id sentinelhub-2 --node https://rpc.mathnodes.com:443 --gas-prices 0.1udvpn --yes --from '%s' %s %s" % (sentinelcli, KEYRINGDIR, KEYNAME, ID, address)
+        #connCMD = [sentinelcli, "connect", "--keyring-backend", "file", "--keyring-dir", KEYRINGDIR, "--chain-id", "sentinelhub-2", "--node",
+        #            "https://rpc.mathnodes.com:443", "--gas-prices", "0.1udvpn", "--yes", "--from", "%s" % KEYNAME, ID, address]
+        
+        '''
+        proc = subprocess.Popen(connCMD, 
+                        stdin=subprocess.PIPE, 
+                        stdout=subprocess.PIPE, 
+                        stderr=subprocess.PIPE)
+        
+        proc.stdin.write(b'%b + \n' % bytes(PASSWORD, 'utf-8'))
+        proc.stdin.flush()
+        proc.stdin.write(b'%b + \n' % bytes(osx_password, 'utf-8'))
+        proc.stdin.flush()
+        
+        stdout,stderr = proc.communicate()
+        print(stdout)
+        print(stderr)
+
+        '''
         
         ofile =  open(CONNECTIONINFO, "wb")    
 
@@ -138,19 +164,127 @@ class HandleWalletFunctions():
         child = pexpect.spawn(connCMD)
         child.logfile = ofile
 
-        child.expect(".*")
-        child.sendline(PASSWORD)
-        child.expect(pexpect.EOF)
+        try:
+            child.expect(".*")
+            child.sendline(PASSWORD)
+            child.expect(".*")
+            index = child.expect(["Error*", "wg-quick*", pexpect.EOF])
+            if index == 0:
+                ofile.flush()
+                ofile.close()
+                return False
+            elif index == 1:
+                child.sendline(osx_password)
+                child.expect(pexpect.EOF)
+            else:
+                print('Im larry')
+        except Exception as e:
+            print(str(e))
+            ofile.flush()
+            ofile.close()
+            return False
         
         ofile.flush()
         ofile.close()
         
-        if path.isfile(path.join(BASEDIR, "status.json")):
-            CONNECTED = True
-        else:
-            CONNECTED = False
+        '''
+        from python_wireguard import Client, ServerConnection, Key
+        
+        wg = wgconfig.WGConfig(path.join(BASEDIR, 'wg99.conf'))
+        wg.read_file()
+        
+        private_key = wg.interface['PrivateKey']
+        peers_keys = wg.peers.keys()
+        for k in peers_keys:
+            public_key = k
             
-        return CONNECTED
+            
+        endpoint = wg.peers[public_key]['Endpoint']
+        srv_ip,srv_port = endpoint.split(':')    
+        local_ip = wg.interface['Address']
+
+        
+        client = Client('wg-client', Key(private_key), local_ip)
+        
+        srv_key = Key(public_key)
+        
+        
+        
+        server_conn = ServerConnection(srv_key, srv_ip, srv_port)
+        
+        client.set_server(server_conn)
+        client.connect()
+        
+        '''
+        
+        #wgCMD = "wg-quick up %s" % path.join(BASEDIR, "wg99.conf")
+        wgCMD = ['wg-quick', 'up', path.join(BASEDIR, "wg99.conf")]
+        
+        proc = subprocess.Popen(wgCMD, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        
+        stdout,stderr = proc.communicate()
+        
+        print(stdout)
+        print(stderr)
+        
+        
+        '''
+        ofile = open(WIREGUARDINFO, "wb")
+        try:
+            
+            child = pexpect.spawn(wgCMD)
+            child.logfile = ofile
+            index = child.expect(["Error*", "wg-quick*"])
+            if index == 0:
+                ofile.flush()
+                ofile.close()
+                return False
+            else:
+                child.sendline(osx_password)
+                child.expect(pexpect.EOF)
+                
+        except Exception as e:
+            print(str(e))
+            ofile.flush()
+            ofile.close()
+            return False 
+            
+        ofile.flush()
+        ofile.close()
+        
+        wgCMD = "wg-quick up %s" % path.join(BASEDIR, "wg99.conf")
+        ofile = open(WIREGUARDINFO, "wb")
+        try:
+            
+            child = pexpect.spawn(wgCMD)
+            child.logfile = ofile
+            index = child.expect(["Error*", "wg-quick*"])
+            if index == 0:
+                ofile.flush()
+                ofile.close()
+                return False
+            else:
+                child.sendline(osx_password)
+                child.expect(pexpect.EOF)
+                
+        except Exception as e:
+            print(str(e))
+            ofile.flush()
+            ofile.close()
+            return False 
+            
+        ofile.flush()
+        ofile.close()
+        '''
+        
+        
+        
+        
+        if path.isfile(path.join(BASEDIR, "status.json")):
+            return True
+        else:
+            return False
+            
 
     def get_balance(self, address):
         endpoint = "/bank/balances/" + address

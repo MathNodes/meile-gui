@@ -5,6 +5,7 @@ from kivymd.app import MDApp
 from kivymd.uix.button import MDFlatButton
 from kivymd.uix.dialog import MDDialog
 from kivy.properties import  StringProperty
+from functools import partial
 
 KV = '''
 <Content>
@@ -19,6 +20,20 @@ KV = '''
     MDTextField:
         hint_text: "Street"
 
+<OSXPasswordDialog>
+    name: "osx_password"
+    title: "OS X Password"
+
+    MDTextField:
+        id: osx
+        size_hint_x: None
+        width: "300dp"
+        height: "300dp"
+        text: ""
+        hint_text: "OS X  Password"
+        pos_hint: {"center_x": .5, "center_y": .80}
+        mode: "rectangle"
+    
 
 MDFloatLayout:
 
@@ -27,6 +42,11 @@ MDFloatLayout:
         pos_hint: {'center_x': .5, 'center_y': .5}
         on_release: app.show_confirmation_dialog()
 '''
+
+class OSXPasswordDialog(BoxLayout):
+    def return_password(self):
+        print("Self IDS: %s" % self.ids.osx.text)
+        return self.ids.osx.text
 
 
 class Content(BoxLayout):
@@ -39,22 +59,23 @@ class Example(MDApp):
     def build(self):
         return Builder.load_string(KV)
 
+
+    def set_osx_password(self, dialog, dt):
+        print("PASSWORD IS: %s" % dialog.return_password())
     def show_confirmation_dialog(self):
+        from _functools import partial
         if not self.dialog:
+            PasswordDialog = OSXPasswordDialog()
             self.dialog = MDDialog(
-                title="Address:",
+                title="freQniK Password",
                 type="custom",
-                content_cls=Content(),
+                content_cls=PasswordDialog,
                 buttons=[
-                    MDFlatButton(
-                        text="CANCEL",
-                        theme_text_color="Custom",
-                        text_color=self.theme_cls.primary_color,
-                    ),
                     MDFlatButton(
                         text="OK",
                         theme_text_color="Custom",
                         text_color=self.theme_cls.primary_color,
+                        on_release=partial(self.set_osx_password, PasswordDialog)
                     ),
                 ],
             )

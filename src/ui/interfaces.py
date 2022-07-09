@@ -18,7 +18,10 @@ class SubscribeContent(BoxLayout):
     def __init_ (self, price):
         self.price_text = price
 
+class OSXPasswordDialog(BoxLayout):
     
+    def return_password(self):
+        return self.ids.osx.text 
 
 class WindowManager(ScreenManager):
     pass
