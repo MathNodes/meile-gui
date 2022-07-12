@@ -1,7 +1,7 @@
 from kivy.properties import BooleanProperty, StringProperty
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.label import Label
-from kivymd.uix.card import MDCard, MDCardSwipe
+from kivymd.uix.card import MDCard
 from kivymd.uix.dialog import MDDialog
 from kivymd.uix.button import MDFlatButton, MDRaisedButton
 from kivy.uix.recycleview import RecycleView
@@ -19,8 +19,7 @@ import requests
 import re
 
 
-from src.cli.sentinel import NodesInfoKeys, IBCCOINS,IBCSCRT, IBCATOM, IBCDEC, IBCOSMO
-from src.cli.sentinel import NodeTreeData
+from src.cli.sentinel import IBCCOINS
 from src.ui.interfaces import SubscribeContent
 from src.typedef.win import CoinsList, WindowNames
 from src.conf.meile_config import MeileGuiConfig

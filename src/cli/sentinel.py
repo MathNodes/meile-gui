@@ -1,6 +1,6 @@
 from subprocess import Popen, PIPE, STDOUT
 import collections
-from os import path
+from os import path, environ
 import re
 import requests
 from urllib3.exceptions import InsecureRequestWarning
@@ -22,17 +22,21 @@ IBCCOINS = [{'uscrt' : IBCSCRT}, {'uatom' : IBCATOM}, {'udec' : IBCDEC}, {'uosmo
 
 SATOSHI = 1000000
 
-BASEDIR  = path.join(path.expanduser('~'), '.sentinelcli')
+USER = environ['SUDO_USER'] if 'SUDO_USER' in environ else environ['USER']
+KEYRINGDIR = path.join(path.expanduser('~' + USER), '.meile-gui')
+BASEDIR  = path.join(path.expanduser('~' + USER), '.sentinelcli')
+
 APIURL   = "https://api.sentinel.mathnodes.com"
+
 NodesInfoKeys = ["Moniker","Address","Provider","Price","Country","Speed","Latency","Peers","Handshake","Version","Status"]
 SubsInfoKeys = ["ID", "Owner", "Plan", "Expiry", "Denom", "Node", "Price", "Deposit", "Free", "Status"]
 FinalSubsKeys = [SubsInfoKeys[0], NodesInfoKeys[0],SubsInfoKeys[5], SubsInfoKeys[6], SubsInfoKeys[7], NodesInfoKeys[4], "Allocated", "Consumed" ]
-
 
 dash = "-"
 
 MeileConfig = MeileGuiConfig()
 sentinelcli = MeileConfig.resource_path("../bin/sentinelcli")
+
 class NodeTreeData():
     NodeTree = None
     
@@ -84,14 +88,13 @@ class NodeTreeData():
         
         self.NodeTree = self.CreateNodeTreeStructure()
         
-        AllNodesSortedStripped = []
         for d in AllNodesInfoSorted:
             for key in NodesInfoKeys:
                 d[key] = d[key].lstrip().rstrip()
-            AllNodesSortedStripped.append(d)
-        
-        for d in AllNodesSortedStripped:
-            
+            version = d[NodesInfoKeys[9]].replace('.','')
+            if version not in ('030', '031', '032'):
+                print(version)
+                continue
             d[NodesInfoKeys[3]] = self.return_denom(d[NodesInfoKeys[3]])
             
             if "Czechia" in d[NodesInfoKeys[4]]:
