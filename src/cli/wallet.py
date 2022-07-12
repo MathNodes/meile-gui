@@ -1,4 +1,4 @@
-from os import path, remove
+from os import path, remove, environ
 import pexpect
 import json
 import requests
@@ -6,11 +6,13 @@ import requests
 from src.conf.meile_config import MeileGuiConfig
 from src.cli.sentinel import IBCATOM, IBCDEC, IBCOSMO, IBCSCRT, SATOSHI, APIURL
 
-KEYRINGDIR = path.join(path.expanduser('~'), '.meile-gui')
+USER = environ['SUDO_USER'] if 'SUDO_USER' in environ else environ['USER']
+KEYRINGDIR = path.join(path.expanduser('~' + USER), '.meile-gui')
+BASEDIR  = path.join(path.expanduser('~' + USER), '.sentinelcli')
 WALLETINFO = path.join(KEYRINGDIR, "infos.txt")
 SUBSCRIBEINFO = path.join(KEYRINGDIR, "subscribe.infos")
 CONNECTIONINFO = path.join(KEYRINGDIR, "connection.infos")
-BASEDIR  = path.join(path.expanduser('~'), '.sentinelcli')
+
 MeileConfig = MeileGuiConfig()
 sentinelcli = MeileConfig.resource_path("../bin/sentinelcli")
 

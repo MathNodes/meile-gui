@@ -6,19 +6,32 @@ from src.conf.meile_config import MeileGuiConfig
 from kivy.lang import Builder
 from kivymd.app import MDApp
 
-import tkinter as tk
 
-import asyncio 
-import threading
+from kivy.config import Config
+MeileConfig = MeileGuiConfig()
+Config.set('kivy','window_icon',MeileConfig.resource_path("../imgs/icon.png"))
+        
+from screeninfo import get_monitors
+
+
+
 class MyMainApp(MDApp):
     title = "Meile dVPN"
+    icon  = MeileConfig.resource_path("../imgs/icon.png")
     def __init__(self,**kwargs):
         super(MyMainApp,self).__init__(**kwargs)
-        from kivy.config import Config
         from kivy.core.window import Window
         Window.size = (1010, 710)
-        
-        dim = self.get_curr_screen_geometry()
+
+        # Get Primary Monitor Resolution
+        # Scaled down and not using tkinter library
+        for m in get_monitors():
+            if m.is_primary:
+                primary_monitor = m
+                
+        dim = []
+        dim.append(primary_monitor.width)
+        dim.append(primary_monitor.height)
         
         Window.left = int((dim[0] - 1010)/2)
         Window.top = int((dim[1] - 710)/2)
@@ -26,9 +39,8 @@ class MyMainApp(MDApp):
         
           
     def build(self):
-        MeileConfig = MeileGuiConfig()
-        kv = Builder.load_file(MeileConfig.resource_path("../kivy/meile.kv"))
         
+        kv = Builder.load_file(MeileConfig.resource_path("../kivy/meile.kv"))
         
         manager = WindowManager()
         manager.add_widget(PreLoadWindow(name=WindowNames.PRELOAD))
@@ -41,8 +53,8 @@ class MyMainApp(MDApp):
     
     
 
-
-
+    # Solution for multiple screens, but results in flickering which looks buggy
+    '''
     def get_curr_screen_geometry(self):
         """
         Workaround to get the size of the current screen in a multi-screen setup.
@@ -64,5 +76,5 @@ class MyMainApp(MDApp):
         
         
     
-     
+    '''     
 app = MyMainApp()

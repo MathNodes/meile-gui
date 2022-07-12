@@ -1,13 +1,14 @@
-from os import path
+from os import path,environ,mkdir
 
 import configparser
-import pkg_resources
 import shutil
-import os
+
 import sys
 
+
 class MeileGuiConfig():
-    BASEDIR   = path.join(path.expanduser('~'), '.meile-gui')
+    USER = environ['SUDO_USER'] if 'SUDO_USER' in environ else environ['USER']
+    BASEDIR   = path.join(path.expanduser('~' + USER), '.meile-gui')
     CONFFILE  = path.join(BASEDIR, 'config.ini')
     IMGDIR    = path.join(BASEDIR, 'img')
     CONFIG    = configparser.ConfigParser()
@@ -24,16 +25,16 @@ class MeileGuiConfig():
         
         if path.isdir(self.BASEDIR):
             if not path.isfile(confpath):
-                defaultconf = self.resource_path(os.path.join('config', 'config.ini'))
+                defaultconf = self.resource_path(path.join('config', 'config.ini'))
                 shutil.copyfile(defaultconf, self.CONFFILE)
                 
         else:
-            os.mkdir(self.BASEDIR)
-            defaultconf = self.resource_path(os.path.join('config', 'config.ini'))
+            mkdir(self.BASEDIR)
+            defaultconf = self.resource_path(path.join('config', 'config.ini'))
             shutil.copyfile(defaultconf, self.CONFFILE)
             
-        if not os.path.isdir(self.IMGDIR):
-            os.mkdir(self.IMGDIR)
+        if not path.isdir(self.IMGDIR):
+            mkdir(self.IMGDIR)
             
         self.CONFIG.read(confpath)
         return self.CONFIG

@@ -6,14 +6,13 @@ from src.cli.sentinel import  NodeTreeData
 from src.cli.sentinel import NodesInfoKeys, FinalSubsKeys
 from src.cli.sentinel import disconnect as Disconnect
 import src.main.main as Meile
-from src.ui.widgets import  NodeRV, WalletInfoContent
+from src.ui.widgets import WalletInfoContent
 from src.utils.qr import QRCode
 from src.cli.wallet import HandleWalletFunctions
 from src.conf.meile_config import MeileGuiConfig
 from src.typedef.win import CoinsList
 
-from kivy.uix.popup import Popup
-from kivymd.uix.spinner import MDSpinner  
+
 from kivy.uix.screenmanager import Screen, SlideTransition
 from kivymd.uix.button import MDFlatButton, MDRaisedButton
 from kivymd.uix.dialog import MDDialog
@@ -21,16 +20,13 @@ from kivy.clock import Clock, mainthread
 from kivyoav.delayed import delayable
 from kivy.properties import ObjectProperty
 from kivymd.uix.card import MDCard
-from functools import partial
 
-import asyncio
 from save_thread_result import ThreadWithResult
 import requests
-import collections
 
 
-from os import path
-
+from os import path,geteuid
+import sys
 class WalletRestore(Screen):
     screemanager = ObjectProperty()
     
@@ -148,6 +144,7 @@ class PreLoadWindow(Screen):
     j = 0
     go_button = ObjectProperty()
     NodeTree = None
+    dialog = None
     def __init__(self, **kwargs):
         super(PreLoadWindow, self).__init__()
         
@@ -161,12 +158,31 @@ class PreLoadWindow(Screen):
     def get_logo(self):
         Config = MeileGuiConfig()
         return Config.resource_path("../imgs/logo_hd.png")
-        
 
+    @mainthread        
+    def add_loading_popup(self, title_text):
+        self.dialog = None
+        self.dialog = MDDialog(
+            title=title_text,
+            buttons=[
+                MDFlatButton(
+                    text="OKAY",
+                    theme_text_color="Custom",
+                    text_color=Meile.app.theme_cls.primary_color,
+                    on_release=self.quit_meile,
+                ),
+                ]
+        )
+        self.dialog.open()
+        
+    def quit_meile(self, dt):
+        sys.exit("Not running as root")
+        
     @delayable
     def update_status_text(self, dt):
         go_button = self.manager.get_screen(WindowNames.PRELOAD).ids.go_button
-
+        if geteuid() != 0:
+            self.add_loading_popup("Please start Meile-GUI as root. i.e., sudo -E ./meile-gui or similarly")
 
         yield 1.0
         
@@ -362,11 +378,11 @@ class MainWindow(Screen):
         
     @mainthread
     def remove_loading_widget(self,dt):
-    	try:
-    	    self.dialog.dismiss()
-    	    self.dialog = None
-    	except:
-    	    pass
+        try:
+            self.dialog.dismiss()
+            self.dialog = None
+        except:
+            pass
         
     @mainthread
     def sub_address_error(self):
@@ -377,7 +393,7 @@ class MainWindow(Screen):
                     text="Okay",
                     theme_text_color="Custom",
                     text_color=(1,1,1,1),
-                    on_release= self.remove_loading_widget
+                    on_release=self.remove_loading_widget
                 ),
             ],
         )
