@@ -11,7 +11,7 @@ from kivymd.uix.list import OneLineIconListItem
 from kivy.metrics import dp
 from kivyoav.delayed import delayable
 from kivy.uix.screenmanager import Screen, SlideTransition
-
+from kivy.utils import get_color_from_hex
 
 from functools import partial
 from urllib3.exceptions import InsecureRequestWarning
@@ -19,12 +19,12 @@ import requests
 import re
 
 
-from src.cli.sentinel import IBCCOINS
-from src.ui.interfaces import SubscribeContent
-from src.typedef.win import CoinsList, WindowNames
-from src.conf.meile_config import MeileGuiConfig
-from src.cli.wallet import HandleWalletFunctions
-import src.main.main as Meile
+from cli.sentinel import IBCCOINS
+from ui.interfaces import SubscribeContent
+from typedef.win import CoinsList, WindowNames
+from conf.meile_config import MeileGuiConfig
+from cli.wallet import HandleWalletFunctions
+import main.main as Meile
 
 class WalletInfoContent(BoxLayout):
     def __init__(self, seed_phrase, name, address, password, **kwargs):
@@ -63,6 +63,7 @@ class SubscribeContent(BoxLayout):
         ]
         self.menu = MDDropdownMenu(
             caller=self.ids.drop_item,
+            background_color=get_color_from_hex("#0d021b"),
             items=menu_items,
             position="center",
             width_mult=4,
@@ -160,6 +161,7 @@ class RecycleViewRow(MDCard):
 
         if not self.dialog:
             self.dialog = MDDialog(
+                md_bg_color=get_color_from_hex("#0d021b"),
                 text='''
 City: %s
 Connected Peers:  %s  
@@ -185,6 +187,7 @@ Node Version: %s
                     title="Address:",
                     type="custom",
                     content_cls=subscribe_dialog,
+                    md_bg_color=get_color_from_hex("#0d021b"),
                     buttons=[
                         MDFlatButton(
                             text="CANCEL",
@@ -193,7 +196,7 @@ Node Version: %s
                             on_release=self.closeDialog
                         ),
                         MDFlatButton(
-                            text="Subscribe",
+                            text="SUBSCRIBE",
                             theme_text_color="Custom",
                             text_color=self.theme_cls.primary_color,
                             on_release=partial(self.subscribe, subscribe_dialog)
@@ -207,7 +210,7 @@ Node Version: %s
         deposit = self.reparse_coin_deposit(sub_node[0])
         self.dialog.dismiss()
         self.dialog = None
-        self.dialog = MDDialog(title="Subscribing...\n\n%s\n %s" %( deposit, sub_node[1]))
+        self.dialog = MDDialog(title="Subscribing...\n\n%s\n %s" %( deposit, sub_node[1]),md_bg_color=get_color_from_hex("#0d021b"))
         self.dialog.open()
         yield 2.0
 
@@ -220,12 +223,13 @@ Node Version: %s
             self.dialog.dismiss()
             self.dialog = MDDialog(
                 title="Successful!",
+                md_bg_color=get_color_from_hex("#0d021b"),
                 buttons=[
                         MDFlatButton(
                             text="OK",
                             theme_text_color="Custom",
                             text_color=self.theme_cls.primary_color,
-                            on_release=self.closeDialog
+                            on_release=self.closeDialogReturnToSubscriptions
                         ),])
             self.dialog.open()
 
@@ -233,6 +237,7 @@ Node Version: %s
             self.dialog.dismiss()
             self.dialog = MDDialog(
             title="Error: %s" % returncode[1],
+            md_bg_color=get_color_from_hex("#0d021b"),
             buttons=[
                     MDFlatButton(
                         text="OK",
@@ -272,6 +277,15 @@ Node Version: %s
                     tru_mu_deposit = tru_mu_deposit.replace(coin, ibc)
                     print(tru_mu_deposit)
         return tru_mu_deposit
+    
+    def closeDialogReturnToSubscriptions(self,inst):
+        self.dialog.dismiss()
+        self.dialog = None
+        Meile.app.root.transition = SlideTransition(direction = "down")
+        Meile.app.root.current = WindowNames.MAIN_WINDOW
+        Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).SubResult = None
+        Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).on_tab_switch(None,None,None,"Subscriptions")
+    
     def closeDialog(self, inst):
         self.dialog.dismiss()
         self.dialog = None
@@ -306,7 +320,7 @@ class RecycleViewSubRow(MDCard):
         
     def add_loading_popup(self, title_text):
         self.dialog = None
-        self.dialog = MDDialog(title=title_text)
+        self.dialog = MDDialog(title=title_text,md_bg_color=get_color_from_hex("#0d021b"))
         self.dialog.open()
     def remove_loading_widget(self):
         self.dialog.dismiss()
@@ -324,6 +338,7 @@ class RecycleViewSubRow(MDCard):
             self.remove_loading_widget()
             self.dialog = MDDialog(
                 title="Connected!",
+                md_bg_color=get_color_from_hex("#0d021b"),
                 buttons=[
                         MDFlatButton(
                             text="OK",
@@ -337,6 +352,7 @@ class RecycleViewSubRow(MDCard):
             self.remove_loading_widget()
             self.dialog = MDDialog(
                 title="Something went wrong. Not connected",
+                md_bg_color=get_color_from_hex("#0d021b"),
                 buttons=[
                         MDFlatButton(
                             text="OK",
@@ -352,7 +368,7 @@ class RecycleViewSubRow(MDCard):
         else:
             Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).CONNECTED = False
             
-        Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).get_ip_address()
+        Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).get_ip_address(None)
         self.remove_loading_widget()
             
             

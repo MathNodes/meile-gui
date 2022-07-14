@@ -1,0 +1,902 @@
+#: import SlideTransition kivy.uix.screenmanager.SlideTransition
+#: import get_color_from_hex kivy.utils.get_color_from_hex
+
+
+WindowManager:
+
+<PreLoadWindow>:
+    name: "preload"
+    status_text: "Loading..."
+    title: app.title
+   
+    MDFloatLayout:
+        md_bg_color: 0,0,0,1
+    
+        Image:
+            source: root.get_logo()
+            size_hint: 1, None
+            size: 500, 500
+            pos_hint: {"x": 0, "y": .275}
+            # size: self.texture_size[0] / 2, self.texture_size[1] / 2
+            # opacity: 0.1
+        
+        MDLabel:
+            id: status_label
+            bold: True
+            text: root.status_text
+            color: 1,1,1,1
+            halign: "center"
+            pos_hint: {"center_x" : .5, "y" : -.3}
+    
+        MDRaisedButton:
+            id: go_button
+            opacity: 0
+            disabled: True
+            text: "Let's Go"
+            pos_hint: {"center_x" : .5, "y" : .05}
+            on_press: root.switch_window()
+
+<MainWindow>:
+    name: "main"
+    MDBoxLayout:
+        orientation: 'vertical'
+        md_bg_color: get_color_from_hex("#0d021b")
+        MDBoxLayout:
+            orientation: "horizontal"
+            size_hint_y: .15
+            MDTextField:
+                hint_text: "IP Address"
+                id: new_ip
+                mode: "fill"
+                width: "200dp"
+                haline: "center"
+                size_hint_x: 1.2
+                pos_hint: {"center_x" : .5, "center_y": .5}                
+                text: ""
+                readonly: True
+                opacity: 1
+                theme_text_color: "Custom"
+                text_color: get_color_from_hex("#fcb711")
+                normal_color: app.theme_cls.accent_color      
+                
+            Image:
+                source: root.get_logo()
+                size_hint: None, None
+                height: "75dp"
+                pos_hint_x: 1
+        
+
+
+        MDTabs:
+            id: android_tabs
+            on_tab_switch: root.on_tab_switch(*args)
+            size_hint_y: None
+            height: "48dp"
+            tab_indicator_anim: True
+            color: 1,1,1,1
+            normal_color: get_color_from_hex("#fcb711")
+            background_color: get_color_from_hex("#fcb711")
+        
+        
+        NodeRV:
+            md_bg_color: get_color_from_hex("#0d021b")    
+            id: rv
+        
+        MDBottomNavigation:
+            size_hint_y: .1
+            panel_color: get_color_from_hex("#0d021b")
+            text_color_normal: get_color_from_hex("#fcb711")
+            MDBottomNavigationItem:
+                name: "lan_disconnect"
+                text: "Disconnect"
+                icon: "lan-disconnect"
+
+                on_tab_release: root.disconnect_from_node()
+                
+            MDBottomNavigationItem:
+                name: "wallet"
+                text: "Wallet"
+                icon: "wallet"
+                on_tab_release: root.wallet_dialog()
+                
+            MDBottomNavigationItem:
+                name: "help"
+                text: "Help"
+                icon: "account-question"
+                on_tab_release: root.build_help_screen_interface()
+                
+    
+            
+<NodeScreen>
+    name: "nodes"
+    MDBoxLayout:
+        orientation: "vertical"
+        NodeRV:
+            id: rv
+    ActionBar:
+        background_normal: ''
+        background_down: ''
+        background_color: get_color_from_hex("#0d021b")
+        ActionView:
+            ActionPrevious:
+                icon: "arrow-left-circle"
+                title: 'Go Back'
+                with_previous: True
+                on_release: root.set_previous_screen() 
+    
+<WalletScreen>:
+    name: "wallet"
+    wallet_name: ""
+    address_qrcode: ""
+    sentinel_logo: root.return_coin_logo("dvpn")
+    secret_logo: root.return_coin_logo("scrt")
+    osmosis_logo: root.return_coin_logo("osmo")
+    cosmos_logo: root.return_coin_logo("atom")
+    decentr_logo: root.return_coin_logo("dec")
+    dec_text: ""
+    scrt_text: " "
+    atom_text: " "
+    dvpn_text: " "
+    osmo_text: " "
+    wallet_address: ""
+    MDBoxLayout:
+        orientation: "vertical"
+        MDToolbar:
+            id: toolbar
+            title: "Wallet"
+            md_bg_color: get_color_from_hex("#FFB908")
+            height: "100dp"
+            padding: 10,0,0,10
+    
+            MDTextField:
+                hint_text: "Address"
+                mode: "fill"
+                size_hint_x: 1.2
+                pos_hint: {"center_x" : .5, "center_y": .5}                
+                text: root.wallet_address
+                readonly: True
+                opacity: 1
+                theme_text_color: "Custom"
+                text_color: get_color_from_hex("#000000")
+                normal_color: app.theme_cls.accent_color
+                
+        MDFloatLayout:
+            
+            Image:
+                source: root.get_qr_code_address()
+                pos_hint: {'x': 0, 'top': 1}
+                size_hint_y: .5
+            
+            Image:
+                source: root.sentinel_logo
+                pos_hint: {'x': -.2, 'top': .9}
+            MDLabel:
+                text: root.dvpn_text
+                theme_text_color: "Custom"
+                text_color: get_color_from_hex("#fcb711")
+                pos_hint: {'x': .35, 'top': .905}
+                font_name: "RobotoMono-Regular"
+                
+
+            Image:
+                source: root.secret_logo
+                pos_hint: {'x': -.2, 'top': .77}
+                
+            MDLabel:
+                text: root.scrt_text
+                theme_text_color: "Custom"
+                text_color: get_color_from_hex("#fcb711")
+                pos_hint: {'x': .35, 'top': .7695}
+                font_name: "RobotoMono-Regular"
+                
+            Image:
+                source: root.osmosis_logo
+                pos_hint: {'x': -.2, 'top': .63}
+                
+            MDLabel:
+                text: root.osmo_text
+                theme_text_color: "Custom"
+                text_color: get_color_from_hex("#fcb711")
+                pos_hint: {'x': .35, 'top': .6295}
+                font_name: "RobotoMono-Regular"
+            Image:
+                source: root.cosmos_logo
+                pos_hint: {'x': .25, 'top': .89}
+                
+            MDLabel:
+                text: root.atom_text
+                theme_text_color: "Custom"
+                text_color: get_color_from_hex("#fcb711")
+                pos_hint: {'x': .8, 'top': .89}
+                font_name: "RobotoMono-Regular"
+            Image:
+                source: root.decentr_logo
+                pos_hint: {'x': .25, 'top': .76}
+                
+            MDLabel:
+                text: root.dec_text
+                theme_text_color: "Custom"
+                text_color: get_color_from_hex("#fcb711")
+                pos_hint: {'x': .8, 'top': .76}
+                font_name: "RobotoMono-Regular"
+    ActionBar:
+        background_normal: ''
+        background_down: ''
+        background_color: get_color_from_hex("#0d021b")
+        ActionView:
+            ActionPrevious:
+                icon: "arrow-left-circle"
+                title: 'Go Back'
+                with_previous: True
+                on_release: root.set_previous_screen() 
+
+    
+
+<WalletRestore>:
+    name: "walletrestore"
+    title: "Wallet Create"
+    ActionBar:
+        background_normal: ''
+        background_down: ''
+        background_color: get_color_from_hex("#0d021b")
+        ActionView:
+            ActionPrevious:
+                icon: "arrow-left-circle"
+                title: 'Go Back'
+                with_previous: True
+                on_release: root.set_previous_screen() 
+    
+    
+    ClickableTextFieldRoundSeed:
+        id: seed
+        size_hint_x: None
+        width: "300dp"
+        height: "300dp"
+        hint_text: "Seed Phrase"
+        pos_hint: {"center_x": .5, "center_y": .80}
+        
+    MDLabel:
+        text: "Leave blank if creating a new wallet"
+        theme_text_color: "Custom"
+        text_color: get_color_from_hex("#4a4545")
+        pos_hint: {"x": .47, "center_y": .74}
+        font_size: "12dp"
+     
+    ClickableTextFieldRoundName:
+        id: name
+        size_hint_x: None
+        width: "300dp"
+        height: "300dp"
+        hint_text: "Wallet Name"
+        pos_hint: {"center_x": .5, "center_y": .67}
+        
+    MDLabel:
+        id: wallet_name_warning
+        opacity: 0
+        text: "You must give the wallet a name"
+        theme_text_color: "Custom"
+        text_color: get_color_from_hex("f42121")
+        pos_hint: {"x": .47, "center_y": .61}
+        font_size: "12dp"
+     
+    ClickableTextFieldRoundPass:
+        id: password
+        size_hint_x: None
+        width: "300dp"
+        height: "300dp"
+        hint_text: "Wallet Password"
+        pos_hint: {"center_x": .5, "center_y": .55}
+        MDLabel:
+        
+    MDLabel:
+        id: wallet_password_warning
+        opacity: 0
+        text: "Must be at least 8 characters"
+        theme_text_color: "Custom"
+        text_color: get_color_from_hex("f42121")
+        pos_hint: {"x": .47, "center_y": .49}
+        font_size: "12dp"
+        
+    MDRaisedButton:
+        id: restore_wallet_button
+        text: "Restore"
+        pos_hint: {"center_x": .5, "center_y": .4}
+        on_press: root.restore_wallet_from_seed_phrase()
+    
+    
+    
+<NodeRV>:
+    key_viewclass: "viewclass"
+    canvas.before:
+        Color:
+            rgba: get_color_from_hex("#fccf62")
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    RecycleGridLayout:
+        md_bg_color: get_color_from_hex("#0d021b")
+        cols:1
+        default_size: dp(200), dp(150)
+        default_size_hint: 1, None
+        size_hint_y: None
+        height: self.minimum_height
+        orientation: 'lr-tb' 
+        spacing: 15
+        padding: 4,4,4,4
+        
+
+
+        
+<-FullImage>:
+    keep_ratio: True
+    allow_stretch: False
+    canvas:
+        Rectangle:
+            texture: self.texture
+            size: self.width - 150 , self.height 
+            pos: self.x - 150, self.y           
+            
+<-FulImage2>:
+    keep_ratio: True
+    allow_stretch: False
+    
+    canvas:
+        Rectangle:
+            texture: self.texture
+            size: self.width - 120, self.height - 60
+            pos: self.x , self.y + 10
+            
+                       
+<RecycleViewCountryRow>:
+    size_hint_y: None
+    height: self.height
+    size: "180dp", "150dp"
+    type_swipe: "hand"
+    pos_hint: {"center_x": .5, "center_y": .5}
+    padding: 10,10
+    border_radius: 20
+    radius: [10]
+    shadow_pos: 0,0
+    elevation: 42
+    num_text: ""
+    country_text: " "
+    source_image: " "
+    on_press: root.show_country_nodes(root.country_text)
+    md_bg_color: get_color_from_hex("#0d021b")
+    MDGridLayout:
+        cols: 1
+        padding: 20,0,0,0
+        MDFloatLayout:
+            MDLabel:
+                text: root.country_text
+                id: country
+                theme_text_color: "Custom"
+                font_style: "H6"
+                font_size: "24sp"
+                text_color: get_color_from_hex("#fcb711")
+                pos_hint: {"x" : 0, "top" : 1.3}
+                size_hint_x: None
+                width: "200dp"
+            MDLabel:
+                text: root.num_text
+                id: country
+                theme_text_color: "Custom"
+                font_style: "H6"
+                font_size: "18sp"
+                text_color: get_color_from_hex("#ffffff")
+                pos_hint: {"x" : 0, "top" : 1.0}
+                size_hint_x: None
+                width: "200dp"
+            Image:
+                source: root.source_image
+                # {"x", "y", "top", "bottom", "left", "right" }
+                pos_hint: {"x" : .3, "top" : 1 }
+            
+    MDSeparator:
+        color: 1,1,1,1
+                    
+<RecycleViewRow>:
+    size_hint_y: None
+    size: "180dp", "180dp"
+    pos_hint: {"center_x": .5, "center_y": .5}
+    orientation: "vertical"
+    padding: 10,10
+    border_radius: 20
+    radius: [10]
+    shadow_pos: 0,0
+    elevation: 42
+    md_bg_color: get_color_from_hex("#0d021b")
+    moniker_text: "."
+    country_text: "."
+    price_text: "."
+    address_text: "."
+    city_text: " "
+    source_image: " "
+    speed_image: " "
+    speed_text: " "
+    ripple_behavior: True
+    on_press: root.subscribe_to_node(root.price_text, root.address_text, root.moniker_text)
+    MDGridLayout:
+        cols: 1
+        
+        MDFloatLayout:
+        
+            MDLabel:
+                text: root.moniker_text
+                theme_text_color: "Custom"
+                font_style: "H6"
+                font_size: "22sp"
+                text_color: get_color_from_hex("#fcb711")
+                pos_hint: {"x" : 0, "top" : 1.3}
+                size_hint_x: None
+                width: "400dp"
+            MDLabel:
+                text: root.address_text
+                theme_text_color: "Custom"
+                font_style: "Subtitle2"
+                font_size: "10sp"
+                text_color: (0/255.0,141/255.0,155/255.0,255/255.0)
+                pos_hint: {"x" : 0, "top" : 1.1}
+            MDLabel:
+                text: root.price_text
+                theme_text_color: "Custom"
+                font_style: "Subtitle2"
+                font_size: "13sp"
+                text_color: get_color_from_hex("#fcb711")
+                pos_hint: {"x" : 0, "top" : .85}
+                
+            Image:
+                source: root.source_image
+                # {"x", "y", "top", "bottom", "left", "right" }
+                pos_hint: {"x" : .3, "top" : 1.3 }
+
+            MDLabel:
+                text: root.speed_text
+                theme_text_color: "Custom"
+                font_style: "Subtitle2"
+                font_size: "12sp"
+                text_color: 1,1,1,1
+                pos_hint: {"x" : .43 , "top": .86 }
+            Image:
+                source: root.speed_image
+                pos_hint: {"x" : .44 , "top": .95 }
+                size_hint: None, .525
+                
+            MDLabel:    
+                text: root.country_text
+                theme_text_color: "Custom"
+                font_style: "H6"
+                font_size: "22sp"
+                text_color: (1,1,1,1)  
+                pos_hint: {"right" : 1.75 , "top": .8 }  
+
+    MDRaisedButton:
+        text: "Get Details"
+        md_bg_color: get_color_from_hex("#fcb711")
+        text_color: 0,0,0,1
+        on_press: root.get_city_of_node(root.address_text)
+        
+        
+    MDSeparator:
+        color: 1,1,1,1
+
+<RecycleViewSubRow>:
+    size_hint_y: None
+    size: "180dp", "180dp"
+    pos_hint: {"center_x": .5, "center_y": .5}
+    orientation: "vertical"
+    padding: 10,10
+    border_radius: 20
+    radius: [10]
+    shadow_pos: 0,0
+    elevation: 42
+    md_bg_color: get_color_from_hex("#0d021b")
+    moniker_text: "."
+    sub_id_text: " "
+    country_text: "."
+    price_text: "."
+    address_text: "."
+    city_text: " "
+    allocated_text: "10GB"
+    consumed_text: "10GB"
+    source_image: " "
+    speed_image: " "
+    speed_text: " "
+    MDGridLayout:
+        cols: 3
+        rows: 2
+        padding: 40,0,0,0
+        MDLabel:
+            text: root.moniker_text
+            theme_text_color: "Custom"
+            font_style: "H6"
+            font_size: "24sp"
+            text_color: get_color_from_hex("#fcb711")
+            width: "350dp"
+            size_hint_x: None
+        FullImage:
+            source: root.source_image
+            
+        MDLabel:    
+            text: root.country_text
+            theme_text_color: "Custom"
+            font_style: "H6"
+            font_size: "22sp"
+            text_color: (1,1,1,1)  
+        MDLabel:
+            text: root.address_text
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "9sp"
+            text_color: (0/255.0,141/255.0,155/255.0,255/255.0)
+        MDLabel:
+            text: root.sub_id_text
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "14sp"
+            text_color: (0/255.0,141/255.0,155/255.0,255/255.0)
+        MDLabel:
+            text: " "
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "14sp"
+            text_color: (0/255.0,141/255.0,155/255.0,255/255.0)                                    
+    MDGridLayout:
+        cols: 2
+        rows: 2
+        padding: 40,0,0,0
+        MDLabel:
+            text: root.price_text
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "14sp"
+            text_color: get_color_from_hex("#fcb711")
+        MDBoxLayout:
+            padding: 80,30,0,0
+            MDLabel:
+                text: root.allocated_text
+                theme_text_color: "Custom"
+                font_style: "Subtitle2"
+                font_size: "12sp"
+                text_color: 1,1,1,1
+            MDLabel:
+                text: root.consumed_text
+                theme_text_color: "Custom"
+                font_style: "Subtitle2"
+                font_size: "12sp"
+                text_color: 1,1,1,1
+        MDProgressBar:
+            value: root.get_data_used(root.allocated_text, root.consumed_text)
+            color: app.theme_cls.accent_color
+            back_color: get_color_from_hex("#ffffff")
+                
+
+
+
+    MDRaisedButton:
+        text: "Connect"
+        md_bg_color: get_color_from_hex("#fcb711")
+        text_color: 0,0,0,1
+        on_press: root.connect_to_node(root.sub_id_text,root.address_text)
+        
+        
+    MDSeparator:
+        color: 1,1,1,1
+         
+
+<ClickableTextFieldRoundSeed>:
+    size_hint_y: None
+    height: seed_phrase.height
+
+    MDTextField:
+        id: seed_phrase
+        hint_text: root.hint_text
+        text: root.text
+        password: False
+        icon_left: "key-variant"
+        mode: "rectangle"
+
+    MDIconButton:
+        icon: "eye-off"
+        pos_hint: {"center_y": .5}
+        pos: seed_phrase.width - self.width + dp(8), 0
+        theme_text_color: "Hint"
+        on_release:
+            self.icon = "eye" if self.icon == "eye-off" else "eye-off"
+            seed_phrase.password = False if seed_phrase.password is True else True
+
+
+<ClickableTextFieldRoundName>:
+    size_hint_y: None
+    height: wallet_name.height
+
+    MDTextField:
+        id: wallet_name
+        hint_text: root.hint_text
+        text: root.text
+        password: False
+        icon_left: "key-variant"
+        mode: "rectangle"
+
+    MDIconButton:
+        icon: "eye-off"
+        pos_hint: {"center_y": .5}
+        pos: wallet_name.width - self.width + dp(8), 0
+        theme_text_color: "Hint"
+        on_release:
+            self.icon = "eye" if self.icon == "eye-off" else "eye-off"
+            wallet_name.password = False if wallet_name.password is True else True
+            
+<ClickableTextFieldRoundPass>:
+    size_hint_y: None
+    height: wallet_password.height
+
+    MDTextField:
+        id: wallet_password
+        hint_text: root.hint_text
+        text: root.text
+        password: False
+        icon_left: "key-variant"
+        mode: "rectangle"
+
+    MDIconButton:
+        icon: "eye-off"
+        pos_hint: {"center_y": .5}
+        pos: wallet_password.width - self.width + dp(8), 0
+        theme_text_color: "Hint"
+        on_release:
+            self.icon = "eye" if self.icon == "eye-off" else "eye-off"
+            wallet_password.password = False if wallet_password.password is True else True
+
+
+
+<Tab>
+
+<SelectableLabel>:
+    # Draw a background to indicate selection
+    text1: "GLARGLY"
+    text2: "BLARGLY"
+    text3: "SHIMARGLY"
+    canvas.before:
+
+        Color:
+            rgba: (.0, 0.9, .1, .3) if self.selected else (0, 0, 0, 1)
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+<RV>:
+    viewclass: 'SelectableLabel'
+    RecycleBoxLayout:
+        default_size: None, dp(48)
+        default_size_hint: 1, None
+        size_hint_y: None
+        height: self.minimum_height
+        orientation: "vertical"
+
+
+<IconListItem>
+
+    IconLeftWidget:
+        icon: root.icon
+
+<WalletInfoContent>
+    orientation: "vertical"
+    spacing: "4dp"
+    size_hint_y: None
+    height: "260dp"
+    seed_phrase: ""
+    wallet_address: ""
+    wallet_password: ""
+    wallet_name: ""
+
+    MDTextField:
+        multiline: True
+        hint_text: "Mnemonic Seed"
+        text: root.seed_phrase
+        readonly: True
+    MDTextField:
+        hint_text: "Wallet"
+        mode: "rectangle"
+        text: root.wallet_name
+        readonly: True
+    
+    MDTextField:
+        hint_text: "Address"
+        mode: "rectangle"
+        text: root.wallet_address
+        readonly: True
+    
+    MDTextField:
+        hint_text: "Password"
+        mode: "rectangle"
+        text: root.wallet_password
+        readonly: True
+
+                       
+<SubscribeContent>
+    orientation: "vertical"
+    spacing: "1dp"
+    size_hint_y: None
+    height: "260dp"
+    price_text: ""
+    naddress: " "
+    MDBoxLayout:
+        orientation: "vertical"
+        MDLabel:
+            id: moniker_text
+            text: root.naddress
+    
+    MDBoxLayout:
+        orientation: "horizontal"
+        MDSlider:
+            
+            id: slider1
+            min: 1
+            max: 314
+            value: 34
+            on_value: root.parse_coin_deposit(root.ids.drop_item.current_item)
+            
+        MDLabel:
+            text: str(int(slider1.value)) + " GB" 
+            size_hint_x: None
+            width: 75
+    MDBoxLayout:
+        orientation: "horizontal"
+        size_hint_x: .8
+        spacing: 20
+        
+        MDTextField:
+            id: deposit
+            hint_text: "Deposit"
+            mode: "fill"
+            text: ""
+            size_hint_y: .65
+            width: "50dp"
+            height: "30dp"
+            readonly: True
+        
+        MDTextField:
+            id: price
+            hint_text: "Price"
+            mode: "fill"
+            text: root.price_text
+            size_hint_y: .65
+            width: "50dp"
+            height: "30dp"
+            readonly: True
+            
+        MDDropDownItem:
+            id: drop_item
+            pos_hint: {'center_x': .5, 'center_y': .5}
+            text: "udvpn"
+            on_release: root.menu.open()
+            
+            
+<HelpScreen>:
+    name: "helpscreen"
+    title: "Help Screen"
+    ActionBar:
+        background_normal: ''
+        background_down: ''
+        background_color: get_color_from_hex("#0d021b")
+        ActionView:
+            ActionPrevious:
+                icon: "arrow-left-circle"
+                title: 'Go Back'
+                with_previous: True
+                on_release: root.set_previous_screen() 
+    
+    MDBoxLayout:
+        orientation: "vertical"
+        MDLabel:
+            font_name: "Roboto-Bold"
+            text: "HELP SCREEN"
+            font_size: "30sp"
+            size_hint_y: .1
+            width: dp(500)
+            pos_hint: { "right": 1.4, "top": 1.5}
+            theme_text_color: "Custom"
+            text_color: get_color_from_hex("#fcb711")
+        ScrollView:
+            effect_cls: "ScrollEffect"
+            scroll_type: ['bars']
+            MDGridLayout:
+                rows: 10
+                cols: 1
+                size_hint_y:None
+                size_hint_x: 1
+                height: self.minimum_height
+                spacing: "10dp"
+                MDLabel:
+                    font_name: "Roboto-BoldItalic"
+                    text: "What is a mnemonic/seed phrase?"
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    size_hint_x: 1
+                    halign: "center"
+                MDLabel:
+                    font_name: "DejaVuSans"
+                    text: "A mnemonic/seed phrase is a set of pre-defined dictionary words that form a unique set. This uniuqqe set is used to generate a wallet with a unique address, similar to how bank accounts have a unique number. i.e., no two bank accounts have the same account number. This address can be used to send and receive currency just like your bank account."
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    size_hint_x: 1
+                    pos_hint_x: .9
+                    halign: "center"
+                    theme_text_color: "Custom"
+                    text_color: get_color_from_hex("#fcb711")
+                    font_size: "12dp"
+                    
+                MDLabel:
+                    font_name: "Roboto-BoldItalic"
+                    text: "What is a address"
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    size_hint_x: 1
+                    halign: "center"
+                MDLabel:
+                    font_name: "DejaVuSans"
+                    text: "An address is a unique identifier that links your funds to the blockcahin. This is a pseudonymous identifier meaning it links your digital identity on the blockchain without storing any personal identifiers of an individual. Addresses are used to send and receive funds in the native currency of the acting network. "
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    size_hint_x: 1
+                    pos_hint_x: .9
+                    halign: "center" 
+                    theme_text_color: "Custom"
+                    text_color: get_color_from_hex("#fcb711")
+                    font_size: "12dp"
+                MDLabel:
+                    font_name: "Roboto-BoldItalic"
+                    text: "How do I receive funds to be able to subscribe and use Meile dVPN?"
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    size_hint_x: 1
+                    halign: "center"
+                MDLabel:
+                    font_name: "DejaVuSans"
+                    text: "There are two primary ways to receive tokens to purchase dVPN (the currency) subscriptions and utilize the network. 1.) You get the DVPN token on a exchange and send it to your wallet address. Current exchanges are KuCoin, HotBit, Polarity and Osmosis. Once you purchase the tokens on the exchange, you need to withdraw them to your address listed in the wallet section of this app. The tokens should appear within minutes after a withdrawal and you can begin purchasing and subscribing to Sentinel dVPN nodes through Meile. 2.) You can purchase the currency used for Meile dVPN right in our app via the 'Top-Up' button within the wallet. These funds will be handled by our servers and the payment processing is handled by stripe. Once you succesfully complete a purchase, your funds should appear in your wallet within minutes of a successful purchase through our app. This is the easiest method to using Meile dVPN."
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    size_hint_x: 1
+                    pos_hint_x: .9
+                    halign: "center" 
+                    theme_text_color: "Custom"
+                    text_color: get_color_from_hex("#fcb711")
+                    font_size: "12dp"
+                MDLabel:
+                    font_name: "Roboto-BoldItalic"
+                    text: "What is MathNodes privacy policy?"
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    size_hint_x: 1
+                    halign: "center"
+                MDLabel:
+                    font_name: "DejaVuSans"
+                    text: "MathNodes uses Stripe to process payments in order to receive funds to use the dVPN. You will see that we do not even need the name of the individual. Once a payment is processed through Stripe, Mathnodes stores only the payment_id received from stripe, the address of your wallet, and the amount of tokens sent (1,000). We have to keep records some information in case there is a dispute and we need to query the orders and verify if tokens were sent to the reciept's address. We do not store your name, your credit card details, or any other information beside what we have mentioned. "
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    size_hint_x: 1
+                    pos_hint_x: .9
+                    halign: "center" 
+                    theme_text_color: "Custom"
+                    text_color: get_color_from_hex("#fcb711")
+                    font_size: "12dp"
+                MDLabel:
+                    font_name: "Roboto-BoldItalic"
+                    text: "Why is a dVPN better than a tradiation VPN?"
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    size_hint_x: 1
+                    halign: "center"
+                MDLabel:
+                    font_name: "DejaVuSans"
+                    text: "A traditional VPN, like Nord, Norton, Cryptostorm, or Proton is a centralized set of servers that a user connects through to access the internet. Most VPNs are required to keep a degree of logging information about users. Centralized VPNs can terminate a user's plan or restrict access to the internet based on private, public, or governmental policy. A dVPN such as the one Meile offers, uses blockchain technologies via the Sentinel Network to ensure a decentralized structure. This means that the servers you connect through are ran by a community of volunteers rather than a central authority. As such, no logging takes places, users don't have the ability to throttle or restrict traffic and no censorship is possible through the use of a dVPN."
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    size_hint_x: 1
+                    pos_hint_x: .9
+                    halign: "center" 
+                    theme_text_color: "Custom"
+                    text_color: get_color_from_hex("#fcb711")
+                    font_size: "12dp"
+            
