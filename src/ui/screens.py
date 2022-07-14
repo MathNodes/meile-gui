@@ -1,16 +1,16 @@
-from src.geography.continents import OurWorld
+from geography.continents import OurWorld
 from kivy.properties import BooleanProperty, StringProperty
-from src.ui.interfaces import Tab
-from src.typedef.win import WindowNames, ICANHAZURL
-from src.cli.sentinel import  NodeTreeData
-from src.cli.sentinel import NodesInfoKeys, FinalSubsKeys
-from src.cli.sentinel import disconnect as Disconnect
-import src.main.main as Meile
-from src.ui.widgets import WalletInfoContent
-from src.utils.qr import QRCode
-from src.cli.wallet import HandleWalletFunctions
-from src.conf.meile_config import MeileGuiConfig
-from src.typedef.win import CoinsList
+from ui.interfaces import Tab
+from typedef.win import WindowNames, ICANHAZURL
+from cli.sentinel import  NodeTreeData
+from cli.sentinel import NodesInfoKeys, FinalSubsKeys
+from cli.sentinel import disconnect as Disconnect
+import main.main as Meile
+from ui.widgets import WalletInfoContent
+from utils.qr import QRCode
+from cli.wallet import HandleWalletFunctions
+from conf.meile_config import MeileGuiConfig
+from typedef.win import CoinsList
 
 
 from kivy.uix.screenmanager import Screen, SlideTransition
@@ -20,6 +20,8 @@ from kivy.clock import Clock, mainthread
 from kivyoav.delayed import delayable
 from kivy.properties import ObjectProperty
 from kivymd.uix.card import MDCard
+from kivy.utils import get_color_from_hex
+
 
 from save_thread_result import ThreadWithResult
 import requests
@@ -52,6 +54,7 @@ class WalletRestore(Screen):
                 else: 
                     seed_text = self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.seed.ids.seed_phrase.text
                 self.dialog = MDDialog(
+                    md_bg_color=get_color_from_hex("#0d021b"),
                     text="Seed: %s\n\nName: %s\nPassword: %s" %
                      (
                      seed_text,
@@ -61,13 +64,13 @@ class WalletRestore(Screen):
                     
                     buttons=[
                         MDFlatButton(
-                            text="Cancel",
+                            text="CANCEL",
                             theme_text_color="Custom",
                             text_color=Meile.app.theme_cls.primary_color,
                             on_release=self.cancel,
                         ),
                         MDRaisedButton(
-                            text="Restore",
+                            text="RESTORE",
                             theme_text_color="Custom",
                             text_color=(1,1,1,1),
                             on_release= self.wallet_restore
@@ -124,6 +127,7 @@ class WalletRestore(Screen):
         self.dialog = MDDialog(
                 type="custom",
                 content_cls=WalletInfo,
+                md_bg_color=get_color_from_hex("#0d021b"),
 
                 buttons=[
                     MDRaisedButton(
@@ -164,6 +168,7 @@ class PreLoadWindow(Screen):
         self.dialog = None
         self.dialog = MDDialog(
             title=title_text,
+            md_bg_color=get_color_from_hex("#0d021b"),
             buttons=[
                 MDFlatButton(
                     text="OKAY",
@@ -182,7 +187,7 @@ class PreLoadWindow(Screen):
     def update_status_text(self, dt):
         go_button = self.manager.get_screen(WindowNames.PRELOAD).ids.go_button
         if geteuid() != 0:
-            self.add_loading_popup("Please start Meile-GUI as root. i.e., sudo -E ./meile-gui or similarly")
+            self.add_loading_popup("Please start Meile-GUI as root. i.e., sudo -E env PATH=$PATH ./meile-gui or similarly")
 
         yield 1.0
         
@@ -251,7 +256,7 @@ class MainWindow(Screen):
             tab = Tab(text=name_tab)
             self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.android_tabs.add_widget(tab)
         
-        self.get_ip_address()
+        self.get_ip_address(None    )
         
         self.on_tab_switch(
             None,
@@ -264,7 +269,7 @@ class MainWindow(Screen):
         self.MeileConfig = MeileGuiConfig()
         return self.MeileConfig.resource_path("../imgs/logo.png")
         
-    def get_ip_address(self):
+    def get_ip_address(self, dt):
         if self.dialog:
             self.dialog.dismiss()
             
@@ -272,25 +277,24 @@ class MainWindow(Screen):
         req = requests.get(ICANHAZURL)
         self.ip = req.text
     
-        self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.new_ip.text = "IP: " + self.ip
+        self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.new_ip.text = self.ip
         #self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.old_ip.text = "Old IP: " + self.old_ip
         
     def disconnect_from_node(self):
         try:
             if self.CONNECTED == None:
                 returncode, self.CONNECTED = Disconnect()
-                if returncode == 0 and not self.CONNECTED:
-                    self.get_ip_address()
+                self.get_ip_address(None)
             elif self.CONNECTED == False:
                 return
             else:
                 returncode, self.CONNECTED = Disconnect()
-                if returncode == 0 and not self.CONNECTED:
-                    self.get_ip_address()
+                self.get_ip_address(None)
         except:
             self.dialog = None
             self.dialog = MDDialog(
             text="Error disconnecting from node",
+            md_bg_color=get_color_from_hex("#0d021b"),
             buttons=[
                 MDFlatButton(
                     text="Okay",
@@ -316,6 +320,7 @@ class MainWindow(Screen):
         if not self.address:
             self.dialog = MDDialog(
                 text="Wallet Restore/Create",
+                md_bg_color=get_color_from_hex("#0d021b"),
                 buttons=[
                     MDRaisedButton(
                         text="Restore/Create",
@@ -334,6 +339,11 @@ class MainWindow(Screen):
         Meile.app.root.transition = SlideTransition(direction = "up")
         Meile.app.root.current = WindowNames.WALLET
         
+    def build_help_screen_interface(self):
+        Meile.app.root.add_widget(HelpScreen(name=WindowNames.HELP))
+        Meile.app.root.transition = SlideTransition(direction = "left")
+        Meile.app.root.current = WindowNames.HELP
+       
     def wallet_restore(self, inst):
         self.dialog.dismiss()
         self.dialog = None
@@ -373,7 +383,7 @@ class MainWindow(Screen):
     @mainthread        
     def add_loading_popup(self, title_text):
         self.dialog = None
-        self.dialog = MDDialog(title=title_text)
+        self.dialog = MDDialog(title=title_text,md_bg_color=get_color_from_hex("#0d021b"))
         self.dialog.open()
         
     @mainthread
@@ -388,6 +398,7 @@ class MainWindow(Screen):
     def sub_address_error(self):
         self.dialog = MDDialog(
             text="Error Loading Subscriptions... No wallet found",
+            md_bg_color=get_color_from_hex("#0d021b"),
             buttons=[
                 MDRaisedButton(
                     text="Okay",
@@ -426,7 +437,7 @@ class MainWindow(Screen):
     @mainthread
     def on_tab_switch(self, instance_tabs, instance_tab, instance_tabs_label, tab_text):
         #from src.cli.sentinel import ConNodes, NodesDictList
-        
+        print("instance_tabs: %s, instance_tab: %s, instance_tabs_label: %s, tab_text: %s" % (instance_tabs, instance_tab, instance_tabs_label, tab_text))
         self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.rv.data = []
         if not tab_text:
             tab_text = OurWorld.CONTINENTS[0]
@@ -633,3 +644,9 @@ class RecycleViewCountryRow(MDCard):
            
         
     
+class HelpScreen(Screen):
+    def set_previous_screen(self):
+        
+        Meile.app.root.remove_widget(self)
+        Meile.app.root.transistion = SlideTransition(direction="right")
+        Meile.app.root.current = WindowNames.MAIN_WINDOW
