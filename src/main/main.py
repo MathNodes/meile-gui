@@ -28,7 +28,7 @@ class MyMainApp(MDApp):
         # Scaled down and not using tkinter library
         if len(get_monitors()) == 1:
             print("ONE MONITOR")
-            primary_monitor = get_monitors()
+            primary_monitor = get_monitors()[0]
         else:
             for m in get_monitors():
                 print(str(m))
