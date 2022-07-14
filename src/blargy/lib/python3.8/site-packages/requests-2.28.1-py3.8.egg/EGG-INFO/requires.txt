@@ -1,0 +1,12 @@
+certifi>=2017.4.17
+charset-normalizer<3,>=2
+idna<4,>=2.5
+urllib3<1.27,>=1.21.1
+
+[security]
+
+[socks]
+PySocks!=1.5.7,>=1.5.6
+
+[use_chardet_on_py3]
+chardet<6,>=3.0.2

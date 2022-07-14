@@ -1,12 +1,13 @@
-from src.ui.interfaces import WindowManager
-from src.ui.screens import MainWindow,  PreLoadWindow, WalletRestore
-from src.typedef.win import WindowNames
-from src.conf.meile_config import MeileGuiConfig
+from ui.interfaces import WindowManager
+from ui.screens import MainWindow,  PreLoadWindow, WalletRestore
+from typedef.win import WindowNames
+from conf.meile_config import MeileGuiConfig
+
 
 from kivy.lang import Builder
 from kivymd.app import MDApp
-
-
+from kivymd.theming import ThemeManager
+from kivy.utils import get_color_from_hex
 from kivy.config import Config
 MeileConfig = MeileGuiConfig()
 Config.set('kivy','window_icon',MeileConfig.resource_path("../imgs/icon.png"))
@@ -25,10 +26,15 @@ class MyMainApp(MDApp):
 
         # Get Primary Monitor Resolution
         # Scaled down and not using tkinter library
-        for m in get_monitors():
-            if m.is_primary:
-                primary_monitor = m
-                
+        if len(get_monitors()) == 1:
+            print("ONE MONITOR")
+            primary_monitor = get_monitors()
+        else:
+            for m in get_monitors():
+                print(str(m))
+                if m.is_primary:
+                    primary_monitor = m
+                    
         dim = []
         dim.append(primary_monitor.width)
         dim.append(primary_monitor.height)
@@ -40,9 +46,15 @@ class MyMainApp(MDApp):
           
     def build(self):
         
-        kv = Builder.load_file(MeileConfig.resource_path("../kivy/meile.kv"))
+        kv = Builder.load_file(MeileConfig.resource_path("../kv/meile.kv"))
         
         manager = WindowManager()
+        theme = ThemeManager()
+        self.theme_cls.primary_palette = "Amber"
+        self.theme_cls.theme_style = "Dark" 
+        self.theme_cls.disabled_primary_color = "Amber"
+        self.theme_cls.accent_palette = "DeepPurple"
+        self.theme_cls.opposite_disabled_primary_color = "Amber"
         manager.add_widget(PreLoadWindow(name=WindowNames.PRELOAD))
         #manager.add_widget(MainWindow(name=WindowNames.MAIN_WINDOW))
         manager.add_widget(WalletRestore(name=WindowNames.WALLET_RESTORE))

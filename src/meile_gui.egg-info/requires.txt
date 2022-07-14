@@ -1,0 +1,8 @@
+kivymd
+kivyoav
+pexpect
+pydash
+qrcode
+save_thread_result
+screeninfo
+treelib
