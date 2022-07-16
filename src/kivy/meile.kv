@@ -40,33 +40,32 @@ WindowManager:
     name: "main"
     MDBoxLayout:
         orientation: 'vertical'
-        
-        MDToolbar:
-            id: toolbar
-            title: "Sentinel dVPN"
-            md_bg_color: get_color_from_hex("#0d021b")
-            height: "100dp"
-            padding: 10,0,0,10
-            spacing: 10
-            right_action_items:
-                [
-                ["lan-disconnect", lambda x: root.disconnect_from_node(), "Disconnect"],
-                ["wallet", lambda x: root.wallet_dialog(), "Wallet"],
-                ]
-            MDLabel:
+        md_bg_color: get_color_from_hex("#0d021b")
+        MDBoxLayout:
+            orientation: "horizontal"
+            size_hint_y: .15
+            MDTextField:
+                hint_text: "IP Address"
                 id: new_ip
-                text: "IP: " 
-                font_size: "15dp"
-                pos_hint: {"center_x" : .8, "center_y": .5}
+                mode: "fill"
+                width: "200dp"
+                haline: "center"
+                size_hint_x: 1.2
+                pos_hint: {"center_x" : .5, "center_y": .5}                
+                text: ""
+                readonly: True
+                opacity: 1
                 theme_text_color: "Custom"
-                text_color: get_color_from_hex("#ffffff")
+                text_color: get_color_from_hex("#fcb711")
+                normal_color: app.theme_cls.accent_color      
                 
-            FitImage:
+            Image:
                 source: root.get_logo()
                 size_hint: None, None
-                height: "100dp"
-                pos: self.pos
-    
+                height: "75dp"
+                pos_hint_x: 1
+        
+
 
         MDTabs:
             id: android_tabs
@@ -74,13 +73,39 @@ WindowManager:
             size_hint_y: None
             height: "48dp"
             tab_indicator_anim: True
-            color: 0,0,0,1
-            background_color: 0,0,0,1
+            color: 1,1,1,1
+            normal_color: get_color_from_hex("#fcb711")
+            background_color: get_color_from_hex("#fcb711")
         
         
         NodeRV:
             md_bg_color: get_color_from_hex("#0d021b")    
             id: rv
+        
+        MDBottomNavigation:
+            size_hint_y: .1
+            panel_color: get_color_from_hex("#0d021b")
+            text_color_normal: get_color_from_hex("#fcb711")
+            MDBottomNavigationItem:
+                name: "lan_disconnect"
+                text: "Disconnect"
+                icon: "lan-disconnect"
+
+                on_tab_release: root.disconnect_from_node()
+                
+            MDBottomNavigationItem:
+                name: "wallet"
+                text: "Wallet"
+                icon: "wallet"
+                on_tab_release: root.wallet_dialog()
+                
+            MDBottomNavigationItem:
+                name: "help"
+                text: "Help"
+                icon: "account-question"
+                on_tab_release: root.build_help_screen_interface()
+                
+    
             
 <NodeScreen>
     name: "nodes"
@@ -89,6 +114,9 @@ WindowManager:
         NodeRV:
             id: rv
     ActionBar:
+        background_normal: ''
+        background_down: ''
+        background_color: get_color_from_hex("#0d021b")
         ActionView:
             ActionPrevious:
                 icon: "arrow-left-circle"
@@ -145,8 +173,10 @@ WindowManager:
             MDLabel:
                 text: root.dvpn_text
                 theme_text_color: "Custom"
-                text_color: get_color_from_hex("#000000")
+                text_color: get_color_from_hex("#fcb711")
                 pos_hint: {'x': .35, 'top': .905}
+                font_name: "RobotoMono-Regular"
+                
 
             Image:
                 source: root.secret_logo
@@ -155,8 +185,10 @@ WindowManager:
             MDLabel:
                 text: root.scrt_text
                 theme_text_color: "Custom"
-                text_color: get_color_from_hex("#000000")
+                text_color: get_color_from_hex("#fcb711")
                 pos_hint: {'x': .35, 'top': .7695}
+                font_name: "RobotoMono-Regular"
+                
             Image:
                 source: root.osmosis_logo
                 pos_hint: {'x': -.2, 'top': .63}
@@ -164,8 +196,9 @@ WindowManager:
             MDLabel:
                 text: root.osmo_text
                 theme_text_color: "Custom"
-                text_color: get_color_from_hex("#000000")
+                text_color: get_color_from_hex("#fcb711")
                 pos_hint: {'x': .35, 'top': .6295}
+                font_name: "RobotoMono-Regular"
             Image:
                 source: root.cosmos_logo
                 pos_hint: {'x': .25, 'top': .89}
@@ -173,8 +206,9 @@ WindowManager:
             MDLabel:
                 text: root.atom_text
                 theme_text_color: "Custom"
-                text_color: get_color_from_hex("#000000")
+                text_color: get_color_from_hex("#fcb711")
                 pos_hint: {'x': .8, 'top': .89}
+                font_name: "RobotoMono-Regular"
             Image:
                 source: root.decentr_logo
                 pos_hint: {'x': .25, 'top': .76}
@@ -182,9 +216,13 @@ WindowManager:
             MDLabel:
                 text: root.dec_text
                 theme_text_color: "Custom"
-                text_color: get_color_from_hex("#000000")
+                text_color: get_color_from_hex("#fcb711")
                 pos_hint: {'x': .8, 'top': .76}
+                font_name: "RobotoMono-Regular"
     ActionBar:
+        background_normal: ''
+        background_down: ''
+        background_color: get_color_from_hex("#0d021b")
         ActionView:
             ActionPrevious:
                 icon: "arrow-left-circle"
@@ -192,25 +230,15 @@ WindowManager:
                 with_previous: True
                 on_release: root.set_previous_screen() 
 
-<OSXPasswordDialog>
-	name: "osx_password"
-	title: "OS X Password"
-
-    MDTextField:
-	    id: osx
-	    size_hint_x: None
-	    width: "300dp"
-	    height: "300dp"
-	    text: ""
-	    hint_text: "OS X Password"
-	    pos_hint: {"center_x": .5, "center_y": .80}
-        mode: "rectangle"
-   
+    
 
 <WalletRestore>:
     name: "walletrestore"
     title: "Wallet Create"
     ActionBar:
+        background_normal: ''
+        background_down: ''
+        background_color: get_color_from_hex("#0d021b")
         ActionView:
             ActionPrevious:
                 icon: "arrow-left-circle"
@@ -486,7 +514,7 @@ WindowManager:
             text_color: get_color_from_hex("#fcb711")
             width: "350dp"
             size_hint_x: None
-        Image:
+        FullImage:
             source: root.source_image
             
         MDLabel:    
@@ -693,7 +721,6 @@ WindowManager:
     height: "260dp"
     price_text: ""
     naddress: " "
-    
     MDBoxLayout:
         orientation: "vertical"
         MDLabel:
@@ -744,3 +771,132 @@ WindowManager:
             pos_hint: {'center_x': .5, 'center_y': .5}
             text: "udvpn"
             on_release: root.menu.open()
+            
+            
+<HelpScreen>:
+    name: "helpscreen"
+    title: "Help Screen"
+    ActionBar:
+        background_normal: ''
+        background_down: ''
+        background_color: get_color_from_hex("#0d021b")
+        ActionView:
+            ActionPrevious:
+                icon: "arrow-left-circle"
+                title: 'Go Back'
+                with_previous: True
+                on_release: root.set_previous_screen() 
+    
+    MDBoxLayout:
+        orientation: "vertical"
+        MDLabel:
+            font_name: "Roboto-Bold"
+            text: "HELP SCREEN"
+            font_size: "30sp"
+            size_hint_y: .1
+            width: dp(500)
+            pos_hint: { "right": 1.4, "top": 1.5}
+            theme_text_color: "Custom"
+            text_color: get_color_from_hex("#fcb711")
+        ScrollView:
+            effect_cls: "ScrollEffect"
+            scroll_type: ['bars']
+            MDGridLayout:
+                rows: 10
+                cols: 1
+                size_hint_y:None
+                size_hint_x: 1
+                height: self.minimum_height
+                spacing: "10dp"
+                MDLabel:
+                    font_name: "Roboto-BoldItalic"
+                    text: "What is a mnemonic/seed phrase?"
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    size_hint_x: 1
+                    halign: "center"
+                MDLabel:
+                    font_name: "DejaVuSans"
+                    text: "A mnemonic/seed phrase is a set of pre-defined dictionary words that form a unique set. This uniuqqe set is used to generate a wallet with a unique address, similar to how bank accounts have a unique number. i.e., no two bank accounts have the same account number. This address can be used to send and receive currency just like your bank account."
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    size_hint_x: 1
+                    pos_hint_x: .9
+                    halign: "center"
+                    theme_text_color: "Custom"
+                    text_color: get_color_from_hex("#fcb711")
+                    font_size: "12dp"
+                    
+                MDLabel:
+                    font_name: "Roboto-BoldItalic"
+                    text: "What is a address"
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    size_hint_x: 1
+                    halign: "center"
+                MDLabel:
+                    font_name: "DejaVuSans"
+                    text: "An address is a unique identifier that links your funds to the blockcahin. This is a pseudonymous identifier meaning it links your digital identity on the blockchain without storing any personal identifiers of an individual. Addresses are used to send and receive funds in the native currency of the acting network. "
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    size_hint_x: 1
+                    pos_hint_x: .9
+                    halign: "center" 
+                    theme_text_color: "Custom"
+                    text_color: get_color_from_hex("#fcb711")
+                    font_size: "12dp"
+                MDLabel:
+                    font_name: "Roboto-BoldItalic"
+                    text: "How do I receive funds to be able to subscribe and use Meile dVPN?"
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    size_hint_x: 1
+                    halign: "center"
+                MDLabel:
+                    font_name: "DejaVuSans"
+                    text: "There are two primary ways to receive tokens to purchase dVPN (the currency) subscriptions and utilize the network. 1.) You get the DVPN token on a exchange and send it to your wallet address. Current exchanges are KuCoin, HotBit, Polarity and Osmosis. Once you purchase the tokens on the exchange, you need to withdraw them to your address listed in the wallet section of this app. The tokens should appear within minutes after a withdrawal and you can begin purchasing and subscribing to Sentinel dVPN nodes through Meile. 2.) You can purchase the currency used for Meile dVPN right in our app via the 'Top-Up' button within the wallet. These funds will be handled by our servers and the payment processing is handled by stripe. Once you succesfully complete a purchase, your funds should appear in your wallet within minutes of a successful purchase through our app. This is the easiest method to using Meile dVPN."
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    size_hint_x: 1
+                    pos_hint_x: .9
+                    halign: "center" 
+                    theme_text_color: "Custom"
+                    text_color: get_color_from_hex("#fcb711")
+                    font_size: "12dp"
+                MDLabel:
+                    font_name: "Roboto-BoldItalic"
+                    text: "What is MathNodes privacy policy?"
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    size_hint_x: 1
+                    halign: "center"
+                MDLabel:
+                    font_name: "DejaVuSans"
+                    text: "MathNodes uses Stripe to process payments in order to receive funds to use the dVPN. You will see that we do not even need the name of the individual. Once a payment is processed through Stripe, Mathnodes stores only the payment_id received from stripe, the address of your wallet, and the amount of tokens sent (1,000). We have to keep records some information in case there is a dispute and we need to query the orders and verify if tokens were sent to the reciept's address. We do not store your name, your credit card details, or any other information beside what we have mentioned. "
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    size_hint_x: 1
+                    pos_hint_x: .9
+                    halign: "center" 
+                    theme_text_color: "Custom"
+                    text_color: get_color_from_hex("#fcb711")
+                    font_size: "12dp"
+                MDLabel:
+                    font_name: "Roboto-BoldItalic"
+                    text: "Why is a dVPN better than a tradiation VPN?"
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    size_hint_x: 1
+                    halign: "center"
+                MDLabel:
+                    font_name: "DejaVuSans"
+                    text: "A traditional VPN, like Nord, Norton, Cryptostorm, or Proton is a centralized set of servers that a user connects through to access the internet. Most VPNs are required to keep a degree of logging information about users. Centralized VPNs can terminate a user's plan or restrict access to the internet based on private, public, or governmental policy. A dVPN such as the one Meile offers, uses blockchain technologies via the Sentinel Network to ensure a decentralized structure. This means that the servers you connect through are ran by a community of volunteers rather than a central authority. As such, no logging takes places, users don't have the ability to throttle or restrict traffic and no censorship is possible through the use of a dVPN."
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    size_hint_x: 1
+                    pos_hint_x: .9
+                    halign: "center" 
+                    theme_text_color: "Custom"
+                    text_color: get_color_from_hex("#fcb711")
+                    font_size: "12dp"
+            

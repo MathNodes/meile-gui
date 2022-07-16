@@ -11,6 +11,7 @@ from kivymd.uix.list import OneLineIconListItem
 from kivy.metrics import dp
 from kivyoav.delayed import delayable
 from kivy.uix.screenmanager import Screen, SlideTransition
+from kivy.utils import get_color_from_hex
 
 
 from functools import partial
@@ -19,9 +20,8 @@ import requests
 import re
 
 
-from src.cli.sentinel import NodesInfoKeys, IBCCOINS,IBCSCRT, IBCATOM, IBCDEC, IBCOSMO
-from src.cli.sentinel import NodeTreeData
-from src.ui.interfaces import SubscribeContent, OSXPasswordDialog
+from src.cli.sentinel import IBCCOINS
+from src.ui.interfaces import SubscribeContent
 from src.typedef.win import CoinsList, WindowNames
 from src.conf.meile_config import MeileGuiConfig
 from src.cli.wallet import HandleWalletFunctions
@@ -65,6 +65,7 @@ class SubscribeContent(BoxLayout):
         ]
         self.menu = MDDropdownMenu(
             caller=self.ids.drop_item,
+            background_color=get_color_from_hex("#0d021b"),
             items=menu_items,
             position="center",
             width_mult=4,
@@ -187,6 +188,7 @@ Node Version: %s
                     title="Address:",
                     type="custom",
                     content_cls=subscribe_dialog,
+                    md_bg_color=get_color_from_hex("#0d021b"),
                     buttons=[
                         MDFlatButton(
                             text="CANCEL",
@@ -222,12 +224,13 @@ Node Version: %s
             self.dialog.dismiss()
             self.dialog = MDDialog(
                 title="Successful!",
+                md_bg_color=get_color_from_hex("#0d021b"),
                 buttons=[
                         MDFlatButton(
                             text="OK",
                             theme_text_color="Custom",
                             text_color=self.theme_cls.primary_color,
-                            on_release=self.closeDialog
+                            on_release=self.closeDialogReturnToSubscriptions
                         ),])
             self.dialog.open()
 
@@ -235,6 +238,7 @@ Node Version: %s
             self.dialog.dismiss()
             self.dialog = MDDialog(
             title="Error: %s" % returncode[1],
+            md_bg_color=get_color_from_hex("#0d021b"),
             buttons=[
                     MDFlatButton(
                         text="OK",
@@ -274,6 +278,15 @@ Node Version: %s
                     tru_mu_deposit = tru_mu_deposit.replace(coin, ibc)
                     print(tru_mu_deposit)
         return tru_mu_deposit
+    
+    def closeDialogReturnToSubscriptions(self,inst):
+        self.dialog.dismiss()
+        self.dialog = None
+        Meile.app.root.transition = SlideTransition(direction = "down")
+        Meile.app.root.current = WindowNames.MAIN_WINDOW
+        Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).SubResult = None
+        Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).on_tab_switch(None,None,None,"Subscriptions")
+ 
     def closeDialog(self, inst):
         self.dialog.dismiss()
         self.dialog = None
@@ -308,12 +321,15 @@ class RecycleViewSubRow(MDCard):
         
     def add_loading_popup(self, title_text):
         self.dialog = None
-        self.dialog = MDDialog(title=title_text)
+        self.dialog = MDDialog(title=title_text,md_bg_color=get_color_from_hex("#0d021b"))
         self.dialog.open()
     def remove_loading_widget(self):
-        self.dialog.dismiss()
-        self.dialog = None
-        
+        try:
+            self.dialog.dismiss()
+            self.dialog = None
+        except:
+            self.dialog = None
+            
     # Non sudo implementation
     '''
     @delayable
@@ -366,6 +382,7 @@ class RecycleViewSubRow(MDCard):
             self.remove_loading_widget()
             self.dialog = MDDialog(
                 title="Connected!",
+                md_bg_color=get_color_from_hex("#0d021b"),
                 buttons=[
                         MDFlatButton(
                             text="OK",
@@ -379,6 +396,7 @@ class RecycleViewSubRow(MDCard):
             self.remove_loading_widget()
             self.dialog = MDDialog(
                 title="Something went wrong. Not connected",
+                md_bg_color=get_color_from_hex("#0d021b"),
                 buttons=[
                         MDFlatButton(
                             text="OK",

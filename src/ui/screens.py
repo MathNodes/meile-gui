@@ -11,9 +11,7 @@ from src.utils.qr import QRCode
 from src.cli.wallet import HandleWalletFunctions
 from src.conf.meile_config import MeileGuiConfig
 from src.typedef.win import CoinsList
-
-from kivy.uix.popup import Popup
-from kivymd.uix.spinner import MDSpinner  
+  
 from kivy.uix.screenmanager import Screen, SlideTransition
 from kivymd.uix.button import MDFlatButton, MDRaisedButton
 from kivymd.uix.dialog import MDDialog
@@ -21,16 +19,15 @@ from kivy.clock import Clock, mainthread
 from kivyoav.delayed import delayable
 from kivy.properties import ObjectProperty
 from kivymd.uix.card import MDCard
+from kivy.utils import get_color_from_hex
 from functools import partial
 
-import asyncio
 from save_thread_result import ThreadWithResult
 import requests
-import collections
 
 
-from os import path
-from kivy.utils import get_color_from_hex
+from os import path,geteuid
+import sys
 
 class WalletRestore(Screen):
     screemanager = ObjectProperty()
@@ -57,6 +54,7 @@ class WalletRestore(Screen):
                 else: 
                     seed_text = self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.seed.ids.seed_phrase.text
                 self.dialog = MDDialog(
+                    md_bg_color=get_color_from_hex("#0d021b"),
                     text="Seed: %s\n\nName: %s\nPassword: %s" %
                      (
                      seed_text,
@@ -129,7 +127,7 @@ class WalletRestore(Screen):
         self.dialog = MDDialog(
                 type="custom",
                 content_cls=WalletInfo,
-
+                md_bg_color=get_color_from_hex("#0d021b"),
                 buttons=[
                     MDRaisedButton(
                         text="I saved this",
@@ -149,6 +147,7 @@ class PreLoadWindow(Screen):
     j = 0
     go_button = ObjectProperty()
     NodeTree = None
+    dialog = None
     def __init__(self, **kwargs):
         super(PreLoadWindow, self).__init__()
         
@@ -163,11 +162,31 @@ class PreLoadWindow(Screen):
         Config = MeileGuiConfig()
         return Config.resource_path("../imgs/logo_hd.png")
         
-
+    @mainthread        
+    def add_loading_popup(self, title_text):
+        self.dialog = None
+        self.dialog = MDDialog(
+            title=title_text,
+            md_bg_color=get_color_from_hex("#0d021b"),
+            buttons=[
+                MDFlatButton(
+                    text="OKAY",
+                    theme_text_color="Custom",
+                    text_color=Meile.app.theme_cls.primary_color,
+                    on_release=self.quit_meile,
+                ),
+                ]
+        )
+        self.dialog.open()
+        
+    def quit_meile(self, dt):
+        sys.exit("Not running as root")
+  
     @delayable
     def update_status_text(self, dt):
         go_button = self.manager.get_screen(WindowNames.PRELOAD).ids.go_button
-
+        if geteuid() != 0:
+            self.add_loading_popup("Please start Meile-GUI as root. i.e., sudo -E env PATH=$PATH ./meile-gui or similarly")
 
         yield 1.0
         
@@ -254,11 +273,14 @@ class MainWindow(Screen):
             self.dialog.dismiss()
             
         self.old_ip = self.ip
-        req = requests.get(ICANHAZURL)
-        self.ip = req.text
-    
-        self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.new_ip.text = "IP: " + self.ip
-        #self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.old_ip.text = "Old IP: " + self.old_ip
+        try:
+            req = requests.get(ICANHAZURL)
+            self.ip = req.text
+        
+            self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.new_ip.text = self.ip
+            #self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.old_ip.text = "Old IP: " + self.old_ip
+        except:
+            pass
     @delayable
     def DisconnectDialog(self):
         self.dialog.dismiss()
@@ -269,26 +291,25 @@ class MainWindow(Screen):
 
   
     def disconnect_from_node(self):
-        self.DisconnectDialog()
+        from builtins import str
         try:
             if self.CONNECTED == None:
-                returncode, self.CONNECTED = Disconnect()
-                if not self.CONNECTED and returncode == 0:
-                    self.remove_loading_widget(None)
-                    self.get_ip_address()
-                else:
-                    self.remove_loading_widget(None)
+                returncode, self.CONNECTED = Disconnect()                
+                #self.remove_loading_widget(None)
+                self.get_ip_address()
             elif self.CONNECTED == False:
+                #self.remove_loading_widget(None)
                 return
             else:
                 returncode, self.CONNECTED = Disconnect()
-                if not self.CONNECTED and returncodxe == 0:
-                    self.remove_loading_widget(None)
-                    self.get_ip_address()
-        except:
+                #self.remove_loading_widget(None)
+                self.get_ip_address()
+        except Exception as e:
+            print(str(e))
             self.dialog = None
             self.dialog = MDDialog(
             text="Error disconnecting from node",
+            md_bg_color=get_color_from_hex("#0d021b"),
             buttons=[
                 MDFlatButton(
                     text="Okay",
@@ -315,6 +336,7 @@ class MainWindow(Screen):
         if not self.address:
             self.dialog = MDDialog(
                 text="Wallet Restore/Create",
+                md_bg_color=get_color_from_hex("#0d021b"),
                 buttons=[
                     MDRaisedButton(
                         text="Restore/Create",
@@ -332,13 +354,18 @@ class MainWindow(Screen):
         Meile.app.root.add_widget(WalletScreen(name=WindowNames.WALLET, ADDRESS=self.address))
         Meile.app.root.transition = SlideTransition(direction = "up")
         Meile.app.root.current = WindowNames.WALLET
+  
+    def build_help_screen_interface(self):
+        Meile.app.root.add_widget(HelpScreen(name=WindowNames.HELP))
+        Meile.app.root.transition = SlideTransition(direction = "left")
+        Meile.app.root.current = WindowNames.HELP
+  
         
     def wallet_restore(self, inst):
         self.dialog.dismiss()
         self.dialog = None
         self.switch_window(WindowNames.WALLET_RESTORE)
-        
-    
+           
     def wallet_create(self, inst):
         pass
         
@@ -372,7 +399,7 @@ class MainWindow(Screen):
     @mainthread        
     def add_loading_popup(self, title_text):
         self.dialog = None
-        self.dialog = MDDialog(title=title_text)
+        self.dialog = MDDialog(title=title_text,md_bg_color=get_color_from_hex("#0d021b"))
         self.dialog.open()
         
     @mainthread
@@ -387,6 +414,7 @@ class MainWindow(Screen):
     def sub_address_error(self):
         self.dialog = MDDialog(
             text="Error Loading Subscriptions... No wallet found",
+            md_bg_color=get_color_from_hex("#0d021b"),
             buttons=[
                 MDRaisedButton(
                     text="Okay",
@@ -632,3 +660,9 @@ class RecycleViewCountryRow(MDCard):
            
         
     
+class HelpScreen(Screen):
+    def set_previous_screen(self):
+        
+        Meile.app.root.remove_widget(self)
+        Meile.app.root.transistion = SlideTransition(direction="right")
+        Meile.app.root.current = WindowNames.MAIN_WINDOW

@@ -46,7 +46,7 @@ class NodeTreeData():
    
     def get_nodes(self, dt):
         AllNodesInfo = []
-        nodeCMD = [sentinelcli, "query", "nodes", "--node", "https://rpc.mathnodes.com:443", "--limit", "5000", "--timeout", "18s"]
+        nodeCMD = [sentinelcli, "query", "nodes", "--node", "https://rpc.mathnodes.com:443", "--limit", "5000", "--timeout", "20s"]
     
         proc = Popen(nodeCMD, stdout=PIPE)
         
@@ -91,7 +91,6 @@ class NodeTreeData():
                 d[key] = d[key].lstrip().rstrip()
             version = d[NodesInfoKeys[9]].replace('.','')
             if version not in ('030', '031', '032'):
-                print(version)
                 continue
             d[NodesInfoKeys[3]] = self.return_denom(d[NodesInfoKeys[3]])
             
@@ -234,10 +233,10 @@ def disconnect():
     proc1 = Popen(partCMD)
     proc1.wait(timeout=10)
     
-    proc = Popen(wg_downCMD, stdout=PIPE, stderr=PIPE)
-    proc_out,proc_err = proc.communicate()
+    #proc = Popen(wg_downCMD, stdout=PIPE, stderr=PIPE)
+    proc_out,proc_err = proc1.communicate()
     
-    return proc.returncode, False
+    return proc1.returncode, False
 
 
     
