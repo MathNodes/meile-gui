@@ -15,6 +15,21 @@ Meile dVPN GUI for Linux &amp; OS X Powered by the Sentinel Network - a blockcha
 
 The new versions come pre-installed with sentinel-cli so there is no requirement to install this separately. There is a also a Mac OS X (M1) port and you can read the readme in that section by switching brances to *osx*
 
+## Mac OS X
+Download the latest release [Mac OS X v0.9.3-beta](https://github.com/MathNodes/meile-gui/releases/download/0.9.3-beta/meile-gui-v0.9.3-beta-darwin-M1.zip)
+
+Unzip. Install wireguard-tools
+```shell
+brew install wireguard-tools
+```
+
+Run:
+```shell
+sudo ./meile-gui
+```
+
+### NOTE:
+pip install is not currently available for Mac OS X. We are working on bringing this as a separate packages. Also, we are working on bundling wireguard-tools into Meile GUI so we can ease the user's install process. 
 
 ## Debian .deb package
 
