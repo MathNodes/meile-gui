@@ -93,7 +93,6 @@ class NodeTreeData():
                 d[key] = d[key].lstrip().rstrip()
             version = d[NodesInfoKeys[9]].replace('.','')
             if version not in ('030', '031', '032'):
-                print(version)
                 continue
             d[NodesInfoKeys[3]] = self.return_denom(d[NodesInfoKeys[3]])
             
