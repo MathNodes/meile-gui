@@ -3,6 +3,8 @@ import pexpect
 import json
 import requests
 
+from json.decoder import JSONDecodeError 
+
 from conf.meile_config import MeileGuiConfig
 from cli.sentinel import IBCATOM, IBCDEC, IBCOSMO, IBCSCRT, SATOSHI, APIURL
 
@@ -111,7 +113,14 @@ class HandleWalletFunctions():
         SUBSCRIBEINFO = path.join(KEYRINGDIR, "subscribe.infos")
         with open(SUBSCRIBEINFO, 'r') as sub_file:
                 lines = sub_file.readlines()
-                tx_json = json.loads(lines[2])
+                try:
+                    tx_json = json.loads(lines[2])
+                except JSONDecodeError as e:
+                    try: 
+                        tx_json = json.loads(lines[3])
+                    except JSONDecodeError as e2:
+                        return(False, 1.1459265357)
+                        
                 if tx_json['data']:
                     try: 
                         sub_id = tx_json['logs'][0]['events'][4]['attributes'][0]['value']
