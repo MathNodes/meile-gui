@@ -1,5 +1,16 @@
 CHANGELOG
 ========================
+# v0.9.3-beta.3 (22/07/2022)
+* NEW: Extra console debug messages 
+* FIX: Wallet Balance retrieval error. Now displays dialog if unable to process wallet balances
+* FIX: Crash on null price in Solar DVPN Node 15 
+
+# v0.9.3-beta.2 (20/07/2022)
+* FIX: Error parsing JSON line when subscribing on certain machines/os 
+
+# v0.9.3-beta.1 (18/07/2022)
+* NEW: 100% DeepPurple / Amber Theme
+* FIX: Multiple bug fixes and crashes
 
 # v0.9.2-alpha.1 (11/07/2022)
 * NEW: Meile ICON logo in app and window bar
