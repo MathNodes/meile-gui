@@ -33,7 +33,7 @@ pip install is not currently available for Mac OS X. We are working on bringing 
 
 ## Debian .deb package
 
-The latest version of Meile GUI comes packaged as a Debian archive. Simply download the release: [https://github.com/MathNodes/meile-gui/releases/download/0.9.3-beta/meilegui_0.9.3-beta_amd64.deb](https://github.com/MathNodes/meile-gui/releases/download/0.9.3-beta/meilegui_0.9.3-beta_amd64.deb)
+The latest version of Meile GUI comes packaged as a Debian archive. Simply download the latest release: [https://github.com/MathNodes/meile-gui/releases/](https://github.com/MathNodes/meile-gui/releases/)
 
 and run:
 
@@ -53,7 +53,7 @@ sudo meile-gui
 Meile dVPN GUI v0.9.3-beta is now available as a pip packages as well. To install, first install wireguard-tools if you don't already have them
 
 ```
-sudo apt install wirguard-tools
+sudo apt install wireguard-tools
 ```
 
 Then install via pip

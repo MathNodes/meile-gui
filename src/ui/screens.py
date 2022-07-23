@@ -507,6 +507,7 @@ class WalletScreen(Screen):
     text = StringProperty()
     ADDRESS = None
     MeileConfig = None
+    dialog = None
     def __init__(self, ADDRESS,  **kwargs):
         super(WalletScreen, self).__init__()
         self.ADDRESS = ADDRESS
@@ -543,11 +544,39 @@ class WalletScreen(Screen):
         return path.join(CONFIG.IMGDIR, "dvpn.png")
     
     def SetBalances(self, CoinDict):
-        self.dec_text = str(CoinDict['dec']) + " dec"
-        self.scrt_text = str(CoinDict['scrt']) + " scrt"
-        self.atom_text = str(CoinDict['atom']) + " atom" 
-        self.osmo_text = str(CoinDict['osmo']) + " osmo"
-        self.dvpn_text = str(CoinDict['dvpn']) + " dvpn"       
+        if CoinDict:
+            self.dec_text = str(CoinDict['dec']) + " dec"
+            self.scrt_text = str(CoinDict['scrt']) + " scrt"
+            self.atom_text = str(CoinDict['atom']) + " atom" 
+            self.osmo_text = str(CoinDict['osmo']) + " osmo"
+            self.dvpn_text = str(CoinDict['dvpn']) + " dvpn"
+        else:
+            self.dec_text = str("0.0") + " dec"
+            self.scrt_text = str("0.0") + " scrt"
+            self.atom_text = str("0.0") + " atom" 
+            self.osmo_text = str("0.0") + " osmo"
+            self.dvpn_text = str("0.0") + " dvpn"
+            self.dialog = MDDialog(
+                text="Error Loading Wallet Balance. Please try again later.",
+                md_bg_color=get_color_from_hex("#0d021b"),
+                buttons=[
+                    MDRaisedButton(
+                        text="OKay",
+                        theme_text_color="Custom",
+                        text_color=(1,1,1,1),
+                        on_release=self.closeDialog
+                    ),
+                ],
+            )
+            self.dialog.open()
+               
+    def closeDialog(self, inst):
+        try:
+            self.dialog.dismiss()
+            self.dialog = None
+        except:
+            print("Dialog is NONE")
+            return
 
     def set_previous_screen(self):
         

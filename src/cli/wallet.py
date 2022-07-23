@@ -173,19 +173,22 @@ class HandleWalletFunctions():
             
         
         coinJSON = r.json()
-        
-        for coin in coinJSON['result']:
-            if "udvpn" in coin['denom']:
-                CoinDict['dvpn'] = round(float(float(coin['amount']) / SATOSHI),4)
-            elif IBCSCRT in coin['denom']:
-                CoinDict['scrt'] = round(float(float(coin['amount']) / SATOSHI),4)
-            elif IBCDEC in coin['denom']:
-                CoinDict['dec'] = round(float(float(coin['amount']) / SATOSHI),4)
-            elif IBCATOM in coin['denom']:
-                CoinDict['atom'] = round(float(float(coin['amount']) / SATOSHI),4)
-            elif IBCOSMO in coin['denom']:
-                CoinDict['osmo'] = round(float(float(coin['amount']) / SATOSHI),4)
-                
+        print(coinJSON)
+        try:
+            for coin in coinJSON['result']:
+                if "udvpn" in coin['denom']:
+                    CoinDict['dvpn'] = round(float(float(coin['amount']) / SATOSHI),4)
+                elif IBCSCRT in coin['denom']:
+                    CoinDict['scrt'] = round(float(float(coin['amount']) / SATOSHI),4)
+                elif IBCDEC in coin['denom']:
+                    CoinDict['dec'] = round(float(float(coin['amount']) / SATOSHI),4)
+                elif IBCATOM in coin['denom']:
+                    CoinDict['atom'] = round(float(float(coin['amount']) / SATOSHI),4)
+                elif IBCOSMO in coin['denom']:
+                    CoinDict['osmo'] = round(float(float(coin['amount']) / SATOSHI),4)
+        except Exception as e:
+            print(str(e))
+            return None
         return CoinDict
     
 

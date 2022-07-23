@@ -10,6 +10,7 @@ src/cli/wallet.py
 src/conf/__init__.py
 src/conf/config.ini
 src/conf/meile_config.py
+src/conf/config/config.ini
 src/geography/__init__.py
 src/geography/continents.py
 src/imgs/__init__.py

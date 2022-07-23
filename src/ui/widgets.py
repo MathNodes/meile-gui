@@ -80,17 +80,25 @@ class SubscribeContent(BoxLayout):
         
     def parse_coin_deposit(self, mu_coin):
         try:
-            mu_coin_amt = re.findall(r'[0-9]+' + mu_coin, self.price_text)[0]
-            if mu_coin_amt:
-                self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(int(mu_coin_amt.split(mu_coin)[0])/1000000)),3)) + self.ids.drop_item.current_item.replace('u','') 
-                return self.ids.deposit.text
+            if self.price_text:
+                mu_coin_amt = re.findall(r'[0-9]+' + mu_coin, self.price_text)[0]
+                if mu_coin_amt:
+                    self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(int(mu_coin_amt.split(mu_coin)[0])/1000000)),3)) + self.ids.drop_item.current_item.replace('u','') 
+                    return self.ids.deposit.text
+                else:
+                    self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(int(self.ids.price.text.split("udvpn")[0])/1000000)),3)) + self.ids.drop_item.current_item.replace('u','')
+                    return self.ids.deposit.text
             else:
-                self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(int(self.ids.price.text.split("udvpn")[0])/1000000)),3)) + self.ids.drop_item.current_item.replace('u','')
+                self.ids.deposit.text = "0.0dvpn"
                 return self.ids.deposit.text
         except IndexError as e:
             print(str(e))
-            self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(int(self.ids.price.text.split("udvpn")[0])/1000000)),3)) + CoinsList.ibc_mu_coins[0].replace('u','')
-            return self.ids.deposit.text
+            if self.ids.price.text:
+                self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(int(self.ids.price.text.split("udvpn")[0])/1000000)),3)) + CoinsList.ibc_mu_coins[0].replace('u','')
+                return self.ids.deposit.text
+            else:
+                self.ids.deposit.text = "0.0dvpn"
+                return self.ids.deposit.text
         
         
 
