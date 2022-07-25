@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: meile-gui
-Version: 0.9.3a1
+Version: 0.9.3a3
 Summary: Meile dVPN powered by the Sentinel Network
 Home-page: https://github.com/MathNodes/meile-gui
 Author: MathNodes
@@ -14,12 +14,30 @@ Description: Meile-GUI (may•lah)
         [![GitHub forks](https://img.shields.io/github/forks/mathnodes/meile-gui?style=for-the-badge)](https://github.com/mathnodes/meile-gui/network)
         [![GitHub issues](https://img.shields.io/github/issues/mathnodes/meile-gui?style=for-the-badge)](https://github.com/mathnodes/meile-gui/issues)
         
+        [![Downloads](https://static.pepy.tech/personalized-badge/meile-gui?period=total&units=international_system&left_color=black&right_color=orange&left_text=pip)](https://pepy.tech/project/meile-gui)
+        [![Downloads](https://static.pepy.tech/personalized-badge/meile-gui?period=month&units=international_system&left_color=black&right_color=orange&left_text=pip%20(month))](https://pepy.tech/project/meile-gui)
+        
         Meile dVPN GUI for Linux &amp; OS X Powered by the Sentinel Network - a blockchain decentralized VPN. 
         
         # Pre-releases
         
         The new versions come pre-installed with sentinel-cli so there is no requirement to install this separately. There is a also a Mac OS X (M1) port and you can read the readme in that section by switching brances to *osx*
         
+        ## Mac OS X
+        Download the latest release [Mac OS X v0.9.3-beta](https://github.com/MathNodes/meile-gui/releases/download/0.9.3-beta/meile-gui-v0.9.3-beta-darwin-M1.zip)
+        
+        Unzip. Install wireguard-tools
+        ```shell
+        brew install wireguard-tools
+        ```
+        
+        Run:
+        ```shell
+        sudo ./meile-gui
+        ```
+        
+        ### NOTE:
+        pip install is not currently available for Mac OS X. We are working on bringing this as a separate packages. Also, we are working on bundling wireguard-tools into Meile GUI so we can ease the user's install process. 
         
         ## Debian .deb package
         
@@ -43,7 +61,7 @@ Description: Meile-GUI (may•lah)
         Meile dVPN GUI v0.9.3-beta is now available as a pip packages as well. To install, first install wireguard-tools if you don't already have them
         
         ```
-        sudo apt install wirguard-tools
+        sudo apt install wireguard-tools
         ```
         
         Then install via pip

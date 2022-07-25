@@ -1,5 +1,8 @@
 CHANGELOG
 ========================
+# v0.9.3-beta.4 (24/07/2022)
+* FIX: Bug when parsing wallet create/restore output
+
 # v0.9.3-beta.3 (22/07/2022)
 * NEW: Extra console debug messages 
 * FIX: Wallet Balance retrieval error. Now displays dialog if unable to process wallet balances
