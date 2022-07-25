@@ -75,9 +75,12 @@ class HandleWalletFunctions():
             with open(WALLETINFO, "r") as dvpn_file:
                 WalletDict = {}   
                 lines = dvpn_file.readlines()
-                addy_seed = [lines[x] for x in line_numbers]
-                WalletDict['address'] = addy_seed[0].split(":")[-1].lstrip().rstrip()
-                WalletDict['seed']    = addy_seed[1].lstrip().rstrip().replace('\n', '')
+                addy_seed = [lines[x] for x in range(line_numbers[0], line_numbers[1] +1)]
+                if "address:" in addy_seed[0]:
+                    WalletDict['address'] = addy_seed[0].split(":")[-1].lstrip().rstrip()
+                else:
+                    WalletDict['address'] = addy_seed[1].split(":")[-1].lstrip().rstrip()
+                WalletDict['seed'] = lines[-1].lstrip().rstrip().replace('\n', '')
                 remove(WALLETINFO)
                 return WalletDict
     
@@ -168,11 +171,10 @@ class HandleWalletFunctions():
         CoinDict = {'dvpn' : 0, 'scrt' : 0, 'dec'  : 0, 'atom' : 0, 'osmo' : 0}
         try:
             r = requests.get(APIURL + endpoint)
+            coinJSON = r.json()
         except:
             return None
             
-        
-        coinJSON = r.json()
         print(coinJSON)
         try:
             for coin in coinJSON['result']:
