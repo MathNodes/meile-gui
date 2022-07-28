@@ -1,5 +1,9 @@
 CHANGELOG
 ========================
+# v0.9.3-beta.5 (27/07/2022)
+* NEW: Shield Icon in App Bar to Notify User is Connected
+* FIX: Image stretching on subscriptions. 
+
 # v0.9.3-beta.4 (24/07/2022)
 * FIX: Bug when parsing wallet create/restore output
 
