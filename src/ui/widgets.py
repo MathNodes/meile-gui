@@ -373,6 +373,7 @@ class RecycleViewSubRow(MDCard):
     def call_ip_get(self,result, *kwargs):
         if result:
             Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).CONNECTED = True
+            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).set_protected_icon(True)
         else:
             Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).CONNECTED = False
             

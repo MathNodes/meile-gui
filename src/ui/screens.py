@@ -240,7 +240,14 @@ class MainWindow(Screen):
         
         Clock.schedule_once(self.get_config,1)     
         Clock.schedule_once(self.build, 2)
-
+    
+    def set_protected_icon(self, setbool):
+        MeileConfig = MeileGuiConfig()
+        if setbool:
+            self.ids.protected.opacity = 1
+        else:
+            self.ids.protected.opacity = 0
+        return MeileConfig.resource_path("../imgs/protected.png")
 
     def get_config(self, dt):
         MeileConfig = MeileGuiConfig()
@@ -285,11 +292,13 @@ class MainWindow(Screen):
             if self.CONNECTED == None:
                 returncode, self.CONNECTED = Disconnect()
                 self.get_ip_address(None)
+                self.set_protected_icon(False)
             elif self.CONNECTED == False:
                 return
             else:
                 returncode, self.CONNECTED = Disconnect()
                 self.get_ip_address(None)
+                self.set_protected_icon(False)
         except:
             self.dialog = None
             self.dialog = MDDialog(
