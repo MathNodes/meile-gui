@@ -12,13 +12,17 @@ from kivy.uix.boxlayout import BoxLayout
 class Tab(MDBoxLayout, MDTabsBase):
     pass
 
+'''
 class SubscribeContent(BoxLayout):
     price_text = StringProperty()
     
     def __init_ (self, price):
         self.price_text = price
-
+'''
+class LatencyContent(BoxLayout):
     
+    def return_latency(self):
+        return self.ids.latency.text
 
 class WindowManager(ScreenManager):
     pass

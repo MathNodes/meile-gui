@@ -20,7 +20,7 @@ import re
 
 
 from cli.sentinel import IBCCOINS
-from ui.interfaces import SubscribeContent
+#from ui.interfaces import SubscribeContent
 from typedef.win import CoinsList, WindowNames
 from conf.meile_config import MeileGuiConfig
 from cli.wallet import HandleWalletFunctions
@@ -203,7 +203,7 @@ Node Version: %s
                             text_color=self.theme_cls.primary_color,
                             on_release=self.closeDialog
                         ),
-                        MDFlatButton(
+                        MDRaisedButton(
                             text="SUBSCRIBE",
                             theme_text_color="Custom",
                             text_color=self.theme_cls.primary_color,
@@ -295,9 +295,12 @@ Node Version: %s
         Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).on_tab_switch(None,None,None,"Subscriptions")
     
     def closeDialog(self, inst):
-        self.dialog.dismiss()
-        self.dialog = None
-        
+        try:
+            self.dialog.dismiss()
+            self.dialog = None
+        except Exception as e:
+            print(str(e))
+            return
  
         
     
@@ -331,11 +334,14 @@ class RecycleViewSubRow(MDCard):
         self.dialog = MDDialog(title=title_text,md_bg_color=get_color_from_hex("#0d021b"))
         self.dialog.open()
     def remove_loading_widget(self):
-        self.dialog.dismiss()
-        self.dialog = None
-
+        try:
+            self.dialog.dismiss()
+            self.dialog = None
+        except Exception as e:
+            print(str(e))
+            return
     @delayable
-    def connect_to_node(self, ID, naddress):
+    def connect_to_node(self, ID, naddress, moniker):
         self.add_loading_popup("Connecting...")
         
         yield 1.8
@@ -352,7 +358,7 @@ class RecycleViewSubRow(MDCard):
                             text="OK",
                             theme_text_color="Custom",
                             text_color=self.theme_cls.primary_color,
-                            on_release=partial(self.call_ip_get, True)
+                            on_release=partial(self.call_ip_get, True, moniker)
                         ),])
             self.dialog.open()
             
@@ -366,14 +372,14 @@ class RecycleViewSubRow(MDCard):
                             text="OK",
                             theme_text_color="Custom",
                             text_color=self.theme_cls.primary_color,
-                            on_release=partial(self.call_ip_get, False)
+                            on_release=partial(self.call_ip_get, False, "")
                         ),])
             self.dialog.open()
             
-    def call_ip_get(self,result, *kwargs):
+    def call_ip_get(self,result, moniker,  *kwargs):
         if result:
             Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).CONNECTED = True
-            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).set_protected_icon(True)
+            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).set_protected_icon(True, moniker)
         else:
             Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).CONNECTED = False
             
