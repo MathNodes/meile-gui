@@ -49,7 +49,20 @@ WindowManager:
                 id: new_ip
                 mode: "fill"
                 width: "35dp"
-                size_hint_x: .2
+                size_hint_x: .4
+                pos_hint: {"center_x" : .5, "center_y": .5}                
+                text: ""
+                readonly: True
+                opacity: 1
+                theme_text_color: "Custom"
+                text_color: get_color_from_hex("#fcb711")
+                normal_color: app.theme_cls.accent_color
+            MDTextField:
+                hint_text: "Node"
+                id: connected_node
+                mode: "fill"
+                width: "100dp"
+                size_hint_x: .6
                 pos_hint: {"center_x" : .5, "center_y": .5}                
                 text: ""
                 readonly: True
@@ -59,10 +72,9 @@ WindowManager:
                 normal_color: app.theme_cls.accent_color      
             Image:
                 id: protected
-                source: root.set_protected_icon(False)
+                source: root.set_protected_icon(False, "")
                 opacity: 0
-                halign: "left"
-                width: "300dp"
+                width: "35dp"
                 size_hint: .6, .6
                 height: "65dp"
                 pos_hint: {'x' : 0, 'center_y' : .5}    
@@ -105,6 +117,11 @@ WindowManager:
                 text: "Wallet"
                 icon: "wallet"
                 on_tab_release: root.wallet_dialog()
+            MDBottomNavigationItem:
+                name: "Refresh"
+                text: "Refresh"
+                icon: "shield-refresh"
+                on_tab_release: root.refresh_nodes_and_subs()
                 
             MDBottomNavigationItem:
                 name: "help"
@@ -584,7 +601,7 @@ WindowManager:
         text: "Connect"
         md_bg_color: get_color_from_hex("#fcb711")
         text_color: 0,0,0,1
-        on_press: root.connect_to_node(root.sub_id_text,root.address_text)
+        on_press: root.connect_to_node(root.sub_id_text,root.address_text, root.moniker_text)
         
         
     MDSeparator:
@@ -720,6 +737,34 @@ WindowManager:
         text: root.wallet_password
         readonly: True
 
+
+<LatencyContent>
+    orientation: "vertical"
+    spacing: "1dp"
+    size_hint_y: None
+    height: "140dp"
+
+    MDBoxLayout:
+        orientation: "vertical"
+        MDLabel:
+            id: latency_text
+            text: "Latency threshold. Increasing latency will take longer to load but will load more nodes; conversely for lower latency."
+            font_size: "12dp"
+                
+    MDBoxLayout:
+        orientation: "horizontal"
+        MDSlider:
+            
+            id: slider1
+            min: 5
+            max: 50
+            value: 21
+            
+        MDLabel:
+            id: latency
+            text: str(int(slider1.value)) + "s" 
+            size_hint_x: None
+            width: 75
                        
 <SubscribeContent>
     orientation: "vertical"

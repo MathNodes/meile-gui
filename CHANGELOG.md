@@ -1,5 +1,14 @@
 CHANGELOG
 ========================
+# v0.9.4-beta.1 (30/07/2022)
+* NEW: Refresh Icon with Latency Selector
+* NEW: TextField with currently connected node name
+* FIX: Protected shield icon in pip install
+* FIX: Minor bugs
+
+# v0.9.3-beta.6 (28/07/2022)
+* FIX: Disconnect Issues on some platforms
+
 # v0.9.3-beta.5 (27/07/2022)
 * NEW: Shield Icon in App Bar to Notify User is Connected
 * FIX: Image stretching on subscriptions. 
