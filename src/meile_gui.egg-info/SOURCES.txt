@@ -211,6 +211,7 @@ src/imgs/pl.png
 src/imgs/pm.png
 src/imgs/pn.png
 src/imgs/pr.png
+src/imgs/protected.png
 src/imgs/ps.png
 src/imgs/pt.png
 src/imgs/pw.png

@@ -47,9 +47,10 @@ class NodeTreeData():
             self.NodeTree = node_tree
             
    
-    def get_nodes(self, dt):
+    def get_nodes(self, latency, *kwargs):
         AllNodesInfo = []
-        nodeCMD = [sentinelcli, "query", "nodes", "--node", "https://rpc.mathnodes.com:443", "--limit", "20000", "--timeout", "21s"]
+        print("Running sentinel-cli with latency: %s" % latency)
+        nodeCMD = [sentinelcli, "query", "nodes", "--node", "https://rpc.mathnodes.com:443", "--limit", "20000", "--timeout", "%s" % latency]
     
         proc = Popen(nodeCMD, stdout=PIPE)
         
@@ -108,7 +109,8 @@ class NodeTreeData():
                 self.NodeTree.create_node(d[NodesInfoKeys[1]], d[NodesInfoKeys[1]],parent=d[NodesInfoKeys[4]], data=d )
             except:
                 pass
-
+            
+        self.NodeTree.show()
     
     def CreateNodeTreeStructure(self, **kwargs):
         NodeTreeBase = Tree()
@@ -214,25 +216,25 @@ def get_node_infos(naddress):
     
 
 def disconnect():
-    ifCMD = ["ifconfig", "-a"]
-    ifgrepCMD = ["grep", "-oE", "wg[0-9]+"]
+    #ifCMD = ["ifconfig", "-a"]
+    #ifgrepCMD = ["grep", "-oE", "wg[0-9]+"]
     partCMD = [sentinelcli, "disconnect"]
     
-    ifoutput = Popen(ifCMD,stdin=PIPE, stdout=PIPE, stderr=STDOUT)
-    grepoutput = Popen(ifgrepCMD, stdin=ifoutput.stdout, stdout=PIPE, stderr=STDOUT)
-    wgif = grepoutput.communicate()[0]
-    wgif_file = str(wgif.decode('utf-8')).replace("\n", '') + ".conf"
+    #ifoutput = Popen(ifCMD,stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+    #grepoutput = Popen(ifgrepCMD, stdin=ifoutput.stdout, stdout=PIPE, stderr=STDOUT)
+    #wgif = grepoutput.communicate()[0]
+    #wgif_file = str(wgif.decode('utf-8')).replace("\n", '') + ".conf"
 
-    CONFFILE = path.join(BASEDIR, wgif_file)
-    wg_downCMD = ['wg-quick', 'down', CONFFILE]
+    #CONFFILE = path.join(BASEDIR, wgif_file)
+    #wg_downCMD = ['wg-quick', 'down', CONFFILE]
         
     proc1 = Popen(partCMD)
     proc1.wait(timeout=10)
     
-    proc = Popen(wg_downCMD, stdout=PIPE, stderr=PIPE)
-    proc_out,proc_err = proc.communicate()
+    #proc = Popen(wg_downCMD, stdout=PIPE, stderr=PIPE)
+    #proc_out,proc_err = proc.communicate()
     
-    return proc.returncode, False
+    return proc1.returncode, False
 
 
     

@@ -8,7 +8,7 @@ with open('README.md', encoding="utf-8") as f:
 
 setup(
     name='meile-gui',
-    version='0.9.3-alpha.5',
+    version='0.9.4-alpha.1',
     description='Meile dVPN powered by the Sentinel Network',
     long_description=readme,
     long_description_content_type="text/markdown",
@@ -103,7 +103,7 @@ setup(
                                                               "um.png","us.png","uy.png","uz.png","va.png",
                                                               "vc.png","ve.png","vg.png","vi.png","vn.png",
                                                               "vu.png","wf.png","ws.png","xk.png","ye.png",
-                                                              "yt.png","za.png","zm.png","zw.png"], 
+                                                              "yt.png","za.png","zm.png","zw.png", "protected.png"], 
                   'kv' : ['meile.kv'], 'main' : ['icon.png'], 'utils' :  ['coinimg/dvpn.png', 'fonts/Roboto-BoldItalic.ttf']  },
     entry_points = {
         'console_scripts': ['meile-gui = main.meile_gui:main'],

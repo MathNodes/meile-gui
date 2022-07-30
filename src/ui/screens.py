@@ -1,6 +1,6 @@
 from geography.continents import OurWorld
 from kivy.properties import BooleanProperty, StringProperty
-from ui.interfaces import Tab
+from ui.interfaces import Tab, LatencyContent
 from typedef.win import WindowNames, ICANHAZURL
 from cli.sentinel import  NodeTreeData
 from cli.sentinel import NodesInfoKeys, FinalSubsKeys
@@ -26,7 +26,7 @@ from kivy.utils import get_color_from_hex
 from save_thread_result import ThreadWithResult
 import requests
 
-
+from functools import partial
 from os import path,geteuid
 import sys
 class WalletRestore(Screen):
@@ -99,8 +99,11 @@ class WalletRestore(Screen):
     def wallet_restore(self, inst):
         MeileConfig = MeileGuiConfig()
         CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
-
-        self.dialog.dismiss()
+        try:
+            self.dialog.dismiss()
+        except Exception as e:
+            print(str(e))
+            
         seed_phrase  = self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.seed.ids.seed_phrase.text
         wallet_name = self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.name.ids.wallet_name.text
         keyring_passphrase = self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.password.ids.wallet_password.text
@@ -155,8 +158,8 @@ class PreLoadWindow(Screen):
         self.NodeTree = NodeTreeData(None)
         
         # Schedule the functions to be called every n seconds
-        Clock.schedule_once(self.NodeTree.get_nodes, 6)
-        Clock.schedule_interval(self.update_status_text, 1)
+        Clock.schedule_once(partial(self.NodeTree.get_nodes, "21s"), 3)
+        Clock.schedule_interval(self.update_status_text, 0.6)
         
         
     def get_logo(self):
@@ -228,6 +231,7 @@ class MainWindow(Screen):
     NodeTree = None
     SubResult = None
     MeileConfig = None
+    ConnectedNode = None
     
     def __init__(self, node_tree, **kwargs):
         #Builder.load_file("./src/kivy/meile.kv")
@@ -235,18 +239,17 @@ class MainWindow(Screen):
         
         self.NodeTree = node_tree
         
-        print("MAINSCREEN, NodeTree: %s" % self.NodeTree)
-        self.NodeTree.NodeTree.show()
-        
         Clock.schedule_once(self.get_config,1)     
         Clock.schedule_once(self.build, 2)
     
-    def set_protected_icon(self, setbool):
+    def set_protected_icon(self, setbool, moniker):
         MeileConfig = MeileGuiConfig()
         if setbool:
             self.ids.protected.opacity = 1
+            self.ids.connected_node.text = moniker
         else:
             self.ids.protected.opacity = 0
+            self.ids.connected_node.text = moniker
         return MeileConfig.resource_path("../imgs/protected.png")
 
     def get_config(self, dt):
@@ -291,15 +294,18 @@ class MainWindow(Screen):
         try:
             if self.CONNECTED == None:
                 returncode, self.CONNECTED = Disconnect()
+                print("Disconnect RTNCODE: %s" % returncode)
                 self.get_ip_address(None)
-                self.set_protected_icon(False)
+                self.set_protected_icon(False, "")
             elif self.CONNECTED == False:
                 return
             else:
                 returncode, self.CONNECTED = Disconnect()
+                print("Disconnect RTNCODE: %s" % returncode)
                 self.get_ip_address(None)
-                self.set_protected_icon(False)
-        except:
+                self.set_protected_icon(False, "")
+        except Exception as e:
+            print(str(e))
             self.dialog = None
             self.dialog = MDDialog(
             text="Error disconnecting from node",
@@ -400,7 +406,8 @@ class MainWindow(Screen):
         try:
             self.dialog.dismiss()
             self.dialog = None
-        except:
+        except Exception as e:
+            print(str(e))
             pass
         
     @mainthread
@@ -419,6 +426,62 @@ class MainWindow(Screen):
         )
         self.dialog.open()
     
+    
+    def refresh_nodes_and_subs(self):
+        lc = LatencyContent()
+        self.dialog = MDDialog(
+                    title="Latency:",
+                    type="custom",
+                    content_cls=lc,
+                    md_bg_color=get_color_from_hex("#0d021b"),
+                    buttons=[
+                        MDFlatButton(
+                            text="CANCEL",
+                            theme_text_color="Custom",
+                            text_color=Meile.app.theme_cls.primary_color,
+                            on_release=self.remove_loading_widget
+                        ),
+                        MDRaisedButton(
+                            text="REFRESH",
+                            theme_text_color="Custom",
+                            text_color=get_color_from_hex("#000000"),
+                            on_release=partial(self.Refresh, lc)
+                        ),
+                    ],
+                )
+        self.dialog.open()
+        
+    @delayable
+    def Refresh(self, latency, *kwargs):
+        self.remove_loading_widget(None)
+        
+        self.add_loading_popup("Reloading Nodes & Subscriptions...")
+        yield 1.3
+        try: 
+            self.NodeTree.NodeTree = None
+            thread = ThreadWithResult(target=self.NodeTree.get_nodes, args=(latency.return_latency(),)) 
+            #Clock.schedule_once(self.NodeTree.get_nodes, 0.2)
+            thread.start()
+            thread.join()
+        except Exception as e:
+            print(str(e))
+            pass
+        self.GetSubscriptions()
+        self.remove_loading_widget(None)
+        self.on_tab_switch(None,None,None,"Subscriptions")
+        
+    def GetSubscriptions(self):
+        try: 
+            thread = ThreadWithResult(target=self.NodeTree.get_subscriptions, args=(self.address,))
+            thread.start()
+            thread.join()    
+            self.SubResult = thread.result
+        except Exception as e:
+            print(str(e))
+            return None
+    
+    
+    
     @delayable
     def subs_callback(self, dt):
         #from src.cli.sentinel import NodesDictList
@@ -427,10 +490,7 @@ class MainWindow(Screen):
         floc = "../imgs/"
         yield 0.314
         if not self.SubResult:
-            thread = ThreadWithResult(target=self.NodeTree.get_subscriptions, args=(self.address,))
-            thread.start()
-            thread.join()    
-            self.SubResult = thread.result
+            self.GetSubscriptions()
         #self.Subscriptions = get_subscriptions(NodesDictList, self.address)
         for sub in self.SubResult:
             if sub[FinalSubsKeys[5]] == "Czechia":
@@ -458,7 +518,7 @@ class MainWindow(Screen):
             self.get_config(None)
             if self.address:
             
-                Clock.schedule_once(self.subs_callback, 2)
+                Clock.schedule_once(self.subs_callback, 1)
                 #Subscriptions = get_subscriptions(NodesDictList, address)
                 
                 return 
