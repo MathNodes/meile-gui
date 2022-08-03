@@ -206,7 +206,7 @@ Node Version: %s
                         MDRaisedButton(
                             text="SUBSCRIBE",
                             theme_text_color="Custom",
-                            text_color=self.theme_cls.primary_color,
+                            text_color=get_color_from_hex("#000000"),
                             on_release=partial(self.subscribe, subscribe_dialog)
                         ),
                     ],
