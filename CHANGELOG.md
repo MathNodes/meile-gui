@@ -1,5 +1,11 @@
 CHANGELOG
 ========================
+# v0.9.4-beta.2 (03/08/2022)
+* NEW: Gnome-menu launcher and icon (ran as sudo) for .deb package
+* ENHANCEMENT: Faster load times with option to refresh
+* FIX: Subscription button text color
+* FIX: Bug that created multiple nodes screen causing confusion
+
 # v0.9.4-beta.1 (30/07/2022)
 * NEW: Refresh Icon with Latency Selector
 * NEW: TextField with currently connected node name
