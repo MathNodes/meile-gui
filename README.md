@@ -61,6 +61,12 @@ Then install via pip
 pip3 install meile-gui
 ```
 
+Upgrade via pip
+
+```shell
+pip3 install meile-gui --upgrade
+```
+
 Because meile-gui enforces users to run as root (due to network device permissions of wireguard) we have enforced this in our releases. To run Meile GUI after pip install do the following:
 
 ```shell
