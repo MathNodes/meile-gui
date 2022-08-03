@@ -158,7 +158,7 @@ class PreLoadWindow(Screen):
         self.NodeTree = NodeTreeData(None)
         
         # Schedule the functions to be called every n seconds
-        Clock.schedule_once(partial(self.NodeTree.get_nodes, "21s"), 3)
+        Clock.schedule_once(partial(self.NodeTree.get_nodes, "12s"), 3)
         Clock.schedule_interval(self.update_status_text, 0.6)
         
         
@@ -735,6 +735,11 @@ class RecycleViewCountryRow(MDCard):
         
     def switch_window(self, country):
         NodeTree = NodeTreeData(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeTree.NodeTree)
+        try:
+            Meile.app.root.remove_widget(NodeScreen(name="nodes", node_tree=NodeTree, country=country))
+        except Exception as e:
+            print(str(e))
+            pass
         Meile.app.root.add_widget(NodeScreen(name="nodes", node_tree=NodeTree, country=country))
 
         Meile.app.root.transition = SlideTransition(direction = "up")
