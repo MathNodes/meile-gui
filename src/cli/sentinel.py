@@ -218,7 +218,7 @@ def get_node_infos(naddress):
 def disconnect():
     #ifCMD = ["ifconfig", "-a"]
     #ifgrepCMD = ["grep", "-oE", "wg[0-9]+"]
-    partCMD = [sentinelcli, "disconnect"]
+    partCMD = [sentinelcli, '--home', BASEDIR, "disconnect"]
     
     #ifoutput = Popen(ifCMD,stdin=PIPE, stdout=PIPE, stderr=STDOUT)
     #grepoutput = Popen(ifgrepCMD, stdin=ifoutput.stdout, stdout=PIPE, stderr=STDOUT)
