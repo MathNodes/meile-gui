@@ -323,7 +323,7 @@ class RecycleViewSubRow(MDCard):
                 consumed = 0.0
             else:
                 consumed = float(float(re.findall(r'[0-9]+\.[0-9]+', consumed)[0].replace('B', '')) / (1024*1024*1024))
-                
+            self.ids.consumed_data.text = str(round(float(float(consumed/allocated)*100),2)) + "%"
             return float(float(consumed/allocated)*100)
         except Exception as e:
             print(str(e))
