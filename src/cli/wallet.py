@@ -9,6 +9,7 @@ from conf.meile_config import MeileGuiConfig
 from cli.sentinel import IBCATOM, IBCDEC, IBCOSMO, IBCSCRT, SATOSHI, APIURL
 
 USER = environ['SUDO_USER'] if 'SUDO_USER' in environ else environ['USER']
+PATH = environ['PATH']
 KEYRINGDIR = path.join(path.expanduser('~' + USER), '.meile-gui')
 BASEDIR  = path.join(path.expanduser('~' + USER), '.sentinelcli')
 WALLETINFO = path.join(KEYRINGDIR, "infos.txt")
@@ -144,7 +145,7 @@ class HandleWalletFunctions():
         CONFIG = MeileGuiConfig.read_configuration(MeileGuiConfig, MeileGuiConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
         KEYNAME = CONFIG['wallet'].get('keyname', '')
-        connCMD = "%s connect --home %s --keyring-backend file --keyring-dir %s --chain-id sentinelhub-2 --node https://rpc.mathnodes.com:443 --gas-prices 0.1udvpn --yes --from '%s' %s %s" % (sentinelcli, BASEDIR, KEYRINGDIR, KEYNAME, ID, address)
+        connCMD = "pkexec env PATH=%s %s connect --home %s --keyring-backend file --keyring-dir %s --chain-id sentinelhub-2 --node https://rpc.mathnodes.com:443 --gas-prices 0.1udvpn --yes --from '%s' %s %s" % (PATH, sentinelcli, BASEDIR, KEYRINGDIR, KEYNAME, ID, address)
         
         ofile =  open(CONNECTIONINFO, "wb")    
 

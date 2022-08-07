@@ -23,6 +23,7 @@ IBCCOINS = [{'uscrt' : IBCSCRT}, {'uatom' : IBCATOM}, {'udec' : IBCDEC}, {'uosmo
 SATOSHI = 1000000
 
 USER = environ['SUDO_USER'] if 'SUDO_USER' in environ else environ['USER']
+PATH = environ['PATH']
 KEYRINGDIR = path.join(path.expanduser('~' + USER), '.meile-gui')
 BASEDIR  = path.join(path.expanduser('~' + USER), '.sentinelcli')
 
@@ -218,7 +219,7 @@ def get_node_infos(naddress):
 def disconnect():
     #ifCMD = ["ifconfig", "-a"]
     #ifgrepCMD = ["grep", "-oE", "wg[0-9]+"]
-    partCMD = [sentinelcli, '--home', BASEDIR, "disconnect"]
+    partCMD = ['pkexec', 'env', 'PATH=%s' % PATH, sentinelcli, '--home', BASEDIR, "disconnect"]
     
     #ifoutput = Popen(ifCMD,stdin=PIPE, stdout=PIPE, stderr=STDOUT)
     #grepoutput = Popen(ifgrepCMD, stdin=ifoutput.stdout, stdout=PIPE, stderr=STDOUT)
