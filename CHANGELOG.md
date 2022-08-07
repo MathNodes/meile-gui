@@ -1,5 +1,12 @@
 CHANGELOG
 ========================
+# v0.9.4-beta.4 (06/08/2022)
+* CHANGE: No longer needed to run as sudo/root. 
+* CHANGE: Propmpts user for system password when connecting/disconnecting
+
+# v0.9.4-beta.3 (06/08/2022)
+* ENHANCEMENT: Better UX on sub cards with added info
+
 # v0.9.4-beta.2 (03/08/2022)
 * NEW: Gnome-menu launcher and icon (ran as sudo) for .deb package
 * ENHANCEMENT: Faster load times with option to refresh
