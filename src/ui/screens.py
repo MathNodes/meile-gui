@@ -375,7 +375,7 @@ class MainWindow(Screen):
                 "viewclass"      : "RecycleViewSubRow",
                 "moniker_text"   : node[FinalSubsKeys[1]].lstrip().rstrip(),
                 "sub_id_text"    : node[FinalSubsKeys[0]].lstrip().rstrip(),
-                "price_text"     : node[FinalSubsKeys[3]].lstrip().rstrip(),
+                "price_text"     : node[FinalSubsKeys[4]].lstrip().rstrip(),
                 "country_text"   : node[FinalSubsKeys[5]].lstrip().rstrip(),
                 "address_text"   : node[FinalSubsKeys[2]].lstrip().rstrip(),
                 "allocated_text" : node[FinalSubsKeys[6]].lstrip().rstrip(),
