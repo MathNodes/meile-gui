@@ -1,6 +1,18 @@
 CHANGELOG
 ========================
 
+# v0.9.5-beta.1 (23/08/2022)
+* REMOVED: All external dependencies
+* NEW: Bundled OS X version with wireguard tools
+* NEW: Installs wireguard tools on first run
+* NEW: Now a standalone application
+
+# v0.9.4-beta.4 (23/08/2022)
+* UPDATE: Made current with linux version
+* CHANGE: No longer needed for sudo/root
+* CHANGE: Use of applescript to prompt user for fingerprint or password on connect/disconnect
+
+
 # v0.9.2-alpha.1
 * NEW: Filters out nodes with node version less than 0.3.0
 * NEW: Mac Silicon M1 build
