@@ -5,7 +5,7 @@ import shutil
 
 import sys
 
-
+from whichcraft import which
 class MeileGuiConfig():
     USER = environ['SUDO_USER'] if 'SUDO_USER' in environ else environ['USER']
     BASEDIR    = path.join(path.expanduser('~'), '.meile-gui')
@@ -19,7 +19,15 @@ class MeileGuiConfig():
         base_path = getattr(sys, '_MEIPASS', path.dirname(path.abspath(__file__)))
         return path.join(base_path, relative_path)
         
-    
+    def is_tool(self, name):
+        return which(name)
+        
+    def check_wireguard_install(self):
+        if self.is_tool("wg-quick") is None:
+            return False
+        else:
+            return True
+        
     def read_configuration(self, confpath):
         """Read the configuration file at given path."""
         # copy our default config file

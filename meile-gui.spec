@@ -8,7 +8,7 @@ a = Analysis(
     ['meile-gui.py'],
     pathex=[],
     binaries=[],
-    datas=[('src/awoc/data/', 'data'), ('src/utils/fonts/', '../utils/fonts'), ('src/utils/coinimg/', '../utils/coinimg'), ('src/imgs/', '../imgs'), ('src/kivy/', '../kivy'), ('src/conf/config/', 'config'), ('src/bin/', '../bin')],
+    datas=[('src/wireguard/src', '../wireguard/src'), ('src/awoc/data/', 'data'), ('src/utils/fonts/', '../utils/fonts'), ('src/utils/coinimg/', '../utils/coinimg'), ('src/imgs/', '../imgs'), ('src/kivy/', '../kivy'), ('src/conf/config/', 'config'), ('src/bin/', '../bin')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

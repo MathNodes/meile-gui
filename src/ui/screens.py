@@ -26,8 +26,9 @@ from save_thread_result import ThreadWithResult
 import requests
 
 
-from os import path,geteuid
+from os import path,geteuid, chdir,getcwd
 import sys
+import subprocess
 
 class WalletRestore(Screen):
     screemanager = ObjectProperty()
@@ -156,12 +157,24 @@ class PreLoadWindow(Screen):
         super(PreLoadWindow, self).__init__()
         self.NodeTree = NodeTreeData(None)
         
-        
+        self.InstallWireguardTools()
         self.runNodeThread()
         # Schedule the functions to be called every n seconds
         #Clock.schedule_once(partial(self.NodeTree.get_nodes, "12s"), 3)
         
         Clock.schedule_interval(self.update_status_text, 0.6)
+    @delayable
+    def InstallWireguardTools(self):
+        yield 0.6
+        Config = MeileGuiConfig()
+        
+        if not Config.check_wireguard_install():
+            print("installing Wireguard...")
+            cwd =  getcwd()
+            self.manager.get_screen(WindowNames.PRELOAD).status_text = "Installing Wireguard..."
+            chdir(Config.resource_path('../wireguard/src'))
+            subprocess.Popen('./install-wireguard.sh', cwd=Config.resource_path('../wireguard/src'), shell=True)
+            chdir(cwd)
         
     @delayable
     def runNodeThread(self):
