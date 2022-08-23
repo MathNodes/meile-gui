@@ -1,0 +1,9 @@
+#!/usr/bin/expect
+set clicmd [lindex $argv 0]
+set password [lindex $argv 1]
+set force_conservative 0
+spawn bash -c ${clicmd}
+expect "Enter.*"
+send "$password\r"
+expect "\[.*"
+expect eof

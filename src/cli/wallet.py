@@ -20,7 +20,10 @@ WIREGUARDINFO = path.join(KEYRINGDIR, "wg.infos")
 BASEDIR  = path.join(path.expanduser('~'), '.sentinelcli')
 MeileConfig = MeileGuiConfig()
 sentinelcli = MeileConfig.resource_path("../bin/sentinelcli")
+sentinelbash = MeileConfig.resource_path("../bin/sentinel.sh")
+sentinel_connect_bash = MeileConfig.resource_path("../bin/sentinel-connect.sh")
 
+wgbash = MeileConfig.resource_path("../bin/wg.sh")
 class HandleWalletFunctions():
     
     def create(self, wallet_name, keyring_passphrase, seed_phrase):
@@ -78,9 +81,12 @@ class HandleWalletFunctions():
             with open(WALLETINFO, "r") as dvpn_file:
                 WalletDict = {}   
                 lines = dvpn_file.readlines()
-                addy_seed = [lines[x] for x in line_numbers]
-                WalletDict['address'] = addy_seed[0].split(":")[-1].lstrip().rstrip()
-                WalletDict['seed']    = addy_seed[1].lstrip().rstrip().replace('\n', '')
+                addy_seed = [lines[x] for x in range(line_numbers[0], line_numbers[1] +1)]
+                if "address:" in addy_seed[0]:
+                    WalletDict['address'] = addy_seed[0].split(":")[-1].lstrip().rstrip()
+                else:
+                    WalletDict['address'] = addy_seed[1].split(":")[-1].lstrip().rstrip()
+                WalletDict['seed'] = lines[-1].lstrip().rstrip().replace('\n', '')
                 remove(WALLETINFO)
                 return WalletDict
     
@@ -117,6 +123,14 @@ class HandleWalletFunctions():
         with open(SUBSCRIBEINFO, 'r') as sub_file:
                 lines = sub_file.readlines()
                 tx_json = json.loads(lines[2])
+                try:
+                    tx_json = json.loads(lines[2])
+                except JSONDecodeError as e:
+                    try: 
+                        tx_json = json.loads(lines[3])
+                    except JSONDecodeError as e2:
+                        return(False, 1.1459265357)
+                   
                 if tx_json['data']:
                     try: 
                         sub_id = tx_json['logs'][0]['events'][4]['attributes'][0]['value']
@@ -137,9 +151,33 @@ class HandleWalletFunctions():
         CONFIG = MeileGuiConfig.read_configuration(MeileGuiConfig, MeileGuiConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
         KEYNAME = CONFIG['wallet'].get('keyname', '')
-        connCMD = "%s connect --keyring-backend file --keyring-dir %s --chain-id sentinelhub-2 --node https://rpc.mathnodes.com:443 --gas-prices 0.1udvpn --yes --from '%s' %s %s" % (sentinelcli, KEYRINGDIR, KEYNAME, ID, address)
+        cliCMD = "%s connect --home %s --keyring-backend file --keyring-dir %s --chain-id sentinelhub-2 --node https://rpc.mathnodes.com:443 --gas-prices 0.1udvpn --yes --from '%s' %s %s" % (sentinelcli, BASEDIR,  KEYRINGDIR, KEYNAME, ID, address)
+        #connCMD = '%s "%s"' % (sentinelbash, cliCMD)
+        connCMD = sentinelbash + ' "%s"' % cliCMD + ' "%s"' % PASSWORD
+        print(connCMD)
         #connCMD = [sentinelcli, "connect", "--keyring-backend", "file", "--keyring-dir", KEYRINGDIR, "--chain-id", "sentinelhub-2", "--node",
         #            "https://rpc.mathnodes.com:443", "--gas-prices", "0.1udvpn", "--yes", "--from", "%s" % KEYNAME, ID, address]
+    
+        try:
+            proc1 = subprocess.Popen(connCMD, shell=True)
+            proc1.wait(timeout=60)
+        except subprocess.TimeoutExpired as e:
+            print(str(e))
+            pass
+        proc_out,proc_err = proc1.communicate()
+        
+        connectBASH = [sentinel_connect_bash]
+        proc2 = subprocess.Popen(connectBASH)
+        proc2.wait(timeout=20)
+        
+        proc_out, proc_err = proc2.communicate()
+        
+        
+        if path.isfile(path.join(BASEDIR, "status.json")):
+            return True
+        else:
+            return False
+
         
         '''
         proc = subprocess.Popen(connCMD, 
@@ -156,7 +194,7 @@ class HandleWalletFunctions():
         print(stdout)
         print(stderr)
 
-        '''
+        
         
         ofile =  open(CONNECTIONINFO, "wb")    
 
@@ -187,7 +225,7 @@ class HandleWalletFunctions():
         ofile.flush()
         ofile.close()
         
-        '''
+        
         from python_wireguard import Client, ServerConnection, Key
         
         wg = wgconfig.WGConfig(path.join(BASEDIR, 'wg99.conf'))
@@ -215,34 +253,36 @@ class HandleWalletFunctions():
         client.set_server(server_conn)
         client.connect()
         
-        '''
-        
-        #wgCMD = "wg-quick up %s" % path.join(BASEDIR, "wg99.conf")
-        wgCMD = ['wg-quick', 'up', path.join(BASEDIR, "wg99.conf")]
-        
-        proc = subprocess.Popen(wgCMD, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-        
-        stdout,stderr = proc.communicate()
-        
-        print(stdout)
-        print(stderr)
         
         
-        '''
+        wg = "wg-quick up %s" % path.join(BASEDIR, "wg99.conf")
+        wgCMD = "%s %s" % (sentinelbash, wg)
+        #wgCMD = ['wg-quick', 'up', path.join(BASEDIR, "wg99.conf")]
+        #wgCMD = [sentinelbash,  'up', path.join(BASEDIR, "wg99.conf")]
+        #proc = subprocess.Popen(wgCMD, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        
+        #stdout,stderr = proc.communicate()
+        
+        #print(stdout)
+        #print(stderr)
+        
+        
+        
         ofile = open(WIREGUARDINFO, "wb")
         try:
             
             child = pexpect.spawn(wgCMD)
             child.logfile = ofile
-            index = child.expect(["Error*", "wg-quick*"])
+            index = child.expect(["Error*", "wg-quick*", pexpect.EOF])
             if index == 0:
                 ofile.flush()
                 ofile.close()
                 return False
-            else:
+            elif index == 1:
                 child.sendline(osx_password)
                 child.expect(pexpect.EOF)
-                
+            else:
+                pass
         except Exception as e:
             print(str(e))
             ofile.flush()
@@ -251,64 +291,38 @@ class HandleWalletFunctions():
             
         ofile.flush()
         ofile.close()
-        
-        wgCMD = "wg-quick up %s" % path.join(BASEDIR, "wg99.conf")
-        ofile = open(WIREGUARDINFO, "wb")
-        try:
-            
-            child = pexpect.spawn(wgCMD)
-            child.logfile = ofile
-            index = child.expect(["Error*", "wg-quick*"])
-            if index == 0:
-                ofile.flush()
-                ofile.close()
-                return False
-            else:
-                child.sendline(osx_password)
-                child.expect(pexpect.EOF)
-                
-        except Exception as e:
-            print(str(e))
-            ofile.flush()
-            ofile.close()
-            return False 
-            
-        ofile.flush()
-        ofile.close()
-        '''
-        
-        
-        
         
         if path.isfile(path.join(BASEDIR, "status.json")):
             return True
         else:
             return False
-            
+        '''    
 
     def get_balance(self, address):
+        from builtins import str
         endpoint = "/bank/balances/" + address
         CoinDict = {'dvpn' : 0, 'scrt' : 0, 'dec'  : 0, 'atom' : 0, 'osmo' : 0}
         try:
             r = requests.get(APIURL + endpoint)
+            coinJSON = r.json()
         except:
             return None
-            
-        
-        coinJSON = r.json()
-        
-        for coin in coinJSON['result']:
-            if "udvpn" in coin['denom']:
-                CoinDict['dvpn'] = round(float(float(coin['amount']) / SATOSHI),4)
-            elif IBCSCRT in coin['denom']:
-                CoinDict['scrt'] = round(float(float(coin['amount']) / SATOSHI),4)
-            elif IBCDEC in coin['denom']:
-                CoinDict['dec'] = round(float(float(coin['amount']) / SATOSHI),4)
-            elif IBCATOM in coin['denom']:
-                CoinDict['atom'] = round(float(float(coin['amount']) / SATOSHI),4)
-            elif IBCOSMO in coin['denom']:
-                CoinDict['osmo'] = round(float(float(coin['amount']) / SATOSHI),4)
-                
+        print(coinJSON)
+        try: 
+            for coin in coinJSON['result']:
+                if "udvpn" in coin['denom']:
+                    CoinDict['dvpn'] = round(float(float(coin['amount']) / SATOSHI),4)
+                elif IBCSCRT in coin['denom']:
+                    CoinDict['scrt'] = round(float(float(coin['amount']) / SATOSHI),4)
+                elif IBCDEC in coin['denom']:
+                    CoinDict['dec'] = round(float(float(coin['amount']) / SATOSHI),4)
+                elif IBCATOM in coin['denom']:
+                    CoinDict['atom'] = round(float(float(coin['amount']) / SATOSHI),4)
+                elif IBCOSMO in coin['denom']:
+                    CoinDict['osmo'] = round(float(float(coin['amount']) / SATOSHI),4)
+        except Exception as e:
+            print(str(e))
+            return None        
         return CoinDict
     
 

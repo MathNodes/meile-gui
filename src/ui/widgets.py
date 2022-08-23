@@ -21,7 +21,6 @@ import re
 
 
 from src.cli.sentinel import IBCCOINS
-from src.ui.interfaces import SubscribeContent
 from src.typedef.win import CoinsList, WindowNames
 from src.conf.meile_config import MeileGuiConfig
 from src.cli.wallet import HandleWalletFunctions
@@ -82,20 +81,27 @@ class SubscribeContent(BoxLayout):
         
     def parse_coin_deposit(self, mu_coin):
         try:
-            mu_coin_amt = re.findall(r'[0-9]+' + mu_coin, self.price_text)[0]
-            if mu_coin_amt:
-                self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(int(mu_coin_amt.split(mu_coin)[0])/1000000)),3)) + self.ids.drop_item.current_item.replace('u','') 
-                return self.ids.deposit.text
+            if self.price_text:
+                mu_coin_amt = re.findall(r'[0-9]+' + mu_coin, self.price_text)[0]
+                if mu_coin_amt:
+                    self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(int(mu_coin_amt.split(mu_coin)[0])/1000000)),3)) + self.ids.drop_item.current_item.replace('u','') 
+                    return self.ids.deposit.text
+                else:
+                    self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(int(self.ids.price.text.split("udvpn")[0])/1000000)),3)) + self.ids.drop_item.current_item.replace('u','')
+                    return self.ids.deposit.text
             else:
-                self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(int(self.ids.price.text.split("udvpn")[0])/1000000)),3)) + self.ids.drop_item.current_item.replace('u','')
+                self.ids.deposit.text = "0.0dvpn"
                 return self.ids.deposit.text
         except IndexError as e:
             print(str(e))
-            self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(int(self.ids.price.text.split("udvpn")[0])/1000000)),3)) + CoinsList.ibc_mu_coins[0].replace('u','')
-            return self.ids.deposit.text
+            if self.ids.price.text:
+                self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(int(self.ids.price.text.split("udvpn")[0])/1000000)),3)) + CoinsList.ibc_mu_coins[0].replace('u','')
+                return self.ids.deposit.text
+            else:
+                self.ids.deposit.text = "0.0dvpn"
+                return self.ids.deposit.text
         
-        
-
+       
     def return_deposit_text(self):
         return (self.ids.deposit.text, self.naddress)
     
@@ -144,21 +150,26 @@ class RecycleViewRow(MDCard):
 
         endpoint = "/nodes/" + naddress.lstrip().rstrip()
         print(APIURL + endpoint)
-        r = requests.get(APIURL + endpoint)
-        remote_url = r.json()['result']['node']['remote_url']
-        r = requests.get(remote_url + "/status", verify=False)
-        print(remote_url)
-        requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
-
-        NodeInfoJSON = r.json()
-        NodeInfoDict = {}
+        try: 
+            requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
+            r = requests.get(APIURL + endpoint)
+            remote_url = r.json()['result']['node']['remote_url']
+            r = requests.get(remote_url + "/status", verify=False)
+            print(remote_url)
+            
+    
+            NodeInfoJSON = r.json()
+            NodeInfoDict = {}
+            
+            NodeInfoDict['connected_peers'] = NodeInfoJSON['result']['peers']
+            NodeInfoDict['max_peers']       = NodeInfoJSON['result']['qos']['max_peers']
+            NodeInfoDict['version']         = NodeInfoJSON['result']['version']
+            NodeInfoDict['city']            = NodeInfoJSON['result']['location']['city']
         
-        NodeInfoDict['connected_peers'] = NodeInfoJSON['result']['peers']
-        NodeInfoDict['max_peers']       = NodeInfoJSON['result']['qos']['max_peers']
-        NodeInfoDict['version']         = NodeInfoJSON['result']['version']
-        NodeInfoDict['city']            = NodeInfoJSON['result']['location']['city']
-
-
+        except Exception as e:
+            print(str(e))
+            return None
+        
 
 
         if not self.dialog:
@@ -197,9 +208,9 @@ Node Version: %s
                             on_release=self.closeDialog
                         ),
                         MDFlatButton(
-                            text="Subscribe",
+                            text="SUBSCRIBE",
                             theme_text_color="Custom",
-                            text_color=self.theme_cls.primary_color,
+                            text_color=get_color_from_hex("#000000"),
                             on_release=partial(self.subscribe, subscribe_dialog)
                         ),
                     ],
@@ -213,7 +224,7 @@ Node Version: %s
         self.dialog = None
         self.dialog = MDDialog(title="Subscribing...\n\n%s\n %s" %( deposit, sub_node[1]))
         self.dialog.open()
-        yield 2.0
+        yield 0.6
 
         CONFIG = MeileGuiConfig.read_configuration(MeileGuiConfig, MeileGuiConfig.CONFFILE)        
         KEYNAME = CONFIG['wallet'].get('keyname', '')
@@ -288,8 +299,12 @@ Node Version: %s
         Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).on_tab_switch(None,None,None,"Subscriptions")
  
     def closeDialog(self, inst):
-        self.dialog.dismiss()
-        self.dialog = None
+        try:
+            self.dialog.dismiss()
+            self.dialog = None
+        except Exception as e:
+            print(str(e))
+            return
         
  
         
@@ -327,7 +342,8 @@ class RecycleViewSubRow(MDCard):
         try:
             self.dialog.dismiss()
             self.dialog = None
-        except:
+        except Exception as e:
+            print(str(e))
             self.dialog = None
             
     # Non sudo implementation
@@ -371,7 +387,7 @@ class RecycleViewSubRow(MDCard):
     '''   
     
     @delayable
-    def connect_to_node(self, ID, naddress):
+    def connect_to_node(self, ID, naddress, moniker):
         self.dialog = None
         self.add_loading_popup("Connecting...")
         yield 0.5
@@ -388,7 +404,7 @@ class RecycleViewSubRow(MDCard):
                             text="OK",
                             theme_text_color="Custom",
                             text_color=self.theme_cls.primary_color,
-                            on_release=partial(self.call_ip_get, True)
+                            on_release=partial(self.call_ip_get, True, moniker)
                         ),])
             self.dialog.open()
             
@@ -402,7 +418,7 @@ class RecycleViewSubRow(MDCard):
                             text="OK",
                             theme_text_color="Custom",
                             text_color=self.theme_cls.primary_color,
-                            on_release=partial(self.call_ip_get, False)
+                            on_release=partial(self.call_ip_get, False, "")
                         ),])
             self.dialog.open()
     
@@ -427,15 +443,15 @@ class RecycleViewSubRow(MDCard):
             self.dialog.open()
         '''
             
-    def call_ip_get(self,result, *kwargs):
+    def call_ip_get(self,result, moniker,  *kwargs):
         if result:
             Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).CONNECTED = True
+            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).set_protected_icon(True, moniker)
         else:
             Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).CONNECTED = False
             
-        Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).get_ip_address()
+        Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).get_ip_address(None)
         self.remove_loading_widget()
-            
             
 
 # In case I go for word wrapping bigger textfield.

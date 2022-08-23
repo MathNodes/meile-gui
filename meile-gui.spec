@@ -35,11 +35,17 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=True,
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
     icon='icon.icns',
+)
+app = BUNDLE(
+    exe,
+    name='meile-gui.app',
+    icon='icon.icns',
+    bundle_identifier='com.mathnodes.meile',
 )

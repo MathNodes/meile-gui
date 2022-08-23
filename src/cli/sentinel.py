@@ -10,8 +10,6 @@ from src.conf.meile_config import MeileGuiConfig
 from treelib import  Tree
 from src.geography.continents import OurWorld
 
-import pexpect
-
 # IBC Tokens
 IBCSCRT  = 'ibc/31FEE1A2A9F9C01113F90BD0BBCCE8FD6BBB8585FAF109A2101827DD1D5B95B8'
 IBCATOM  = 'ibc/A8C2D23A1E6F95DA4E48BA349667E322BD7A6C996D8A4AAE8BA72E190F3D1477'
@@ -34,6 +32,8 @@ dash = "-"
 
 MeileConfig = MeileGuiConfig()
 sentinelcli = MeileConfig.resource_path("../bin/sentinelcli")
+sentinel_disconnect_bash = MeileConfig.resource_path("../bin/sentinel-disconnect.sh")
+
 class NodeTreeData():
     NodeTree = None
     
@@ -44,9 +44,10 @@ class NodeTreeData():
             self.NodeTree = node_tree
             
    
-    def get_nodes(self, dt):
+    def get_nodes(self, latency, *kwargs):
         AllNodesInfo = []
-        nodeCMD = [sentinelcli, "query", "nodes", "--node", "https://rpc.mathnodes.com:443", "--limit", "5000", "--timeout", "20s"]
+        print("Running sentinel-cli with latency: %s" % latency)
+        nodeCMD = [sentinelcli, "query", "nodes", "--node", "https://rpc.mathnodes.com:443", "--limit", "5000", "--timeout", "%s" % latency]
     
         proc = Popen(nodeCMD, stdout=PIPE)
         
@@ -85,7 +86,6 @@ class NodeTreeData():
         
         self.NodeTree = self.CreateNodeTreeStructure()
         
-        AllNodesSortedStripped = []
         for d in AllNodesInfoSorted:
             for key in NodesInfoKeys:
                 d[key] = d[key].lstrip().rstrip()
@@ -106,6 +106,7 @@ class NodeTreeData():
                 self.NodeTree.create_node(d[NodesInfoKeys[1]], d[NodesInfoKeys[1]],parent=d[NodesInfoKeys[4]], data=d )
             except:
                 pass
+        self.NodeTree.show()
 
     
     def CreateNodeTreeStructure(self, **kwargs):
@@ -204,36 +205,20 @@ def get_node_infos(naddress):
     endpoint = "/nodes/" + naddress
     
     NodeInfoDict = {}
-    
-    r = requests.get(APIURL + endpoint)
-    
-    remote_url = r.json()['result']['node']['remote_url']
-    
-    
+    try: 
+        r = requests.get(APIURL + endpoint)
+        
+        remote_url = r.json()['result']['node']['remote_url']
+        
+    except Exception as e:
+        print(str(e))
 
 def disconnect():
-    ifCMD = ["ifconfig", "-a"]
-    ifgrepCMD = ["grep", "-oE", "wg[0-9]+"]
-    partCMD = [sentinelcli, "disconnect"]
+    partCMD = [sentinel_disconnect_bash, '%s disconnect' % sentinelcli]
     
-    
-    # Not OS X Friendly
-    '''
-    ifoutput = Popen(ifCMD,stdin=PIPE, stdout=PIPE, stderr=STDOUT)
-    grepoutput = Popen(ifgrepCMD, stdin=ifoutput.stdout, stdout=PIPE, stderr=STDOUT)
-    wgif = grepoutput.communicate()[0]
-    wgif_file = str(wgif.decode('utf-8')).replace("\n", '') + ".conf"
-    '''
-    
-    wgif_file = "wg99.conf"
-    
-    CONFFILE = path.join(BASEDIR, wgif_file)
-    wg_downCMD = 'wg-quick down %s' % CONFFILE
-        
     proc1 = Popen(partCMD)
     proc1.wait(timeout=10)
     
-    #proc = Popen(wg_downCMD, stdout=PIPE, stderr=PIPE)
     proc_out,proc_err = proc1.communicate()
     
     return proc1.returncode, False

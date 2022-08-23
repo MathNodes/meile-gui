@@ -48,9 +48,21 @@ WindowManager:
                 hint_text: "IP Address"
                 id: new_ip
                 mode: "fill"
-                width: "200dp"
-                haline: "center"
-                size_hint_x: 1.2
+                width: "35dp"
+                size_hint_x: .4
+                pos_hint: {"center_x" : .5, "center_y": .5}                
+                text: ""
+                readonly: True
+                opacity: 1
+                theme_text_color: "Custom"
+                text_color: get_color_from_hex("#fcb711")
+                normal_color: app.theme_cls.accent_color
+            MDTextField:
+                hint_text: "Node"
+                id: connected_node
+                mode: "fill"
+                width: "100dp"
+                size_hint_x: .6
                 pos_hint: {"center_x" : .5, "center_y": .5}                
                 text: ""
                 readonly: True
@@ -58,7 +70,14 @@ WindowManager:
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex("#fcb711")
                 normal_color: app.theme_cls.accent_color      
-                
+            Image:
+                id: protected
+                source: root.set_protected_icon(False, "")
+                opacity: 0
+                width: "35dp"
+                size_hint: .6, .6
+                height: "65dp"
+                pos_hint: {'x' : 0, 'center_y' : .5}    
             Image:
                 source: root.get_logo()
                 size_hint: None, None
@@ -98,6 +117,11 @@ WindowManager:
                 text: "Wallet"
                 icon: "wallet"
                 on_tab_release: root.wallet_dialog()
+            MDBottomNavigationItem:
+                name: "Refresh"
+                text: "Refresh"
+                icon: "shield-refresh"
+                on_tab_release: root.refresh_nodes_and_subs()
                 
             MDBottomNavigationItem:
                 name: "help"
@@ -502,86 +526,106 @@ WindowManager:
     source_image: " "
     speed_image: " "
     speed_text: " "
-    MDGridLayout:
-        cols: 3
-        rows: 2
-        padding: 40,0,0,0
+    MDFloatLayout:
         MDLabel:
             text: root.moniker_text
             theme_text_color: "Custom"
             font_style: "H6"
             font_size: "24sp"
             text_color: get_color_from_hex("#fcb711")
-            width: "350dp"
+            width: "300dp"
+            pos_hint: {"x" : 0, "top" : 1.45}
             size_hint_x: None
         Image:
             source: root.source_image
+            pos_hint: {"x" : .3, "top" : 1.25}
             
         MDLabel:    
             text: root.country_text
             theme_text_color: "Custom"
             font_style: "H6"
             font_size: "22sp"
-            text_color: (1,1,1,1)  
+            text_color: get_color_from_hex("#b2b1b1")  
+            pos_hint: {"x" : .75, "top" : 0.7}
         MDLabel:
             text: root.address_text
             theme_text_color: "Custom"
             font_style: "Subtitle2"
             font_size: "9sp"
-            text_color: (0/255.0,141/255.0,155/255.0,255/255.0)
+            text_color: get_color_from_hex("#3c3c3c")
+            pos_hint: {"x" : 0, "top" : 1.29}
         MDLabel:
             text: root.sub_id_text
             theme_text_color: "Custom"
             font_style: "Subtitle2"
             font_size: "14sp"
             text_color: (0/255.0,141/255.0,155/255.0,255/255.0)
+            opacity: 0
         MDLabel:
-            text: " "
+            text: "Deposit: "
             theme_text_color: "Custom"
             font_style: "Subtitle2"
-            font_size: "14sp"
-            text_color: (0/255.0,141/255.0,155/255.0,255/255.0)                                    
-    MDGridLayout:
-        cols: 2
-        rows: 2
-        padding: 40,0,0,0
+            font_size: "11sp"
+            text_color: get_color_from_hex("#b2b1b1")
+            pos_hint: {"x" : 0, "top" : 1.15}
         MDLabel:
             text: root.price_text
             theme_text_color: "Custom"
             font_style: "Subtitle2"
-            font_size: "14sp"
+            font_size: "11sp"
             text_color: get_color_from_hex("#fcb711")
-        MDBoxLayout:
-            padding: 80,30,0,0
-            MDLabel:
-                text: root.allocated_text
-                theme_text_color: "Custom"
-                font_style: "Subtitle2"
-                font_size: "12sp"
-                text_color: 1,1,1,1
-            MDLabel:
-                text: root.consumed_text
-                theme_text_color: "Custom"
-                font_style: "Subtitle2"
-                font_size: "12sp"
-                text_color: 1,1,1,1
+            pos_hint: {"x" : .08, "top" : 1.15}
+        MDLabel:
+            text: "Allocated: "
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "11sp"
+            text_color: 1,1,1,1
+            pos_hint: {"x" : 0, "top" : 1.03}
+        MDLabel:
+            text: root.allocated_text
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "11sp"
+            text_color: 1,1,1,1
+            pos_hint: {"x" : .08, "top" : 1.03}
+        MDLabel:
+            text: "Used: "
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "11sp"
+            text_color: 1,1,1,1
+            pos_hint: {"x" : 0.15, "top" : 1.03}
+        MDLabel:
+            text: root.consumed_text
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "11sp"
+            text_color: 1,1,1,1
+            pos_hint: {"x" : 0.2, "top" : 1.03 }
         MDProgressBar:
             value: root.get_data_used(root.allocated_text, root.consumed_text)
             color: app.theme_cls.accent_color
             back_color: get_color_from_hex("#ffffff")
-                
-
-
-
-    MDRaisedButton:
-        text: "Connect"
-        md_bg_color: get_color_from_hex("#fcb711")
-        text_color: 0,0,0,1
-        on_press: root.connect_to_node(root.sub_id_text,root.address_text)
-        
-        
-    MDSeparator:
-        color: 1,1,1,1
+            pos_hint: {"x" : 0, "top" : .95 }
+            size_hint_x: .5
+        MDLabel:
+            id: consumed_data
+            text: " "
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "11sp"
+            text_color: 1,1,1,1
+            pos_hint: {"x" : .5, "top" : 1.03 }      
+        MDRaisedButton:
+            text: "Connect"
+            md_bg_color: get_color_from_hex("#fcb711")
+            text_color: 0,0,0,1
+            on_press: root.connect_to_node(root.sub_id_text,root.address_text, root.moniker_text)
+            pos_hint: {"x" : 0, "top" : .35 }
+        MDSeparator:
+            color: 1,1,1,1
+            pos_hint: {"x" : 0, "top" : .0 }
          
 
 <ClickableTextFieldRoundSeed>:
@@ -713,6 +757,34 @@ WindowManager:
         text: root.wallet_password
         readonly: True
 
+
+<LatencyContent>
+    orientation: "vertical"
+    spacing: "1dp"
+    size_hint_y: None
+    height: "140dp"
+
+    MDBoxLayout:
+        orientation: "vertical"
+        MDLabel:
+            id: latency_text
+            text: "Latency threshold. Increasing latency will take longer to load but will load more nodes; conversely for lower latency."
+            font_size: "12dp"
+                
+    MDBoxLayout:
+        orientation: "horizontal"
+        MDSlider:
+            
+            id: slider1
+            min: 5
+            max: 50
+            value: 21
+            
+        MDLabel:
+            id: latency
+            text: str(int(slider1.value)) + "s" 
+            size_hint_x: None
+            width: 75
                        
 <SubscribeContent>
     orientation: "vertical"

@@ -1,0 +1,5 @@
+#!/usr/bin/expect
+set clicmd [lindex $argv 0]
+set force_conservative 0
+spawn bash -c ${clicmd}
+expect eof

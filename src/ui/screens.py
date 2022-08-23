@@ -1,12 +1,12 @@
 from src.geography.continents import OurWorld
 from kivy.properties import BooleanProperty, StringProperty
-from src.ui.interfaces import Tab, OSXPasswordDialog
+from src.ui.interfaces import Tab, LatencyContent
 from src.typedef.win import WindowNames, ICANHAZURL
 from src.cli.sentinel import  NodeTreeData
 from src.cli.sentinel import NodesInfoKeys, FinalSubsKeys
 from src.cli.sentinel import disconnect as Disconnect
 import src.main.main as Meile
-from src.ui.widgets import  NodeRV, WalletInfoContent
+from src.ui.widgets import  WalletInfoContent
 from src.utils.qr import QRCode
 from src.cli.wallet import HandleWalletFunctions
 from src.conf.meile_config import MeileGuiConfig
@@ -64,13 +64,13 @@ class WalletRestore(Screen):
                     
                     buttons=[
                         MDFlatButton(
-                            text="Cancel",
+                            text="CANCEL",
                             theme_text_color="Custom",
                             text_color=Meile.app.theme_cls.primary_color,
                             on_release=self.cancel,
                         ),
                         MDRaisedButton(
-                            text="Restore",
+                            text="RESTORE",
                             theme_text_color="Custom",
                             text_color=(1,1,1,1),
                             on_release= self.wallet_restore
@@ -99,8 +99,11 @@ class WalletRestore(Screen):
     def wallet_restore(self, inst):
         MeileConfig = MeileGuiConfig()
         CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
-
-        self.dialog.dismiss()
+        try:
+            self.dialog.dismiss()
+        except Exception as e:
+            print(str(e))
+            
         seed_phrase  = self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.seed.ids.seed_phrase.text
         wallet_name = self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.name.ids.wallet_name.text
         keyring_passphrase = self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.password.ids.wallet_password.text
@@ -148,15 +151,25 @@ class PreLoadWindow(Screen):
     go_button = ObjectProperty()
     NodeTree = None
     dialog = None
+    
     def __init__(self, **kwargs):
         super(PreLoadWindow, self).__init__()
-        
         self.NodeTree = NodeTreeData(None)
         
-        # Schedule the functions to be called every n seconds
-        Clock.schedule_once(self.NodeTree.get_nodes, 6)
-        Clock.schedule_interval(self.update_status_text, 1)
         
+        self.runNodeThread()
+        # Schedule the functions to be called every n seconds
+        #Clock.schedule_once(partial(self.NodeTree.get_nodes, "12s"), 3)
+        
+        Clock.schedule_interval(self.update_status_text, 0.6)
+        
+    @delayable
+    def runNodeThread(self):
+        yield 1.4
+        thread = ThreadWithResult(target=self.NodeTree.get_nodes, args=("12s",))
+        thread.start()
+        thread.join()
+        result = thread.result
         
     def get_logo(self):
         Config = MeileGuiConfig()
@@ -185,8 +198,8 @@ class PreLoadWindow(Screen):
     @delayable
     def update_status_text(self, dt):
         go_button = self.manager.get_screen(WindowNames.PRELOAD).ids.go_button
-        if geteuid() != 0:
-            self.add_loading_popup("Please start Meile-GUI as root. i.e., sudo -E env PATH=$PATH ./meile-gui or similarly")
+        #if geteuid() != 0:
+        #    self.add_loading_popup("Please start Meile-GUI as root. i.e., sudo -E env PATH=$PATH ./meile-gui or similarly")
 
         yield 1.0
         
@@ -227,19 +240,26 @@ class MainWindow(Screen):
     NodeTree = None
     SubResult = None
     MeileConfig = None
+    ConnectedNode = None
     
     def __init__(self, node_tree, **kwargs):
         #Builder.load_file("./src/kivy/meile.kv")
         super(MainWindow, self).__init__()
         
         self.NodeTree = node_tree
-        
-        print("MAINSCREEN, NodeTree: %s" % self.NodeTree)
-        self.NodeTree.NodeTree.show()
-        
+                
         Clock.schedule_once(self.get_config,1)     
         Clock.schedule_once(self.build, 2)
 
+    def set_protected_icon(self, setbool, moniker):
+        MeileConfig = MeileGuiConfig()
+        if setbool:
+            self.ids.protected.opacity = 1
+            self.ids.connected_node.text = moniker
+        else:
+            self.ids.protected.opacity = 0
+            self.ids.connected_node.text = moniker
+        return MeileConfig.resource_path("../imgs/protected.png")
 
     def get_config(self, dt):
         MeileConfig = MeileGuiConfig()
@@ -255,7 +275,7 @@ class MainWindow(Screen):
             tab = Tab(text=name_tab)
             self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.android_tabs.add_widget(tab)
         
-        self.get_ip_address()
+        self.get_ip_address(None)
         
         self.on_tab_switch(
             None,
@@ -268,7 +288,7 @@ class MainWindow(Screen):
         self.MeileConfig = MeileGuiConfig()
         return self.MeileConfig.resource_path("../imgs/logo.png")
         
-    def get_ip_address(self):
+    def get_ip_address(self, dt):
         if self.dialog:
             self.dialog.dismiss()
             
@@ -281,29 +301,21 @@ class MainWindow(Screen):
             #self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.old_ip.text = "Old IP: " + self.old_ip
         except:
             pass
-    @delayable
-    def DisconnectDialog(self):
-        self.dialog.dismiss()
-        self.dialog = None
-        self.add_loading_popup("Disconnecting...")
-        
-        yield .5
 
-  
     def disconnect_from_node(self):
-        from builtins import str
         try:
             if self.CONNECTED == None:
-                returncode, self.CONNECTED = Disconnect()                
-                #self.remove_loading_widget(None)
-                self.get_ip_address()
+                returncode, self.CONNECTED = Disconnect()
+                print("Disconnect RTNCODE: %s" % returncode)
+                self.get_ip_address(None)
+                self.set_protected_icon(False, "")
             elif self.CONNECTED == False:
-                #self.remove_loading_widget(None)
                 return
             else:
                 returncode, self.CONNECTED = Disconnect()
-                #self.remove_loading_widget(None)
-                self.get_ip_address()
+                print("Disconnect RTNCODE: %s" % returncode)
+                self.get_ip_address(None)
+                self.set_protected_icon(False, "")
         except Exception as e:
             print(str(e))
             self.dialog = None
@@ -315,15 +327,13 @@ class MainWindow(Screen):
                     text="Okay",
                     theme_text_color="Custom",
                     text_color=Meile.app.theme_cls.primary_color,
-                    on_release=self.get_ip_callback,
+                    on_release=self.get_ip_address,
                 ),
                 ]
             )
             self.dialog.open()
             
-    def get_ip_callback(self, dt):
-        self.get_ip_address()
-        
+          
     def wallet_dialog(self):
         
         # Add a check here to see if they already have a wallet available in
@@ -376,7 +386,7 @@ class MainWindow(Screen):
                 "viewclass"      : "RecycleViewSubRow",
                 "moniker_text"   : node[FinalSubsKeys[1]].lstrip().rstrip(),
                 "sub_id_text"    : node[FinalSubsKeys[0]].lstrip().rstrip(),
-                "price_text"     : node[FinalSubsKeys[3]].lstrip().rstrip(),
+                "price_text"     : node[FinalSubsKeys[4]].lstrip().rstrip(),
                 "country_text"   : node[FinalSubsKeys[5]].lstrip().rstrip(),
                 "address_text"   : node[FinalSubsKeys[2]].lstrip().rstrip(),
                 "allocated_text" : node[FinalSubsKeys[6]].lstrip().rstrip(),
@@ -407,8 +417,9 @@ class MainWindow(Screen):
     	try:
     	    self.dialog.dismiss()
     	    self.dialog = None
-    	except:
-    	    pass
+    	except Exception as e:
+            print(str(e))
+            pass
         
     @mainthread
     def sub_address_error(self):
@@ -425,6 +436,60 @@ class MainWindow(Screen):
             ],
         )
         self.dialog.open()
+        
+    def refresh_nodes_and_subs(self):
+        lc = LatencyContent()
+        self.dialog = MDDialog(
+                    title="Latency:",
+                    type="custom",
+                    content_cls=lc,
+                    md_bg_color=get_color_from_hex("#0d021b"),
+                    buttons=[
+                        MDFlatButton(
+                            text="CANCEL",
+                            theme_text_color="Custom",
+                            text_color=Meile.app.theme_cls.primary_color,
+                            on_release=self.remove_loading_widget
+                        ),
+                        MDRaisedButton(
+                            text="REFRESH",
+                            theme_text_color="Custom",
+                            text_color=get_color_from_hex("#000000"),
+                            on_release=partial(self.Refresh, lc)
+                        ),
+                    ],
+                )
+        self.dialog.open()
+        
+    @delayable
+    def Refresh(self, latency, *kwargs):
+        self.remove_loading_widget(None)
+        
+        self.add_loading_popup("Reloading Nodes & Subscriptions...")
+        yield 1.3
+        try: 
+            self.NodeTree.NodeTree = None
+            thread = ThreadWithResult(target=self.NodeTree.get_nodes, args=(latency.return_latency(),)) 
+            #Clock.schedule_once(self.NodeTree.get_nodes, 0.2)
+            thread.start()
+            thread.join()
+        except Exception as e:
+            print(str(e))
+            pass
+        self.GetSubscriptions()
+        self.remove_loading_widget(None)
+        self.on_tab_switch(None,None,None,"Subscriptions")
+     
+    def GetSubscriptions(self):
+        try: 
+            thread = ThreadWithResult(target=self.NodeTree.get_subscriptions, args=(self.address,))
+            thread.start()
+            thread.join()    
+            self.SubResult = thread.result
+        except Exception as e:
+            print(str(e))
+            return None
+    
     
     @delayable
     def subs_callback(self, dt):
@@ -434,10 +499,7 @@ class MainWindow(Screen):
         floc = "../imgs/"
         yield 0.314
         if not self.SubResult:
-            thread = ThreadWithResult(target=self.NodeTree.get_subscriptions, args=(self.address,))
-            thread.start()
-            thread.join()    
-            self.SubResult = thread.result
+            self.GetSubscriptions()
         #self.Subscriptions = get_subscriptions(NodesDictList, self.address)
         for sub in self.SubResult:
             if sub[FinalSubsKeys[5]] == "Czechia":
@@ -465,7 +527,7 @@ class MainWindow(Screen):
             self.get_config(None)
             if self.address:
             
-                Clock.schedule_once(self.subs_callback, 2)
+                Clock.schedule_once(self.subs_callback, 1)
                 #Subscriptions = get_subscriptions(NodesDictList, address)
                 
                 return 
@@ -559,12 +621,40 @@ class WalletScreen(Screen):
         return path.join(CONFIG.IMGDIR, "dvpn.png")
     
     def SetBalances(self, CoinDict):
-        self.dec_text = str(CoinDict['dec']) + " dec"
-        self.scrt_text = str(CoinDict['scrt']) + " scrt"
-        self.atom_text = str(CoinDict['atom']) + " atom" 
-        self.osmo_text = str(CoinDict['osmo']) + " osmo"
-        self.dvpn_text = str(CoinDict['dvpn']) + " dvpn"       
-
+        if CoinDict:
+            self.dec_text = str(CoinDict['dec']) + " dec"
+            self.scrt_text = str(CoinDict['scrt']) + " scrt"
+            self.atom_text = str(CoinDict['atom']) + " atom" 
+            self.osmo_text = str(CoinDict['osmo']) + " osmo"
+            self.dvpn_text = str(CoinDict['dvpn']) + " dvpn"
+        else:
+            self.dec_text = str("0.0") + " dec"
+            self.scrt_text = str("0.0") + " scrt"
+            self.atom_text = str("0.0") + " atom" 
+            self.osmo_text = str("0.0") + " osmo"
+            self.dvpn_text = str("0.0") + " dvpn"
+            self.dialog = MDDialog(
+                text="Error Loading Wallet Balance. Please try again later.",
+                md_bg_color=get_color_from_hex("#0d021b"),
+                buttons=[
+                    MDRaisedButton(
+                        text="OKay",
+                        theme_text_color="Custom",
+                        text_color=(1,1,1,1),
+                        on_release=self.closeDialog
+                    ),
+                ],
+            )
+            self.dialog.open()
+            
+    def closeDialog(self, inst):
+        try:
+            self.dialog.dismiss()
+            self.dialog = None
+        except:
+            print("Dialog is NONE")
+            return
+     
     def set_previous_screen(self):
         
         Meile.app.root.remove_widget(self)
@@ -653,12 +743,15 @@ class RecycleViewCountryRow(MDCard):
         
     def switch_window(self, country):
         NodeTree = NodeTreeData(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeTree.NodeTree)
+        try:
+            Meile.app.root.remove_widget(NodeScreen(name="nodes", node_tree=NodeTree, country=country))
+        except Exception as e:
+            print(str(e))
+            pass
         Meile.app.root.add_widget(NodeScreen(name="nodes", node_tree=NodeTree, country=country))
 
         Meile.app.root.transition = SlideTransition(direction = "up")
-        Meile.app.root.current = WindowNames.NODES
-           
-        
+        Meile.app.root.current = WindowNames.NODES   
     
 class HelpScreen(Screen):
     def set_previous_screen(self):
