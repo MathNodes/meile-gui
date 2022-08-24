@@ -152,17 +152,34 @@ class PreLoadWindow(Screen):
     go_button = ObjectProperty()
     NodeTree = None
     dialog = None
+    UUID = None
     
     def __init__(self, **kwargs):
         super(PreLoadWindow, self).__init__()
         self.NodeTree = NodeTreeData(None)
         
+        
+        self.GenerateUUID()
         self.InstallWireguardTools()
         self.runNodeThread()
         # Schedule the functions to be called every n seconds
         #Clock.schedule_once(partial(self.NodeTree.get_nodes, "12s"), 3)
         
         Clock.schedule_interval(self.update_status_text, 0.6)
+        
+    def GenerateUUID(self):
+        MeileConfig = MeileGuiConfig()
+        CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
+        self.UUID = CONFIG['wallet'].get('uuid')
+
+        if not self.UUID:
+            import uuid
+            FILE = open(MeileGuiConfig.CONFFILE,'w')
+            self.UUID = uuid.uuid4()
+            CONFIG.set('wallet', 'uuid', "%s" % self.UUID)
+            CONFIG.write(FILE)
+            FILE.close()
+            
     @delayable
     def InstallWireguardTools(self):
         yield 0.6
