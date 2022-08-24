@@ -1,5 +1,9 @@
 CHANGELOG
 ========================
+# v0.9.5-beta.1 (20/08/2022)
+* NEW: Ping
+* FIX: pexpect timeout exception handling
+
 # v0.9.4-beta.4 (06/08/2022)
 * CHANGE: No longer needed to run as sudo/root. 
 * CHANGE: Propmpts user for system password when connecting/disconnecting
