@@ -1,4 +1,0 @@
-[pyinstaller40]
-hook-dirs = kivymd.tools.packaging.pyinstaller:get_hook_dirs
-tests = kivymd.tools.packaging.pyinstaller:get_pyinstaller_tests
-

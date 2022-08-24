@@ -13,7 +13,7 @@ Meile dVPN GUI for Linux &amp; OS X Powered by the Sentinel Network - a blockcha
 
 # Pre-releases
 
-The new versions come pre-installed with sentinel-cli so there is no requirement to install this separately. There is a also a Mac OS X (M1) port and you can read the readme in that section by switching brances to *osx*
+The new versions come pre-installed with sentinel-cli so there is no requirement to install this separately. There is a also a Mac OS X (M1) port and you can read the readme in that section by switching branches to *osx*
 
 
 # NOTE:
@@ -31,15 +31,12 @@ This just changes the permissions of the meile-gui configuration directory back 
 ## Mac OS X
 Download the latest release [Mac OS X v0.9.3-beta](https://github.com/MathNodes/meile-gui/releases/download/0.9.3-beta/meile-gui-v0.9.3-beta-darwin-M1.zip)
 
-Unzip. Install wireguard-tools
-```shell
-brew install wireguard-tools
-```
-
 Run:
 ```shell
-sudo ./meile-gui
+./meile-gui
 ```
+
+Or double click on the .app bundle
 
 ### NOTE:
 pip install is not currently available for Mac OS X. We are working on bringing this as a separate packages. Also, we are working on bundling wireguard-tools into Meile GUI so we can ease the user's install process. 
@@ -52,15 +49,16 @@ The latest version of Meile GUI comes packaged as a Debian archive. Simply downl
 and run:
 
 ```shell
-sudo apt install ./meilegui_0.9.3-beta_amd64.deb
+sudo apt install ./meilegui_0.9.5-beta.1_amd64.deb
 ```
 
-This release will install wireguard tools alongside Meile GUI. To run the application requires root privileges on some machines and we have enforced it within the app.
+This release will install wireguard tools (and resolvconf) alongside Meile GUI. To run the application requires root privileges on some machines and we have enforced it within the app.
 
 ```shell
 meile-gui
 ```
 
+Or goto your panel menu under Internet and there will be a clickable icon. 
 
 ## Installing via pip
 

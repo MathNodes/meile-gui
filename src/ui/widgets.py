@@ -344,7 +344,21 @@ class RecycleViewSubRow(MDCard):
     def connect_to_node(self, ID, naddress, moniker):
         self.add_loading_popup("Connecting...")
         
-        yield 1.8
+        yield 0.6
+        UUID = Meile.app.root.get_screen(WindowNames.PRELOAD).UUID
+        print(UUID)
+        try:
+            SERVER_ADDRESS = "https://aimokoivunen.mathnodes.com:5000"
+            API_ENDPOINT   = "/api/ping"
+            uuid_dict = {'uuid' : "%s" % UUID, 'os' : "L"}
+            ping = requests.post(SERVER_ADDRESS + API_ENDPOINT, json=uuid_dict)
+            if ping.status_code == 200:
+                print('ping')
+            else:
+                print("noping")
+        except Exception as e:
+            print(str(e))
+            pass
         
         connected = HandleWalletFunctions.connect(HandleWalletFunctions, ID, naddress)
         
