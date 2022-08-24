@@ -149,16 +149,18 @@ class HandleWalletFunctions():
         
         ofile =  open(CONNECTIONINFO, "wb")    
 
-
-        child = pexpect.spawn(connCMD)
-        child.logfile = ofile
-
-        child.expect(".*")
-        child.sendline(PASSWORD)
-        child.expect(pexpect.EOF)
-        
-        ofile.flush()
-        ofile.close()
+        try:
+            child = pexpect.spawn(connCMD)
+            child.logfile = ofile
+    
+            child.expect(".*")
+            child.sendline(PASSWORD)
+            child.expect(pexpect.EOF)
+            
+            ofile.flush()
+            ofile.close()
+        except pexpect.exceptions.TIMEOUT:
+            return False
         
         if path.isfile(path.join(BASEDIR, "status.json")):
             CONNECTED = True

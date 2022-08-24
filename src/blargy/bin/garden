@@ -1,4 +1,0 @@
-#!/home/bubonic/eclipse-workspace/Meile-GUI-pip/src/blargy/bin/python3
-# EASY-INSTALL-SCRIPT: 'Kivy-Garden==0.1.5','garden'
-__requires__ = 'Kivy-Garden==0.1.5'
-__import__('pkg_resources').run_script('Kivy-Garden==0.1.5', 'garden')
