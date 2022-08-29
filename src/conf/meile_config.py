@@ -20,7 +20,8 @@ class MeileGuiConfig():
         return path.join(base_path, relative_path)
         
     def is_tool(self, name):
-        return which(name)
+        
+        return path.isfile('/opt/local/bin/wg-quick')
         
     def check_wireguard_install(self):
         if self.is_tool("wg-quick") is None:

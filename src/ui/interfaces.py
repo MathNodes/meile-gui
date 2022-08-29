@@ -49,3 +49,19 @@ class FullImage(Image):
     pass
 class FullImage2(Image):
     pass
+
+class ClickableTextFieldRoundCC(MDRelativeLayout):
+    text = StringProperty()
+    hint_text = StringProperty()
+
+'''
+class ClickableTextFieldRoundName(MDRelativeLayout):
+    text = StringProperty()
+    hint_text = StringProperty()
+'''
+class ClickableTextFieldRoundCVV(MDRelativeLayout):
+    text = StringProperty()
+    hint_text = StringProperty()
+
+class TXContent(BoxLayout):
+    pass
