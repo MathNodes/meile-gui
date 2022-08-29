@@ -1,8 +1,10 @@
 kivymd
 kivyoav
 pexpect
+pycoingecko
 pydash
 qrcode
 save_thread_result
 screeninfo
+stripe
 treelib
