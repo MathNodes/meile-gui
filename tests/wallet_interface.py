@@ -92,6 +92,11 @@ WindowManager:
                 source: root.get_qr_code_address()
                 pos_hint: {'x': 0, 'top': 1}
                 size_hint_y: .5
+                
+            MDRaisedButton:
+                pos_hint: {'x' : .8 , 'top': .9 }
+                text: "RE-FUEL"
+                on_release: root.open_fiat_interface()
             
             Image:
                 source: root.sentinel_logo

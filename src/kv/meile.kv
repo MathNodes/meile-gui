@@ -190,6 +190,12 @@ WindowManager:
                 source: root.get_qr_code_address()
                 pos_hint: {'x': 0, 'top': 1}
                 size_hint_y: .5
+                
+            MDRaisedButton:
+                pos_hint: {'x' : .8 , 'top': .9 }
+                text: "RE-FUEL"
+                on_release: root.open_fiat_interface()
+                
             
             Image:
                 source: root.sentinel_logo
@@ -971,4 +977,240 @@ WindowManager:
                     theme_text_color: "Custom"
                     text_color: get_color_from_hex("#fcb711")
                     font_size: "12dp"
+<FiatInterface>:
+    name: "fiatgateway"
+    title: "Re-fuel"
+    wallet_address: root.get_my_wallet_address()
+    MDBoxLayout:
+        orientation: "vertical"
+        MDToolbar:
+            id: toolbar
+            title: "Wallet"
+            md_bg_color: get_color_from_hex("#FFB908")
+            height: "100dp"
+            type: "top"
+    
+            MDTextField:
+                hint_text: "Address"
+                mode: "fill"
+                size_hint_x: 1.2
+                pos_hint: {"center_x" : .5, "center_y": .5}
+                text: root.wallet_address
+                readonly: True
+                opacity: 1
+                theme_text_color: "Custom"
+                text_color: get_color_from_hex("#000000")
+                normal_color: app.theme_cls.accent_color
+        MDFloatLayout:
+
+            ClickableTextFieldRoundCC:
+                id: ccnum
+                size_hint_x: None
+                width: "300dp"
+                height: "300dp"
+                hint_text: "Credit Card Number"
+                pos_hint: {"center_x": .5, "center_y": .80}
+         
+            MDLabel:
+                id: credit_card_number_warning
+                opacity: 0
+                text: "Sixteen digit number"
+                theme_text_color: "Custom"
+                text_color: get_color_from_hex("#fcb711")
+                pos_hint: {"x": .47, "center_y": .74}
+                font_size: "12dp"
+             
+            MDLabel:
+                opacity: 1
+                text: "Month"
+                theme_text_color: "Custom"
+                text_color: get_color_from_hex("#fcb711")
+                pos_hint: {"x": .35, "center_y": .7}
+                font_size: "12dp"
+             
+            MDDropDownItem:
+                id: month_list
+                pos_hint: {'center_x': .38, 'center_y': .67}
+                text: '01'
+                on_release: root.menu_month.open()
+                
+            MDLabel:
+                opacity: 1
+                text: "Year"
+                theme_text_color: "Custom"
+                text_color: get_color_from_hex("#fcb711")
+                pos_hint: {"x": .45, "center_y": .7}
+                font_size: "12dp"
             
+            MDDropDownItem:
+                id: year_list
+                pos_hint: {'center_x': .48, 'center_y': .67}
+                text: '2022'
+                on_release: root.menu_year.open()
+                
+            ClickableTextFieldRoundCVV:
+                id: cvvnum
+                size_hint_x: None
+                width: "100dp"
+                height: "300dp"
+                hint_text: "CVV"
+                pos_hint: {"center_x": .6, "center_y": .69}
+                
+            MDLabel:
+                id: cvv_code_warning
+                opacity: 0
+                text: "Wrong CVV. 3 or 4 digit code"
+                theme_text_color: "Custom"
+                text_color: get_color_from_hex("f42121")
+                pos_hint: {"x": .47, "center_y": .62}
+                font_size: "12dp"
+            MDLabel:
+                id: dvpn_qty_text
+                opacity: 1
+                text: "DVPN"
+                theme_text_color: "Custom"
+                text_color: get_color_from_hex("#fcb711")
+                pos_hint: {"x": .355, "center_y": .60}
+                font_size: "14dp"
+                
+            MDDropDownItem:
+                id: dvpn_qty_menu
+                pos_hint: {'center_x': .43, 'center_y': .60}
+                text: '1000'
+                on_release: root.menu_dvpn_qty.open()
+                
+            MDFloatLayout:
+        
+                CheckBox:
+                    on_active: root.terms_agreement(self.active)
+                    pos_hint: {"x": .36, "center_y": .54}
+                    color: get_color_from_hex("f42121")
+                    size_hint: None, None
+                    size: dp(30), dp(30)
+                MDLabel:
+                    text: "I agree to the terms of the MathNodes purchasing policy."
+                    font_size: 10
+                    theme_text_color: "Custom"
+                    text_color: get_color_from_hex("f42121")
+                    pos_hint: {"x": .40, "center_y": .54}
+                    
+            MDLabel:
+                id: dvpn_price
+                text: "DVPN: $" + str(root.get_dvpn_price())
+                theme_text_color: "Custom"
+                text_color: get_color_from_hex("#fcb711")
+                pos_hint: {"x": .40, "center_y": .48}
+                font_size: "16dp"
+                
+            MDLabel:
+                id: surcharge
+                text: "Surcharge: $1.95"
+                theme_text_color: "Custom"
+                text_color: get_color_from_hex("ffffff")
+                pos_hint: {"x": .40, "center_y": .43}
+                font_size: "16dp"
+            MDLabel:
+                id: dvpn_qty
+                text:"QTY: " + str(root.DVPNOptions[root.idvpn]) + " dvpn"
+                theme_text_color: "Custom"
+                text_color: get_color_from_hex("#fcb711")
+                pos_hint: {"x": .40, "center_y": .38}
+                font_size: "16dp"
+            
+            MDLabel:
+                id: charge_amount
+                text:"Total Charge: $" + str(round((root.get_dvpn_price()*root.get_dvpn_qty())+1.95,2))
+                theme_text_color: "Custom"
+                text_color: get_color_from_hex("#fcb711")
+                pos_hint: {"x": .40, "center_y": .33}
+                font_size: "16dp"
+                
+            MDRaisedButton:
+                id: restore_wallet_button
+                text: "PURCHASE"
+                pos_hint: {"center_x": .5, "center_y": .25}
+                on_press: root.pay()
+            
+    ActionBar:
+        background_normal: ''
+        background_down: ''
+        background_color: get_color_from_hex("#0d021b")
+        ActionView:
+            ActionPrevious:
+                icon: "arrow-left-circle"
+                title: 'Go Back'
+                with_previous: True
+                on_release: root.set_previous_screen() 
+    
+        
+<ClickableTextFieldRoundCC>:
+    size_hint_y: None
+    height: ccnum.height
+
+    MDTextField:
+        id: ccnum
+        hint_text: root.hint_text
+        text: root.text
+        password: True
+        icon_left: "key-variant"
+        mode: "rectangle"
+
+    MDIconButton:
+        icon: "eye-off"
+        pos_hint: {"center_y": .5}
+        pos: ccnum.width - self.width + dp(8), 0
+        theme_text_color: "Hint"
+        on_release:
+            self.icon = "eye" if self.icon == "eye-off" else "eye-off"
+            ccnum.password = False if ccnum.password is True else True
+
+
+
+<ClickableTextFieldRoundCVV>:
+    size_hint_y: None
+    height: cvvnum.height
+
+    MDTextField:
+        id: cvvnum
+        hint_text: root.hint_text
+        text: root.text
+        password: True
+        icon_left: "key-variant"
+        mode: "rectangle"
+
+    MDIconButton:
+        icon: "eye-off"
+        pos_hint: {"center_y": .5}
+        pos: cvvnum.width - self.width + dp(8), 0
+        theme_text_color: "Hint"
+        on_release:
+            self.icon = "eye" if self.icon == "eye-off" else "eye-off"
+            cvvnum.password = False if cvvnum.password is True else True
+
+<IconListItem>
+
+    IconLeftWidget:
+        icon: root.icon
+        
+        
+<TXContent>
+    orientation: "vertical"
+    spacing: "4dp"
+    size_hint_y: None
+    height: "130dp"
+    MDTextField:
+        id: message
+        multiline: True
+        hint_text: "Message"
+        text: " "
+        readonly: True
+    MDTextField:
+        id: txhash
+        hint_text: "TX ID"
+        mode: "rectangle"
+        text: " "
+        readonly: True
+    MDLabel:
+        text: "Please copy the TX ID and save it somewhere safely."
+        font_size: "11dp"
+   
