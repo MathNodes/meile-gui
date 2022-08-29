@@ -11,6 +11,11 @@ src/conf/__init__.py
 src/conf/config.ini
 src/conf/meile_config.py
 src/conf/config/config.ini
+src/fiat/__init__.py
+src/fiat/fiat_interface.py
+src/fiat/stripe_pay/__init__.py
+src/fiat/stripe_pay/charge.py
+src/fiat/stripe_pay/scrtsxx.py
 src/geography/__init__.py
 src/geography/continents.py
 src/imgs/__init__.py

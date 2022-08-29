@@ -8,6 +8,8 @@ from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.recyclegridlayout import RecycleGridLayout
 from kivy.uix.image import Image
 from kivy.uix.boxlayout import BoxLayout
+from kivymd.uix.list import OneLineIconListItem
+
 
 class Tab(MDBoxLayout, MDTabsBase):
     pass
@@ -46,4 +48,23 @@ class SelectableRecycleGridLayout(FocusBehavior, LayoutSelectionBehavior,
 class FullImage(Image):
     pass
 class FullImage2(Image):
+    pass
+
+
+
+class ClickableTextFieldRoundCC(MDRelativeLayout):
+    text = StringProperty()
+    hint_text = StringProperty()
+    
+'''
+class ClickableTextFieldRoundName(MDRelativeLayout):
+    text = StringProperty()
+    hint_text = StringProperty()
+
+'''
+class ClickableTextFieldRoundCVV(MDRelativeLayout):
+    text = StringProperty()
+    hint_text = StringProperty()
+
+class TXContent(BoxLayout):
     pass

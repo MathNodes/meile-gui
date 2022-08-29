@@ -11,7 +11,7 @@ from utils.qr import QRCode
 from cli.wallet import HandleWalletFunctions
 from conf.meile_config import MeileGuiConfig
 from typedef.win import CoinsList
-
+from fiat import fiat_interface
 
 from kivy.uix.screenmanager import Screen, SlideTransition
 from kivymd.uix.button import MDFlatButton, MDRaisedButton
@@ -661,7 +661,12 @@ class WalletScreen(Screen):
         except:
             print("Dialog is NONE")
             return
-
+        
+    def open_fiat_interface(self):
+        Meile.app.root.add_widget(fiat_interface.FiatInterface(name=WindowNames.FIAT))
+        Meile.app.root.transistion = SlideTransition(direction="right")
+        Meile.app.root.current = WindowNames.FIAT
+        
     def set_previous_screen(self):
         
         Meile.app.root.remove_widget(self)
