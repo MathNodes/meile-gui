@@ -329,9 +329,12 @@ class MainWindow(Screen):
             self.ip = req.text
         
             self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.new_ip.text = self.ip
+            return True
             #self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.old_ip.text = "Old IP: " + self.old_ip
-        except:
-            pass
+        except Exception as e:
+            print(str(e))
+            return False
+            
 
     def disconnect_from_node(self):
         try:

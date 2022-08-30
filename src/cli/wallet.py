@@ -101,7 +101,8 @@ class HandleWalletFunctions():
         PASSWORD = CONFIG['wallet'].get('password', '')
     
         ofile =  open(SUBSCRIBEINFO, "wb")    
-        
+        if not KEYNAME:
+            return (False, 1337)
         SCMD = "%s tx subscription subscribe-to-node --yes --keyring-backend file --keyring-dir %s --gas-prices 0.1udvpn --chain-id sentinelhub-2 --node https://rpc.mathnodes.com:443 --from '%s' '%s' %s"  % (sentinelcli, KEYRINGDIR, KEYNAME, NODE, DEPOSIT)    
      
         child = pexpect.spawn(SCMD)
@@ -122,7 +123,6 @@ class HandleWalletFunctions():
         SUBSCRIBEINFO = path.join(KEYRINGDIR, "subscribe.infos")
         with open(SUBSCRIBEINFO, 'r') as sub_file:
                 lines = sub_file.readlines()
-                tx_json = json.loads(lines[2])
                 try:
                     tx_json = json.loads(lines[2])
                 except JSONDecodeError as e:
