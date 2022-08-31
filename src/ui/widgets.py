@@ -471,6 +471,7 @@ class RecycleViewSubRow(MDCard):
             self.change_dns()
         else:
             self.remove_loading_widget()
+            
     @delayable        
     def change_dns(self):
         
@@ -490,9 +491,8 @@ class RecycleViewSubRow(MDCard):
             pass
         
         proc_out,proc_err = dnsPROC.communicate()
-        print(proc_out)
-        print(proc_err)
-        
+       
+        yield 1.4 
         Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).get_ip_address(None)
         self.remove_loading_widget()
 
