@@ -1,5 +1,16 @@
 CHANGELOG
 ========================
+# v1.0.1 (01/09/2022)
+* NEW: .deb package for virtual machine guest OSes
+* FIX: Binary release fix for FIAT Gateway
+
+# v1.0.0 (30/8/2022)
+* NEW: Fiat Gateway
+* CHANGE: Added CryptoCompare API alongside CoinGecko for additional DVPN price in FIAT gateway
+* NEW: Automatic DNS resolve configuration for MacOS and Linux. Resolves to cloudflar if host HNS does not work
+* FIX: No wallet subscription crash 
+* FIX: Major/Minor bug fixes for stability
+
 # v0.9.5-beta.1 (20/08/2022)
 * NEW: Ping
 * FIX: pexpect timeout exception handling
