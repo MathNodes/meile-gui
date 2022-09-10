@@ -17,7 +17,8 @@ from functools import partial
 from urllib3.exceptions import InsecureRequestWarning
 import requests
 import re
-
+from os import path
+from subprocess import Popen, TimeoutExpired
 
 from cli.sentinel import IBCCOINS
 #from ui.interfaces import SubscribeContent
@@ -244,7 +245,7 @@ Node Version: %s
         else:
             self.dialog.dismiss()
             self.dialog = MDDialog(
-            title="Error: %s" % returncode[1],
+            title="Error: %s" % "No wallet found!" if returncode[1] == 1337  else returncode[1],
             md_bg_color=get_color_from_hex("#0d021b"),
             buttons=[
                     MDFlatButton(
@@ -397,11 +398,43 @@ class RecycleViewSubRow(MDCard):
         else:
             Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).CONNECTED = False
             
-        Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).get_ip_address(None)
-        self.remove_loading_widget()
+        if not Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).get_ip_address(None):
+            self.remove_loading_widget()
+            self.change_dns()
+        else:
+            self.remove_loading_widget()
             
+    @delayable        
+    def change_dns(self):
+        MeileConfig = MeileGuiConfig()
+        RESOLVFILE = path.join(MeileConfig.BASEDIR, "dns")
+        DNSFILE = open(RESOLVFILE, 'w')
+        
+        DNSFILE.write('nameserver 1.1.1.1')
+        DNSFILE.flush()
+        DNSFILE.close()
+        
+        yield 0.6
+        if self.dialog:
+            self.dialog.dismiss()
+        self.add_loading_popup("DNS Resolver error... Switching to Cloudflare")
+        yield 2.6
+
+        dnsCMD = "pkexec bash -c 'cat %s | resolvconf -a wg99 && resolvconf -u'" % RESOLVFILE
+
+        try: 
+            dnsPROC = Popen(dnsCMD, shell=True)
+            dnsPROC.wait(timeout=60)
+        except TimeoutExpired as e:
+            print(str(e))
+            pass
+        
+        proc_out,proc_err = dnsPROC.communicate()
             
 
+        yield 1.2
+        Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).get_ip_address(None)
+        self.remove_loading_widget()
 # In case I go for word wrapping bigger textfield.
 '''
 class MySeedBox(MDTextFieldRect):

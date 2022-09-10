@@ -1,7 +1,6 @@
 #: import SlideTransition kivy.uix.screenmanager.SlideTransition
 #: import get_color_from_hex kivy.utils.get_color_from_hex
 
-
 WindowManager:
 
 <PreLoadWindow>:
@@ -137,16 +136,16 @@ WindowManager:
         orientation: "vertical"
         NodeRV:
             id: rv
-    ActionBar:
-        background_normal: ''
-        background_down: ''
-        background_color: get_color_from_hex("#0d021b")
-        ActionView:
-            ActionPrevious:
-                icon: "arrow-left-circle"
-                title: 'Go Back'
-                with_previous: True
-                on_release: root.set_previous_screen() 
+        ActionBar:
+            background_normal: ''
+            background_down: ''
+            background_color: get_color_from_hex("#0d021b")
+            ActionView:
+                ActionPrevious:
+                    icon: "arrow-left-circle"
+                    title: 'Go Back'
+                    with_previous: True
+                    on_release: root.set_previous_screen() 
     
 <WalletScreen>:
     name: "wallet"
@@ -165,17 +164,17 @@ WindowManager:
     wallet_address: ""
     MDBoxLayout:
         orientation: "vertical"
-        MDToolbar:
+        MDTopAppBar:
             id: toolbar
             title: "Wallet"
             md_bg_color: get_color_from_hex("#FFB908")
-            height: "100dp"
+            height: "70dp"
             padding: 10,0,0,10
     
             MDTextField:
                 hint_text: "Address"
                 mode: "fill"
-                size_hint_x: 1.2
+                size_hint_x: .5 
                 pos_hint: {"center_x" : .5, "center_y": .5}                
                 text: root.wallet_address
                 readonly: True
@@ -612,9 +611,10 @@ WindowManager:
         MDProgressBar:
             value: root.get_data_used(root.allocated_text, root.consumed_text)
             color: app.theme_cls.accent_color
-            back_color: get_color_from_hex("#ffffff")
-            pos_hint: {"x" : 0, "top" : .95 }
+            #back_color: get_color_from_hex("#ffffff")
+            pos_hint: {"x" : 0, "top" : .475 }
             size_hint_x: .5
+            size_hint_y: .06
         MDLabel:
             id: consumed_data
             text: " "
@@ -723,12 +723,6 @@ WindowManager:
         size_hint_y: None
         height: self.minimum_height
         orientation: "vertical"
-
-
-<IconListItem>
-
-    IconLeftWidget:
-        icon: root.icon
 
 <WalletInfoContent>
     orientation: "vertical"
@@ -876,11 +870,20 @@ WindowManager:
             pos_hint: { "right": 1.4, "top": 1.5}
             theme_text_color: "Custom"
             text_color: get_color_from_hex("#fcb711")
+        MDLabel:
+            font_name: "Roboto-Bold"
+            text: "v1.0.0"
+            font_size: "16sp"
+            size_hint_y: .1
+            width: dp(500)
+            pos_hint: { "right": 1.475, "top": 1.5}
+            theme_text_color: "Custom"
+            text_color: get_color_from_hex("#fcb711")
         ScrollView:
             effect_cls: "ScrollEffect"
             scroll_type: ['bars']
             MDGridLayout:
-                rows: 10
+                rows: 12
                 cols: 1
                 size_hint_y:None
                 size_hint_x: 1
@@ -907,7 +910,7 @@ WindowManager:
                     
                 MDLabel:
                     font_name: "Roboto-BoldItalic"
-                    text: "What is a address"
+                    text: "What is a address?"
                     size_hint_y: None
                     height: self.texture_size[1]
                     size_hint_x: 1
@@ -950,7 +953,7 @@ WindowManager:
                     halign: "center"
                 MDLabel:
                     font_name: "DejaVuSans"
-                    text: "MathNodes uses Stripe to process payments in order to receive funds to use the dVPN. You will see that we do not even need the name of the individual. Once a payment is processed through Stripe, Mathnodes stores only the payment_id received from stripe, the address of your wallet, and the amount of tokens sent (1,000). We have to keep records some information in case there is a dispute and we need to query the orders and verify if tokens were sent to the reciept's address. We do not store your name, your credit card details, or any other information beside what we have mentioned. "
+                    text: "MathNodes uses Stripe to process payments in order to receive funds to use the dVPN. You will see that we do not even need the name of the individual. Once a payment is processed through Stripe, Mathnodes stores only the payment_id received from stripe, the address of your wallet, and the amount of tokens sent (1,000). We have to keep records some information in case there is a dispute and we need to query the orders and verify if tokens were sent to the reciept's address. We do not store your name, your credit card details, or any other information beside what we have mentioned. The full policy can be viewed at https://meile.app/policy"
                     size_hint_y: None
                     height: self.texture_size[1]
                     size_hint_x: 1
@@ -977,23 +980,42 @@ WindowManager:
                     theme_text_color: "Custom"
                     text_color: get_color_from_hex("#fcb711")
                     font_size: "12dp"
+                    
+                MDLabel:
+                    font_name: "Roboto-BoldItalic"
+                    text: "Is there a refund policy?"
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    size_hint_x: 1
+                    halign: "center"
+                MDLabel:
+                    font_name: "DejaVuSans"
+                    text: "Absolutely no refunds under any circumstances. All token sales are final as they cannot be refunded due to the limitations of blockchain technology. If for some reason your credit card was charged for a token purchase, and you did not receive the tokens in your wallet, please reach out to us at support@mathnodes.com - We will advise you on how to produce evidences of your purchase and we may double check our records along with a block explorer to view if the transaction did not go through."
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    size_hint_x: 1
+                    pos_hint_x: .9
+                    halign: "center" 
+                    theme_text_color: "Custom"
+                    text_color: get_color_from_hex("#fcb711")
+                    font_size: "12dp"
 <FiatInterface>:
     name: "fiatgateway"
     title: "Re-fuel"
     wallet_address: root.get_my_wallet_address()
     MDBoxLayout:
         orientation: "vertical"
-        MDToolbar:
+        MDTopAppBar:
             id: toolbar
             title: "Wallet"
             md_bg_color: get_color_from_hex("#FFB908")
-            height: "100dp"
+            height: "70dp"
             type: "top"
     
             MDTextField:
                 hint_text: "Address"
                 mode: "fill"
-                size_hint_x: 1.2
+                size_hint_x: .5
                 pos_hint: {"center_x" : .5, "center_y": .5}
                 text: root.wallet_address
                 readonly: True

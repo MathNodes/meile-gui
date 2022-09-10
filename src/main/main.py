@@ -52,9 +52,9 @@ class MyMainApp(MDApp):
         theme = ThemeManager()
         self.theme_cls.primary_palette = "Amber"
         self.theme_cls.theme_style = "Dark" 
-        self.theme_cls.disabled_primary_color = "Amber"
+        #self.theme_cls.disabled_primary_color = "Amber"
         self.theme_cls.accent_palette = "DeepPurple"
-        self.theme_cls.opposite_disabled_primary_color = "Amber"
+        #self.theme_cls.opposite_disabled_primary_color = "Amber"
         manager.add_widget(PreLoadWindow(name=WindowNames.PRELOAD))
         #manager.add_widget(MainWindow(name=WindowNames.MAIN_WINDOW))
         manager.add_widget(WalletRestore(name=WindowNames.WALLET_RESTORE))

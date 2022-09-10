@@ -126,7 +126,7 @@ class WalletRestore(Screen):
         
         CONFIG.write(FILE)
         FILE.close()
-        WalletInfo = WalletInfoContent(seed_phrase, wallet_name, Wallet['address'], keyring_passphrase)
+        WalletInfo = WalletInfoContent(Wallet['seed'], wallet_name, Wallet['address'], keyring_passphrase)
         self.dialog = MDDialog(
                 type="custom",
                 content_cls=WalletInfo,
@@ -278,7 +278,7 @@ class MainWindow(Screen):
         #OurWorld.CONTINENTS.append("Search")
         
         for name_tab in OurWorld.CONTINENTS:
-            tab = Tab(text=name_tab)
+            tab = Tab(tab_label_text=name_tab)
             self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.android_tabs.add_widget(tab)
         
         self.get_ip_address(None    )
@@ -299,12 +299,16 @@ class MainWindow(Screen):
             self.dialog.dismiss()
             
         self.old_ip = self.ip
-        req = requests.get(ICANHAZURL)
-        self.ip = req.text
-    
-        self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.new_ip.text = self.ip
-        #self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.old_ip.text = "Old IP: " + self.old_ip
+        try: 
+            req = requests.get(ICANHAZURL)
+            self.ip = req.text
         
+            self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.new_ip.text = self.ip
+            return True
+            #self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.old_ip.text = "Old IP: " + self.old_ip
+        except Exception as e:
+            print(str(e))
+            return False
     def disconnect_from_node(self):
         try:
             if self.CONNECTED == None:

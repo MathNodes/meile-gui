@@ -1,7 +1,6 @@
 README.md
 setup.py
 src/awoc/__init__.py
-src/awoc/data/world.json
 src/bin/__init__.py
 src/bin/sentinelcli
 src/cli/__init__.py
