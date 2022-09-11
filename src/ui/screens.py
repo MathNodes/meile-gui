@@ -128,7 +128,7 @@ class WalletRestore(Screen):
         
         CONFIG.write(FILE)
         FILE.close()
-        WalletInfo = WalletInfoContent(seed_phrase, wallet_name, Wallet['address'], keyring_passphrase)
+        WalletInfo = WalletInfoContent(Wallet['seed'], wallet_name, Wallet['address'], keyring_passphrase)
         self.dialog = MDDialog(
                 type="custom",
                 content_cls=WalletInfo,

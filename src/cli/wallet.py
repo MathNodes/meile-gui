@@ -87,7 +87,7 @@ class HandleWalletFunctions():
                 else:
                     WalletDict['address'] = addy_seed[1].split(":")[-1].lstrip().rstrip()
                 WalletDict['seed'] = lines[-1].lstrip().rstrip().replace('\n', '')
-                remove(WALLETINFO)
+                #remove(WALLETINFO)
                 return WalletDict
     
         else:
