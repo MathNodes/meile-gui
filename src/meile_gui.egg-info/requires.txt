@@ -1,10 +1,21 @@
 kivymd
+<<<<<<< HEAD
 pydash
 treelib
 kivyoav
 pexpect
+=======
+kivyoav
+pexpect
+pycoingecko
+pydash
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
 qrcode
 save_thread_result
 screeninfo
 stripe
+<<<<<<< HEAD
 pycoingecko
+=======
+treelib
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb

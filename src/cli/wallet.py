@@ -82,7 +82,11 @@ class HandleWalletFunctions():
                 else:
                     WalletDict['address'] = addy_seed[1].split(":")[-1].lstrip().rstrip()
                 WalletDict['seed'] = lines[-1].lstrip().rstrip().replace('\n', '')
+<<<<<<< HEAD
                 #remove(WALLETINFO)
+=======
+                remove(WALLETINFO)
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
                 return WalletDict
     
         else:
@@ -95,6 +99,7 @@ class HandleWalletFunctions():
         CONFIG = MeileGuiConfig.read_configuration(MeileGuiConfig, MeileGuiConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
     
+<<<<<<< HEAD
         ofile =  open(SUBSCRIBEINFO, "wb")
             
         if not KEYNAME:
@@ -113,6 +118,21 @@ class HandleWalletFunctions():
         except pexpect.exceptions.TIMEOUT:
             return (False, 1415)
         
+=======
+        ofile =  open(SUBSCRIBEINFO, "wb")    
+        
+        SCMD = "%s tx subscription subscribe-to-node --yes --keyring-backend file --keyring-dir %s --gas-prices 0.1udvpn --chain-id sentinelhub-2 --node https://rpc.mathnodes.com:443 --from '%s' '%s' %s"  % (sentinelcli, KEYRINGDIR, KEYNAME, NODE, DEPOSIT)    
+     
+        child = pexpect.spawn(SCMD)
+        child.logfile = ofile
+        
+        child.expect(".*")
+        child.sendline(PASSWORD)
+        child.expect(pexpect.EOF)
+        
+        ofile.flush()
+        ofile.close()
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
         
         return self.ParseSubscribe(self)
         

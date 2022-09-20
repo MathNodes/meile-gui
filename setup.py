@@ -8,7 +8,11 @@ with open('README.md', encoding="utf-8") as f:
 
 setup(
     name='meile-gui',
+<<<<<<< HEAD
     version='1.1.0',
+=======
+    version='0.9.9-beta.1',
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
     description='Meile dVPN powered by the Sentinel Network',
     long_description=readme,
     long_description_content_type="text/markdown",

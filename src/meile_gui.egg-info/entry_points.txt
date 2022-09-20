@@ -1,2 +1,6 @@
 [console_scripts]
 meile-gui = main.meile_gui:main
+<<<<<<< HEAD
+=======
+
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb

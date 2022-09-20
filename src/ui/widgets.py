@@ -12,16 +12,23 @@ from kivy.metrics import dp
 from kivyoav.delayed import delayable
 from kivy.uix.screenmanager import Screen, SlideTransition
 from kivy.utils import get_color_from_hex
+<<<<<<< HEAD
 from kivymd.uix.behaviors import HoverBehavior
 from kivymd.theming import ThemableBehavior
 from kivy.core.window import Window
+=======
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
 
 from functools import partial
 from urllib3.exceptions import InsecureRequestWarning
 import requests
 import re
+<<<<<<< HEAD
 from os import path
 from subprocess import Popen, TimeoutExpired
+=======
+
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
 
 from cli.sentinel import IBCCOINS
 #from ui.interfaces import SubscribeContent
@@ -144,6 +151,7 @@ class SelectableLabel(RecycleDataViewBehavior, Label):
 class NodeRV(RecycleView):    
     pass
 
+<<<<<<< HEAD
 class OnHoverMDRaisedButton(MDRaisedButton, ThemableBehavior, HoverBehavior):
     def on_enter(self, *args):
         self.md_bg_color = get_color_from_hex("#fad783")
@@ -167,6 +175,13 @@ class RecycleViewRow(MDCard,ThemableBehavior, HoverBehavior):
         self.md_bg_color = get_color_from_hex("#0d021b")
         Window.set_system_cursor('arrow')
         
+=======
+
+class RecycleViewRow(MDCard):
+    text = StringProperty()    
+    dialog = None
+    
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
     def get_city_of_node(self, naddress):   
         APIURL   = "https://api.sentinel.mathnodes.com"
 
@@ -266,7 +281,11 @@ Node Version: %s
         else:
             self.dialog.dismiss()
             self.dialog = MDDialog(
+<<<<<<< HEAD
             title="Error: %s" % "No wallet found!" if returncode[1] == 1337  else returncode[1],
+=======
+            title="Error: %s" % returncode[1],
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
             md_bg_color=get_color_from_hex("#0d021b"),
             buttons=[
                     MDFlatButton(
@@ -363,11 +382,15 @@ class RecycleViewSubRow(MDCard):
             print(str(e))
             return
     @delayable
+<<<<<<< HEAD
     def connect_to_node(self, ID, naddress, moniker, switchValue):
         if switchValue == False:
             Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).disconnect_from_node()
             return 
         
+=======
+    def connect_to_node(self, ID, naddress, moniker):
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
         self.add_loading_popup("Connecting...")
         
         yield 0.6
@@ -423,6 +446,7 @@ class RecycleViewSubRow(MDCard):
         else:
             Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).CONNECTED = False
             
+<<<<<<< HEAD
         if not Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).get_ip_address(None):
             self.remove_loading_widget()
             self.change_dns()
@@ -460,6 +484,13 @@ class RecycleViewSubRow(MDCard):
         yield 1.2
         Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).get_ip_address(None)
         self.remove_loading_widget()
+=======
+        Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).get_ip_address(None)
+        self.remove_loading_widget()
+            
+            
+
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
 # In case I go for word wrapping bigger textfield.
 '''
 class MySeedBox(MDTextFieldRect):

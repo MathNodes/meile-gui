@@ -20,10 +20,15 @@ from kivymd.uix.list import OneLineIconListItem, OneLineListItem
 from functools import partial
 from datetime import datetime
 from os import path
+<<<<<<< HEAD
+=======
+import stripe
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
 import requests
 from requests.auth import HTTPBasicAuth
 from pycoingecko import CoinGeckoAPI 
 
+<<<<<<< HEAD
 
 import stripe 
 from stripe.error import CardError
@@ -34,6 +39,15 @@ from fiat.stripe_pay import scrtsxx
 
 from typedef.win import WindowNames
 from ui.interfaces import TXContent
+=======
+from fiat.stripe_pay.charge import HotwalletFuncs as HandleWalletFunctions
+from fiat.stripe_pay.charge import StripePayments
+from fiat.stripe_pay import scrtsxx
+
+from typedef.win import WindowNames
+from ui.interfaces import TXContent
+from stripe.error import CardError
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
 from conf.meile_config import MeileGuiConfig
 import main.main as Meile
 
@@ -233,7 +247,11 @@ class FiatInterface(Screen):
         CHARGEFILE = open(path.join(self.CONFIG.BASEDIR, 'stripe_payment.log'), 'a+')
         DATEFORMAT = '%Y-%m-%d.%H:%M:%S'
         yield 2
+<<<<<<< HEAD
         StripeInstance = Charge.StripePayments()
+=======
+        StripeInstance = StripePayments()
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
         #print("Credit Card Number: %s" % ccnum)
         #print("Expiration: %s/%s" %(ccmonth, ccyear))
         #print("CVV: %s" % cvv)

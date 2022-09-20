@@ -1,6 +1,10 @@
 #: import SlideTransition kivy.uix.screenmanager.SlideTransition
 #: import get_color_from_hex kivy.utils.get_color_from_hex
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
 WindowManager:
 
 <PreLoadWindow>:
@@ -40,16 +44,26 @@ WindowManager:
     MDBoxLayout:
         orientation: 'vertical'
         md_bg_color: get_color_from_hex("#0d021b")
+<<<<<<< HEAD
         MDFloatLayout:
+=======
+        MDBoxLayout:
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
             orientation: "horizontal"
             size_hint_y: .15
             MDTextField:
                 hint_text: "IP Address"
                 id: new_ip
                 mode: "fill"
+<<<<<<< HEAD
                 width: "25dp"
                 size_hint_x: .18
                 pos_hint: {"x" : 0, "center_y": .5}                
+=======
+                width: "35dp"
+                size_hint_x: .4
+                pos_hint: {"center_x" : .5, "center_y": .5}                
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
                 text: ""
                 readonly: True
                 opacity: 1
@@ -60,14 +74,21 @@ WindowManager:
                 hint_text: "Node"
                 id: connected_node
                 mode: "fill"
+<<<<<<< HEAD
                 width: "75dp"
                 size_hint_x: .4
                 pos_hint: {"x" : .2, "center_y": .5}                
+=======
+                width: "100dp"
+                size_hint_x: .6
+                pos_hint: {"center_x" : .5, "center_y": .5}                
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
                 text: ""
                 readonly: True
                 opacity: 1
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex("#fcb711")
+<<<<<<< HEAD
                 normal_color: app.theme_cls.accent_color
             MDLabel:
                 text: "Sort"
@@ -93,18 +114,32 @@ WindowManager:
                     center_x: self.parent.center_x
                     center_y: self.parent.center_y
                             
+=======
+                normal_color: app.theme_cls.accent_color      
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
             Image:
                 id: protected
                 source: root.set_protected_icon(False, "")
                 opacity: 0
+<<<<<<< HEAD
                 size_hint: None, None
                 height: "65dp"
                 pos_hint: {'x' : .8, 'center_y' : .5}    
+=======
+                width: "35dp"
+                size_hint: .6, .6
+                height: "65dp"
+                pos_hint: {'x' : 0, 'center_y' : .5}    
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
             Image:
                 source: root.get_logo()
                 size_hint: None, None
                 height: "75dp"
+<<<<<<< HEAD
                 pos_hint: {'x' : .9, 'center_y' : .5}
+=======
+                pos_hint_x: 1
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
         
 
 
@@ -127,14 +162,27 @@ WindowManager:
             size_hint_y: .1
             panel_color: get_color_from_hex("#0d021b")
             text_color_normal: get_color_from_hex("#fcb711")
+<<<<<<< HEAD
             text_color_active: get_color_from_hex("#fad783")
             selected_color_background: get_color_from_hex("#200c3a")
+=======
+            MDBottomNavigationItem:
+                name: "lan_disconnect"
+                text: "Disconnect"
+                icon: "lan-disconnect"
+
+                on_tab_release: root.disconnect_from_node()
+                
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
             MDBottomNavigationItem:
                 name: "wallet"
                 text: "Wallet"
                 icon: "wallet"
                 on_tab_release: root.wallet_dialog()
+<<<<<<< HEAD
                 on_tab_press: 
+=======
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
             MDBottomNavigationItem:
                 name: "Refresh"
                 text: "Refresh"
@@ -148,7 +196,10 @@ WindowManager:
                 on_tab_release: root.build_help_screen_interface()
                 
     
+<<<<<<< HEAD
 <TooltipMDRaisedButton@MDRaisedButton+MDTooltip>
+=======
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
             
 <NodeScreen>
     name: "nodes"
@@ -156,6 +207,7 @@ WindowManager:
         orientation: "vertical"
         NodeRV:
             id: rv
+<<<<<<< HEAD
         ActionBar:
             background_normal: ''
             background_down: ''
@@ -166,6 +218,18 @@ WindowManager:
                     title: 'Go Back'
                     with_previous: True
                     on_release: root.set_previous_screen() 
+=======
+    ActionBar:
+        background_normal: ''
+        background_down: ''
+        background_color: get_color_from_hex("#0d021b")
+        ActionView:
+            ActionPrevious:
+                icon: "arrow-left-circle"
+                title: 'Go Back'
+                with_previous: True
+                on_release: root.set_previous_screen() 
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
     
 <WalletScreen>:
     name: "wallet"
@@ -184,6 +248,7 @@ WindowManager:
     wallet_address: ""
     MDBoxLayout:
         orientation: "vertical"
+<<<<<<< HEAD
         MDTopAppBar:
             id: toolbar
             title: "Wallet"
@@ -193,6 +258,19 @@ WindowManager:
                 hint_text: "Address"
                 mode: "fill"
                 size_hint_x: .5 
+=======
+        MDToolbar:
+            id: toolbar
+            title: "Wallet"
+            md_bg_color: get_color_from_hex("#FFB908")
+            height: "100dp"
+            padding: 10,0,0,10
+    
+            MDTextField:
+                hint_text: "Address"
+                mode: "fill"
+                size_hint_x: 1.2
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
                 pos_hint: {"center_x" : .5, "center_y": .5}                
                 text: root.wallet_address
                 readonly: True
@@ -517,7 +595,11 @@ WindowManager:
                 text_color: (1,1,1,1)  
                 pos_hint: {"right" : 1.75 , "top": .8 }  
 
+<<<<<<< HEAD
     OnHoverMDRaisedButton:
+=======
+    MDRaisedButton:
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
         text: "Get Details"
         md_bg_color: get_color_from_hex("#fcb711")
         text_color: 0,0,0,1
@@ -527,8 +609,11 @@ WindowManager:
     MDSeparator:
         color: 1,1,1,1
 
+<<<<<<< HEAD
 <OnHoverMDRaisedButton>:
 
+=======
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
 <RecycleViewSubRow>:
     size_hint_y: None
     size: "180dp", "180dp"
@@ -562,7 +647,10 @@ WindowManager:
             pos_hint: {"x" : 0, "top" : 1.45}
             size_hint_x: None
         Image:
+<<<<<<< HEAD
             id: country_image
+=======
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
             source: root.source_image
             pos_hint: {"x" : .3, "top" : 1.25}
             
@@ -572,7 +660,11 @@ WindowManager:
             font_style: "H6"
             font_size: "22sp"
             text_color: get_color_from_hex("#b2b1b1")  
+<<<<<<< HEAD
             pos_hint: {"x" : .768, "top" : 0.7}
+=======
+            pos_hint: {"x" : .75, "top" : 0.7}
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
         MDLabel:
             text: root.address_text
             theme_text_color: "Custom"
@@ -632,10 +724,16 @@ WindowManager:
         MDProgressBar:
             value: root.get_data_used(root.allocated_text, root.consumed_text)
             color: app.theme_cls.accent_color
+<<<<<<< HEAD
             #back_color: get_color_from_hex("#ffffff")
             pos_hint: {"x" : 0, "top" : .475 }
             size_hint_x: .5
             size_hint_y: .06
+=======
+            back_color: get_color_from_hex("#ffffff")
+            pos_hint: {"x" : 0, "top" : .95 }
+            size_hint_x: .5
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
         MDLabel:
             id: consumed_data
             text: " "
@@ -644,6 +742,7 @@ WindowManager:
             font_size: "11sp"
             text_color: 1,1,1,1
             pos_hint: {"x" : .5, "top" : 1.03 }      
+<<<<<<< HEAD
         Switch:
             canvas.after:
                 Color:
@@ -655,10 +754,19 @@ WindowManager:
             on_active: root.connect_to_node(root.sub_id_text,root.address_text, root.moniker_text, self.active)
             pos_hint: {"x" : 0, "top" : .55 }
             size_hint: None,None
+=======
+        MDRaisedButton:
+            text: "Connect"
+            md_bg_color: get_color_from_hex("#fcb711")
+            text_color: 0,0,0,1
+            on_press: root.connect_to_node(root.sub_id_text,root.address_text, root.moniker_text)
+            pos_hint: {"x" : 0, "top" : .35 }
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
         MDSeparator:
             color: 1,1,1,1
             pos_hint: {"x" : 0, "top" : .0 }
          
+<<<<<<< HEAD
 <YellowSwitch>:
     size_hint: None, None
     size: 100, 100
@@ -691,6 +799,9 @@ WindowManager:
             bold: True
             font_size: 13
             pos: self.parent.center_x - sp(30), self.parent.center_y - sp(50)
+=======
+
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
 <ClickableTextFieldRoundSeed>:
     size_hint_y: None
     height: seed_phrase.height
@@ -781,6 +892,15 @@ WindowManager:
         height: self.minimum_height
         orientation: "vertical"
 
+<<<<<<< HEAD
+=======
+
+<IconListItem>
+
+    IconLeftWidget:
+        icon: root.icon
+
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
 <WalletInfoContent>
     orientation: "vertical"
     spacing: "4dp"
@@ -927,6 +1047,7 @@ WindowManager:
             pos_hint: { "right": 1.4, "top": 1.5}
             theme_text_color: "Custom"
             text_color: get_color_from_hex("#fcb711")
+<<<<<<< HEAD
         MDLabel:
             font_name: "Roboto-Bold"
             text: "v1.0.0"
@@ -936,11 +1057,17 @@ WindowManager:
             pos_hint: { "right": 1.475, "top": 1.5}
             theme_text_color: "Custom"
             text_color: get_color_from_hex("#fcb711")
+=======
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
         ScrollView:
             effect_cls: "ScrollEffect"
             scroll_type: ['bars']
             MDGridLayout:
+<<<<<<< HEAD
                 rows: 12
+=======
+                rows: 10
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
                 cols: 1
                 size_hint_y:None
                 size_hint_x: 1
@@ -967,7 +1094,11 @@ WindowManager:
                     
                 MDLabel:
                     font_name: "Roboto-BoldItalic"
+<<<<<<< HEAD
                     text: "What is a address?"
+=======
+                    text: "What is a address"
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
                     size_hint_y: None
                     height: self.texture_size[1]
                     size_hint_x: 1
@@ -1010,7 +1141,11 @@ WindowManager:
                     halign: "center"
                 MDLabel:
                     font_name: "DejaVuSans"
+<<<<<<< HEAD
                     text: "MathNodes uses Stripe to process payments in order to receive funds to use the dVPN. You will see that we do not even need the name of the individual. Once a payment is processed through Stripe, Mathnodes stores only the payment_id received from stripe, the address of your wallet, and the amount of tokens sent (1,000). We have to keep records some information in case there is a dispute and we need to query the orders and verify if tokens were sent to the reciept's address. We do not store your name, your credit card details, or any other information beside what we have mentioned. The full policy can be viewed at https://meile.app/policy"
+=======
+                    text: "MathNodes uses Stripe to process payments in order to receive funds to use the dVPN. You will see that we do not even need the name of the individual. Once a payment is processed through Stripe, Mathnodes stores only the payment_id received from stripe, the address of your wallet, and the amount of tokens sent (1,000). We have to keep records some information in case there is a dispute and we need to query the orders and verify if tokens were sent to the reciept's address. We do not store your name, your credit card details, or any other information beside what we have mentioned. "
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
                     size_hint_y: None
                     height: self.texture_size[1]
                     size_hint_x: 1
@@ -1037,6 +1172,7 @@ WindowManager:
                     theme_text_color: "Custom"
                     text_color: get_color_from_hex("#fcb711")
                     font_size: "12dp"
+<<<<<<< HEAD
                     
                 MDLabel:
                     font_name: "Roboto-BoldItalic"
@@ -1056,23 +1192,37 @@ WindowManager:
                     theme_text_color: "Custom"
                     text_color: get_color_from_hex("#fcb711")
                     font_size: "12dp"
+=======
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
 <FiatInterface>:
     name: "fiatgateway"
     title: "Re-fuel"
     wallet_address: root.get_my_wallet_address()
     MDBoxLayout:
         orientation: "vertical"
+<<<<<<< HEAD
         MDTopAppBar:
             id: toolbar
             title: "Wallet"
             md_bg_color: get_color_from_hex("#FFB908")
             height: "70dp"
+=======
+        MDToolbar:
+            id: toolbar
+            title: "Wallet"
+            md_bg_color: get_color_from_hex("#FFB908")
+            height: "100dp"
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
             type: "top"
     
             MDTextField:
                 hint_text: "Address"
                 mode: "fill"
+<<<<<<< HEAD
                 size_hint_x: .5
+=======
+                size_hint_x: 1.2
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
                 pos_hint: {"center_x" : .5, "center_y": .5}
                 text: root.wallet_address
                 readonly: True
@@ -1292,4 +1442,8 @@ WindowManager:
     MDLabel:
         text: "Please copy the TX ID and save it somewhere safely."
         font_size: "11dp"
+<<<<<<< HEAD
    
+=======
+   
+>>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
