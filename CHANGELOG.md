@@ -1,5 +1,15 @@
 CHANGELOG
 ========================
+
+# v1.1.0 (20/09/2022)
+* NEW: Cloudflar DoH (DNS-over-HTTPS) WARP integration
+* NEW: Hover focus on node listings
+* NEW: Sort by Price (dpvn) or Moniker
+* NEW: Hover on focus for country listings
+* NEW: Switch for Connect/Disconnect in Subscriptions
+* CHANGE: Removed Disconnect button in NavBar
+* FIX: Minor bugs
+
 # v1.0.1 (01/09/2022)
 * NEW: .deb package for virtual machine guest OSes
 * FIX: Binary release fix for FIAT Gateway
