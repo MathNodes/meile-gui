@@ -53,7 +53,7 @@ class AWOC:
         self._script_dir = os.path.dirname(__file__)
 
         # The path to the Global World Object Data file.
-        self._relative_GWOD_path = 'data/world.json'
+        self._relative_GWOD_path = 'datum/world.json'
 
         # Building GWOD full relative path.
         self._GWOD_path = self.resource_path(self._relative_GWOD_path)

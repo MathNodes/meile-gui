@@ -12,12 +12,16 @@ from kivy.metrics import dp
 from kivyoav.delayed import delayable
 from kivy.uix.screenmanager import Screen, SlideTransition
 from kivy.utils import get_color_from_hex
+from kivymd.uix.behaviors import HoverBehavior
+from kivymd.theming import ThemableBehavior
+from kivy.core.window import Window
 
 from functools import partial
 from urllib3.exceptions import InsecureRequestWarning
 import requests
 import re
-
+from os import path
+from subprocess import Popen, TimeoutExpired
 
 from cli.sentinel import IBCCOINS
 #from ui.interfaces import SubscribeContent
@@ -140,11 +144,29 @@ class SelectableLabel(RecycleDataViewBehavior, Label):
 class NodeRV(RecycleView):    
     pass
 
+class OnHoverMDRaisedButton(MDRaisedButton, ThemableBehavior, HoverBehavior):
+    def on_enter(self, *args):
+        self.md_bg_color = get_color_from_hex("#fad783")
+        Window.set_system_cursor('arrow')
+        
+    def on_leave(self, *args):
+        '''The method will be called when the mouse cursor goes beyond
+        the borders of the current widget.'''
 
-class RecycleViewRow(MDCard):
+        self.md_bg_color = get_color_from_hex("#fcb711")
+        Window.set_system_cursor('arrow')
+class RecycleViewRow(MDCard,ThemableBehavior, HoverBehavior):
     text = StringProperty()    
     dialog = None
     
+    def on_enter(self, *args):
+        self.md_bg_color = get_color_from_hex("#200c3a")
+        Window.set_system_cursor('hand')
+        
+    def on_leave(self, *args):
+        self.md_bg_color = get_color_from_hex("#0d021b")
+        Window.set_system_cursor('arrow')
+        
     def get_city_of_node(self, naddress):   
         APIURL   = "https://api.sentinel.mathnodes.com"
 
@@ -244,7 +266,7 @@ Node Version: %s
         else:
             self.dialog.dismiss()
             self.dialog = MDDialog(
-            title="Error: %s" % returncode[1],
+            title="Error: %s" % "No wallet found!" if returncode[1] == 1337  else returncode[1],
             md_bg_color=get_color_from_hex("#0d021b"),
             buttons=[
                     MDFlatButton(
@@ -341,7 +363,11 @@ class RecycleViewSubRow(MDCard):
             print(str(e))
             return
     @delayable
-    def connect_to_node(self, ID, naddress, moniker):
+    def connect_to_node(self, ID, naddress, moniker, switchValue):
+        if switchValue == False:
+            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).disconnect_from_node()
+            return 
+        
         self.add_loading_popup("Connecting...")
         
         yield 0.6
@@ -397,11 +423,43 @@ class RecycleViewSubRow(MDCard):
         else:
             Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).CONNECTED = False
             
-        Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).get_ip_address(None)
-        self.remove_loading_widget()
+        if not Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).get_ip_address(None):
+            self.remove_loading_widget()
+            self.change_dns()
+        else:
+            self.remove_loading_widget()
             
+    @delayable        
+    def change_dns(self):
+        MeileConfig = MeileGuiConfig()
+        RESOLVFILE = path.join(MeileConfig.BASEDIR, "dns")
+        DNSFILE = open(RESOLVFILE, 'w')
+        
+        DNSFILE.write('nameserver 1.1.1.1')
+        DNSFILE.flush()
+        DNSFILE.close()
+        
+        yield 0.6
+        if self.dialog:
+            self.dialog.dismiss()
+        self.add_loading_popup("DNS Resolver error... Switching to Cloudflare")
+        yield 2.6
+
+        dnsCMD = "pkexec bash -c 'cat %s | resolvconf -a wg99 && resolvconf -u'" % RESOLVFILE
+
+        try: 
+            dnsPROC = Popen(dnsCMD, shell=True)
+            dnsPROC.wait(timeout=60)
+        except TimeoutExpired as e:
+            print(str(e))
+            pass
+        
+        proc_out,proc_err = dnsPROC.communicate()
             
 
+        yield 1.2
+        Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).get_ip_address(None)
+        self.remove_loading_widget()
 # In case I go for word wrapping bigger textfield.
 '''
 class MySeedBox(MDTextFieldRect):

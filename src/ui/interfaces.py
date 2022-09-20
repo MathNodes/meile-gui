@@ -9,6 +9,9 @@ from kivy.uix.recyclegridlayout import RecycleGridLayout
 from kivy.uix.image import Image
 from kivy.uix.boxlayout import BoxLayout
 from kivymd.uix.list import OneLineIconListItem
+from kivymd.uix.button import MDFlatButton, MDRaisedButton
+from kivymd.uix.tooltip import MDTooltip
+from kivy.uix.switch import Switch
 
 
 class Tab(MDBoxLayout, MDTabsBase):
@@ -25,7 +28,10 @@ class LatencyContent(BoxLayout):
     
     def return_latency(self):
         return self.ids.latency.text
-
+class YellowSwitch(Switch):
+    pass
+class TooltipMDRaisedButton(MDRaisedButton, MDTooltip):
+    pass
 class WindowManager(ScreenManager):
     pass
 

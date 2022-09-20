@@ -164,6 +164,16 @@ class NodeTreeData():
             try:
                 NodeData = self.NodeTree.get_node(snaddress).data
             except AttributeError:
+                SubsFinalResult.append({
+                                            FinalSubsKeys[0] : SubsResult[SubsInfoKeys[0]][k],
+                                            FinalSubsKeys[1] : "Offline",
+                                            FinalSubsKeys[2] : SubsResult[SubsInfoKeys[5]][k],
+                                            FinalSubsKeys[3] : SubsResult[SubsInfoKeys[6]][k],
+                                            FinalSubsKeys[4] : SubsResult[SubsInfoKeys[7]][k],
+                                            FinalSubsKeys[5] : None,
+                                            FinalSubsKeys[6] : "0B",
+                                            FinalSubsKeys[7] : "0B"
+                                            })
                 print("Sub not found in list")
                 k += 1
                 continue   

@@ -1,10 +1,10 @@
 kivymd
+pydash
+treelib
 kivyoav
 pexpect
-pycoingecko
-pydash
 qrcode
 save_thread_result
 screeninfo
 stripe
-treelib
+pycoingecko
