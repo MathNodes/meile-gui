@@ -62,13 +62,13 @@ Or goto your panel menu under Internet and there will be a clickable icon.
 
 Because there were issues loading certain mesa OpenGL drivers in various Debian Virtual Machines, we have included a separate .deb archive that automatically configures the system to handle the Meile dependencies. Please use this version if you are running a Debian flavor in a virutal machine (VM).
 
-[Debian/Ubuntu 20.04 Virtual Machine]](https://github.com/MathNodes/meile-gui/releases/download/v1.1.0/meile-gui-v1.1.0_amd64_vm.deb)
+[Debian/Ubuntu 20.04 Virtual Machine](https://github.com/MathNodes/meile-gui/releases/download/v1.1.0/meile-gui-v1.1.0_amd64_vm.deb)
 
 ## Redhat/CentOS/Fedora (.rpm)
 
 Download the latest RPM for RedHat releases:
 
-[RedHat RPM]](https://github.com/MathNodes/meile-gui/releases/download/v1.1.0/meile-gui-1.1.0-1.fc36.x86_64.rpm)
+[RedHat RPM](https://github.com/MathNodes/meile-gui/releases/download/v1.1.0/meile-gui-1.1.0-1.fc36.x86_64.rpm)
 
 Install the rpm from a terminal:
 
