@@ -2,7 +2,6 @@ awoc
 bin
 cli
 conf
-fiat
 geography
 imgs
 kv

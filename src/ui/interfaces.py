@@ -8,14 +8,9 @@ from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.recyclegridlayout import RecycleGridLayout
 from kivy.uix.image import Image
 from kivy.uix.boxlayout import BoxLayout
-from kivymd.uix.list import OneLineIconListItem
-<<<<<<< HEAD
 from kivymd.uix.button import MDFlatButton, MDRaisedButton
 from kivymd.uix.tooltip import MDTooltip
 from kivy.uix.switch import Switch
-=======
->>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
-
 
 class Tab(MDBoxLayout, MDTabsBase):
     pass
@@ -31,14 +26,11 @@ class LatencyContent(BoxLayout):
     
     def return_latency(self):
         return self.ids.latency.text
-<<<<<<< HEAD
 class YellowSwitch(Switch):
     pass
 class TooltipMDRaisedButton(MDRaisedButton, MDTooltip):
     pass
-=======
 
->>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
 class WindowManager(ScreenManager):
     pass
 
@@ -61,23 +53,4 @@ class SelectableRecycleGridLayout(FocusBehavior, LayoutSelectionBehavior,
 class FullImage(Image):
     pass
 class FullImage2(Image):
-    pass
-
-
-
-class ClickableTextFieldRoundCC(MDRelativeLayout):
-    text = StringProperty()
-    hint_text = StringProperty()
-    
-'''
-class ClickableTextFieldRoundName(MDRelativeLayout):
-    text = StringProperty()
-    hint_text = StringProperty()
-
-'''
-class ClickableTextFieldRoundCVV(MDRelativeLayout):
-    text = StringProperty()
-    hint_text = StringProperty()
-
-class TXContent(BoxLayout):
     pass

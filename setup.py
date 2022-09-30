@@ -8,23 +8,19 @@ with open('README.md', encoding="utf-8") as f:
 
 setup(
     name='meile-gui',
-<<<<<<< HEAD
-    version='1.1.0',
-=======
-    version='0.9.9-beta.1',
->>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
+    version='0.9.9',
     description='Meile dVPN powered by the Sentinel Network',
     long_description=readme,
     long_description_content_type="text/markdown",
     author='MathNodes',
     author_email='freQniK@mathnodes.com',
-    url='https://github.com/MathNodes/meile-gui',
+    url='https://meile.app',
     license='GNU General Public License (GPL)',
     keywords='vpn, dvpn, sentinel, crypto, gui, privacy, security, decentralized ',
     classifiers = [
         'Development Status :: 4 - Beta',
         "Programming Language :: Python",
-        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.10",
         "License :: OSI Approved :: GNU General Public License (GPL)",
         "Environment :: X11 Applications",
         "Environment :: MacOS X",
@@ -32,7 +28,7 @@ setup(
         "Natural Language :: English",
         "Operating System :: MacOS",
         "Operating System :: POSIX",
-        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.10",
         "Topic :: System :: Networking",
         "Topic :: Internet",
         
@@ -40,8 +36,8 @@ setup(
     ],
     package_dir={"": "src"},
     packages=find_packages(where="src"),
-    install_requires=['kivymd', 'pydash', 'treelib', 'kivyoav', 'pexpect', 'qrcode', 'save_thread_result', 'screeninfo', 'stripe', 'pycoingecko'],
-    package_data={'conf': ['config/config.ini'], 'bin' : ['sentinelcli', 'warp-cli', 'warp-svc'], 'awoc' : ['data/world.json'],
+    install_requires=['kivymd', 'pydash', 'treelib', 'kivyoav', 'pexpect', 'qrcode', 'save_thread_result', 'screeninfo'],
+    package_data={'conf': ['config/config.ini'], 'bin' : ['sentinelcli', 'warp-cli','warp-svc'], 'awoc' : ['data/world.json'],
                   'fonts': ['Roboto-BoldItalic.ttf'], 'imgs' : ["ad.png","ae.png","af.png","ag.png",
                                                               "ai.png","al.png","am.png","ao.png",
                                                               "aq.png","ar.png","as.png","atom.png",
