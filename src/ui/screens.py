@@ -12,10 +12,7 @@ from cli.wallet import HandleWalletFunctions
 from conf.meile_config import MeileGuiConfig
 from typedef.win import CoinsList
 from fiat import fiat_interface
-<<<<<<< HEAD
 from cli.warp import WarpHandler
-=======
->>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
 
 from kivy.uix.screenmanager import Screen, SlideTransition
 from kivymd.uix.button import MDFlatButton, MDRaisedButton
@@ -25,7 +22,6 @@ from kivyoav.delayed import delayable
 from kivy.properties import ObjectProperty
 from kivymd.uix.card import MDCard
 from kivy.utils import get_color_from_hex
-<<<<<<< HEAD
 from kivy.metrics import dp
 from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.behaviors import HoverBehavior
@@ -33,13 +29,10 @@ from kivymd.theming import ThemableBehavior
 from kivy.core.window import Window
 
 
-=======
->>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
 
 
 from save_thread_result import ThreadWithResult
 import requests
-<<<<<<< HEAD
 from functools import partial
 from os import path,geteuid
 import sys
@@ -47,12 +40,6 @@ import copy
 import re
 from time import sleep
 
-=======
-
-from functools import partial
-from os import path,geteuid
-import sys
->>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
 class WalletRestore(Screen):
     screemanager = ObjectProperty()
     
@@ -150,11 +137,7 @@ class WalletRestore(Screen):
         
         CONFIG.write(FILE)
         FILE.close()
-<<<<<<< HEAD
         WalletInfo = WalletInfoContent(Wallet['seed'], wallet_name, Wallet['address'], keyring_passphrase)
-=======
-        WalletInfo = WalletInfoContent(seed_phrase, wallet_name, Wallet['address'], keyring_passphrase)
->>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
         self.dialog = MDDialog(
                 type="custom",
                 content_cls=WalletInfo,
@@ -187,7 +170,6 @@ class PreLoadWindow(Screen):
         self.NodeTree = NodeTreeData(None)
         
         self.GenerateUUID()
-<<<<<<< HEAD
         self.CreateWarpConfig()
 
         # Schedule the functions to be called every n seconds
@@ -207,13 +189,6 @@ class PreLoadWindow(Screen):
             CONFIG.write(FILE)
         FILE.close()   
         
-=======
-        
-        # Schedule the functions to be called every n seconds
-        Clock.schedule_once(partial(self.NodeTree.get_nodes, "12s"), 3)
-        Clock.schedule_interval(self.update_status_text, 0.6)
-        
->>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
     def GenerateUUID(self):
         MeileConfig = MeileGuiConfig()
         CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
@@ -248,13 +223,7 @@ class PreLoadWindow(Screen):
         )
         self.dialog.open()
         
-<<<<<<< HEAD
              
-=======
-    def quit_meile(self, dt):
-        sys.exit("Not running as root")
-        
->>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
     @delayable
     def update_status_text(self, dt):
         go_button = self.manager.get_screen(WindowNames.PRELOAD).ids.go_button
@@ -297,20 +266,14 @@ class MainWindow(Screen):
     old_ip = ""
     ip = ""
     CONNECTED = None
-<<<<<<< HEAD
     warpd = False
-=======
->>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
     NodeTree = None
     SubResult = None
     MeileConfig = None
     ConnectedNode = None
-<<<<<<< HEAD
     menu = None
     SortOptions = ['None', "Moniker", "Price"]
     Sort = SortOptions[0]
-=======
->>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
     
     def __init__(self, node_tree, **kwargs):
         #Builder.load_file("./src/kivy/meile.kv")
@@ -320,7 +283,6 @@ class MainWindow(Screen):
         
         Clock.schedule_once(self.get_config,1)     
         Clock.schedule_once(self.build, 2)
-<<<<<<< HEAD
         sort_icons = ["sort-variant", "sort-alphabetical-ascending", "sort-numeric-ascending"]
         menu_items = [
             {
@@ -349,9 +311,6 @@ class MainWindow(Screen):
         MeileConfig = MeileGuiConfig()
         return MeileConfig.resource_path("../imgs/warp.png")
          
-=======
-    
->>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
     def set_protected_icon(self, setbool, moniker):
         MeileConfig = MeileGuiConfig()
         if setbool:
@@ -373,11 +332,7 @@ class MainWindow(Screen):
         #OurWorld.CONTINENTS.append("Search")
         
         for name_tab in OurWorld.CONTINENTS:
-<<<<<<< HEAD
             tab = Tab(tab_label_text=name_tab)
-=======
-            tab = Tab(text=name_tab)
->>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
             self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.android_tabs.add_widget(tab)
         
         self.get_ip_address(None    )
@@ -389,7 +344,6 @@ class MainWindow(Screen):
             self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.android_tabs.ids.layout.children[-1].text
         )
 
-<<<<<<< HEAD
     @mainthread
     def display_warp_success(self):
         
@@ -460,8 +414,6 @@ class MainWindow(Screen):
             )
             self.dialog.open()
             
-=======
->>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
     def get_logo(self):
         self.MeileConfig = MeileGuiConfig()
         return self.MeileConfig.resource_path("../imgs/logo.png")
@@ -471,7 +423,6 @@ class MainWindow(Screen):
             self.dialog.dismiss()
             
         self.old_ip = self.ip
-<<<<<<< HEAD
         try: 
             req = requests.get(ICANHAZURL)
             self.ip = req.text
@@ -482,13 +433,6 @@ class MainWindow(Screen):
         except Exception as e:
             print(str(e))
             return False
-=======
-        req = requests.get(ICANHAZURL)
-        self.ip = req.text
-    
-        self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.new_ip.text = self.ip
-        #self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.old_ip.text = "Old IP: " + self.old_ip
->>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
         
     def disconnect_from_node(self):
         try:
@@ -570,7 +514,6 @@ class MainWindow(Screen):
         
     
     def add_sub_rv_data(self, node, flagloc):
-<<<<<<< HEAD
         
         if node[FinalSubsKeys[1]] == "Offline":
            self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.rv.data.append(
@@ -604,22 +547,6 @@ class MainWindow(Screen):
                     
                 },
             )
-=======
-        self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.rv.data.append(
-            {
-                "viewclass"      : "RecycleViewSubRow",
-                "moniker_text"   : node[FinalSubsKeys[1]].lstrip().rstrip(),
-                "sub_id_text"    : node[FinalSubsKeys[0]].lstrip().rstrip(),
-                "price_text"     : node[FinalSubsKeys[4]].lstrip().rstrip(),
-                "country_text"   : node[FinalSubsKeys[5]].lstrip().rstrip(),
-                "address_text"   : node[FinalSubsKeys[2]].lstrip().rstrip(),
-                "allocated_text" : node[FinalSubsKeys[6]].lstrip().rstrip(),
-                "consumed_text"  : node[FinalSubsKeys[7]].lstrip().rstrip(),
-                "source_image"   : self.MeileConfig.resource_path(flagloc)
-                
-            },
-        )
->>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
         
     def add_country_rv_data(self, NodeCountries):
         self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.rv.data.append(
@@ -692,11 +619,7 @@ class MainWindow(Screen):
         self.remove_loading_widget(None)
         
         self.add_loading_popup("Reloading Nodes & Subscriptions...")
-<<<<<<< HEAD
         yield 0.5
-=======
-        yield 1.3
->>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
         try: 
             self.NodeTree.NodeTree = None
             thread = ThreadWithResult(target=self.NodeTree.get_nodes, args=(latency.return_latency(),)) 
@@ -706,16 +629,10 @@ class MainWindow(Screen):
         except Exception as e:
             print(str(e))
             pass
-<<<<<<< HEAD
         self.SubResult = None
         self.remove_loading_widget(None)
         self.ids.android_tabs.switch_tab("Subscriptions")
         #self.on_tab_switch(None, None, None, "Subscriptions")
-=======
-        self.GetSubscriptions()
-        self.remove_loading_widget(None)
-        self.on_tab_switch(None,None,None,"Subscriptions")
->>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
         
     def GetSubscriptions(self):
         try: 
@@ -731,21 +648,11 @@ class MainWindow(Screen):
     
     @delayable
     def subs_callback(self, dt):
-<<<<<<< HEAD
-=======
-        #from src.cli.sentinel import NodesDictList
-         
-        
->>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
         floc = "../imgs/"
         yield 0.314
         if not self.SubResult:
             self.GetSubscriptions()
-<<<<<<< HEAD
         
-=======
-        #self.Subscriptions = get_subscriptions(NodesDictList, self.address)
->>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
         for sub in self.SubResult:
             if sub[FinalSubsKeys[5]] == "Czechia":
                 sub[FinalSubsKeys[5]] = "Czech Republic"
@@ -756,10 +663,7 @@ class MainWindow(Screen):
             flagloc = floc + iso2 + ".png"
             self.add_sub_rv_data(sub, flagloc)
         self.remove_loading_widget(None)
-<<<<<<< HEAD
         
-=======
->>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
 
     @mainthread
     def on_tab_switch(self, instance_tabs, instance_tab, instance_tabs_label, tab_text):
@@ -772,21 +676,12 @@ class MainWindow(Screen):
         # Subscriptions
         #print(self.NodeTree.NodeTree.show())
         if tab_text == OurWorld.CONTINENTS[6]:
-<<<<<<< HEAD
             self.get_config(None)
             self.add_loading_popup("Loading...")
-=======
-            self.add_loading_popup("Loading...")
-            self.get_config(None)
->>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
             if self.address:
             
                 Clock.schedule_once(self.subs_callback, 1)
                 #Subscriptions = get_subscriptions(NodesDictList, address)
-<<<<<<< HEAD
-=======
-                
->>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
                 return 
             else:
                 self.remove_loading_widget(None)
@@ -928,18 +823,13 @@ class NodeScreen(Screen):
     NodeTree = None
     Country = None
     MeileConfig = None
-<<<<<<< HEAD
     def __init__(self, node_tree, country, sort, **kwargs):
-=======
-    def __init__(self, node_tree, country, **kwargs):
->>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
         super(NodeScreen, self).__init__()
         
         self.NodeTree = node_tree
         
         
         floc = "../imgs/"
-<<<<<<< HEAD
         CountryNodes = self.NodeTree.NodeTree.children(country)
         
         if sort == Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).SortOptions[1]:
@@ -1002,18 +892,6 @@ class NodeScreen(Screen):
             flagloc = floc + iso2 + ".png"
             self.add_rv_data(node, flagloc)
                 
-=======
-
-        for node_child in self.NodeTree.NodeTree.children(country):
-            node = node_child.data
-            iso2 = OurWorld.our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
-            flagloc = floc + iso2 + ".png"
-            self.add_rv_data(node, flagloc)
-        
-        
-        
-        
->>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
     def add_rv_data(self, node, flagloc):
         self.MeileConfig = MeileGuiConfig()
 
@@ -1066,7 +944,6 @@ class NodeScreen(Screen):
         Meile.app.root.current = WindowNames.MAIN_WINDOW
 
         
-<<<<<<< HEAD
 class RecycleViewCountryRow(MDCard,ThemableBehavior, HoverBehavior):
     text = StringProperty()
     
@@ -1078,11 +955,6 @@ class RecycleViewCountryRow(MDCard,ThemableBehavior, HoverBehavior):
         self.md_bg_color = get_color_from_hex("#0d021b")
         Window.set_system_cursor('arrow')
         
-=======
-class RecycleViewCountryRow(MDCard):
-    text = StringProperty()
-    
->>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
     def show_country_nodes(self, country):
         print(country)
         self.switch_window(country)
@@ -1090,7 +962,6 @@ class RecycleViewCountryRow(MDCard):
     def switch_window(self, country):
         NodeTree = NodeTreeData(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeTree.NodeTree)
         try:
-<<<<<<< HEAD
             Meile.app.root.remove_widget(Meile.app.root.get_screen(WindowNames.NODES))
         except Exception as e:
             print(str(e))
@@ -1099,13 +970,6 @@ class RecycleViewCountryRow(MDCard):
                                              node_tree=NodeTree,
                                              country=country,
                                              sort=Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).Sort))
-=======
-            Meile.app.root.remove_widget(NodeScreen(name="nodes", node_tree=NodeTree, country=country))
-        except Exception as e:
-            print(str(e))
-            pass
-        Meile.app.root.add_widget(NodeScreen(name="nodes", node_tree=NodeTree, country=country))
->>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
 
         Meile.app.root.transition = SlideTransition(direction = "up")
         Meile.app.root.current = WindowNames.NODES

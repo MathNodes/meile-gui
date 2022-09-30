@@ -1,19 +1,12 @@
 README.md
 setup.py
 src/awoc/__init__.py
-<<<<<<< HEAD
-=======
-src/awoc/data/world.json
->>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
 src/bin/__init__.py
 src/bin/sentinelcli
 src/cli/__init__.py
 src/cli/sentinel.py
 src/cli/wallet.py
-<<<<<<< HEAD
 src/cli/warp.py
-=======
->>>>>>> 80ab241e269da90baefd4b857339cce30a324ecb
 src/conf/__init__.py
 src/conf/config.ini
 src/conf/meile_config.py
