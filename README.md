@@ -13,13 +13,10 @@ Meile dVPN GUI for Linux &amp; OS X Powered by the Sentinel Network - a blockcha
 
 # Full Version
 
-The full version 1.0.0 has been released to GitHub. Branches include **master**, **osx**, **fiat**, **osx-fiat**. The exception is that we did not include the scrtsxx.py which contains credentials for the FIAT gateway. Please navigate the various branches to understand the different interworkings. 
+The full version 1.x has been released to GitHub. Branches include **master**, **osx**, **fiat**, **osx-fiat**, **pip**. The exception is that we did not include the scrtsxx.py which contains credentials for the FIAT gateway. Please navigate the various branches to understand the different interworkings. 
 
 
-# NOTE:
-sudo/root privleges is no longer required to run meile-gui on Linux. Thank god. We've used AppleScript to prompt the user for fingerprint or system password thereby removing sudo/root privileges being necessary to run the OS X Meile version. NOTE: The OS X bundle seems to not connect to nodes as of now. Please use the binary as that is in working order. 
-
-## Note 2: 
+## Note: 
 If you have an older version (<0.9.5-beta.1) of Meile on your system, running the following is mandatory to allow newer versions to work:
 
 ```shell
@@ -30,7 +27,7 @@ where `user` is your username on your system.
 This just changes the permissions of the meile-gui configuration directory back to a regular user instead of its previous permission as root. 
 
 ## Mac OS X
-Download the latest release [Mac OS X v1.0.1](https://github.com/MathNodes/meile-gui/releases/download/1.0.1/meile-gui-v1.0.1_darwin_M1)
+Download the latest release [Mac OS X v1.1.0](https://github.com/MathNodes/meile-gui/releases/download/v1.1.0/meile-gui-v1.1.0_darwin_M1)
 
 Run:
 ```shell
@@ -63,7 +60,23 @@ Or goto your panel menu under Internet and there will be a clickable icon.
 
 ## Debian Virtual Machine (.deb)
 
-Because there were issues loading certain mesa OpenGL drivers in various Debian Virtual Machines, we have included a separate .deb archive that automatically configures the system to handle the Meile dependencies. Please use this version if you are running a Debian flavor in a virutal machine (VM). 
+Because there were issues loading certain mesa OpenGL drivers in various Debian Virtual Machines, we have included a separate .deb archive that automatically configures the system to handle the Meile dependencies. Please use this version if you are running a Debian flavor in a virutal machine (VM).
+
+[Debian/Ubuntu 20.04 Virtual Machine]](https://github.com/MathNodes/meile-gui/releases/download/v1.1.0/meile-gui-v1.1.0_amd64_vm.deb)
+
+## Redhat/CentOS/Fedora (.rpm)
+
+Download the latest RPM for RedHat releases:
+
+[RedHat RPM]](https://github.com/MathNodes/meile-gui/releases/download/v1.1.0/meile-gui-1.1.0-1.fc36.x86_64.rpm)
+
+Install the rpm from a terminal:
+
+```shell
+sudo rpm -i meile-gui-1.1.0-1.fc36.x86_64.rpm
+```
+
+This will install `meile-gui` and all its dependencies. 
 
 ## Installing via pip
 
@@ -103,7 +116,7 @@ sudo apt install -y wireguard-tools openresolv mesa-utils libgl1-mesa-glx
 After installing wireguard-tools, download the latest stable release at the [Release](https://github.com/MathNodes/meile-gui/releases) page and extract:
 
 ```shell
-tar xvjf meile-gui-v1.0.1_amd64.tar.bz2
+tar xvjf meile-gui-v1.1.0.tar.bz2
 ```
 
 Run & enjoy!
@@ -111,6 +124,48 @@ Run & enjoy!
 Please make comments, suggestions, and issues on the issues page here at GitHub. If you are a GitHub newb, you can join us on our Telegram [MathNodes-Telegram](http://t.me/MathNodes) or our Discord [MathNodes-Discord](https://discord.gg/HQrHXZJHQq) in the Meile channel. 
 
 All suggestions are welcome.
+
+
+## Creating a Binary for your distribution:
+
+In order to create a binary for your distribution some packages need to be installed first.
+
+Pyinstaller:
+```shell
+pip3 install pyinstaller
+```
+
+Install a python virtualenv:
+
+```shell
+sudo apt install python3-virtualenv
+```
+
+Then clone the repo:
+```shell
+git clone https://github.com/MathNodes/meile-gui
+```
+
+Switch to the pip branch as this is the one without FIAT gateway
+```
+cd meile-gui && git checkout pip
+```
+
+Then run a python virtual environment and install meile-gui. This will find all the dependencies for **meile-gui**.
+
+```shell
+python3 -m venv meile-gui && \
+source meile-gui/bin/activate && \ 
+pip install -e .
+```
+
+Once meile-gui and it's dependencies have been installed within the python virutal environment, a binary release can be created:
+
+```
+bash pyinstaller.cmd
+```
+
+That's it. Navigate to the `dist` folder where the binary will be. 
 
 # Donations
 
