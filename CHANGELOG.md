@@ -1,25 +1,80 @@
 CHANGELOG
 ========================
 
-# v0.9.5-beta.1 (23/08/2022)
-* REMOVED: All external dependencies
-* NEW: Bundled OS X version with wireguard tools
-* NEW: Installs wireguard tools on first run
-* NEW: Now a standalone application
+# v1.1.0 (20/09/2022)
+* NEW: Cloudflare DoH (DNS-over-HTTPS) WARP integration
+* NEW: Hover focus on node listings
+* NEW: Sort by Price (dpvn) or Moniker
+* NEW: Hover on focus for country listings
+* NEW: Switch for Connect/Disconnect in Subscriptions
+* CHANGE: Removed Disconnect button in NavBar
+* FIX: Minor bugs
 
-# v0.9.4-beta.4 (23/08/2022)
-* UPDATE: Made current with linux version
-* CHANGE: No longer needed for sudo/root
-* CHANGE: Use of applescript to prompt user for fingerprint or password on connect/disconnect
+# v1.0.1 (01/09/2022)
+* NEW: .deb package for virtual machine guest OSes
+* FIX: Binary release fix for FIAT Gateway
 
+# v1.0.0 (30/8/2022)
+* NEW: Fiat Gateway
+* CHANGE: Added CryptoCompare API alongside CoinGecko for additional DVPN price in FIAT gateway
+* NEW: Automatic DNS resolve configuration for MacOS and Linux. Resolves to cloudflar if host HNS does not work
+* FIX: No wallet subscription crash 
+* FIX: Major/Minor bug fixes for stability
 
-# v0.9.2-alpha.1
-* NEW: Filters out nodes with node version less than 0.3.0
-* NEW: Mac Silicon M1 build
-* FIX: Removed tkinter support in place of smoother gui loading
-* FIX: Fixed Subscription crash bug
-* CHANGE: Build for Mac M1 requires root for wireguard
+# v0.9.5-beta.1 (20/08/2022)
+* NEW: Ping
+* FIX: pexpect timeout exception handling
 
+# v0.9.4-beta.4 (06/08/2022)
+* CHANGE: No longer needed to run as sudo/root. 
+* CHANGE: Propmpts user for system password when connecting/disconnecting
+
+# v0.9.4-beta.3 (06/08/2022)
+* ENHANCEMENT: Better UX on sub cards with added info
+
+# v0.9.4-beta.2 (03/08/2022)
+* NEW: Gnome-menu launcher and icon (ran as sudo) for .deb package
+* ENHANCEMENT: Faster load times with option to refresh
+* FIX: Subscription button text color
+* FIX: Bug that created multiple nodes screen causing confusion
+
+# v0.9.4-beta.1 (30/07/2022)
+* NEW: Refresh Icon with Latency Selector
+* NEW: TextField with currently connected node name
+* FIX: Protected shield icon in pip install
+* FIX: Minor bugs
+
+# v0.9.3-beta.6 (28/07/2022)
+* FIX: Disconnect Issues on some platforms
+
+# v0.9.3-beta.5 (27/07/2022)
+* NEW: Shield Icon in App Bar to Notify User is Connected
+* FIX: Image stretching on subscriptions. 
+
+# v0.9.3-beta.4 (24/07/2022)
+* FIX: Bug when parsing wallet create/restore output
+
+# v0.9.3-beta.3 (22/07/2022)
+* NEW: Extra console debug messages 
+* FIX: Wallet Balance retrieval error. Now displays dialog if unable to process wallet balances
+* FIX: Crash on null price in Solar DVPN Node 15 
+
+# v0.9.3-beta.2 (20/07/2022)
+* FIX: Error parsing JSON line when subscribing on certain machines/os 
+
+# v0.9.3-beta.1 (18/07/2022)
+* NEW: 100% DeepPurple / Amber Theme
+* FIX: Multiple bug fixes and crashes
+
+# v0.9.2-alpha.1 (11/07/2022)
+* NEW: Meile ICON logo in app and window bar
+* NEW: Filter out dVPN nodes with version < 0.3.0
+* FIX: Check to see if user is sudo/root. Issues on some linux with users not having network device permissions causing a panic when connecting
+* FIX: Subscription crash when wallet not loaded
+* FIX: Removed duplicate or unnessary imports
+* FIX: Other minor improvements
+* CHANGE: Removed tkinter support in favor of smaller screen library
+* CHANGE: Determine actual user and place config files in ~/.meile-gui
 
 
 # v0.9.1-alpha.1 (04/07/2022)

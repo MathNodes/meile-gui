@@ -33,6 +33,7 @@ dash = "-"
 MeileConfig = MeileGuiConfig()
 sentinelcli = MeileConfig.resource_path("../bin/sentinelcli")
 sentinel_disconnect_bash = MeileConfig.resource_path("../bin/sentinel-disconnect.sh")
+RPC = "https://rpc.mathnodes.com:443"
 
 class NodeTreeData():
     NodeTree = None
@@ -47,7 +48,7 @@ class NodeTreeData():
     def get_nodes(self, latency, *kwargs):
         AllNodesInfo = []
         print("Running sentinel-cli with latency: %s" % latency)
-        nodeCMD = [sentinelcli, "query", "nodes", "--node", "https://rpc.mathnodes.com:443", "--limit", "5000", "--timeout", "%s" % latency]
+        nodeCMD = [sentinelcli, "query", "nodes", "--node", RPC , "--limit", "5000", "--timeout", "%s" % latency]
     
         proc = Popen(nodeCMD, stdout=PIPE)
         
@@ -133,7 +134,7 @@ class NodeTreeData():
         SubsNodesInfo = []
         SubsFinalResult    = []
         print("Geting Subscriptions... %s" % ADDRESS)
-        subsCMD = [sentinelcli, "query", "subscriptions", "--node", "https://rpc.mathnodes.com:4444", "--status", "Active", "--limit", "100", "--address" ,ADDRESS]
+        subsCMD = [sentinelcli, "query", "subscriptions", "--node", RPC, "--status", "Active", "--limit", "100", "--address" ,ADDRESS]
         proc = Popen(subsCMD, stdout=PIPE)
     
         k=1
@@ -160,10 +161,20 @@ class NodeTreeData():
             try:
                 NodeData = self.NodeTree.get_node(snaddress).data
             except AttributeError:
-                print("Sub not found in list")
-                k += 1
-                continue   
-            quotaCMD = [sentinelcli, 'query', 'quotas', '--node', 'https://rpc.mathnodes.com:443', '--page', '1', SubsResult[SubsInfoKeys[0]][k]]
+               SubsFinalResult.append({
+                                            FinalSubsKeys[0] : SubsResult[SubsInfoKeys[0]][k],
+                                            FinalSubsKeys[1] : "Offline",
+                                            FinalSubsKeys[2] : SubsResult[SubsInfoKeys[5]][k],
+                                            FinalSubsKeys[3] : SubsResult[SubsInfoKeys[6]][k],
+                                            FinalSubsKeys[4] : SubsResult[SubsInfoKeys[7]][k],
+                                            FinalSubsKeys[5] : None,
+                                            FinalSubsKeys[6] : "0B",
+                                            FinalSubsKeys[7] : "0B"
+                                            })
+               print("Sub not found in list")
+               k += 1
+               continue      
+            quotaCMD = [sentinelcli, 'query', 'quotas', '--node', RPC, '--page', '1', SubsResult[SubsInfoKeys[0]][k]]
             proc = Popen(quotaCMD, stdout=PIPE)
                     
             h=1

@@ -12,12 +12,15 @@ from kivy.metrics import dp
 from kivyoav.delayed import delayable
 from kivy.uix.screenmanager import Screen, SlideTransition
 from kivy.utils import get_color_from_hex
-
+from kivymd.uix.behaviors import HoverBehavior
+from kivymd.theming import ThemableBehavior
+from kivy.core.window import Window
 
 from functools import partial
 from urllib3.exceptions import InsecureRequestWarning
 import requests
 import re
+from os import path
 
 
 from subprocess import Popen
@@ -143,10 +146,30 @@ class NodeRV(RecycleView):
     pass
 
 
-class RecycleViewRow(MDCard):
+class OnHoverMDRaisedButton(MDRaisedButton, ThemableBehavior, HoverBehavior):
+    def on_enter(self, *args):
+        self.md_bg_color = get_color_from_hex("#fad783")
+        Window.set_system_cursor('arrow')
+        
+    def on_leave(self, *args):
+        '''The method will be called when the mouse cursor goes beyond
+        the borders of the current widget.'''
+
+        self.md_bg_color = get_color_from_hex("#fcb711")
+        Window.set_system_cursor('arrow')
+
+class RecycleViewRow(MDCard,ThemableBehavior, HoverBehavior):
     text = StringProperty()    
     dialog = None
     
+    def on_enter(self, *args):
+        self.md_bg_color = get_color_from_hex("#200c3a")
+        Window.set_system_cursor('hand')
+        
+    def on_leave(self, *args):
+        self.md_bg_color = get_color_from_hex("#0d021b")
+        Window.set_system_cursor('arrow')
+        
     def get_city_of_node(self, naddress):   
         APIURL   = "https://api.sentinel.mathnodes.com"
 
@@ -298,6 +321,8 @@ Node Version: %s
         Meile.app.root.transition = SlideTransition(direction = "down")
         Meile.app.root.current = WindowNames.MAIN_WINDOW
         Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).SubResult = None
+        
+        #Change this to switch_tab by ids
         Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).on_tab_switch(None,None,None,"Subscriptions")
  
     def closeDialog(self, inst):
@@ -389,7 +414,11 @@ class RecycleViewSubRow(MDCard):
     '''   
     
     @delayable
-    def connect_to_node(self, ID, naddress, moniker):
+    def connect_to_node(self, ID, naddress, moniker, switchValue):
+        if switchValue == False:
+            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).disconnect_from_node()
+            return 
+        
         self.dialog = None
         self.add_loading_popup("Connecting...")
         yield 0.5
@@ -498,19 +527,3 @@ class RecycleViewSubRow(MDCard):
 
         
         
-        
-        
-# In case I go for word wrapping bigger textfield.
-'''
-class MySeedBox(MDTextFieldRect):
-
-    def insert_text(self, substring, from_undo=False):
-
-        line_length = 65
-        seq = ' '.join(substring.split())
-        
-        if len(seq) > line_length:
-            seq = '\n'.join([seq[i:i+line_length] for i in range(0, len(seq), line_length)])
-
-        return super(MySeedtBox, self).insert_text(seq, from_undo=from_undo)
-'''

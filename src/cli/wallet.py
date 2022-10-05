@@ -147,8 +147,8 @@ class HandleWalletFunctions():
                     remove(SUBSCRIBEINFO)
                     return (False, tx_json['raw_log'])
     def connect(self, ID, address, osx_password):
-
-        CONFIG = MeileGuiConfig.read_configuration(MeileGuiConfig, MeileGuiConfig.CONFFILE)
+        MeileConfig = MeileGuiConfig()
+        CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
         KEYNAME = CONFIG['wallet'].get('keyname', '')
         cliCMD = "%s connect --home %s --keyring-backend file --keyring-dir %s --chain-id sentinelhub-2 --node https://rpc.mathnodes.com:443 --gas-prices 0.1udvpn --yes --from '%s' %s %s" % (sentinelcli, BASEDIR,  KEYRINGDIR, KEYNAME, ID, address)
