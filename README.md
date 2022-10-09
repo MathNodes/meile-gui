@@ -13,7 +13,7 @@ Meile dVPN GUI for Linux &amp; OS X Powered by the Sentinel Network - a blockcha
 
 # Full Version
 
-The full version 1.x has been released to GitHub. Branches include **master**, **osx**, **fiat**, **osx-fiat**, **pip**. The exception is that we did not include the scrtsxx.py which contains credentials for the FIAT gateway. Please navigate the various branches to understand the different interworkings. 
+The full version 1.x has been released to GitHub. Branches include **main**, **osx**, **fiat**, **osx-fiat**, **pip**. The exception is that we did not include the scrtsxx.py which contains credentials for the FIAT gateway. Please navigate the various branches to understand the different interworkings. 
 
 
 ## Note: 
