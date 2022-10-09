@@ -8,7 +8,7 @@ with open('README.md', encoding="utf-8") as f:
 
 setup(
     name='meile-gui',
-    version='0.9.9',
+    version='0.10.0',
     description='Meile dVPN powered by the Sentinel Network',
     long_description=readme,
     long_description_content_type="text/markdown",
@@ -36,8 +36,8 @@ setup(
     ],
     package_dir={"": "src"},
     packages=find_packages(where="src"),
-    install_requires=['kivymd', 'pydash', 'treelib', 'kivyoav', 'pexpect', 'qrcode', 'save_thread_result', 'screeninfo'],
-    package_data={'conf': ['config/config.ini'], 'bin' : ['sentinelcli', 'warp-cli','warp-svc'], 'awoc' : ['data/world.json'],
+    install_requires=['kivymd', 'pydash', 'treelib', 'kivyoav', 'pexpect', 'qrcode', 'save_thread_result', 'screeninfo', 'mapview'],
+    package_data={'conf': ['config/config.ini'], 'bin' : ['sentinelcli'], 'awoc' : ['data/world.json'],
                   'fonts': ['Roboto-BoldItalic.ttf'], 'imgs' : ["ad.png","ae.png","af.png","ag.png",
                                                               "ai.png","al.png","am.png","ao.png",
                                                               "aq.png","ar.png","as.png","atom.png",

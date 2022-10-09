@@ -1,5 +1,12 @@
 CHANGELOG
 ========================
+# v0.10.0-pip (09/10/2022)
+* NEW: Meile Pin map of country nodes
+* NEW: Clickable pins
+* NEW: Map centers around region tab
+* NEW: Dictionary of Country Lat/Long coordinates
+* FIX: Fixed KivyMD Warnings about MDCard Behavior
+
 
 # v1.1.0 (20/09/2022)
 * NEW: Cloudflar DoH (DNS-over-HTTPS) WARP integration

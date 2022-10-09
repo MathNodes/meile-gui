@@ -3,7 +3,7 @@ from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.label import Label
 from kivymd.uix.card import MDCard
 from kivymd.uix.dialog import MDDialog
-from kivymd.uix.button import MDFlatButton, MDRaisedButton
+from kivymd.uix.button import MDFlatButton, MDRaisedButton,MDFillRoundFlatButton
 from kivy.uix.recycleview import RecycleView
 from kivy.uix.boxlayout import BoxLayout
 from kivymd.uix.menu import MDDropdownMenu
@@ -15,6 +15,9 @@ from kivy.utils import get_color_from_hex
 from kivymd.uix.behaviors import HoverBehavior
 from kivymd.theming import ThemableBehavior
 from kivy.core.window import Window
+from kivymd.uix.behaviors.elevation import RectangularElevationBehavior
+
+
 
 from functools import partial
 from urllib3.exceptions import InsecureRequestWarning
@@ -155,7 +158,7 @@ class OnHoverMDRaisedButton(MDRaisedButton, ThemableBehavior, HoverBehavior):
         self.md_bg_color = get_color_from_hex("#fcb711")
         Window.set_system_cursor('arrow')
 
-class RecycleViewRow(MDCard,ThemableBehavior, HoverBehavior):
+class RecycleViewRow(MDCard,RectangularElevationBehavior,ThemableBehavior, HoverBehavior):
     text = StringProperty()    
     dialog = None
     
@@ -326,7 +329,7 @@ Node Version: %s
  
         
     
-class RecycleViewSubRow(MDCard):
+class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
     text = StringProperty()
     dialog = None
         
@@ -461,6 +464,20 @@ class RecycleViewSubRow(MDCard):
         self.remove_loading_widget()
 
 # In case I go for word wrapping bigger textfield.
+
+
+class MDMapCountryButton(MDFillRoundFlatButton,ThemableBehavior, HoverBehavior):
+    def on_enter(self, *args):
+        self.md_bg_color = get_color_from_hex("#fcb711")
+        Window.set_system_cursor('arrow')
+        
+    def on_leave(self, *args):
+        '''The method will be called when the mouse cursor goes beyond
+        the borders of the current widget.'''
+
+        self.md_bg_color = get_color_from_hex("#0d021b")
+        Window.set_system_cursor('arrow')
+    
 '''
 class MySeedBox(MDTextFieldRect):
 
