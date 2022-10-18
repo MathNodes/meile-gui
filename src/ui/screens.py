@@ -47,6 +47,21 @@ class WalletRestore(Screen):
     screemanager = ObjectProperty()
     
     dialog = None
+    
+    def __init__(self, **kwargs):
+        super(WalletRestore, self).__init__()
+        self.build()
+
+    def build(self):
+        if Meile.app.manager.get_screen(WindowNames.MAIN_WINDOW).NewWallet:
+            self.ids.seed.opacity = 0
+            self.ids.seed_hint.opacity = 0
+            self.ids.restore_wallet_button.text = "Create"
+        else:
+            self.ids.seed.opacity = 1
+            self.ids.seed_hint.opacity = 1
+            self.ids.restore_wallet_button.text = "Restore"
+        
     def restore_wallet_from_seed_phrase(self):
         if not self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.name.ids.wallet_name.text and not self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.password.ids.wallet_password.text:
             self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.wallet_name_warning.opacity = 1
@@ -102,7 +117,7 @@ class WalletRestore(Screen):
             self.dialog = None
         except AttributeError:
             pass
-        
+        Meile.app.root.remove_widget(self)
         Meile.app.root.transition = SlideTransition(direction = "down")
         Meile.app.root.current = WindowNames.MAIN_WINDOW
 
@@ -176,7 +191,7 @@ class PreLoadWindow(Screen):
         self.CreateWarpConfig()
         
         # Schedule the functions to be called every n seconds
-        Clock.schedule_once(partial(self.NodeTree.get_nodes, "12s"), 3)
+        Clock.schedule_once(partial(self.NodeTree.get_nodes, "11s"), 3)
         Clock.schedule_interval(self.update_status_text, 0.6)
         
     def CreateWarpConfig(self):
@@ -280,6 +295,8 @@ class MainWindow(Screen):
     Sort = SortOptions[0]
     MeileMap = None
     MeileMapBuilt = False
+    NodeSwitch = {"node" : None, "switch" : False}
+    NewWallet = False
     
     def __init__(self, node_tree, **kwargs):
         #Builder.load_file("./src/kivy/meile.kv")
@@ -484,6 +501,7 @@ class MainWindow(Screen):
                 print("Disconnect RTNCODE: %s" % returncode)
                 self.get_ip_address(None)
                 self.set_protected_icon(False, "")
+            self.NodeSwitch = {"node" : None, "switch" : False}
         except Exception as e:
             print(str(e))
             self.dialog = None
@@ -517,17 +535,36 @@ class MainWindow(Screen):
                 text="Wallet Restore/Create",
                 md_bg_color=get_color_from_hex("#0d021b"),
                 buttons=[
-                    MDRaisedButton(
-                        text="Restore/Create",
+                    MDFlatButton(
+                        text="CREATE",
                         theme_text_color="Custom",
                         text_color=(1,1,1,1),
-                        on_release= self.wallet_restore
+                        on_release=partial(self.wallet_restore, True)
+                        ),
+                    
+                    MDRaisedButton(
+                        text="RESTORE",
+                        theme_text_color="Custom",
+                        text_color=(1,1,1,1),
+                        on_release=partial(self.wallet_restore, False)
                     ),
                 ],
             )
             self.dialog.open()
         else:
             self.build_wallet_interface()
+            
+    def wallet_restore(self, NewWallet, inst):
+        if NewWallet:
+            self.NewWallet = True
+        else:
+            self.NewWallet = False
+            
+        self.dialog.dismiss()
+        self.dialog = None
+        Meile.app.manager.add_widget(WalletRestore(name=WindowNames.WALLET_RESTORE))
+        Meile.app.root.transition = SlideTransition(direction = "right")
+        Meile.app.root.current = WindowNames.WALLET_RESTORE
             
     def build_wallet_interface(self):
         Meile.app.root.add_widget(WalletScreen(name=WindowNames.WALLET, ADDRESS=self.address))
@@ -538,12 +575,6 @@ class MainWindow(Screen):
         Meile.app.root.add_widget(HelpScreen(name=WindowNames.HELP))
         Meile.app.root.transition = SlideTransition(direction = "left")
         Meile.app.root.current = WindowNames.HELP
-       
-    def wallet_restore(self, inst):
-        self.dialog.dismiss()
-        self.dialog = None
-        self.switch_window(WindowNames.WALLET_RESTORE)
-        
     
     def wallet_create(self, inst):
         pass
@@ -812,6 +843,9 @@ class WalletScreen(Screen):
     def build(self, dt):
         Wallet = HandleWalletFunctions()
         self.SetBalances(Wallet.get_balance(self.ADDRESS))
+    
+    def refresh_wallet(self):
+        self.build(None)
     
     def open_fiat_interface(self):
         pass

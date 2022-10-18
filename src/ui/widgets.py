@@ -1,6 +1,7 @@
 from kivy.properties import BooleanProperty, StringProperty
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.label import Label
+from kivymd.uix.label import MDLabel
 from kivymd.uix.card import MDCard
 from kivymd.uix.dialog import MDDialog
 from kivymd.uix.button import MDFlatButton, MDRaisedButton,MDFillRoundFlatButton
@@ -16,7 +17,8 @@ from kivymd.uix.behaviors import HoverBehavior
 from kivymd.theming import ThemableBehavior
 from kivy.core.window import Window
 from kivymd.uix.behaviors.elevation import RectangularElevationBehavior
-
+from kivy.core.clipboard import Clipboard
+from kivy.animation import Animation
 
 
 from functools import partial
@@ -24,6 +26,7 @@ from urllib3.exceptions import InsecureRequestWarning
 import requests
 import re
 from os import path
+from subprocess import Popen, TimeoutExpired
 
 from cli.sentinel import IBCCOINS
 #from ui.interfaces import SubscribeContent
@@ -34,13 +37,29 @@ import main.main as Meile
 
 class WalletInfoContent(BoxLayout):
     def __init__(self, seed_phrase, name, address, password, **kwargs):
-        super(WalletInfoContent, self).__init__()
+        super(WalletInfoContent, self).__init__(**kwargs)
         self.seed_phrase = seed_phrase
         self.wallet_address = address
         self.wallet_password = password
         self.wallet_name = name
         
+    def copy_seed_phrase(self):
+        Clipboard.copy(self.seed_phrase)
+        self.AnimateCopiedLabel()
+        
+    def AnimateCopiedLabel(self):
+        label = MDLabel(text='Seed Phrase Copied!',
+                      theme_text_color="Custom",
+                      text_color=get_color_from_hex("#fcb711"),
+                      font_size=dp(10))
+        self.ids.seed_box.add_widget(label)
 
+        anim = Animation(color=(0, 0, 0, 1), duration=.2) + Animation(color=get_color_from_hex("#fcb711"), duration=.2)
+        anim.repeat = True
+                
+        anim.start(label)
+            
+        return label
 
 class SubscribeContent(BoxLayout):
     
@@ -146,7 +165,7 @@ class SelectableLabel(RecycleDataViewBehavior, Label):
 class NodeRV(RecycleView):    
     pass
 
-class OnHoverMDRaisedButton(MDRaisedButton, ThemableBehavior, HoverBehavior):
+class OnHoverMDRaisedButton(MDRaisedButton, HoverBehavior):
     def on_enter(self, *args):
         self.md_bg_color = get_color_from_hex("#fad783")
         Window.set_system_cursor('arrow')
@@ -269,7 +288,7 @@ Node Version: %s
         else:
             self.dialog.dismiss()
             self.dialog = MDDialog(
-            title="Error: %s" % returncode[1],
+            title="Error: %s" % "No wallet found!" if returncode[1] == 1337  else returncode[1],
             md_bg_color=get_color_from_hex("#0d021b"),
             buttons=[
                     MDFlatButton(
@@ -326,15 +345,18 @@ Node Version: %s
         except Exception as e:
             print(str(e))
             return
- 
-        
-    
+     
 class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
     text = StringProperty()
     dialog = None
         
-    def get_data_used(self, allocated, consumed):
+    def get_data_used(self, allocated, consumed, node_address):
         try:         
+            if Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node'] == node_address:
+                self.ids.node_switch.active = True
+            else:
+                self.ids.node_switch.active = False
+            
             allocated = float(allocated.replace('GB',''))
             
             if "GB" in consumed:
@@ -347,6 +369,10 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
                 consumed = 0.0
             else:
                 consumed = float(float(re.findall(r'[0-9]+\.[0-9]+', consumed)[0].replace('B', '')) / (1024*1024*1024))
+            if allocated == 0:
+                self.ids.consumed_data.text = "0%"
+                return 0
+            
             self.ids.consumed_data.text = str(round(float(float(consumed/allocated)*100),2)) + "%"
             return float(float(consumed/allocated)*100)
         except Exception as e:
@@ -357,6 +383,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
         self.dialog = None
         self.dialog = MDDialog(title=title_text,md_bg_color=get_color_from_hex("#0d021b"))
         self.dialog.open()
+        
     def remove_loading_widget(self):
         try:
             self.dialog.dismiss()
@@ -364,17 +391,28 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
         except Exception as e:
             print(str(e))
             return
+        
     @delayable
-    def connect_to_node(self, ID, naddress, moniker, switchValue):
-        if switchValue == False:
+    def connect_to_node(self, ID, naddress, moniker, switchValue, *kwargs):
+        
+        '''
+           These two conditionals are needed to check
+           and verify the switch in the sub card and ensure
+           it is on, when connected, and does not try to disconnect
+           or reconnect. 
+        '''
+        if Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['switch'] and naddress == Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node'] and not switchValue:
+            print("DISCONNECTING!!!")
             Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).disconnect_from_node()
+            return True
+        
+        if Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).CONNECTED:
             return 
         
         self.add_loading_popup("Connecting...")
         
         yield 0.6
         UUID = Meile.app.root.get_screen(WindowNames.PRELOAD).UUID
-        print(UUID)
         try:
             SERVER_ADDRESS = "https://aimokoivunen.mathnodes.com:5000"
             API_ENDPOINT   = "/api/ping"
@@ -391,6 +429,11 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
         connected = HandleWalletFunctions.connect(HandleWalletFunctions, ID, naddress)
         
         if connected:
+            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node'] = naddress
+            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['switch'] = True
+            print("%s, %s" % (Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node'],
+                              Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['switch']
+                             ))
             self.remove_loading_widget()
             self.dialog = MDDialog(
                 title="Connected!",
@@ -462,10 +505,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
         yield 1.2
         Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).get_ip_address(None)
         self.remove_loading_widget()
-
-# In case I go for word wrapping bigger textfield.
-
-
+        
 class MDMapCountryButton(MDFillRoundFlatButton,ThemableBehavior, HoverBehavior):
     def on_enter(self, *args):
         self.md_bg_color = get_color_from_hex("#fcb711")
@@ -477,17 +517,4 @@ class MDMapCountryButton(MDFillRoundFlatButton,ThemableBehavior, HoverBehavior):
 
         self.md_bg_color = get_color_from_hex("#0d021b")
         Window.set_system_cursor('arrow')
-    
-'''
-class MySeedBox(MDTextFieldRect):
-
-    def insert_text(self, substring, from_undo=False):
-
-        line_length = 65
-        seq = ' '.join(substring.split())
-        
-        if len(seq) > line_length:
-            seq = '\n'.join([seq[i:i+line_length] for i in range(0, len(seq), line_length)])
-
-        return super(MySeedtBox, self).insert_text(seq, from_undo=from_undo)
-'''
+            

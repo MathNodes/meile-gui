@@ -1,5 +1,25 @@
 CHANGELOG
 ========================
+# v0.10.3-pip (17/10/2022)
+* NEW: Clickable Pin map with total node listings
+* NEW: Refresh button in wallet screen
+* NEW: Copy button for seed phrase on wallet restore/create
+* NEW: Visible and draggable scrollbar on nodes
+* CHANGE: Removed elevation from node cards as shadow rendering is broken in Kivy 1.1.1 
+* CHANGE: Padding on "wallet" in the fiat interface (binary release only)
+* CHANGE: Using rpc.mathnodes.com:443 for subs fixing country block of port 4444
+* FIX: Connection switch bug that displayed random on in nodes when refreshing leading to confusion 
+* FIX: Poor resize of screen with node cards. Resizes fast and clean
+* FIX: Offline node consumed/allocated data progress bar and status text
+* FIX: Divide by 0 bug and convert 0.00B to float
+
+
+# v0.10.2-pip (11/10/2022)
+* FIX: Python 3.8 kivy_garden error
+
+# v0.10.1-pip (09/10/2022)
+* FIX: Minor bug fixes
+
 # v0.10.0-pip (09/10/2022)
 * NEW: Meile Pin map of country nodes
 * NEW: Clickable pins

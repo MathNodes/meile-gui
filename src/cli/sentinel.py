@@ -137,7 +137,7 @@ class NodeTreeData():
         SubsNodesInfo = []
         SubsFinalResult    = []
         print("Geting Subscriptions... %s" % ADDRESS)
-        subsCMD = [sentinelcli, "query", "subscriptions", "--node", "https://rpc.mathnodes.com:4444", "--status", "Active", "--limit", "100", "--address" ,ADDRESS]
+        subsCMD = [sentinelcli, "query", "subscriptions", "--node", "https://rpc.mathnodes.com:443", "--status", "Active", "--limit", "100", "--address" ,ADDRESS]
         proc = Popen(subsCMD, stdout=PIPE)
     
         k=1
@@ -171,8 +171,8 @@ class NodeTreeData():
                                             FinalSubsKeys[3] : SubsResult[SubsInfoKeys[6]][k],
                                             FinalSubsKeys[4] : SubsResult[SubsInfoKeys[7]][k],
                                             FinalSubsKeys[5] : None,
-                                            FinalSubsKeys[6] : "0B",
-                                            FinalSubsKeys[7] : "0B"
+                                            FinalSubsKeys[6] : "0.00GB",
+                                            FinalSubsKeys[7] : "0.00B"
                                             })
                 print("Sub not found in list")
                 k += 1
