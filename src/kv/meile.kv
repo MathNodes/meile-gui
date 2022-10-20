@@ -125,9 +125,7 @@ WindowManager:
             NodeRV:
                 md_bg_color: get_color_from_hex("#0d021b")    
                 id: rv
-            #ContinentMap:
-            #    id: continent_map
-            
+         
         MDBottomNavigation:
             size_hint_y: .1
             panel_color: get_color_from_hex("#0d021b")
@@ -207,14 +205,16 @@ WindowManager:
                 normal_color: app.theme_cls.accent_color
                 
         MDFloatLayout:
-            MDRaisedButton:
-                pos_hint: {'x' : .1 , 'top': .9 }
-                text: "REFRESH"
-                on_release: root.refresh_wallet()
+
             Image:
                 source: root.get_qr_code_address()
                 pos_hint: {'x': 0, 'top': 1}
                 size_hint_y: .5
+                
+            MDRaisedButton:
+                pos_hint: {'x' : .1 , 'top': .9 }
+                text: "REFRESH"
+                on_release: root.refresh_wallet()
                 
             MDRaisedButton:
                 pos_hint: {'x' : .8 , 'top': .9 }
@@ -799,11 +799,13 @@ WindowManager:
     wallet_password: ""
     wallet_name: ""
     padding: 0,10,0,10
+    
     MDTextField:
         multiline: True
         hint_text: "Mnemonic Seed"
         text: root.seed_phrase
         readonly: True
+        
     MDBoxLayout:
         id: seed_box
         orientation: "horizontal"
@@ -1092,7 +1094,6 @@ WindowManager:
             type: "top"
             padding: 0,20,0,0
             
-    
             MDTextField:
                 hint_text: "Address"
                 mode: "fill"

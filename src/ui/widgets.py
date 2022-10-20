@@ -20,7 +20,6 @@ from kivymd.uix.behaviors.elevation import RectangularElevationBehavior
 from kivy.core.clipboard import Clipboard
 from kivy.animation import Animation
 
-
 from functools import partial
 from urllib3.exceptions import InsecureRequestWarning
 import requests
@@ -409,64 +408,66 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
         if Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).CONNECTED:
             return 
         
-        self.add_loading_popup("Connecting...")
-        
-        yield 0.6
-        UUID = Meile.app.root.get_screen(WindowNames.PRELOAD).UUID
-        try:
-            SERVER_ADDRESS = "https://aimokoivunen.mathnodes.com:5000"
-            API_ENDPOINT   = "/api/ping"
-            uuid_dict = {'uuid' : "%s" % UUID, 'os' : "L"}
-            ping = requests.post(SERVER_ADDRESS + API_ENDPOINT, json=uuid_dict)
-            if ping.status_code == 200:
-                print('ping')
+        if switchValue:
+            self.add_loading_popup("Connecting...")
+            
+            yield 0.6
+            UUID = Meile.app.root.get_screen(WindowNames.PRELOAD).UUID
+            try:
+                SERVER_ADDRESS = "https://aimokoivunen.mathnodes.com:5000"
+                API_ENDPOINT   = "/api/ping"
+                uuid_dict = {'uuid' : "%s" % UUID, 'os' : "L"}
+                ping = requests.post(SERVER_ADDRESS + API_ENDPOINT, json=uuid_dict)
+                if ping.status_code == 200:
+                    print('ping')
+                else:
+                    print("noping")
+            except Exception as e:
+                print(str(e))
+                pass
+            
+            connected = HandleWalletFunctions.connect(HandleWalletFunctions, ID, naddress)
+            
+            if connected:
+                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node'] = naddress
+                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['switch'] = True
+                print("%s, %s" % (Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node'],
+                                  Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['switch']
+                                 ))
+                self.remove_loading_widget()
+                self.dialog = MDDialog(
+                    title="Connected!",
+                    md_bg_color=get_color_from_hex("#0d021b"),
+                    buttons=[
+                            MDFlatButton(
+                                text="OK",
+                                theme_text_color="Custom",
+                                text_color=self.theme_cls.primary_color,
+                                on_release=partial(self.call_ip_get, True, moniker)
+                            ),])
+                self.dialog.open()
+                
             else:
-                print("noping")
-        except Exception as e:
-            print(str(e))
-            pass
-        
-        connected = HandleWalletFunctions.connect(HandleWalletFunctions, ID, naddress)
-        
-        if connected:
-            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node'] = naddress
-            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['switch'] = True
-            print("%s, %s" % (Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node'],
-                              Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['switch']
-                             ))
-            self.remove_loading_widget()
-            self.dialog = MDDialog(
-                title="Connected!",
-                md_bg_color=get_color_from_hex("#0d021b"),
-                buttons=[
-                        MDFlatButton(
-                            text="OK",
-                            theme_text_color="Custom",
-                            text_color=self.theme_cls.primary_color,
-                            on_release=partial(self.call_ip_get, True, moniker)
-                        ),])
-            self.dialog.open()
-            
-        else:
-            self.remove_loading_widget()
-            self.dialog = MDDialog(
-                title="Something went wrong. Not connected",
-                md_bg_color=get_color_from_hex("#0d021b"),
-                buttons=[
-                        MDFlatButton(
-                            text="OK",
-                            theme_text_color="Custom",
-                            text_color=self.theme_cls.primary_color,
-                            on_release=partial(self.call_ip_get, False, "")
-                        ),])
-            self.dialog.open()
-            
+                self.remove_loading_widget()
+                self.dialog = MDDialog(
+                    title="Something went wrong. Not connected",
+                    md_bg_color=get_color_from_hex("#0d021b"),
+                    buttons=[
+                            MDFlatButton(
+                                text="OK",
+                                theme_text_color="Custom",
+                                text_color=self.theme_cls.primary_color,
+                                on_release=partial(self.call_ip_get, False, "")
+                            ),])
+                self.dialog.open()
+                
     def call_ip_get(self,result, moniker,  *kwargs):
         if result:
             Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).CONNECTED = True
             Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).set_protected_icon(True, moniker)
         else:
             Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).CONNECTED = False
+            self.ids.node_switch.active = False
             
         if not Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).get_ip_address(None):
             self.remove_loading_widget()

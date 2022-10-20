@@ -13,7 +13,6 @@ from conf.meile_config import MeileGuiConfig
 from typedef.win import CoinsList
 from cli.warp import WarpHandler
 
-
 from kivy.uix.screenmanager import Screen, SlideTransition
 from kivymd.uix.button import MDFlatButton, MDRaisedButton,MDTextButton, MDFillRoundFlatButton
 from kivymd.uix.dialog import MDDialog
@@ -28,10 +27,7 @@ from kivymd.uix.behaviors import HoverBehavior
 from kivymd.theming import ThemableBehavior
 from kivy.core.window import Window
 from kivymd.uix.behaviors.elevation import RectangularElevationBehavior
-#from kivy.garden.mapview import MapMarker
 from kivy_garden.mapview import MapMarkerPopup, MapView
-
-
 
 from save_thread_result import ThreadWithResult
 import requests
@@ -41,7 +37,6 @@ import sys
 import copy 
 import re
 from time import sleep
-
 
 class WalletRestore(Screen):
     screemanager = ObjectProperty()
@@ -575,10 +570,6 @@ class MainWindow(Screen):
         Meile.app.root.add_widget(HelpScreen(name=WindowNames.HELP))
         Meile.app.root.transition = SlideTransition(direction = "left")
         Meile.app.root.current = WindowNames.HELP
-    
-    def wallet_create(self, inst):
-        pass
-        
     
     def add_sub_rv_data(self, node, flagloc):
         

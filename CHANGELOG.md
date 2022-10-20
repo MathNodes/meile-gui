@@ -12,6 +12,7 @@ CHANGELOG
 * FIX: Poor resize of screen with node cards. Resizes fast and clean
 * FIX: Offline node consumed/allocated data progress bar and status text
 * FIX: Divide by 0 bug and convert 0.00B to float
+* FIX: Switch set to off if user cancels connection
 
 
 # v0.10.2-pip (11/10/2022)
