@@ -1,5 +1,19 @@
 CHANGELOG
 ========================
+# v1.2.0 (20/10/2022)
+* NEW: Clickable Pin map with total node listings
+* NEW: Refresh button in wallet screen
+* NEW: Copy button for seed phrase on wallet restore/create
+* NEW: Visible and draggable scrollbar on nodes
+* CHANGE: Removed elevation from node cards as shadow rendering is broken in Kivy 1.1.1 
+* CHANGE: Padding on "wallet" in the fiat interface (binary release only)
+* CHANGE: Using rpc.mathnodes.com:443 for subs fixing country block of port 4444
+* FIX: Connection switch bug that displayed random on in nodes when refreshing leading to confusion 
+* FIX: Poor resize of screen with node cards. Resizes fast and clean
+* FIX: Offline node consumed/allocated data progress bar and status text
+* FIX: Divide by 0 bug and convert 0.00B to float
+* FIX: Switch set to off if user cancels connection
+
 
 # v1.1.0 (20/09/2022)
 * NEW: Cloudflar DoH (DNS-over-HTTPS) WARP integration
