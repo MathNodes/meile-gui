@@ -1,5 +1,6 @@
 #: import SlideTransition kivy.uix.screenmanager.SlideTransition
 #: import get_color_from_hex kivy.utils.get_color_from_hex
+#: import MapView kivy_garden.mapview.MapView
 
 WindowManager:
 
@@ -118,11 +119,13 @@ WindowManager:
             normal_color: get_color_from_hex("#fcb711")
             background_color: get_color_from_hex("#fcb711")
         
-        
-        NodeRV:
-            md_bg_color: get_color_from_hex("#0d021b")    
-            id: rv
-        
+        MDBoxLayout:
+            id: country_map
+            orientation: "horizontal"
+            NodeRV:
+                md_bg_color: get_color_from_hex("#0d021b")    
+                id: rv
+
         MDBottomNavigation:
             size_hint_y: .1
             panel_color: get_color_from_hex("#0d021b")
@@ -202,12 +205,17 @@ WindowManager:
                 normal_color: app.theme_cls.accent_color
                 
         MDFloatLayout:
-            
+
             Image:
                 source: root.get_qr_code_address()
                 pos_hint: {'x': 0, 'top': 1}
                 size_hint_y: .5
                 
+            MDRaisedButton:
+                pos_hint: {'x' : .1 , 'top': .9 }
+                text: "REFRESH"
+                on_release: root.refresh_wallet()
+                    
             MDRaisedButton:
                 pos_hint: {'x' : .8 , 'top': .9 }
                 text: "RE-FUEL"
@@ -303,6 +311,7 @@ WindowManager:
         pos_hint: {"center_x": .5, "center_y": .80}
         
     MDLabel:
+        id: seed_hint
         text: "Leave blank if creating a new wallet"
         theme_text_color: "Custom"
         text_color: get_color_from_hex("#4a4545")
@@ -346,7 +355,7 @@ WindowManager:
         
     MDRaisedButton:
         id: restore_wallet_button
-        text: "Restore"
+        text: "Create"
         pos_hint: {"center_x": .5, "center_y": .4}
         on_press: root.restore_wallet_from_seed_phrase()
     
@@ -354,6 +363,8 @@ WindowManager:
     
 <NodeRV>:
     key_viewclass: "viewclass"
+    bar_width: dp(12)
+    scroll_type: ["bars", "content"]
     canvas.before:
         Color:
             rgba: get_color_from_hex("#fccf62")
@@ -403,8 +414,6 @@ WindowManager:
     padding: 10,10
     border_radius: 20
     radius: [10]
-    shadow_pos: 0,0
-    elevation: 42
     num_text: ""
     country_text: " "
     source_image: " "
@@ -437,7 +446,7 @@ WindowManager:
             Image:
                 source: root.source_image
                 # {"x", "y", "top", "bottom", "left", "right" }
-                pos_hint: {"x" : .3, "top" : 1 }
+                pos_hint: {"x" : .9, "top" : 1.175 }
             
     MDSeparator:
         color: 1,1,1,1
@@ -450,8 +459,6 @@ WindowManager:
     padding: 10,10
     border_radius: 20
     radius: [10]
-    shadow_pos: 0,0
-    elevation: 42
     md_bg_color: get_color_from_hex("#0d021b")
     moniker_text: "."
     country_text: "."
@@ -537,8 +544,6 @@ WindowManager:
     padding: 10,10
     border_radius: 20
     radius: [10]
-    shadow_pos: 0,0
-    elevation: 42
     md_bg_color: get_color_from_hex("#0d021b")
     moniker_text: "."
     sub_id_text: " "
@@ -558,7 +563,7 @@ WindowManager:
             font_style: "H6"
             font_size: "24sp"
             text_color: get_color_from_hex("#fcb711")
-            width: "300dp"
+            width: "350dp"
             pos_hint: {"x" : 0, "top" : 1.45}
             size_hint_x: None
         Image:
@@ -630,7 +635,7 @@ WindowManager:
             text_color: 1,1,1,1
             pos_hint: {"x" : 0.2, "top" : 1.03 }
         MDProgressBar:
-            value: root.get_data_used(root.allocated_text, root.consumed_text)
+            value: root.get_data_used(root.allocated_text, root.consumed_text, root.address_text)
             color: app.theme_cls.accent_color
             #back_color: get_color_from_hex("#ffffff")
             pos_hint: {"x" : 0, "top" : .475 }
@@ -645,6 +650,7 @@ WindowManager:
             text_color: 1,1,1,1
             pos_hint: {"x" : .5, "top" : 1.03 }      
         Switch:
+            id: node_switch
             canvas.after:
                 Color:
                     rgb:  get_color_from_hex("#fab40c")
@@ -697,9 +703,10 @@ WindowManager:
 
     MDTextField:
         id: seed_phrase
+        multiline: True
         hint_text: root.hint_text
         text: root.text
-        password: False
+        password: True
         icon_left: "key-variant"
         mode: "rectangle"
 
@@ -742,7 +749,7 @@ WindowManager:
         id: wallet_password
         hint_text: root.hint_text
         text: root.text
-        password: False
+        password: True
         icon_left: "key-variant"
         mode: "rectangle"
 
@@ -783,19 +790,35 @@ WindowManager:
 
 <WalletInfoContent>
     orientation: "vertical"
-    spacing: "4dp"
+    spacing: "15dp"
     size_hint_y: None
-    height: "260dp"
+    height: "300dp"
     seed_phrase: ""
     wallet_address: ""
     wallet_password: ""
     wallet_name: ""
-
+    padding: 0,10,0,10
+    
     MDTextField:
         multiline: True
         hint_text: "Mnemonic Seed"
         text: root.seed_phrase
         readonly: True
+        
+    MDBoxLayout:
+        id: seed_box
+        orientation: "horizontal"
+        padding: 0,0,20,20
+        spacing: "20dp"    
+        MDRaisedButton:
+            id: copy_seed_button
+            text: "COPY SEED"
+            font_size: dp(9)
+            pos_hint: {"center_x": .1, "center_y": .5}
+            on_press: root.copy_seed_phrase()
+            size_hint: None, None
+            size: 15,10
+            
     MDTextField:
         hint_text: "Wallet"
         mode: "rectangle"
@@ -929,7 +952,7 @@ WindowManager:
             text_color: get_color_from_hex("#fcb711")
         MDLabel:
             font_name: "Roboto-Bold"
-            text: "v1.0.0"
+            text: "v1.1.1"
             font_size: "16sp"
             size_hint_y: .1
             width: dp(500)
@@ -1068,6 +1091,7 @@ WindowManager:
             md_bg_color: get_color_from_hex("#FFB908")
             height: "70dp"
             type: "top"
+            padding: 0,20,0,0
     
             MDTextField:
                 hint_text: "Address"
@@ -1183,7 +1207,7 @@ WindowManager:
                 
             MDLabel:
                 id: surcharge
-                text: "Surcharge: $1.95"
+                text: "Surcharge: $1.25"
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex("ffffff")
                 pos_hint: {"x": .40, "center_y": .43}
@@ -1293,3 +1317,6 @@ WindowManager:
         text: "Please copy the TX ID and save it somewhere safely."
         font_size: "11dp"
    
+<ContinentMap>:
+    zoom: 3
+    

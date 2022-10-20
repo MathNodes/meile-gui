@@ -19,6 +19,7 @@ from screeninfo import get_monitors
 class MyMainApp(MDApp):
     title = "Meile dVPN"
     icon  = MeileConfig.resource_path("../imgs/icon.png")
+    manager = None
     def __init__(self,**kwargs):
         super(MyMainApp,self).__init__(**kwargs)
         from kivy.core.window import Window
@@ -48,18 +49,18 @@ class MyMainApp(MDApp):
         
         kv = Builder.load_file(MeileConfig.resource_path("../kv/meile.kv"))
         
-        manager = WindowManager()
+        self.manager = WindowManager()
         theme = ThemeManager()
         self.theme_cls.primary_palette = "Amber"
         self.theme_cls.theme_style = "Dark" 
         #self.theme_cls.disabled_primary_color = "Amber"
         self.theme_cls.accent_palette = "DeepPurple"
         #self.theme_cls.opposite_disabled_primary_color = "Amber"
-        manager.add_widget(PreLoadWindow(name=WindowNames.PRELOAD))
+        self.manager.add_widget(PreLoadWindow(name=WindowNames.PRELOAD))
         #manager.add_widget(MainWindow(name=WindowNames.MAIN_WINDOW))
-        manager.add_widget(WalletRestore(name=WindowNames.WALLET_RESTORE))
+        #manager.add_widget(WalletRestore(name=WindowNames.WALLET_RESTORE))
         #MeileConfig.read_configuration(MeileGuiConfig, MeileGuiConfig.CONFFILE)
-        return manager
+        return self.manager
 
     
     

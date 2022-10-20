@@ -51,7 +51,7 @@ class FiatInterface(Screen):
     year = "2022"
     policy = False
     my_wallet_address = None
-    DVPNOptions = [1000,2000,5000]
+    DVPNOptions = [1000,2000,5000,10000]
     idvpn = 0
     CONFIG = None
     clock = None
@@ -306,11 +306,16 @@ class FiatInterface(Screen):
             
     def GetSurchargeAmount(self):
         if self.idvpn in [0,1]:
-            self.ids.surcharge.text = "Surcharge: $1.95"
-            return float(1.95)
+            self.ids.surcharge.text = "Surcharge: $1.25"
+            return float(1.25)
+        
+        elif self.idvpn in [2]:
+            self.ids.surcharge.text = "Surcharge: $1.50"
+            return float(1.50)
+        
         else:
-            self.ids.surcharge.text = "Surcharge: $2.95"
-            return float(2.95)
+            self.ids.surcharge.text = "Surcharge: $1.75"
+            return float(1.75)
         
     def TransferCoins(self, stripe_id, wallet_address, dvpn_qty):
         SERVER_ADDRESS = scrtsxx.SERVER_ADDRESS

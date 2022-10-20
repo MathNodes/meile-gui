@@ -27,9 +27,15 @@ where `user` is your username on your system.
 This just changes the permissions of the meile-gui configuration directory back to a regular user instead of its previous permission as root. 
 
 ## Mac OS X
-Download the latest release [Mac OS X v1.1.0](https://github.com/MathNodes/meile-gui/releases/download/v1.1.0/meile-gui-v1.1.0_darwin_M1)
+Download the latest release [Mac OS X v1.2.0](https://github.com/MathNodes/meile-gui/releases/download/v1.2.0/meile-gui-v1.2.0_darwin_M1)
 
-Run:
+Make sure to give the binary executable permissions if it doesn't have it already:
+
+```shell
+chmod +x meile-gui
+```
+
+Then run:
 ```shell
 ./meile-gui
 ```
@@ -47,7 +53,7 @@ The latest version of Meile GUI comes packaged as a Debian archive. Simply downl
 and run:
 
 ```shell
-sudo apt install -y ./meile-gui-v1.0.1_amd64.deb
+sudo apt install -y ./meile-gui-v1.2.0_ubuntu22.04_amd64.deb
 ```
 
 This release will install wireguard tools (and resolvconf) alongside Meile GUI. To run the application requires root privileges on some machines and we have enforced it within the app.
@@ -62,18 +68,24 @@ Or goto your panel menu under Internet and there will be a clickable icon.
 
 Because there were issues loading certain mesa OpenGL drivers in various Debian Virtual Machines, we have included a separate .deb archive that automatically configures the system to handle the Meile dependencies. Please use this version if you are running a Debian flavor in a virutal machine (VM).
 
-[Debian/Ubuntu 20.04 Virtual Machine](https://github.com/MathNodes/meile-gui/releases/download/v1.1.0/meile-gui-v1.1.0_amd64_vm.deb)
+[Debian/Ubuntu 20.04 Virtual Machine](https://github.com/MathNodes/meile-gui/releases/download/v1.2.0/meile-gui-v1.2.0_amd64_vm.deb)
 
 ## Redhat/CentOS/Fedora (.rpm)
 
 Download the latest RPM for RedHat releases:
 
-[RedHat RPM](https://github.com/MathNodes/meile-gui/releases/download/v1.1.0/meile-gui-1.1.0-1.fc36.x86_64.rpm)
+[RedHat RPM](https://github.com/MathNodes/meile-gui/releases/download/v1.2.0/meile-gui-v1.2.0-1.fc36.x86_64.rpm)
 
 Install the rpm from a terminal:
 
 ```shell
-sudo rpm -i meile-gui-1.1.0-1.fc36.x86_64.rpm
+sudo rpm -i meile-gui-v1.2.0-1.fc36.x86_64.rpm
+```
+
+or to install all dependencies 
+
+```shell
+sudo dnf install meile-gui-v1.2.0-1.fc36.x86_64.rpm
 ```
 
 This will install `meile-gui` and all its dependencies. 
@@ -83,7 +95,7 @@ This will install `meile-gui` and all its dependencies.
 Meile dVPN GUI v0.9.3-beta is now available as a pip packages as well. To install, first install wireguard-tools and meile dependencies if you don't already have them
 
 ```
-sudo apt install -y  wireguard-tools openresolv mesa-utils libgl1-mesa-glx
+sudo apt install -y  wireguard-tools openresolv mesa-utils libgl1-mesa-glx xclip
 ```
 
 Then install via pip
@@ -110,13 +122,13 @@ The FIAT gateway is not included in the pip package. This is due to certain cred
 ## Installing from Binary
 
 ```shell
-sudo apt install -y wireguard-tools openresolv mesa-utils libgl1-mesa-glx
+sudo apt install -y wireguard-tools openresolv mesa-utils libgl1-mesa-glx xclip
 ```
 
 After installing wireguard-tools, download the latest stable release at the [Release](https://github.com/MathNodes/meile-gui/releases) page and extract:
 
 ```shell
-tar xvjf meile-gui-v1.1.0.tar.bz2
+tar xvjf meile-gui-v1.2.0.tar.bz2
 ```
 
 Run & enjoy!

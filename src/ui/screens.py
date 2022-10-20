@@ -6,7 +6,7 @@ from cli.sentinel import  NodeTreeData
 from cli.sentinel import NodesInfoKeys, FinalSubsKeys
 from cli.sentinel import disconnect as Disconnect
 import main.main as Meile
-from ui.widgets import WalletInfoContent
+from ui.widgets import WalletInfoContent, MDMapCountryButton
 from utils.qr import QRCode
 from cli.wallet import HandleWalletFunctions
 from conf.meile_config import MeileGuiConfig
@@ -15,7 +15,7 @@ from fiat import fiat_interface
 from cli.warp import WarpHandler
 
 from kivy.uix.screenmanager import Screen, SlideTransition
-from kivymd.uix.button import MDFlatButton, MDRaisedButton
+from kivymd.uix.button import MDFlatButton, MDRaisedButton,MDTextButton, MDFillRoundFlatButton
 from kivymd.uix.dialog import MDDialog
 from kivy.clock import Clock, mainthread
 from kivyoav.delayed import delayable
@@ -27,9 +27,8 @@ from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.behaviors import HoverBehavior
 from kivymd.theming import ThemableBehavior
 from kivy.core.window import Window
-
-
-
+from kivymd.uix.behaviors.elevation import RectangularElevationBehavior
+from kivy_garden.mapview import MapMarkerPopup, MapView
 
 from save_thread_result import ThreadWithResult
 import requests
@@ -44,6 +43,21 @@ class WalletRestore(Screen):
     screemanager = ObjectProperty()
     
     dialog = None
+    
+    def __init__(self, **kwargs):
+        super(WalletRestore, self).__init__()
+        self.build()
+
+    def build(self):
+        if Meile.app.manager.get_screen(WindowNames.MAIN_WINDOW).NewWallet:
+            self.ids.seed.opacity = 0
+            self.ids.seed_hint.opacity = 0
+            self.ids.restore_wallet_button.text = "Create"
+        else:
+            self.ids.seed.opacity = 1
+            self.ids.seed_hint.opacity = 1
+            self.ids.restore_wallet_button.text = "Restore"
+        
     def restore_wallet_from_seed_phrase(self):
         if not self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.name.ids.wallet_name.text and not self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.password.ids.wallet_password.text:
             self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.wallet_name_warning.opacity = 1
@@ -100,9 +114,9 @@ class WalletRestore(Screen):
         except AttributeError:
             pass
         
+        Meile.app.root.remove_widget(self)
         Meile.app.root.transition = SlideTransition(direction = "down")
         Meile.app.root.current = WindowNames.MAIN_WINDOW
-
        
     def cancel(self):
         self.dialog.dismiss()
@@ -173,7 +187,7 @@ class PreLoadWindow(Screen):
         self.CreateWarpConfig()
 
         # Schedule the functions to be called every n seconds
-        Clock.schedule_once(partial(self.NodeTree.get_nodes, "13s"), 3)
+        Clock.schedule_once(partial(self.NodeTree.get_nodes, "11s"), 3)
         Clock.schedule_interval(self.update_status_text, 0.6)
         
     def CreateWarpConfig(self):
@@ -272,17 +286,23 @@ class MainWindow(Screen):
     MeileConfig = None
     ConnectedNode = None
     menu = None
+    MeileLand = None
     SortOptions = ['None', "Moniker", "Price"]
     Sort = SortOptions[0]
+    MeileMap = None
+    MeileMapBuilt = False
+    NodeSwitch = {"node" : None, "switch" : False}
+    NewWallet = False
     
     def __init__(self, node_tree, **kwargs):
         #Builder.load_file("./src/kivy/meile.kv")
         super(MainWindow, self).__init__()
         
         self.NodeTree = node_tree
+        self.MeileLand = OurWorld()
         
         Clock.schedule_once(self.get_config,1)     
-        Clock.schedule_once(self.build, 2)
+        Clock.schedule_once(self.build, 1)
         sort_icons = ["sort-variant", "sort-alphabetical-ascending", "sort-numeric-ascending"]
         menu_items = [
             {
@@ -302,6 +322,52 @@ class MainWindow(Screen):
         )
         self.menu.bind()
         
+    def build(self, dt):
+        OurWorld.CONTINENTS.remove(OurWorld.CONTINENTS[1])
+        OurWorld.CONTINENTS.append("Subscriptions")
+        #OurWorld.CONTINENTS.append("Search")
+        
+        for name_tab in OurWorld.CONTINENTS:
+            tab = Tab(tab_label_text=name_tab)
+            self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.android_tabs.add_widget(tab)
+        
+        self.get_ip_address(None    )
+        
+        self.on_tab_switch(
+            None,
+            None,
+            None,
+            self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.android_tabs.ids.layout.children[-1].text
+        )
+    
+    def build_meile_map(self):
+        if not self.MeileMapBuilt: 
+            self.MeileMap = MapView(lat=50.6394, lon=3.057, zoom=3)
+            self.MeileMap.map_source = "osm"
+            
+            self.ids.country_map.add_widget(self.MeileMap)
+            self.AddCountryNodePins()
+            self.MeileMapBuilt = True
+    
+    def AddCountryNodePins(self):
+        try:
+            for continent in self.MeileLand.CONTINENTS:
+                for ncountry in self.NodeTree.NodeTree.children(continent):
+                    loc = self.MeileLand.CountryLatLong[ncountry.tag]
+                    marker = MapMarkerPopup(lat=loc[0], lon=loc[1])
+                    marker.add_widget(MDMapCountryButton(text='%s - %s' %(ncountry.tag, len(self.NodeTree.NodeTree.children(ncountry.tag))),
+                                                   theme_text_color="Custom",
+                                                   md_bg_color=get_color_from_hex("#0d021b"),
+                                                   text_color=(1,1,1,1),
+                                                   on_release=partial(self.load_country_nodes, ncountry.tag)
+                                                   ))
+                    self.MeileMap.add_marker(marker)
+        except Exception as e:
+            print(str(e))
+            pass        
+        self.get_continent_coordinates(self.MeileLand.CONTINENTS[0])
+
+                
     def set_item(self, text_item):
         self.ids.drop_item.set_item(text_item)
         self.Sort = text_item
@@ -326,23 +392,7 @@ class MainWindow(Screen):
         CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
         self.address = CONFIG['wallet'].get("address")  
 
-    def build(self, dt):
-        OurWorld.CONTINENTS.remove(OurWorld.CONTINENTS[1])
-        OurWorld.CONTINENTS.append("Subscriptions")
-        #OurWorld.CONTINENTS.append("Search")
-        
-        for name_tab in OurWorld.CONTINENTS:
-            tab = Tab(tab_label_text=name_tab)
-            self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.android_tabs.add_widget(tab)
-        
-        self.get_ip_address(None    )
-        
-        self.on_tab_switch(
-            None,
-            None,
-            None,
-            self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.android_tabs.ids.layout.children[-1].text
-        )
+
 
     @mainthread
     def display_warp_success(self):
@@ -448,6 +498,7 @@ class MainWindow(Screen):
                 print("Disconnect RTNCODE: %s" % returncode)
                 self.get_ip_address(None)
                 self.set_protected_icon(False, "")
+            self.NodeSwitch = {"node" : None, "switch" : False}
         except Exception as e:
             print(str(e))
             self.dialog = None
@@ -481,17 +532,36 @@ class MainWindow(Screen):
                 text="Wallet Restore/Create",
                 md_bg_color=get_color_from_hex("#0d021b"),
                 buttons=[
-                    MDRaisedButton(
-                        text="Restore/Create",
+                    MDFlatButton(
+                        text="CREATE",
                         theme_text_color="Custom",
                         text_color=(1,1,1,1),
-                        on_release= self.wallet_restore
+                        on_release=partial(self.wallet_restore, True)
+                        ),
+                    
+                    MDRaisedButton(
+                        text="RESTORE",
+                        theme_text_color="Custom",
+                        text_color=(1,1,1,1),
+                        on_release=partial(self.wallet_restore, False)
                     ),
                 ],
             )
             self.dialog.open()
         else:
             self.build_wallet_interface()
+            
+    def wallet_restore(self, NewWallet, inst):
+        if NewWallet:
+            self.NewWallet = True
+        else:
+            self.NewWallet = False
+            
+        self.dialog.dismiss()
+        self.dialog = None
+        Meile.app.manager.add_widget(WalletRestore(name=WindowNames.WALLET_RESTORE))
+        Meile.app.root.transition = SlideTransition(direction = "right")
+        Meile.app.root.current = WindowNames.WALLET_RESTORE
             
     def build_wallet_interface(self):
         Meile.app.root.add_widget(WalletScreen(name=WindowNames.WALLET, ADDRESS=self.address))
@@ -503,16 +573,6 @@ class MainWindow(Screen):
         Meile.app.root.transition = SlideTransition(direction = "left")
         Meile.app.root.current = WindowNames.HELP
        
-    def wallet_restore(self, inst):
-        self.dialog.dismiss()
-        self.dialog = None
-        self.switch_window(WindowNames.WALLET_RESTORE)
-        
-    
-    def wallet_create(self, inst):
-        pass
-        
-    
     def add_sub_rv_data(self, node, flagloc):
         
         if node[FinalSubsKeys[1]] == "Offline":
@@ -547,6 +607,10 @@ class MainWindow(Screen):
                     
                 },
             )
+         
+       
+        
+        
         
     def add_country_rv_data(self, NodeCountries):
         self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.rv.data.append(
@@ -673,6 +737,9 @@ class MainWindow(Screen):
         if not tab_text:
             tab_text = OurWorld.CONTINENTS[0]
             
+        # Check to build Map
+        self.build_meile_map()
+        
         # Subscriptions
         #print(self.NodeTree.NodeTree.show())
         if tab_text == OurWorld.CONTINENTS[6]:
@@ -681,6 +748,8 @@ class MainWindow(Screen):
             if self.address:
             
                 Clock.schedule_once(self.subs_callback, 1)
+                self.ids.country_map.remove_widget(self.MeileMap)
+                self.MeileMapBuilt = False
                 #Subscriptions = get_subscriptions(NodesDictList, address)
                 return 
             else:
@@ -692,30 +761,40 @@ class MainWindow(Screen):
         if tab_text == OurWorld.CONTINENTS[0]:
             for ncountry in self.NodeTree.NodeTree.children(OurWorld.CONTINENTS[0]):
                 self.add_country_rv_data(self.build_node_data(ncountry))
+                self.get_continent_coordinates(OurWorld.CONTINENTS[0])
             
         elif tab_text == OurWorld.CONTINENTS[1]:
             for ncountry in self.NodeTree.NodeTree.children(OurWorld.CONTINENTS[1]):
                 self.add_country_rv_data(self.build_node_data(ncountry))
+                self.get_continent_coordinates(OurWorld.CONTINENTS[1])
             
         elif tab_text == OurWorld.CONTINENTS[2]:
             for ncountry in self.NodeTree.NodeTree.children(OurWorld.CONTINENTS[2]):
                 self.add_country_rv_data(self.build_node_data(ncountry))
+                self.get_continent_coordinates(OurWorld.CONTINENTS[2])
 
         elif tab_text == OurWorld.CONTINENTS[3]:
             for ncountry in self.NodeTree.NodeTree.children(OurWorld.CONTINENTS[3]):
                 self.add_country_rv_data(self.build_node_data(ncountry))
+                self.get_continent_coordinates(OurWorld.CONTINENTS[3])
 
         elif tab_text == OurWorld.CONTINENTS[4]:
             for ncountry in self.NodeTree.NodeTree.children(OurWorld.CONTINENTS[4]):
-                self.add_country_rv_data(self.build_node_data(ncountry))            
+                self.add_country_rv_data(self.build_node_data(ncountry))
+                self.get_continent_coordinates(OurWorld.CONTINENTS[4])            
 
         elif tab_text == OurWorld.CONTINENTS[5]:
             for ncountry in self.NodeTree.NodeTree.children(OurWorld.CONTINENTS[5]):
-                self.add_country_rv_data(self.build_node_data(ncountry))            
+                self.add_country_rv_data(self.build_node_data(ncountry))
+                self.get_continent_coordinates(OurWorld.CONTINENTS[5])            
         # Search Criteria
         else:
-            pass      
-    
+            pass
+              
+    def get_continent_coordinates(self, c):
+        loc = self.MeileLand.ContinentLatLong[c]
+        self.MeileMap.center_on(loc[0], loc[1])
+        
     def build_node_data(self, ncountry):
         floc = "../imgs/"
         NodeCountries = {}
@@ -732,6 +811,21 @@ class MainWindow(Screen):
     def switch_window(self, window):
         Meile.app.root.transition = SlideTransition(direction = "up")
         Meile.app.root.current = window
+        
+    def load_country_nodes(self, country, *kwargs):
+        NodeTree = NodeTreeData(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeTree.NodeTree)
+        try:
+            Meile.app.root.remove_widget(Meile.app.root.get_screen(WindowNames.NODES))
+        except Exception as e:
+            print(str(e))
+            pass
+        Meile.app.root.add_widget(NodeScreen(name="nodes",
+                                             node_tree=NodeTree,
+                                             country=country,
+                                             sort=Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).Sort))
+
+        Meile.app.root.transition = SlideTransition(direction = "up")
+        Meile.app.root.current = WindowNames.NODES
         
 class WalletScreen(Screen):
     text = StringProperty()
@@ -751,6 +845,9 @@ class WalletScreen(Screen):
         Wallet = HandleWalletFunctions()
         self.SetBalances(Wallet.get_balance(self.ADDRESS))
         
+    def refresh_wallet(self):
+        self.build(None)
+            
     def return_coin_logo(self, coin):
         self.MeileConfig = MeileGuiConfig() 
 
@@ -944,7 +1041,7 @@ class NodeScreen(Screen):
         Meile.app.root.current = WindowNames.MAIN_WINDOW
 
         
-class RecycleViewCountryRow(MDCard,ThemableBehavior, HoverBehavior):
+class RecycleViewCountryRow(MDCard,RectangularElevationBehavior,ThemableBehavior, HoverBehavior):
     text = StringProperty()
     
     def on_enter(self, *args):
