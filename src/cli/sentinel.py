@@ -168,8 +168,8 @@ class NodeTreeData():
                                             FinalSubsKeys[3] : SubsResult[SubsInfoKeys[6]][k],
                                             FinalSubsKeys[4] : SubsResult[SubsInfoKeys[7]][k],
                                             FinalSubsKeys[5] : None,
-                                            FinalSubsKeys[6] : "0B",
-                                            FinalSubsKeys[7] : "0B"
+                                            FinalSubsKeys[6] : "0.00GB",
+                                            FinalSubsKeys[7] : "0.00B"
                                             })
                print("Sub not found in list")
                k += 1
@@ -211,7 +211,7 @@ class NodeTreeData():
         return SubsFinalResult
 
 
-
+'''
 def get_node_infos(naddress):
     endpoint = "/nodes/" + naddress
     
@@ -223,12 +223,13 @@ def get_node_infos(naddress):
         
     except Exception as e:
         print(str(e))
-
+'''
+    
 def disconnect():
     partCMD = [sentinel_disconnect_bash, '%s disconnect' % sentinelcli]
     
     proc1 = Popen(partCMD)
-    proc1.wait(timeout=10)
+    proc1.wait(timeout=20)
     
     proc_out,proc_err = proc1.communicate()
     

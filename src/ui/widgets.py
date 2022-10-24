@@ -1,9 +1,9 @@
 from kivy.properties import BooleanProperty, StringProperty
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
-from kivy.uix.label import Label
-from kivymd.uix.card import MDCard, MDCardSwipe
+from kivymd.uix.card import MDCard
+from kivymd.uix.label import MDLabel
 from kivymd.uix.dialog import MDDialog
-from kivymd.uix.button import MDFlatButton, MDRaisedButton
+from kivymd.uix.button import MDFlatButton, MDRaisedButton, MDFillRoundFlatButton
 from kivy.uix.recycleview import RecycleView
 from kivy.uix.boxlayout import BoxLayout
 from kivymd.uix.menu import MDDropdownMenu
@@ -15,6 +15,9 @@ from kivy.utils import get_color_from_hex
 from kivymd.uix.behaviors import HoverBehavior
 from kivymd.theming import ThemableBehavior
 from kivy.core.window import Window
+from kivymd.uix.behaviors.elevation import RectangularElevationBehavior
+from kivy.core.clipboard import Clipboard
+from kivy.animation import Animation
 
 from functools import partial
 from urllib3.exceptions import InsecureRequestWarning
@@ -23,7 +26,7 @@ import re
 from os import path
 
 
-from subprocess import Popen
+from subprocess import Popen, TimeoutExpired
 
 from src.cli.sentinel import IBCCOINS
 from src.typedef.win import CoinsList, WindowNames
@@ -34,11 +37,29 @@ import src.main.main as Meile
 
 class WalletInfoContent(BoxLayout):
     def __init__(self, seed_phrase, name, address, password, **kwargs):
-        super(WalletInfoContent, self).__init__()
+        super(WalletInfoContent, self).__init__(**kwargs)
         self.seed_phrase = seed_phrase
         self.wallet_address = address
         self.wallet_password = password
         self.wallet_name = name
+        
+    def copy_seed_phrase(self):
+        Clipboard.copy(self.seed_phrase)
+        self.AnimateCopiedLabel()
+        
+    def AnimateCopiedLabel(self):
+        label = MDLabel(text='Seed Phrase Copied!',
+                      theme_text_color="Custom",
+                      text_color=get_color_from_hex("#fcb711"),
+                      font_size=dp(10))
+        self.ids.seed_box.add_widget(label)
+ 
+        anim = Animation(color=(0, 0, 0, 1), duration=.2) + Animation(color=get_color_from_hex("#fcb711"), duration=.2)
+        anim.repeat = True
+                
+        anim.start(label)
+            
+        return label
         
 
 
@@ -113,34 +134,6 @@ class SubscribeContent(BoxLayout):
 class IconListItem(OneLineIconListItem):
     icon = StringProperty()
 
-   
-class SelectableLabel(RecycleDataViewBehavior, Label):
-    ''' Add selection support to the Label '''
-    index = None
-    selected = BooleanProperty(False)
-    selectable = BooleanProperty(True)
-
-    def refresh_view_attrs(self, rv, index, data):
-        ''' Catch and handle the view changes '''
-        self.index = index
-        return super(SelectableLabel, self).refresh_view_attrs(
-            rv, index, data)
-
-    def on_touch_down(self, touch):
-        ''' Add selection on touch down '''
-        if super(SelectableLabel, self).on_touch_down(touch):
-            return True
-        if self.collide_point(*touch.pos) and self.selectable:
-            return self.parent.select_with_touch(self.index, touch)
-
-    def apply_selection(self, rv, index, is_selected):
-        ''' Respond to the selection of items in the view. '''
-        self.selected = is_selected
-        if is_selected:
-            print("selection changed to {0}".format(rv.data[index]))
-        else:
-            print("selection removed for {0}".format(rv.data[index]))
-
 
 class NodeRV(RecycleView):    
     pass
@@ -158,7 +151,7 @@ class OnHoverMDRaisedButton(MDRaisedButton, ThemableBehavior, HoverBehavior):
         self.md_bg_color = get_color_from_hex("#fcb711")
         Window.set_system_cursor('arrow')
 
-class RecycleViewRow(MDCard,ThemableBehavior, HoverBehavior):
+class RecycleViewRow(MDCard,RectangularElevationBehavior, ThemableBehavior, HoverBehavior):
     text = StringProperty()    
     dialog = None
     
@@ -199,6 +192,7 @@ class RecycleViewRow(MDCard,ThemableBehavior, HoverBehavior):
 
         if not self.dialog:
             self.dialog = MDDialog(
+                md_bg_color=get_color_from_hex("#0d021b"),
                 text='''
 City: %s
 Connected Peers:  %s  
@@ -247,7 +241,7 @@ Node Version: %s
         deposit = self.reparse_coin_deposit(sub_node[0])
         self.dialog.dismiss()
         self.dialog = None
-        self.dialog = MDDialog(title="Subscribing...\n\n%s\n %s" %( deposit, sub_node[1]))
+        self.dialog = MDDialog(title="Subscribing...\n\n%s\n %s" %( deposit, sub_node[1]),md_bg_color=get_color_from_hex("#0d021b"))
         self.dialog.open()
         yield 0.6
 
@@ -273,7 +267,7 @@ Node Version: %s
         else:
             self.dialog.dismiss()
             self.dialog = MDDialog(
-            title="Error: %s" % "No wallet found!" if returncode[1] == 1337 else returncode[1],
+            title="Error: %s" % "No wallet found!" if returncode[1] == 1337  else returncode[1],
             md_bg_color=get_color_from_hex("#0d021b"),
             buttons=[
                     MDFlatButton(
@@ -336,13 +330,18 @@ Node Version: %s
  
         
     
-class RecycleViewSubRow(MDCard):
+class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
     text = StringProperty()
     dialog = None
     
     
-    def get_data_used(self, allocated, consumed):
+    def get_data_used(self, allocated, consumed, node_address):
         try:         
+            if Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node'] == node_address:
+                self.ids.node_switch.active = True
+            else:
+                self.ids.node_switch.active = False
+                        
             allocated = float(allocated.replace('GB',''))
             
             if "GB" in consumed:
@@ -355,7 +354,12 @@ class RecycleViewSubRow(MDCard):
                 consumed = 0.0
             else:
                 consumed = float(float(re.findall(r'[0-9]+\.[0-9]+', consumed)[0].replace('B', '')) / (1024*1024*1024))
-                
+
+            if allocated == 0:
+                self.ids.consumed_data.text = "0%"
+                return 0
+            
+            self.ids.consumed_data.text = str(round(float(float(consumed/allocated)*100),2)) + "%"
             return float(float(consumed/allocated)*100)
         except Exception as e:
             print(str(e))
@@ -373,120 +377,75 @@ class RecycleViewSubRow(MDCard):
             print(str(e))
             self.dialog = None
             
-    # Non sudo implementation
-    '''
-    @delayable
-    def set_osx_password(self, passdialog, ID, naddress, dt):
-        print("OS X PASSWORD: %s" % passdialog.return_password())
-        self.dialog.dismiss()
-        self.dialog = None
-        self.add_loading_popup("Connecting...")
-        
-        yield 1
-        
-        connected = HandleWalletFunctions.connect(HandleWalletFunctions, ID, naddress, passdialog.return_password())
-        
-        if connected:
-            self.remove_loading_widget()
-            self.dialog = MDDialog(
-                title="Connected!",
-                buttons=[
-                        MDFlatButton(
-                            text="OK",
-                            theme_text_color="Custom",
-                            text_color=self.theme_cls.primary_color,
-                            on_release=partial(self.call_ip_get, True)
-                        ),])
-            self.dialog.open()
-            
-        else:
-            self.remove_loading_widget()
-            self.dialog = MDDialog(
-                title="Something went wrong. Not connected",
-                buttons=[
-                        MDFlatButton(
-                            text="OK",
-                            theme_text_color="Custom",
-                            text_color=self.theme_cls.primary_color,
-                            on_release=partial(self.call_ip_get, False)
-                        ),])
-            self.dialog.open()
-    '''   
     
     @delayable
-    def connect_to_node(self, ID, naddress, moniker, switchValue):
-        if switchValue == False:
+    def connect_to_node(self, ID, naddress, moniker, switchValue, **kwargs):
+        '''
+           These two conditionals are needed to check
+           and verify the switch in the sub card and ensure
+           it is on, when connected, and does not try to disconnect
+           or reconnect. 
+        '''
+        if Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['switch'] and naddress == Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node'] and not switchValue:
+            print("DISCONNECTING!!!")
             Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).disconnect_from_node()
-            return 
+            return True
         
-        self.dialog = None
-        self.add_loading_popup("Connecting...")
-        yield 0.5
+        if Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).CONNECTED:
+            return
         
-        UUID = Meile.app.root.get_screen(WindowNames.PRELOAD).UUID
-        print(UUID)
-        try:
-            SERVER_ADDRESS = "https://aimokoivunen.mathnodes.com:5000"
-            API_ENDPOINT   = "/api/ping"
-            uuid_dict = {'uuid' : "%s" % UUID, 'os' : "M"}
-            ping = requests.post(SERVER_ADDRESS + API_ENDPOINT, json=uuid_dict)
-            if ping.status_code == 200:
-                print('ping')
-            else:
-                print("noping")
-        except Exception as e:
-            print(str(e))
-            pass
-        connected = HandleWalletFunctions.connect(HandleWalletFunctions, ID, naddress, None)
-        
-        if connected:
-            self.remove_loading_widget()
-            self.dialog = MDDialog(
-                title="Connected!",
-                md_bg_color=get_color_from_hex("#0d021b"),
-                buttons=[
-                        MDFlatButton(
-                            text="OK",
-                            theme_text_color="Custom",
-                            text_color=self.theme_cls.primary_color,
-                            on_release=partial(self.call_ip_get, True, moniker)
-                        ),])
-            self.dialog.open()
+        if switchValue:
+            self.add_loading_popup("Connecting...")
+            yield 0.6
+            UUID = Meile.app.root.get_screen(WindowNames.PRELOAD).UUID
+            try:
+                SERVER_ADDRESS = "https://aimokoivunen.mathnodes.com:5000"
+                API_ENDPOINT   = "/api/ping"
+                uuid_dict = {'uuid' : "%s" % UUID, 'os' : "L"}
+                ping = requests.post(SERVER_ADDRESS + API_ENDPOINT, json=uuid_dict)
+                if ping.status_code == 200:
+                    print('ping')
+                else:
+                    print("noping")
+            except Exception as e:
+                print(str(e))
+                pass
             
-        else:
-            self.remove_loading_widget()
-            self.dialog = MDDialog(
-                title="Something went wrong. Not connected",
-                md_bg_color=get_color_from_hex("#0d021b"),
-                buttons=[
-                        MDFlatButton(
-                            text="OK",
-                            theme_text_color="Custom",
-                            text_color=self.theme_cls.primary_color,
-                            on_release=partial(self.call_ip_get, False, "")
-                        ),])
-            self.dialog.open()
-    
-        # For when it is not run with sudo
-        '''
-        if not self.dialog:
-            PasswordDialog = OSXPasswordDialog()
-            self.dialog = MDDialog(
-                    title="OA X Password",
-                    type="custom",
-                    content_cls=PasswordDialog,
+            connected = HandleWalletFunctions.connect(HandleWalletFunctions, ID, naddress)
+            
+            if connected:
+                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node'] = naddress
+                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['switch'] = True
+                print("%s, %s" % (Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node'],
+                                  Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['switch']
+                                 ))
+                self.remove_loading_widget()
+                self.dialog = MDDialog(
+                    title="Connected!",
+                    md_bg_color=get_color_from_hex("#0d021b"),
+                     buttons=[
+                            MDFlatButton(
+                                text="OK",
+                                theme_text_color="Custom",
+                                text_color=self.theme_cls.primary_color,
+                                on_release=partial(self.call_ip_get, True, moniker)
+                            ),])
+                self.dialog.open()
+                
+            else:
+                self.remove_loading_widget()
+                self.dialog = MDDialog(
+                    title="Something went wrong. Not connected",
+                    md_bg_color=get_color_from_hex("#0d021b"),
                     buttons=[
-                        
-                        MDFlatButton(
-                            text="Continue",
-                            theme_text_color="Custom",
-                            text_color=self.theme_cls.primary_color,
-                            on_release=partial(self.set_osx_password, PasswordDialog, ID, naddress)
-                        ),
-                    ],
-                )
-            self.dialog.open()
-        '''
+                            MDFlatButton(
+                                text="OK",
+                                theme_text_color="Custom",
+                                text_color=self.theme_cls.primary_color,
+                                on_release=partial(self.call_ip_get, False, "")
+                            ),])
+                self.dialog.open()
+                                 
             
     def call_ip_get(self,result, moniker,  *kwargs):
         if result:
@@ -494,6 +453,7 @@ class RecycleViewSubRow(MDCard):
             Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).set_protected_icon(True, moniker)
         else:
             Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).CONNECTED = False
+            self.ids.node_switch.active = False
             
         if not Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).get_ip_address(None):
             self.remove_loading_widget()
@@ -526,4 +486,16 @@ class RecycleViewSubRow(MDCard):
         self.remove_loading_widget()
 
         
+class MDMapCountryButton(MDFillRoundFlatButton,ThemableBehavior, HoverBehavior):
+    def on_enter(self, *args):
+        self.md_bg_color = get_color_from_hex("#fcb711")
+        Window.set_system_cursor('arrow')
+         
+    def on_leave(self, *args):
+        '''The method will be called when the mouse cursor goes beyond
+        the borders of the current widget.'''
+
+        self.md_bg_color = get_color_from_hex("#0d021b")
+        Window.set_system_cursor('arrow')
         
+    

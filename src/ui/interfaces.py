@@ -11,6 +11,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivymd.uix.button import MDFlatButton, MDRaisedButton
 from kivymd.uix.tooltip import MDTooltip
 from kivy.uix.switch import Switch
+from kivy_garden.mapview import MapView
 
 class Tab(MDBoxLayout, MDTabsBase):
     pass
@@ -51,9 +52,11 @@ class ClickableTextFieldRoundPass(MDRelativeLayout):
 class SelectableRecycleGridLayout(FocusBehavior, LayoutSelectionBehavior,
                                 RecycleGridLayout):
     ''' Adds selection and focus behaviour to the view. '''
-
+class ContinentMap(MapView):
+    pass
 class FullImage(Image):
     pass
+
 class FullImage2(Image):
     pass
 

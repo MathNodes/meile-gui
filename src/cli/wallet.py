@@ -3,6 +3,8 @@ import pexpect
 import json
 import requests
 
+from json.decoder import JSONDecodeError
+
 from time import sleep
 
 from src.conf.meile_config import MeileGuiConfig
@@ -22,6 +24,7 @@ MeileConfig = MeileGuiConfig()
 sentinelcli = MeileConfig.resource_path("../bin/sentinelcli")
 sentinelbash = MeileConfig.resource_path("../bin/sentinel.sh")
 sentinel_connect_bash = MeileConfig.resource_path("../bin/sentinel-connect.sh")
+RPC = "https://rpc.mathnodes.com:443"
 
 wgbash = MeileConfig.resource_path("../bin/wg.sh")
 class HandleWalletFunctions():
@@ -103,18 +106,21 @@ class HandleWalletFunctions():
         ofile =  open(SUBSCRIBEINFO, "wb")    
         if not KEYNAME:
             return (False, 1337)
-        SCMD = "%s tx subscription subscribe-to-node --yes --keyring-backend file --keyring-dir %s --gas-prices 0.1udvpn --chain-id sentinelhub-2 --node https://rpc.mathnodes.com:443 --from '%s' '%s' %s"  % (sentinelcli, KEYRINGDIR, KEYNAME, NODE, DEPOSIT)    
-     
-        child = pexpect.spawn(SCMD)
-        child.logfile = ofile
-        
-        child.expect(".*")
-        child.sendline(PASSWORD)
-        child.expect(pexpect.EOF)
-        
-        ofile.flush()
-        ofile.close()
-        
+        SCMD = "%s tx subscription subscribe-to-node --yes --keyring-backend file --keyring-dir %s --gas-prices 0.1udvpn --chain-id sentinelhub-2 --node %s --from '%s' '%s' %s"  % (sentinelcli, KEYRINGDIR, RPC, KEYNAME, NODE, DEPOSIT)
+            
+        try:
+            child = pexpect.spawn(SCMD)
+            child.logfile = ofile
+            
+            child.expect(".*")
+            child.sendline(PASSWORD)
+            child.expect(pexpect.EOF)
+            
+            ofile.flush()
+            ofile.close()
+        except pexpect.exceptions.TIMEOUT:
+            return (False,1415)
+            
         return self.ParseSubscribe(self)
         
         
@@ -146,12 +152,12 @@ class HandleWalletFunctions():
                 elif 'insufficient' in tx_json['raw_log']:
                     remove(SUBSCRIBEINFO)
                     return (False, tx_json['raw_log'])
-    def connect(self, ID, address, osx_password):
+    def connect(self, ID, address):
         MeileConfig = MeileGuiConfig()
         CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
         KEYNAME = CONFIG['wallet'].get('keyname', '')
-        cliCMD = "%s connect --home %s --keyring-backend file --keyring-dir %s --chain-id sentinelhub-2 --node https://rpc.mathnodes.com:443 --gas-prices 0.1udvpn --yes --from '%s' %s %s" % (sentinelcli, BASEDIR,  KEYRINGDIR, KEYNAME, ID, address)
+        cliCMD = "%s connect --home %s --keyring-backend file --keyring-dir %s --chain-id sentinelhub-2 --node %s --gas-prices 0.1udvpn --yes --from '%s' %s %s" % (sentinelcli, BASEDIR,  KEYRINGDIR, RPC, KEYNAME, ID, address)
         #connCMD = '%s "%s"' % (sentinelbash, cliCMD)
         connCMD = sentinelbash + ' "%s"' % cliCMD + ' "%s"' % PASSWORD
         print(connCMD)
@@ -299,7 +305,6 @@ class HandleWalletFunctions():
         '''    
 
     def get_balance(self, address):
-        from builtins import str
         endpoint = "/bank/balances/" + address
         CoinDict = {'dvpn' : 0, 'scrt' : 0, 'dec'  : 0, 'atom' : 0, 'osmo' : 0}
         try:

@@ -1,5 +1,6 @@
 #: import SlideTransition kivy.uix.screenmanager.SlideTransition
 #: import get_color_from_hex kivy.utils.get_color_from_hex
+#: import MapView kivy_garden.mapview.MapView
 
 WindowManager:
 
@@ -119,9 +120,12 @@ WindowManager:
             background_color: get_color_from_hex("#fcb711")
         
         
-        NodeRV:
-            md_bg_color: get_color_from_hex("#0d021b")    
-            id: rv
+        MDBoxLayout:
+            id: country_map
+            orientation: "horizontal"
+            NodeRV:
+                md_bg_color: get_color_from_hex("#0d021b")    
+                id: rv
         
         MDBottomNavigation:
             size_hint_y: .1
@@ -207,6 +211,11 @@ WindowManager:
                 source: root.get_qr_code_address()
                 pos_hint: {'x': 0, 'top': 1}
                 size_hint_y: .5
+                
+            MDRaisedButton:
+                pos_hint: {'x' : .1 , 'top': .9 }
+                text: "REFRESH"
+                on_release: root.refresh_wallet()
                 
             MDRaisedButton:
                 pos_hint: {'x' : .8 , 'top': .9 }
@@ -303,6 +312,7 @@ WindowManager:
         pos_hint: {"center_x": .5, "center_y": .80}
         
     MDLabel:
+    	id: seed_hint
         text: "Leave blank if creating a new wallet"
         theme_text_color: "Custom"
         text_color: get_color_from_hex("#4a4545")
@@ -346,7 +356,7 @@ WindowManager:
         
     MDRaisedButton:
         id: restore_wallet_button
-        text: "Restore"
+        text: "Create"
         pos_hint: {"center_x": .5, "center_y": .4}
         on_press: root.restore_wallet_from_seed_phrase()
     
@@ -354,6 +364,8 @@ WindowManager:
     
 <NodeRV>:
     key_viewclass: "viewclass"
+    bar_width: dp(12)
+    scroll_type: ["bars", "content"]
     canvas.before:
         Color:
             rgba: get_color_from_hex("#fccf62")
@@ -403,8 +415,6 @@ WindowManager:
     padding: 10,10
     border_radius: 20
     radius: [10]
-    shadow_pos: 0,0
-    elevation: 42
     num_text: ""
     country_text: " "
     source_image: " "
@@ -437,7 +447,7 @@ WindowManager:
             Image:
                 source: root.source_image
                 # {"x", "y", "top", "bottom", "left", "right" }
-                pos_hint: {"x" : .3, "top" : 1 }
+                pos_hint: {"x" : .9, "top" : 1.175 }
             
     MDSeparator:
         color: 1,1,1,1
@@ -450,8 +460,6 @@ WindowManager:
     padding: 10,10
     border_radius: 20
     radius: [10]
-    shadow_pos: 0,0
-    elevation: 42
     md_bg_color: get_color_from_hex("#0d021b")
     moniker_text: "."
     country_text: "."
@@ -537,8 +545,6 @@ WindowManager:
     padding: 10,10
     border_radius: 20
     radius: [10]
-    shadow_pos: 0,0
-    elevation: 42
     md_bg_color: get_color_from_hex("#0d021b")
     moniker_text: "."
     sub_id_text: " "
@@ -630,7 +636,7 @@ WindowManager:
             text_color: 1,1,1,1
             pos_hint: {"x" : 0.2, "top" : 1.03 }
         MDProgressBar:
-            value: root.get_data_used(root.allocated_text, root.consumed_text)
+            value: root.get_data_used(root.allocated_text, root.consumed_text, root.address_text)
             color: app.theme_cls.accent_color
             #back_color: get_color_from_hex("#ffffff")
             pos_hint: {"x" : 0, "top" : .475 }
@@ -645,6 +651,7 @@ WindowManager:
             text_color: 1,1,1,1
             pos_hint: {"x" : .5, "top" : 1.03 }      
         Switch:
+        	id: node_switch
             canvas.after:
                 Color:
                     rgb:  get_color_from_hex("#fab40c")
@@ -653,7 +660,7 @@ WindowManager:
             md_bg_color: get_color_from_hex("#fcb711")
             text_color: 0,0,0,1
             on_active: root.connect_to_node(root.sub_id_text,root.address_text, root.moniker_text, self.active)
-            pos_hint: {"x" : .0125, "top" : .47 }
+            pos_hint: {"x" : 0.015, "top" : .45 }
             size_hint: None,None
         MDSeparator:
             color: 1,1,1,1
@@ -697,9 +704,10 @@ WindowManager:
 
     MDTextField:
         id: seed_phrase
+        multiline: True
         hint_text: root.hint_text
         text: root.text
-        password: False
+        password: True
         icon_left: "key-variant"
         mode: "rectangle"
 
@@ -742,7 +750,7 @@ WindowManager:
         id: wallet_password
         hint_text: root.hint_text
         text: root.text
-        password: False
+        password: True
         icon_left: "key-variant"
         mode: "rectangle"
 
@@ -783,19 +791,33 @@ WindowManager:
 
 <WalletInfoContent>
     orientation: "vertical"
-    spacing: "4dp"
+    spacing: "15dp"
     size_hint_y: None
-    height: "260dp"
+    height: "300dp"
     seed_phrase: ""
     wallet_address: ""
     wallet_password: ""
     wallet_name: ""
+    padding: 0,10,0,10
 
     MDTextField:
         multiline: True
         hint_text: "Mnemonic Seed"
         text: root.seed_phrase
         readonly: True
+    MDBoxLayout:
+        id: seed_box
+        orientation: "horizontal"
+        padding: 0,0,20,20
+        spacing: "20dp"    
+        MDRaisedButton:
+            id: copy_seed_button
+            text: "COPY SEED"
+            font_size: dp(9)
+            pos_hint: {"center_x": .1, "center_y": .5}
+            on_press: root.copy_seed_phrase()
+            size_hint: None, None
+            size: 15,10
     MDTextField:
         hint_text: "Wallet"
         mode: "rectangle"
@@ -929,7 +951,7 @@ WindowManager:
             text_color: get_color_from_hex("#fcb711")
         MDLabel:
             font_name: "Roboto-Bold"
-            text: "v1.0.0"
+            text: "v1.2.0"
             font_size: "16sp"
             size_hint_y: .1
             width: dp(500)
@@ -955,7 +977,7 @@ WindowManager:
                     halign: "center"
                 MDLabel:
                     font_name: "DejaVuSans"
-                    text: "A mnemonic/seed phrase is a set of pre-defined dictionary words that form a unique set. This uniuqqe set is used to generate a wallet with a unique address, similar to how bank accounts have a unique number. i.e., no two bank accounts have the same account number. This address can be used to send and receive currency just like your bank account."
+                    text: "A mnemonic/seed phrase is a set of pre-defined dictionary words that form a unique set. This unique set is used to generate a wallet with a unique address, similar to how bank accounts have a unique number. i.e., no two bank accounts have the same account number. This address can be used to send and receive currency just like your bank account."
                     size_hint_y: None
                     height: self.texture_size[1]
                     size_hint_x: 1
@@ -967,14 +989,14 @@ WindowManager:
                     
                 MDLabel:
                     font_name: "Roboto-BoldItalic"
-                    text: "What is a address?"
+                    text: "What is an address?"
                     size_hint_y: None
                     height: self.texture_size[1]
                     size_hint_x: 1
                     halign: "center"
                 MDLabel:
                     font_name: "DejaVuSans"
-                    text: "An address is a unique identifier that links your funds to the blockcahin. This is a pseudonymous identifier meaning it links your digital identity on the blockchain without storing any personal identifiers of an individual. Addresses are used to send and receive funds in the native currency of the acting network. "
+                    text: "An address is a unique identifier that links your funds to the blockchain. This is a pseudonymous identifier meaning it links your digital identity on the blockchain without storing any personal identifiers of an individual. Addresses are used to send and receive funds in the native currency of the acting network. "
                     size_hint_y: None
                     height: self.texture_size[1]
                     size_hint_x: 1
@@ -992,7 +1014,7 @@ WindowManager:
                     halign: "center"
                 MDLabel:
                     font_name: "DejaVuSans"
-                    text: "There are two primary ways to receive tokens to purchase dVPN (the currency) subscriptions and utilize the network. 1.) You get the DVPN token on a exchange and send it to your wallet address. Current exchanges are KuCoin, HotBit, Polarity and Osmosis. Once you purchase the tokens on the exchange, you need to withdraw them to your address listed in the wallet section of this app. The tokens should appear within minutes after a withdrawal and you can begin purchasing and subscribing to Sentinel dVPN nodes through Meile. 2.) You can purchase the currency used for Meile dVPN right in our app via the 'Top-Up' button within the wallet. These funds will be handled by our servers and the payment processing is handled by stripe. Once you succesfully complete a purchase, your funds should appear in your wallet within minutes of a successful purchase through our app. This is the easiest method to using Meile dVPN."
+                    text: "There are two primary ways to receive tokens to purchase dVPN (the currency) subscriptions and utilize the network. 1.) You get the DVPN token on a exchange and send it to your wallet address. Current exchanges are KuCoin, HotBit, Polarity and Osmosis. Once you purchase the tokens on the exchange, you need to withdraw them to your address listed in the wallet section of this app. The tokens should appear within minutes after a withdrawal and you can begin purchasing and subscribing to Sentinel dVPN nodes through Meile. 2.) You can purchase the currency used for Meile dVPN right in our app via the 'RE-FUEL' button within the wallet. These funds will be handled by our servers and the payment processing is handled by Stripe. Once you succesfully complete a purchase, your funds should appear in your wallet within minutes of a successful purchase through our app. This is the easiest method to using Meile dVPN."
                     size_hint_y: None
                     height: self.texture_size[1]
                     size_hint_x: 1
@@ -1010,7 +1032,7 @@ WindowManager:
                     halign: "center"
                 MDLabel:
                     font_name: "DejaVuSans"
-                    text: "MathNodes uses Stripe to process payments in order to receive funds to use the dVPN. You will see that we do not even need the name of the individual. Once a payment is processed through Stripe, Mathnodes stores only the payment_id received from stripe, the address of your wallet, and the amount of tokens sent (1,000). We have to keep records some information in case there is a dispute and we need to query the orders and verify if tokens were sent to the reciept's address. We do not store your name, your credit card details, or any other information beside what we have mentioned. The full policy can be viewed at https://meile.app/policy"
+                    text: "MathNodes uses Stripe to process payments in order to receive funds to use the dVPN. You will see that we do not even need the name of the individual. Once a payment is processed through Stripe, Mathnodes stores only the payment_id received from stripe, the address of your wallet, and the amount of tokens sent (1,000). We have to keep records some information in case there is a dispute and we need to query the orders and verify if tokens were sent to the recipient's address. We do not store your name, your credit card details, or any other information beside what we have mentioned. The full policy can be viewed at https://meile.app/policy"
                     size_hint_y: None
                     height: self.texture_size[1]
                     size_hint_x: 1
@@ -1021,14 +1043,14 @@ WindowManager:
                     font_size: "12dp"
                 MDLabel:
                     font_name: "Roboto-BoldItalic"
-                    text: "Why is a dVPN better than a tradiation VPN?"
+                    text: "Why is a dVPN better than a traditional VPN?"
                     size_hint_y: None
                     height: self.texture_size[1]
                     size_hint_x: 1
                     halign: "center"
                 MDLabel:
                     font_name: "DejaVuSans"
-                    text: "A traditional VPN, like Nord, Norton, Cryptostorm, or Proton is a centralized set of servers that a user connects through to access the internet. Most VPNs are required to keep a degree of logging information about users. Centralized VPNs can terminate a user's plan or restrict access to the internet based on private, public, or governmental policy. A dVPN such as the one Meile offers, uses blockchain technologies via the Sentinel Network to ensure a decentralized structure. This means that the servers you connect through are ran by a community of volunteers rather than a central authority. As such, no logging takes places, users don't have the ability to throttle or restrict traffic and no censorship is possible through the use of a dVPN."
+                    text: "A traditional VPN, like Nord, Norton, Cryptostorm, or Proton is a centralized set of servers that a user connects through to access the internet. Most VPNs are required to keep a degree of logging information about users. Centralized VPNs can terminate a user's plan or restrict access to the internet based on private, public, or governmental policy. A dVPN such as the one Meile offers, uses blockchain technologies via the Sentinel Network to ensure a decentralized structure. This means that the servers you connect through are run by a community of volunteers rather than a central authority. As such, no logging takes places, users don't have the ability to throttle or restrict traffic and no censorship is possible through the use of a dVPN."
                     size_hint_y: None
                     height: self.texture_size[1]
                     size_hint_x: 1
@@ -1068,6 +1090,7 @@ WindowManager:
             md_bg_color: get_color_from_hex("#FFB908")
             height: "70dp"
             type: "top"
+            padding: 0,20,0,0
     
             MDTextField:
                 hint_text: "Address"
@@ -1161,14 +1184,21 @@ WindowManager:
             MDFloatLayout:
         
                 CheckBox:
+	                canvas.before:
+	            		Color:
+	                		rgb: 1,1,1
+	            		Rectangle:
+	                		pos: self.center_x-8, self.center_y-8
+	                		size: [20,20]
+	                		
                     on_active: root.terms_agreement(self.active)
                     pos_hint: {"x": .36, "center_y": .54}
-                    color: get_color_from_hex("f42121")
+                    color: get_color_from_hex("ffffff")
                     size_hint: None, None
                     size: dp(30), dp(30)
                 MDLabel:
                     text: "I agree to the terms of the MathNodes purchasing policy."
-                    font_size: 10
+                    font_size: 20
                     theme_text_color: "Custom"
                     text_color: get_color_from_hex("f42121")
                     pos_hint: {"x": .40, "center_y": .54}
@@ -1183,7 +1213,7 @@ WindowManager:
                 
             MDLabel:
                 id: surcharge
-                text: "Surcharge: $1.95"
+                text: "Surcharge: $1.25"
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex("ffffff")
                 pos_hint: {"x": .40, "center_y": .43}
@@ -1293,3 +1323,6 @@ WindowManager:
         text: "Please copy the TX ID and save it somewhere safely."
         font_size: "11dp"
    
+<ContinentMap>:
+    zoom: 3
+    
