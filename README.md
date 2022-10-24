@@ -29,7 +29,7 @@ cd meile-gui && git checkout fiat-osx
 Install the python packages
 
 ```shell
-pip install kivymd pydash treelib kivyoav pexpect qrcode save_thread_result screeninfo stripe pycoingecko
+pip install kivymd pydash treelib kivyoav pexpect qrcode save_thread_result screeninfo stripe pycoingecko unidecode kivy_garden mapview
 ```
 
 Then you can run the python script directly from a terminal
@@ -38,7 +38,7 @@ Then you can run the python script directly from a terminal
 python3 meile-gui.py
 ```
 
-That's it. 
+That's it. **NOTE**: The source runs a lot cleaner and has significant speed improvements over the precompiled binary for OS X. 
 
 
 ## Note: 
