@@ -26,7 +26,6 @@ USER = environ['SUDO_USER'] if 'SUDO_USER' in environ else environ['USER']
 PATH = environ['PATH']
 KEYRINGDIR = path.join(path.expanduser('~' + USER), '.meile-gui')
 BASEDIR  = path.join(path.expanduser('~' + USER), '.sentinelcli')
-
 APIURL   = "https://api.sentinel.mathnodes.com"
 
 NodesInfoKeys = ["Moniker","Address","Provider","Price","Country","Speed","Latency","Peers","Handshake","Version","Status"]
@@ -37,6 +36,7 @@ dash = "-"
 
 MeileConfig = MeileGuiConfig()
 sentinelcli = MeileConfig.resource_path("../bin/sentinelcli")
+RPC = "https://rpc.mathnodes.com:443"
 
 class NodeTreeData():
     NodeTree = None
@@ -51,7 +51,7 @@ class NodeTreeData():
     def get_nodes(self, latency, *kwargs):
         AllNodesInfo = []
         print("Running sentinel-cli with latency: %s" % latency)
-        nodeCMD = [sentinelcli, "query", "nodes", "--node", "https://rpc.mathnodes.com:443", "--limit", "20000", "--timeout", "%s" % latency]
+        nodeCMD = [sentinelcli, "query", "nodes", "--node", RPC, "--limit", "20000", "--timeout", "%s" % latency]
     
         proc = Popen(nodeCMD, stdout=PIPE)
         
@@ -137,7 +137,7 @@ class NodeTreeData():
         SubsNodesInfo = []
         SubsFinalResult    = []
         print("Geting Subscriptions... %s" % ADDRESS)
-        subsCMD = [sentinelcli, "query", "subscriptions", "--node", "https://rpc.mathnodes.com:443", "--status", "Active", "--limit", "100", "--address" ,ADDRESS]
+        subsCMD = [sentinelcli, "query", "subscriptions", "--node", RPC, "--status", "Active", "--limit", "100", "--address" ,ADDRESS]
         proc = Popen(subsCMD, stdout=PIPE)
     
         k=1
@@ -177,7 +177,7 @@ class NodeTreeData():
                 print("Sub not found in list")
                 k += 1
                 continue   
-            quotaCMD = [sentinelcli, 'query', 'quotas', '--node', 'https://rpc.mathnodes.com:443', '--page', '1', SubsResult[SubsInfoKeys[0]][k]]
+            quotaCMD = [sentinelcli, 'query', 'quotas', '--node', RPC, '--page', '1', SubsResult[SubsInfoKeys[0]][k]]
             proc = Popen(quotaCMD, stdout=PIPE)
                     
             h=1
@@ -219,11 +219,12 @@ def get_node_infos(naddress):
     endpoint = "/nodes/" + naddress
     
     NodeInfoDict = {}
-    
-    r = requests.get(APIURL + endpoint)
-    
-    remote_url = r.json()['result']['node']['remote_url']
-    
+    try: 
+        r = requests.get(APIURL + endpoint)
+        
+        remote_url = r.json()['result']['node']['remote_url']
+    except Exception as e:
+        print(str(e))
     
 
 def disconnect():

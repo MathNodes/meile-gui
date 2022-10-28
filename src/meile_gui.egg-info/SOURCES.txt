@@ -4,6 +4,8 @@ src/awoc/__init__.py
 src/awoc/data/world.json
 src/bin/__init__.py
 src/bin/sentinelcli
+src/bin/warp-cli
+src/bin/warp-svc
 src/cli/__init__.py
 src/cli/sentinel.py
 src/cli/wallet.py

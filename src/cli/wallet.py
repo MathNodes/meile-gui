@@ -18,6 +18,7 @@ CONNECTIONINFO = path.join(KEYRINGDIR, "connection.infos")
 
 MeileConfig = MeileGuiConfig()
 sentinelcli = MeileConfig.resource_path("../bin/sentinelcli")
+RPC = "https://rpc.mathnodes.com:443"
 
 class HandleWalletFunctions():
     
@@ -100,7 +101,7 @@ class HandleWalletFunctions():
         if not KEYNAME:
             return (False, 1337)
         
-        SCMD = "%s tx subscription subscribe-to-node --yes --keyring-backend file --keyring-dir %s --gas-prices 0.1udvpn --chain-id sentinelhub-2 --node https://rpc.mathnodes.com:443 --from '%s' '%s' %s"  % (sentinelcli, KEYRINGDIR, KEYNAME, NODE, DEPOSIT)    
+        SCMD = "%s tx subscription subscribe-to-node --yes --keyring-backend file --keyring-dir %s --gas-prices 0.1udvpn --chain-id sentinelhub-2 --node %s --from '%s' '%s' %s"  % (sentinelcli, KEYRINGDIR, RPC, KEYNAME, NODE, DEPOSIT)    
         try:
             child = pexpect.spawn(SCMD)
             child.logfile = ofile
@@ -150,7 +151,7 @@ class HandleWalletFunctions():
         CONFIG = MeileGuiConfig.read_configuration(MeileGuiConfig, MeileGuiConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
         KEYNAME = CONFIG['wallet'].get('keyname', '')
-        connCMD = "pkexec env PATH=%s %s connect --home %s --keyring-backend file --keyring-dir %s --chain-id sentinelhub-2 --node https://rpc.mathnodes.com:443 --gas-prices 0.1udvpn --yes --from '%s' %s %s" % (PATH, sentinelcli, BASEDIR, KEYRINGDIR, KEYNAME, ID, address)
+        connCMD = "pkexec env PATH=%s %s connect --home %s --keyring-backend file --keyring-dir %s --chain-id sentinelhub-2 --node %s --gas-prices 0.1udvpn --yes --from '%s' %s %s" % (PATH, sentinelcli, BASEDIR, KEYRINGDIR, RPC, KEYNAME, ID, address)
         
         ofile =  open(CONNECTIONINFO, "wb")    
 

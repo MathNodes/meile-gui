@@ -1,10 +1,9 @@
 from kivy.properties import BooleanProperty, StringProperty
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
-from kivy.uix.label import Label
 from kivymd.uix.label import MDLabel
 from kivymd.uix.card import MDCard
 from kivymd.uix.dialog import MDDialog
-from kivymd.uix.button import MDFlatButton, MDRaisedButton,MDFillRoundFlatButton
+from kivymd.uix.button import MDFlatButton, MDRaisedButton, MDFillRoundFlatButton
 from kivy.uix.recycleview import RecycleView
 from kivy.uix.boxlayout import BoxLayout
 from kivymd.uix.menu import MDDropdownMenu
@@ -132,34 +131,6 @@ class SubscribeContent(BoxLayout):
 class IconListItem(OneLineIconListItem):
     icon = StringProperty()
 
-   
-class SelectableLabel(RecycleDataViewBehavior, Label):
-    ''' Add selection support to the Label '''
-    index = None
-    selected = BooleanProperty(False)
-    selectable = BooleanProperty(True)
-
-    def refresh_view_attrs(self, rv, index, data):
-        ''' Catch and handle the view changes '''
-        self.index = index
-        return super(SelectableLabel, self).refresh_view_attrs(
-            rv, index, data)
-
-    def on_touch_down(self, touch):
-        ''' Add selection on touch down '''
-        if super(SelectableLabel, self).on_touch_down(touch):
-            return True
-        if self.collide_point(*touch.pos) and self.selectable:
-            return self.parent.select_with_touch(self.index, touch)
-
-    def apply_selection(self, rv, index, is_selected):
-        ''' Respond to the selection of items in the view. '''
-        self.selected = is_selected
-        if is_selected:
-            print("selection changed to {0}".format(rv.data[index]))
-        else:
-            print("selection removed for {0}".format(rv.data[index]))
-
 
 class NodeRV(RecycleView):    
     pass
@@ -192,22 +163,25 @@ class RecycleViewRow(MDCard,RectangularElevationBehavior,ThemableBehavior, Hover
         APIURL   = "https://api.sentinel.mathnodes.com"
 
         endpoint = "/nodes/" + naddress.lstrip().rstrip()
-        print(APIURL + endpoint)
-        r = requests.get(APIURL + endpoint)
-        remote_url = r.json()['result']['node']['remote_url']
-        r = requests.get(remote_url + "/status", verify=False)
-        print(remote_url)
-        requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
+        #print(APIURL + endpoint)
+        try:
+            requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
+            r = requests.get(APIURL + endpoint)
+            remote_url = r.json()['result']['node']['remote_url']
+            r = requests.get(remote_url + "/status", verify=False)
+            print(remote_url)
+    
+            NodeInfoJSON = r.json()
+            NodeInfoDict = {}
+            
+            NodeInfoDict['connected_peers'] = NodeInfoJSON['result']['peers']
+            NodeInfoDict['max_peers']       = NodeInfoJSON['result']['qos']['max_peers']
+            NodeInfoDict['version']         = NodeInfoJSON['result']['version']
+            NodeInfoDict['city']            = NodeInfoJSON['result']['location']['city']
 
-        NodeInfoJSON = r.json()
-        NodeInfoDict = {}
-        
-        NodeInfoDict['connected_peers'] = NodeInfoJSON['result']['peers']
-        NodeInfoDict['max_peers']       = NodeInfoJSON['result']['qos']['max_peers']
-        NodeInfoDict['version']         = NodeInfoJSON['result']['version']
-        NodeInfoDict['city']            = NodeInfoJSON['result']['location']['city']
-
-
+        except Exception as e:
+            print(str(e))
+            return None
 
 
         if not self.dialog:
@@ -263,7 +237,7 @@ Node Version: %s
         self.dialog = None
         self.dialog = MDDialog(title="Subscribing...\n\n%s\n %s" %( deposit, sub_node[1]),md_bg_color=get_color_from_hex("#0d021b"))
         self.dialog.open()
-        yield 2.0
+        yield 0.6
 
         CONFIG = MeileGuiConfig.read_configuration(MeileGuiConfig, MeileGuiConfig.CONFFILE)        
         KEYNAME = CONFIG['wallet'].get('keyname', '')
@@ -335,6 +309,7 @@ Node Version: %s
         Meile.app.root.transition = SlideTransition(direction = "down")
         Meile.app.root.current = WindowNames.MAIN_WINDOW
         Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).SubResult = None
+        #Change this to switch_tab by ids
         Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).on_tab_switch(None,None,None,"Subscriptions")
     
     def closeDialog(self, inst):
@@ -343,7 +318,7 @@ Node Version: %s
             self.dialog = None
         except Exception as e:
             print(str(e))
-            return
+            self.dialog = None
      
 class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
     text = StringProperty()
@@ -392,7 +367,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
             return
         
     @delayable
-    def connect_to_node(self, ID, naddress, moniker, switchValue, *kwargs):
+    def connect_to_node(self, ID, naddress, moniker, switchValue, **kwargs):
         
         '''
            These two conditionals are needed to check
