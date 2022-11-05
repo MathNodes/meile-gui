@@ -12,7 +12,7 @@ from conf.meile_config import MeileGuiConfig
 from typedef.win import CoinsList
 from cli.warp import WarpHandler
 
-from kivy.properties import BooleanProperty, StringProperty
+from kivy.properties import BooleanProperty, StringProperty, ColorProperty
 from kivy.uix.screenmanager import Screen, SlideTransition
 from kivymd.uix.button import MDFlatButton, MDRaisedButton,MDTextButton, MDFillRoundFlatButton
 from kivymd.uix.dialog import MDDialog
@@ -194,7 +194,7 @@ class PreLoadWindow(Screen):
         self.CreateWarpConfig()
         
         # Schedule the functions to be called every n seconds
-        Clock.schedule_once(partial(self.NodeTree.get_nodes, "11s"), 3)
+        Clock.schedule_once(partial(self.NodeTree.get_nodes, "13s"), 3)
         Clock.schedule_interval(self.update_status_text, 0.6)
         
     def CreateWarpConfig(self):
@@ -299,9 +299,10 @@ class MainWindow(Screen):
     Sort = SortOptions[0]
     MeileMap = None
     MeileMapBuilt = False
-    NodeSwitch = {"node" : None, "switch" : False}
+    NodeSwitch = {"node" : None, "switch" : False, 'id' : None, 'consumed' : None, 'allocated' : None}
     NewWallet = False
-    
+    box_color = ColorProperty('#fcb711')
+
     def __init__(self, node_tree, **kwargs):
         #Builder.load_file("./src/kivy/meile.kv")
         super(MainWindow, self).__init__()
@@ -532,7 +533,12 @@ class MainWindow(Screen):
                 print("Disconnect RTNCODE: %s" % returncode)
                 self.get_ip_address(None)
                 self.set_protected_icon(False, "")
-            self.NodeSwitch = {"node" : None, "switch" : False}
+            self.NodeSwitch = {"node" : None,
+                               "switch" : False,
+                               'id' : None,
+                               'consumed' : None,
+                               'allocated' : None
+                               }
             self.warp_disconnect(None)
         except Exception as e:
             print(str(e))

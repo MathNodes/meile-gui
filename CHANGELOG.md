@@ -1,6 +1,13 @@
 CHANGELOG
 ========================
-# v0.10.3-pip (17/10/2022)
+# v0.10.4.0 (05/11/2022)
+* NEW: Real-time bandwidth usage for current session, snapshot taken every two minutes. 
+* NEW: Dependency *psutil* added - needed for bandwidth usage
+* CHANGE: IP Address/Node now rectangle TextField instaed of Fill Box
+* CHANGE: Bandwidth meter for current session at top
+* UPDATE: Aligned Sort label with menu option
+
+# v0.10.3.x (17/10/2022)
 * NEW: Clickable Pin map with total node listings
 * NEW: Refresh button in wallet screen
 * NEW: Copy button for seed phrase on wallet restore/create

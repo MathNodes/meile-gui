@@ -18,11 +18,14 @@ from kivy.core.window import Window
 from kivymd.uix.behaviors.elevation import RectangularElevationBehavior
 from kivy.core.clipboard import Clipboard
 from kivy.animation import Animation
+from kivy.clock import Clock
+
 
 from functools import partial
 from urllib3.exceptions import InsecureRequestWarning
 import requests
 import re
+import psutil
 from os import path
 from subprocess import Popen, TimeoutExpired
 
@@ -31,6 +34,7 @@ from cli.sentinel import IBCCOINS
 from typedef.win import CoinsList, WindowNames
 from conf.meile_config import MeileGuiConfig
 from cli.wallet import HandleWalletFunctions
+from cli.sentinel import NodeTreeData
 import main.main as Meile
 
 class WalletInfoContent(BoxLayout):
@@ -323,36 +327,66 @@ Node Version: %s
 class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
     text = StringProperty()
     dialog = None
+    clock = None
         
     def get_data_used(self, allocated, consumed, node_address):
-        try:         
+        try:
+            ''' Since this function is called when opening the Subscription tab,
+                we need to do a little house keeping for the card switches and the
+                data consumed
+            '''         
             if Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node'] == node_address:
                 self.ids.node_switch.active = True
             else:
                 self.ids.node_switch.active = False
             
-            allocated = float(allocated.replace('GB',''))
+            if not self.clock and Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['id']:
+                print("Not self.clock()")
+                self.setQuotaClock(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['id'],
+                                   Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node'])
             
-            if "GB" in consumed:
-                consumed  = float(consumed.replace('GB', ''))
-            elif "MB" in consumed:
-                consumed = float(float(consumed.replace('MB', '')) / 1024)
-            elif "KB" in consumed:
-                consumed = float(float(consumed.replace('KB', '')) / (1024*1024))
-            elif "0.00B" in consumed:
-                consumed = 0.0
-            else:
-                consumed = float(float(re.findall(r'[0-9]+\.[0-9]+', consumed)[0].replace('B', '')) / (1024*1024*1024))
+            #End house keeping
+            
+            allocated = float(allocated.replace('GB',''))
+            consumed = self.compute_consumed_data(consumed)
+            
             if allocated == 0:
                 self.ids.consumed_data.text = "0%"
                 return 0
             
             self.ids.consumed_data.text = str(round(float(float(consumed/allocated)*100),2)) + "%"
-            return float(float(consumed/allocated)*100)
+            return round(float(float(consumed/allocated)*100),3)
         except Exception as e:
             print(str(e))
             return float(50)
         
+    def compute_consumed_data(self, consumed):
+        if "GB" in consumed:
+            consumed  = float(consumed.replace('GB', ''))
+        elif "MB" in consumed:
+            consumed = float(float(consumed.replace('MB', '')) / 1024)
+        elif "KB" in consumed:
+            consumed = float(float(consumed.replace('KB', '')) / (1024*1024))
+        elif "0.00B" in consumed:
+            consumed = 0.0
+        else:
+            consumed = float(float(re.findall(r'[0-9]+\.[0-9]+', consumed)[0].replace('B', '')) / (1024*1024*1024))
+        
+        return consumed
+        
+    def connected_quota(self, allocated, consumed):
+        allocated = float(allocated.replace('GB',''))
+        consumed  = self.compute_consumed_data(consumed)
+        
+        if Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).CONNECTED:
+            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).ids.quota_pct.text = str(round(float(float(consumed/allocated)*100),2)) + "%"
+        
+        else:
+            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).ids.quota_pct.text = "0.00%"
+            
+        return round(float(float(consumed/allocated)*100),3)    
+    
+    
     def add_loading_popup(self, title_text):
         self.dialog = None
         self.dialog = MDDialog(title=title_text,md_bg_color=get_color_from_hex("#0d021b"))
@@ -377,6 +411,10 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
         '''
         if Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['switch'] and naddress == Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node'] and not switchValue:
             print("DISCONNECTING!!!")
+            try:
+                self.clock.cancel()
+            except Exception as e:
+                print(str(e))
             Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).disconnect_from_node()
             return True
         
@@ -404,11 +442,15 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
             connected = HandleWalletFunctions.connect(HandleWalletFunctions, ID, naddress)
             
             if connected:
-                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node'] = naddress
-                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['switch'] = True
-                print("%s, %s" % (Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node'],
-                                  Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['switch']
-                                 ))
+                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node']      = naddress
+                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['switch']    = True
+                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['id']        = ID
+                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['allocated'] = self.allocated_text
+                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['consumed']  = self.consumed_text
+                
+                
+                self.setQuotaClock(ID, naddress)
+
                 self.remove_loading_widget()
                 self.dialog = MDDialog(
                     title="Connected!",
@@ -435,6 +477,35 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
                                 on_release=partial(self.call_ip_get, False, "")
                             ),])
                 self.dialog.open()
+    
+    def setQuotaClock(self,ID, naddress):
+        self.clock = Clock.create_trigger(partial(self.UpdateQuotaForNode,
+                                                  Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['id'],
+                                                  Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node']),
+                                                  120)
+        self.clock()
+        
+    def UpdateQuotaForNode(self, ID, naddress, dt):
+        print("%s: Getting Quota: " % ID, end= ' ')
+        connConsumed = self.GetConsumedWhileConnected(self.compute_consumed_data(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['consumed']))
+        
+        Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).ids.quota.value = self.connected_quota(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['allocated'], connConsumed)
+        print("%s,%s - %s" % (connConsumed,
+                              Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['consumed'],
+                              Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).ids.quota.value))
+    
+        try: 
+            self.clock()
+        except:
+            pass 
+        
+    def GetConsumedWhileConnected(self, sConsumed):
+        bytes_sent = round(float(float(psutil.net_io_counters(pernic=True)['wg99'].bytes_sent) / 1073741824),3)
+        bytes_recvd = round(float(float(psutil.net_io_counters(pernic=True)['wg99'].bytes_recv) / 1073741824),3)
+        
+        total_data = str(round(float(bytes_sent + bytes_recvd)+ float(sConsumed),3)) + "GB"
+        
+        return total_data    
                 
     def call_ip_get(self,result, moniker,  *kwargs):
         if result:
