@@ -302,6 +302,9 @@ class MainWindow(Screen):
     NodeSwitch = {"node" : None, "switch" : False, 'id' : None, 'consumed' : None, 'allocated' : None}
     NewWallet = False
     box_color = ColorProperty('#fcb711')
+    clock = None
+    PersistentBandwidth = {}
+
 
     def __init__(self, node_tree, **kwargs):
         #Builder.load_file("./src/kivy/meile.kv")
@@ -426,7 +429,7 @@ class MainWindow(Screen):
         CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
         
         if not self.warpd and self.warpd_disconnected:
-            self.add_loading_popup("Staring WARP service...")
+            self.add_loading_popup("Starting WARP service...")
             yield 1.3
             if WARP.start_warp_daemon():
                 sleep(7)
@@ -527,7 +530,7 @@ class MainWindow(Screen):
                 self.get_ip_address(None)
                 self.set_protected_icon(False, "")
             elif self.CONNECTED == False:
-                return
+                print("Disconnected!")
             else:
                 returncode, self.CONNECTED = Disconnect()
                 print("Disconnect RTNCODE: %s" % returncode)
@@ -540,6 +543,7 @@ class MainWindow(Screen):
                                'allocated' : None
                                }
             self.warp_disconnect(None)
+            return True
         except Exception as e:
             print(str(e))
             self.dialog = None
@@ -556,7 +560,7 @@ class MainWindow(Screen):
                 ]
             )
             self.dialog.open()
-            
+            return False 
                     
         
     def wallet_dialog(self):
@@ -773,7 +777,6 @@ class MainWindow(Screen):
     @mainthread
     def on_tab_switch(self, instance_tabs, instance_tab, instance_tabs_label, tab_text):
         #from src.cli.sentinel import ConNodes, NodesDictList
-        print("instance_tabs: %s, instance_tab: %s, instance_tabs_label: %s, tab_text: %s" % (instance_tabs, instance_tab, instance_tabs_label, tab_text))
         self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.rv.data = []
         if not tab_text:
             tab_text = OurWorld.CONTINENTS[0]
@@ -1027,23 +1030,64 @@ class NodeScreen(Screen):
         
     def add_rv_data(self, node, flagloc):
         self.MeileConfig = MeileGuiConfig()
-
+        speedRate = []
         floc = "../imgs/"
         speed = node[NodesInfoKeys[5]].lstrip().rstrip().split('+')
+        speedAdj = node[NodesInfoKeys[5]].lstrip().rstrip().split('+')
         
-        if "MB" in speed[0]:
+        if "GB" in speedAdj[0]:
+            speedRate.append("GB")
+        elif "MB" in speedAdj[0]:
+            speedRate.append("MB")
+        elif "KB" in speedAdj[0]:
+            speedRate.append("KB")
+        else:
+            speedRate.append("B")
+        
+        if "GB" in speedAdj[1]:
+            speedRate.append("GB")       
+        elif "MB" in speedAdj[1]:
+            speedRate.append("MB")
+        elif "KB" in speedAdj[1]:
+            speedRate.append("KB")
+        else:
+            speedRate.append("B")
+        
+        
+        speedAdj[0] = speedAdj[0].replace('GB', '').replace('MB', '').replace('KB', '').replace('B', '')
+        speedAdj[1] = speedAdj[1].replace('GB', '').replace('MB', '').replace('KB', '').replace('B', '')
+        
+        if float(speedAdj[0]) < 0:
+                speedAdj[0] = 0
+                
+        if float(speedAdj[1]) < 0:
+                speedAdj[1] = 0
+                
+        speedText = str(speedAdj[0]) + speedRate[0] + "↓" + "," + str(speedAdj[1]) + speedRate[1] + "↑"
+        
+        if "GB" in speed[0]:
+            speed[0] = float(speed[0].replace("GB", '')) * 1024
+        elif "MB" in speed[0]:
             speed[0] = float(speed[0].replace("MB", ''))
         elif "KB" in speed[0]:
             speed[0] = float(float(speed[0].replace("KB", '')) / 1024 )
         else:
             speed[0] = 10
-            
-        if "MB" in speed[1]:
+        
+        if speed[0] < 0:
+            speed[0] = 0
+        
+        if "GB" in speed[1]:
+            speed[1] = float(speed[0].replace("GB", '')) * 1024    
+        elif "MB" in speed[1]:
             speed[1] = float(speed[1].replace("MB", ''))
         elif "KB" in speed[1]:
             speed[1] = float(float(speed[1].replace("KB", '')) / 1024 )
         else:
             speed[1] = 10
+        
+        if speed[1] < 0:
+            speed[1] = 0
         
         total = float(speed[0] + speed[1])
         if total >= 200:
@@ -1063,7 +1107,7 @@ class NodeScreen(Screen):
                 "price_text"   : node[NodesInfoKeys[3]].lstrip().rstrip(),
                 "country_text" : node[NodesInfoKeys[4]].lstrip().rstrip(),
                 "address_text" : node[NodesInfoKeys[1]].lstrip().rstrip(),
-                "speed_text"   : node[NodesInfoKeys[5]].lstrip().rstrip(),
+                "speed_text"   : speedText,
                 "speed_image"  : self.MeileConfig.resource_path(speedimage),
                 "source_image" : self.MeileConfig.resource_path(flagloc)
                 

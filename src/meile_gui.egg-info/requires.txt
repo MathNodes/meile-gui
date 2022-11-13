@@ -7,4 +7,5 @@ qrcode
 save_thread_result
 screeninfo
 mapview
+psutil
 unidecode

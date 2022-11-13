@@ -193,40 +193,6 @@ class NodeTreeData():
             k += 1 
 
         return SubsFinalResult   
-        '''
-        quotaCMD = [sentinelcli, 'query', 'quotas', '--node', RPC, '--page', '1', SubsResult[SubsInfoKeys[0]][k]]
-        proc = Popen(quotaCMD, stdout=PIPE)
-                
-        h=1
-        for line in proc.stdout.readlines():
-            #print(line)
-            if h < 4:
-                h += 1 
-                continue
-            if h >=4 and '+-----------+' in str(line.decode('utf-8')):
-                break
-            else:
-                nodeQuota = str(line.decode('utf-8')).split("|")[2:-1]
-                allotted = float(re.findall(r'[0-9]+\.[0-9]+', nodeQuota[0])[0])
-                consumed = float(re.findall(r'[0-9]+\.[0-9]+', nodeQuota[1])[0])
-                
-                if allotted == consumed:
-                    break
-                else:
-                    
-                        
-                    SubsFinalResult.append({
-                                        FinalSubsKeys[0] : SubsResult[SubsInfoKeys[0]][k],
-                                        FinalSubsKeys[1] : NodeData[NodesInfoKeys[0]],
-                                        FinalSubsKeys[2] : SubsResult[SubsInfoKeys[5]][k],
-                                        FinalSubsKeys[3] : SubsResult[SubsInfoKeys[6]][k],
-                                        FinalSubsKeys[4] : SubsResult[SubsInfoKeys[7]][k],
-                                        FinalSubsKeys[5] : NodeData[NodesInfoKeys[4]],
-                                        FinalSubsKeys[6] : nodeQuota[0],
-                                        FinalSubsKeys[7] : nodeQuota[1]
-                                        })
-        '''
-            
 
 
     def GetQuota(self, id):
@@ -277,7 +243,7 @@ def disconnect():
     #wg_downCMD = ['wg-quick', 'down', CONFFILE]
         
     proc1 = Popen(partCMD)
-    proc1.wait(timeout=10)
+    proc1.wait(timeout=30)
     
     #proc = Popen(wg_downCMD, stdout=PIPE, stderr=PIPE)
     #proc_out,proc_err = proc.communicate()

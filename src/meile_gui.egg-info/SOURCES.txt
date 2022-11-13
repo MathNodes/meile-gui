@@ -4,8 +4,6 @@ src/awoc/__init__.py
 src/awoc/data/world.json
 src/bin/__init__.py
 src/bin/sentinelcli
-src/bin/warp-cli
-src/bin/warp-svc
 src/cli/__init__.py
 src/cli/sentinel.py
 src/cli/wallet.py
@@ -13,6 +11,9 @@ src/cli/warp.py
 src/conf/__init__.py
 src/conf/meile_config.py
 src/conf/config/config.ini
+src/fonts/Roboto-BoldItalic.ttf
+src/fonts/__init__.py
+src/fonts/arial-unicode-ms.ttf
 src/geography/__init__.py
 src/geography/continents.py
 src/imgs/__init__.py

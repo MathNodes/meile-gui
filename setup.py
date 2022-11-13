@@ -8,7 +8,7 @@ with open('README.md', encoding="utf-8") as f:
 
 setup(
     name='meile-gui',
-    version='0.10.4.0',
+    version='0.10.4.1',
     description='Meile dVPN powered by the Sentinel Network',
     long_description=readme,
     long_description_content_type="text/markdown",
@@ -36,9 +36,9 @@ setup(
     ],
     package_dir={"": "src"},
     packages=find_packages(where="src"),
-    install_requires=['kivymd', 'pydash', 'treelib', 'kivyoav', 'pexpect', 'qrcode', 'save_thread_result', 'screeninfo', 'mapview', 'unidecode', 'psutil'],
-    package_data={'conf': ['config/config.ini'], 'bin' : ['sentinelcli', 'warp-cli', 'warp-svc'], 'awoc' : ['data/world.json'],
-                  'fonts': ['Roboto-BoldItalic.ttf'], 'imgs' : ["ad.png","ae.png","af.png","ag.png",
+    install_requires=['kivymd', 'pydash', 'treelib', 'kivyoav', 'pexpect', 'qrcode', 'save_thread_result', 'screeninfo', 'mapview', 'psutil', 'unidecode'],
+    package_data={'conf': ['config/config.ini'], 'bin' : ['sentinelcli'], 'awoc' : ['data/world.json'],
+                  'fonts': ['Roboto-BoldItalic.ttf', 'arial-unicode-ms.ttf'], 'imgs' : ["ad.png","ae.png","af.png","ag.png",
                                                               "ai.png","al.png","am.png","ao.png",
                                                               "aq.png","ar.png","as.png","atom.png",
                                                               "at.png","au.png","avg.png","aw.png",

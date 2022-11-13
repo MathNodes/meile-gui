@@ -550,7 +550,8 @@ WindowManager:
             MDLabel:
                 text: root.speed_text
                 theme_text_color: "Custom"
-                font_style: "Subtitle2"
+                #font_style: "Subtitle2"
+                font_name: root.get_font()
                 font_size: "12sp"
                 text_color: 1,1,1,1
                 pos_hint: {"x" : .43 , "top": .86 }
@@ -996,7 +997,7 @@ WindowManager:
             text_color: get_color_from_hex("#fcb711")
         MDLabel:
             font_name: "Roboto-Bold"
-            text: "v1.1.1"
+            text: "v1.2.2"
             font_size: "16sp"
             size_hint_y: .1
             width: dp(500)
@@ -1022,7 +1023,7 @@ WindowManager:
                     halign: "center"
                 MDLabel:
                     font_name: "DejaVuSans"
-                    text: "A mnemonic/seed phrase is a set of pre-defined dictionary words that form a unique set. This uniuqqe set is used to generate a wallet with a unique address, similar to how bank accounts have a unique number. i.e., no two bank accounts have the same account number. This address can be used to send and receive currency just like your bank account."
+                    text: "A mnemonic/seed phrase is a set of pre-defined dictionary words that form a unique set. This unique set is used to generate a wallet with a unique address, similar to how bank accounts have a unique number. i.e., no two bank accounts have the same account number. This address can be used to send and receive currency just like your bank account."
                     size_hint_y: None
                     height: self.texture_size[1]
                     size_hint_x: 1
@@ -1034,14 +1035,14 @@ WindowManager:
                     
                 MDLabel:
                     font_name: "Roboto-BoldItalic"
-                    text: "What is a address?"
+                    text: "What is an address?"
                     size_hint_y: None
                     height: self.texture_size[1]
                     size_hint_x: 1
                     halign: "center"
                 MDLabel:
                     font_name: "DejaVuSans"
-                    text: "An address is a unique identifier that links your funds to the blockcahin. This is a pseudonymous identifier meaning it links your digital identity on the blockchain without storing any personal identifiers of an individual. Addresses are used to send and receive funds in the native currency of the acting network. "
+                    text: "An address is a unique identifier that links your funds to the blockchain. This is a pseudonymous identifier meaning it links your digital identity on the blockchain without storing any personal identifiers of an individual. Addresses are used to send and receive funds in the native currency of the acting network. "
                     size_hint_y: None
                     height: self.texture_size[1]
                     size_hint_x: 1
@@ -1059,7 +1060,7 @@ WindowManager:
                     halign: "center"
                 MDLabel:
                     font_name: "DejaVuSans"
-                    text: "There are two primary ways to receive tokens to purchase dVPN (the currency) subscriptions and utilize the network. 1.) You get the DVPN token on a exchange and send it to your wallet address. Current exchanges are KuCoin, HotBit, Polarity and Osmosis. Once you purchase the tokens on the exchange, you need to withdraw them to your address listed in the wallet section of this app. The tokens should appear within minutes after a withdrawal and you can begin purchasing and subscribing to Sentinel dVPN nodes through Meile. 2.) You can purchase the currency used for Meile dVPN right in our app via the 'Top-Up' button within the wallet. These funds will be handled by our servers and the payment processing is handled by stripe. Once you succesfully complete a purchase, your funds should appear in your wallet within minutes of a successful purchase through our app. This is the easiest method to using Meile dVPN."
+                    text: "There are two primary ways to receive tokens to purchase dVPN (the currency) subscriptions and utilize the network. 1.) You get the DVPN token on a exchange and send it to your wallet address. Current exchanges are KuCoin, HotBit, Polarity and Osmosis. Once you purchase the tokens on the exchange, you need to withdraw them to your address listed in the wallet section of this app. The tokens should appear within minutes after a withdrawal and you can begin purchasing and subscribing to Sentinel dVPN nodes through Meile. 2.) You can purchase the currency used for Meile dVPN right in our app via the 'RE-FUEL' button within the wallet. These funds will be handled by our servers and the payment processing is handled by Stripe. Once you successfully complete a purchase, your funds should appear in your wallet within minutes of a successful purchase through our app. This is the easiest method to using Meile dVPN."
                     size_hint_y: None
                     height: self.texture_size[1]
                     size_hint_x: 1
@@ -1077,7 +1078,7 @@ WindowManager:
                     halign: "center"
                 MDLabel:
                     font_name: "DejaVuSans"
-                    text: "MathNodes uses Stripe to process payments in order to receive funds to use the dVPN. You will see that we do not even need the name of the individual. Once a payment is processed through Stripe, Mathnodes stores only the payment_id received from stripe, the address of your wallet, and the amount of tokens sent (1,000). We have to keep records some information in case there is a dispute and we need to query the orders and verify if tokens were sent to the reciept's address. We do not store your name, your credit card details, or any other information beside what we have mentioned. The full policy can be viewed at https://meile.app/policy"
+                    text: "MathNodes uses Stripe to process payments in order to receive funds to use the dVPN. You will see that we do not even need the name of the individual. Once a payment is processed through Stripe, MathNodes stores only the payment_id received from Stripe, the address of your wallet, and the amount of tokens sent (1,000). We have to keep records some information in case there is a dispute and we need to query the orders and verify if tokens were sent to the recipient's address. We do not store your name, your credit card details, or any other information beside what we have mentioned. The full policy can be viewed at https://meile.app/policy"
                     size_hint_y: None
                     height: self.texture_size[1]
                     size_hint_x: 1
@@ -1088,14 +1089,14 @@ WindowManager:
                     font_size: "12dp"
                 MDLabel:
                     font_name: "Roboto-BoldItalic"
-                    text: "Why is a dVPN better than a tradiation VPN?"
+                    text: "Why is a dVPN better than a tradiational VPN?"
                     size_hint_y: None
                     height: self.texture_size[1]
                     size_hint_x: 1
                     halign: "center"
                 MDLabel:
                     font_name: "DejaVuSans"
-                    text: "A traditional VPN, like Nord, Norton, Cryptostorm, or Proton is a centralized set of servers that a user connects through to access the internet. Most VPNs are required to keep a degree of logging information about users. Centralized VPNs can terminate a user's plan or restrict access to the internet based on private, public, or governmental policy. A dVPN such as the one Meile offers, uses blockchain technologies via the Sentinel Network to ensure a decentralized structure. This means that the servers you connect through are ran by a community of volunteers rather than a central authority. As such, no logging takes places, users don't have the ability to throttle or restrict traffic and no censorship is possible through the use of a dVPN."
+                    text: "A traditional VPN, like Nord, Norton, Cryptostorm, or Proton is a centralized set of servers that a user connects through to access the internet. Most VPNs are required to keep a degree of logging information about users. Centralized VPNs can terminate a user's plan or restrict access to the internet based on private, public, or governmental policy. A dVPN such as the one Meile offers, uses blockchain technologies via the Sentinel Network to ensure a decentralized structure. This means that the servers you connect through are run by a community of volunteers rather than a central authority. As such, no logging takes places, users don't have the ability to throttle or restrict traffic and no censorship is possible through the use of a dVPN."
                     size_hint_y: None
                     height: self.texture_size[1]
                     size_hint_x: 1

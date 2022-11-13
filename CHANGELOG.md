@@ -1,5 +1,10 @@
 CHANGELOG
 ========================
+# v0.10.4.1 (13/11/2022)
+* NEW: Arial unicode fonts for bandwidth arrows
+* NEW: Persistent real-time bandwidth usage between switching nodes
+* FIX: Handling of connected node
+
 # v0.10.4.0 (05/11/2022)
 * NEW: Real-time bandwidth usage for current session, snapshot taken every two minutes. 
 * NEW: Dependency *psutil* added - needed for bandwidth usage
