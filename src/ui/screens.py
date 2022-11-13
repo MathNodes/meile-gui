@@ -303,6 +303,8 @@ class MainWindow(Screen):
     NodeSwitch = {"node" : None, "switch" : False, 'id' : None, 'consumed' : None, 'allocated' : None}
     NewWallet = False
     box_color = ColorProperty('#fcb711')
+    clock = None
+    PersistentBandwidth = {}
     
     def __init__(self, node_tree, **kwargs):
         #Builder.load_file("./src/kivy/meile.kv")
@@ -529,7 +531,7 @@ class MainWindow(Screen):
                 self.get_ip_address(None)
                 self.set_protected_icon(False, "")
             elif self.CONNECTED == False:
-                return
+                print("Disconnected!")
             else:
                 returncode, self.CONNECTED = Disconnect()
                 print("Disconnect RTNCODE: %s" % returncode)
@@ -542,6 +544,7 @@ class MainWindow(Screen):
                                'allocated' : None
                                }
             self.warp_disconnect(None)
+            return True
         except Exception as e:
             print(str(e))
             self.dialog = None
@@ -558,7 +561,7 @@ class MainWindow(Screen):
                 ]
             )
             self.dialog.open()
-            
+            return False 
                     
         
     def wallet_dialog(self):

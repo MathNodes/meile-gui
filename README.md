@@ -53,7 +53,7 @@ The latest version of Meile GUI comes packaged as a Debian archive. Simply downl
 and run:
 
 ```shell
-sudo apt install -y ./meile-gui-v1.2.2_ubuntu22.04_amd64.deb
+sudo apt install -y ./meile-gui-v1.2.3_ubuntu22.04_amd64.deb
 ```
 
 This release will install wireguard tools (and resolvconf) alongside Meile GUI. To run the application requires root privileges on some machines and we have enforced it within the app.
@@ -68,24 +68,26 @@ Or goto your panel menu under Internet and there will be a clickable icon.
 
 Because there were issues loading certain mesa OpenGL drivers in various Debian Virtual Machines, we have included a separate .deb archive that automatically configures the system to handle the Meile dependencies. Please use this version if you are running a Debian flavor in a virutal machine (VM).
 
-[Debian/Ubuntu 20.04 Virtual Machine](https://github.com/MathNodes/meile-gui/releases/download/v1.2.2/meile-gui-v1.2.2_amd64_vm.deb)
+[Debian/Ubuntu 20.04 Virtual Machine](https://github.com/MathNodes/meile-gui/releases/download/v1.2.3/meile-gui-v1.2.3_ubuntu2004_amd64_vm.deb)
+
+[Debian/Ubuntu 22.04 Virtual Machine](https://github.com/MathNodes/meile-gui/releases/download/v1.2.3/meile-gui-v1.2.3_ubuntu2204_amd64_vm.deb)
 
 ## Redhat/CentOS/Fedora (.rpm)
 
 Download the latest RPM for RedHat releases:
 
-[RedHat RPM](https://github.com/MathNodes/meile-gui/releases/download/v1.2.2/meile-gui-v1.2.2-1.fc36.x86_64.rpm)
+[RedHat RPM](https://github.com/MathNodes/meile-gui/releases/download/v1.2.3/meile-gui-v1.2.3-1.fc36.x86_64.rpm)
 
 Install the rpm from a terminal:
 
 ```shell
-sudo rpm -i meile-gui-v1.2.2-1.fc36.x86_64.rpm
+sudo rpm -i meile-gui-v1.2.3-1.fc36.x86_64.rpm
 ```
 
-or to install all dependencies 
+or to install all dependencies **(recommended)**
 
 ```shell
-sudo dnf install meile-gui-v1.2.2-1.fc36.x86_64.rpm
+sudo dnf install meile-gui-v1.2.3-1.fc36.x86_64.rpm
 ```
 
 This will install `meile-gui` and all its dependencies. 
@@ -128,7 +130,7 @@ sudo apt install -y wireguard-tools openresolv mesa-utils libgl1-mesa-glx xclip
 After installing wireguard-tools, download the latest stable release at the [Release](https://github.com/MathNodes/meile-gui/releases) page and extract:
 
 ```shell
-tar xvjf meile-gui-v1.2.2.tar.bz2
+tar xvjf meile-gui-v1.2.3.tar.bz2
 ```
 
 Run & enjoy!

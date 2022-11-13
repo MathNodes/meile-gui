@@ -1,5 +1,11 @@
 CHANGELOG
 ========================
+# v1.2.3 (13/11/2022)
+* NEW: Persisent real-time bandwidth when switching between nodes
+* CHANGE: Handling of CONNECTED boolean
+* FIX: Issue #28
+* FIX: Issue #29
+
 # v1.2.2 (12/11/2022)
 * NEW: Real-time bandwidth usage for current session, snapshot taken every two minutes. 
 * NEW: Dependency *psutil* added - needed for bandwidth usage

@@ -242,7 +242,7 @@ def disconnect():
     #wg_downCMD = ['wg-quick', 'down', CONFFILE]
         
     proc1 = Popen(partCMD)
-    proc1.wait(timeout=10)
+    proc1.wait(timeout=30)
     
     #proc = Popen(wg_downCMD, stdout=PIPE, stderr=PIPE)
     #proc_out,proc_err = proc.communicate()

@@ -156,7 +156,7 @@ class RecycleViewRow(MDCard,RectangularElevationBehavior,ThemableBehavior, Hover
     
     def get_font(self):
         Config = MeileGuiConfig()
-        return Config.resource_path("fonts/arial-unicode-ms.ttf")
+        return Config.resource_path("../fonts/arial-unicode-ms.ttf")
     
     def on_enter(self, *args):
         self.md_bg_color = get_color_from_hex("#200c3a")
@@ -333,7 +333,7 @@ Node Version: %s
 class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
     text = StringProperty()
     dialog = None
-    clock = None
+    
 
        
     def get_data_used(self, allocated, consumed, node_address):
@@ -347,8 +347,8 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
             else:
                 self.ids.node_switch.active = False
             
-            if not self.clock and Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['id']:
-                print("Not self.clock()")
+            if not Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).clock and Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['id']:
+                print("Not clock()")
                 self.setQuotaClock(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['id'],
                                    Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node'])
             
@@ -381,17 +381,16 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
         
         return consumed
         
-    def connected_quota(self, allocated, consumed):
-        allocated = float(allocated.replace('GB',''))
-        consumed  = self.compute_consumed_data(consumed)
-        
+    def connected_quota(self, allocated, consumed):        
         if Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).CONNECTED:
+            allocated = float(allocated.replace('GB',''))
+            consumed  = self.compute_consumed_data(consumed)
             Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).ids.quota_pct.text = str(round(float(float(consumed/allocated)*100),2)) + "%"
-        
+            return round(float(float(consumed/allocated)*100),3)
         else:
             Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).ids.quota_pct.text = "0.00%"
-            
-        return round(float(float(consumed/allocated)*100),3)    
+            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).ids.quota.value    = 0
+            return float(0)    
     
         
     def add_loading_popup(self, title_text):
@@ -420,10 +419,12 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
         if Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['switch'] and naddress == Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node'] and not switchValue:
             print("DISCONNECTING!!!")
             try:
-                self.clock.cancel()
+                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).clock.cancel()
+                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).clock = None
             except Exception as e:
                 print(str(e))
-            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).disconnect_from_node()
+            if Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).disconnect_from_node():
+                self.connected_quota(None, None)
             return True
         
         if Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).CONNECTED:
@@ -450,11 +451,15 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
             connected = HandleWalletFunctions.connect(HandleWalletFunctions, ID, naddress)
             
             if connected:
+                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).CONNECTED               = True
                 Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node']      = naddress
                 Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['switch']    = True
                 Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['id']        = ID
                 Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['allocated'] = self.allocated_text
                 Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['consumed']  = self.consumed_text
+                
+                if not ID in Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth:
+                    Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth[ID] = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch
                 
                 
                 self.setQuotaClock(ID, naddress)
@@ -487,24 +492,36 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
                 self.dialog.open()
     
     def setQuotaClock(self,ID, naddress):
-        self.clock = Clock.create_trigger(partial(self.UpdateQuotaForNode,
+        self.UpdateQuotaForNode(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['id'],
+                                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node'],
+                                None)
+        
+        Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).clock = Clock.create_trigger(partial(self.UpdateQuotaForNode,
                                                   Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['id'],
                                                   Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node']),
                                                   120)
-        self.clock()
+        Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).clock()
         
     def UpdateQuotaForNode(self, ID, naddress, dt):
-        print("%s: Getting Quota: " % ID, end= ' ')
-        connConsumed = self.GetConsumedWhileConnected(self.compute_consumed_data(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['consumed']))
-        
-        Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).ids.quota.value = self.connected_quota(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['allocated'], connConsumed)
-        print("%s,%s - %s" % (connConsumed,
-                              Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['consumed'],
-                              Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).ids.quota.value))
-    
+        try:
+            print("%s: Getting Quota: " % ID, end= ' ')
+            startConsumption = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth[ID]['consumed']
+            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth[ID]['consumed'] = self.GetConsumedWhileConnected(self.compute_consumed_data(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth[ID]['consumed']))
+            
+            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).ids.quota.value = self.connected_quota(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['allocated'],
+                                                                                                      Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth[ID]['consumed'])
+            print("%s,%s - %s%%" % (Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth[ID]['consumed'],
+                                  startConsumption,
+                                  Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).ids.quota.value))
+        except Exception as e:
+            print("Error getting bandwidth!")
+            print(str(e))
+            
         try: 
-            self.clock()
-        except:
+            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).clock()
+        except Exception as e:
+            print("Error running clock()")
+            print(str(e))
             pass 
         
     def GetConsumedWhileConnected(self, sConsumed):
