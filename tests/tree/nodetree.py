@@ -11,7 +11,7 @@ from treelib import Node, Tree
 
 from continents import OurWorld
 
-
+import copy
 # IBC Tokens
 IBCSCRT  = 'ibc/31FEE1A2A9F9C01113F90BD0BBCCE8FD6BBB8585FAF109A2101827DD1D5B95B8'
 IBCATOM  = 'ibc/A8C2D23A1E6F95DA4E48BA349667E322BD7A6C996D8A4AAE8BA72E190F3D1477'
@@ -38,23 +38,26 @@ global NodesDictList
 NodesDictList = collections.defaultdict(list)
 
 class NodeTreeData():
-
-    def GetSentinelNodes(self, dt):
-        print("Getting Nodes...")
-        global ConNodes
-        global NodesDictList
-        ConNodes,NodesDictList = self.get_nodes()
-        print("Nodes begotten and not made")
-        
-    def get_nodes(self):
+    NodeTree = None
+    
+    def __init__(self, node_tree):
+        if not node_tree:
+            self.NodeTree = Tree()
+        else:
+            self.NodeTree = node_tree
+            
+   
+    def get_nodes(self, latency, *kwargs):
         AllNodesInfo = []
-        nodeCMD = ["sentinelcli", "query", "nodes", "--node", "https://rpc.mathnodes.com:4444", "--limit", "20000"]
+        print("Running sentinel-cli with latency: %s" % latency)
+        nodeCMD = ["sentinelcli", "query", "nodes", "--node", "https://rpc.mathnodes.com:443", "--limit", "20000", "--timeout", "%s" % latency]
+    
     
         proc = Popen(nodeCMD, stdout=PIPE)
         
         k=1
         
-        print()
+        
         for line in proc.stdout.readlines():
             #print(line)
             if k < 4:  
@@ -83,56 +86,34 @@ class NodeTreeData():
         #get = input("Blah: ")
         AllNodesInfoSorted = sorted(AllNodesInfo, key=lambda d: d[NodesInfoKeys[4]])
         
-        result = collections.defaultdict(list)
+        #result = collections.defaultdict(list)
         
-        NodeTree = self.CreateNodeTreeStructure(self)
+        self.NodeTree = self.CreateNodeTreeStructure()
         
-        AllNodesSortedStripped = []
         for d in AllNodesInfoSorted:
             for key in NodesInfoKeys:
                 d[key] = d[key].lstrip().rstrip()
-            AllNodesSortedStripped.append(d)
-        
-        for d in AllNodesSortedStripped:
-            
-            d[NodesInfoKeys[3]] = self.return_denom(self, d[NodesInfoKeys[3]])
+            version = d[NodesInfoKeys[9]].replace('.','')
+            if version not in ('030', '031', '032'):
+                continue
+            d[NodesInfoKeys[3]] = self.return_denom(d[NodesInfoKeys[3]])
             
             if "Czechia" in d[NodesInfoKeys[4]]:
                 d[NodesInfoKeys[4]] = "Czech Republic"
            
             d_continent = OurWorld.our_world.get_country_continent_name(d[NodesInfoKeys[4]])
             try:
-                NodeTree.create_node(d[NodesInfoKeys[4]],d[NodesInfoKeys[4]], parent=d_continent)
+                self.NodeTree.create_node(d[NodesInfoKeys[4]],d[NodesInfoKeys[4]], parent=d_continent)
             except:
                 pass
             try:
-                NodeTree.create_node(d[NodesInfoKeys[1]], d[NodesInfoKeys[1]],parent=d[NodesInfoKeys[4]], data=d )
+                self.NodeTree.create_node(d[NodesInfoKeys[1]], d[NodesInfoKeys[1]],parent=d[NodesInfoKeys[4]], data=d )
             except:
                 pass
-        NodeTree.show()
-        NodeTree.save2file("nodedata.txt")
-        print(NodeTree.get_node("sentnode1w25tyg0ghmsdzcuufep3lfxe6t8puv89jftr3s").data)
-        for node in NodeTree.children(OurWorld.CONTINENTS[0]):
-            print(node.tag)
-            print(len(NodeTree.children(node.tag)))
-        print(len(NodeTree.children(OurWorld.CONTINENTS[0])))
-        '''    
-        #d["City"] = get_city_of_node(d[NodesInfoKeys[1]])
-        AllNodesInfoSorted2.append(d)
             
-        for d in AllNodesInfoSorted:
-            for k, v in d.items():
-                v=self.return_denom(v)
-                result[k].append(v.lstrip().rstrip())
-                
-        
+        self.NodeTree.show()
     
-        return AllNodesInfoSorted2, result
-        '''
-            
-        return NodeTree
-    
-    def CreateNodeTreeStructure(self):
+    def CreateNodeTreeStructure(self, **kwargs):
         NodeTreeBase = Tree()
         RootTag = "CONTINENTS"
         RootIdentifier = RootTag.lower()
@@ -154,4 +135,52 @@ class NodeTreeData():
         return tokens
 
 if __name__ == "__main__":
-    NodeTreeData.get_nodes(NodeTreeData)
+    nodes = NodeTreeData(None)
+    nodes.get_nodes("7s")
+    Australia = nodes.NodeTree.children("Australia")
+    NodeData = [] 
+    TempDict ={}
+    for node in Australia:
+        #TempDict['tag'] = node.tag
+        #NodeDict = dict(list(TempDict.items()) + list(node.data.items()))
+        NodeData.append(node.data)
+    #print(NodeData)
+    '''
+    for data in NodeData:
+        print("%s, %s" % (data['tag'], data['Moniker']))
+    '''
+        
+    NodeDataPrice = []
+    i=0
+    
+    OldNodeData = copy.deepcopy(NodeData)
+    
+    for data in NodeData:
+        #TempTagDict.append({'tag' : data['tag'], 'Price' : data['Price']})
+        udvpn = re.findall(r'[0-9]+' +"udvpn", data['Price'])[0]
+        NodeData[i]['Price'] = udvpn
+        i += 1
+    NodeDataSortedByMoniker = sorted(NodeData, key=lambda d: int(d['Price'].split('udvpn')[0]))
+    
+    
+    NewNodeData = []
+
+    for ndata in NodeDataSortedByMoniker:
+        for odata in OldNodeData:
+            if odata['Address'] == ndata['Address']:
+                ndata['Price'] = odata['Price']
+                print(odata['Price'])
+                NewNodeData.append(ndata)
+                
+    
+    NodeDataSortedByMoniker = NewNodeData
+    '''
+    SortedNodeTreeBase = Tree()
+    RootTag = "Australia"
+    RootIdentifier = RootTag.lower()
+    SortedNodeTreeBase.create_node(RootTag, RootIdentifier)
+    '''
+    for data in NodeDataSortedByMoniker:
+        print("%s, %s, %s" % (data['Address'], data['Moniker'], data['Price']))
+        
+

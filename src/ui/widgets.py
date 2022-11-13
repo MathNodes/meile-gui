@@ -1,10 +1,9 @@
 from kivy.properties import BooleanProperty, StringProperty
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
-from kivy.uix.label import Label
 from kivymd.uix.label import MDLabel
 from kivymd.uix.card import MDCard
 from kivymd.uix.dialog import MDDialog
-from kivymd.uix.button import MDFlatButton, MDRaisedButton,MDFillRoundFlatButton
+from kivymd.uix.button import MDFlatButton, MDRaisedButton, MDFillRoundFlatButton
 from kivy.uix.recycleview import RecycleView
 from kivy.uix.boxlayout import BoxLayout
 from kivymd.uix.menu import MDDropdownMenu
@@ -19,11 +18,13 @@ from kivy.core.window import Window
 from kivymd.uix.behaviors.elevation import RectangularElevationBehavior
 from kivy.core.clipboard import Clipboard
 from kivy.animation import Animation
+from kivy.clock import Clock
 
 from functools import partial
 from urllib3.exceptions import InsecureRequestWarning
 import requests
 import re
+import psutil
 from os import path
 from subprocess import Popen, TimeoutExpired
 
@@ -32,6 +33,7 @@ from cli.sentinel import IBCCOINS
 from typedef.win import CoinsList, WindowNames
 from conf.meile_config import MeileGuiConfig
 from cli.wallet import HandleWalletFunctions
+from cli.sentinel import NodeTreeData
 import main.main as Meile
 
 class WalletInfoContent(BoxLayout):
@@ -132,34 +134,6 @@ class SubscribeContent(BoxLayout):
 class IconListItem(OneLineIconListItem):
     icon = StringProperty()
 
-   
-class SelectableLabel(RecycleDataViewBehavior, Label):
-    ''' Add selection support to the Label '''
-    index = None
-    selected = BooleanProperty(False)
-    selectable = BooleanProperty(True)
-
-    def refresh_view_attrs(self, rv, index, data):
-        ''' Catch and handle the view changes '''
-        self.index = index
-        return super(SelectableLabel, self).refresh_view_attrs(
-            rv, index, data)
-
-    def on_touch_down(self, touch):
-        ''' Add selection on touch down '''
-        if super(SelectableLabel, self).on_touch_down(touch):
-            return True
-        if self.collide_point(*touch.pos) and self.selectable:
-            return self.parent.select_with_touch(self.index, touch)
-
-    def apply_selection(self, rv, index, is_selected):
-        ''' Respond to the selection of items in the view. '''
-        self.selected = is_selected
-        if is_selected:
-            print("selection changed to {0}".format(rv.data[index]))
-        else:
-            print("selection removed for {0}".format(rv.data[index]))
-
 
 class NodeRV(RecycleView):    
     pass
@@ -180,6 +154,10 @@ class RecycleViewRow(MDCard,RectangularElevationBehavior,ThemableBehavior, Hover
     text = StringProperty()    
     dialog = None
     
+    def get_font(self):
+        Config = MeileGuiConfig()
+        return Config.resource_path("fonts/arial-unicode-ms.ttf")
+    
     def on_enter(self, *args):
         self.md_bg_color = get_color_from_hex("#200c3a")
         Window.set_system_cursor('hand')
@@ -192,21 +170,27 @@ class RecycleViewRow(MDCard,RectangularElevationBehavior,ThemableBehavior, Hover
         APIURL   = "https://api.sentinel.mathnodes.com"
 
         endpoint = "/nodes/" + naddress.lstrip().rstrip()
-        print(APIURL + endpoint)
-        r = requests.get(APIURL + endpoint)
-        remote_url = r.json()['result']['node']['remote_url']
-        r = requests.get(remote_url + "/status", verify=False)
-        print(remote_url)
-        requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
-
-        NodeInfoJSON = r.json()
-        NodeInfoDict = {}
+        #print(APIURL + endpoint)
+        try: 
+            requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
+            r = requests.get(APIURL + endpoint)
+            remote_url = r.json()['result']['node']['remote_url']
+            r = requests.get(remote_url + "/status", verify=False)
+            print(remote_url)
+            
+    
+            NodeInfoJSON = r.json()
+            
+            NodeInfoDict = {}
+            
+            NodeInfoDict['connected_peers'] = NodeInfoJSON['result']['peers']
+            NodeInfoDict['max_peers']       = NodeInfoJSON['result']['qos']['max_peers']
+            NodeInfoDict['version']         = NodeInfoJSON['result']['version']
+            NodeInfoDict['city']            = NodeInfoJSON['result']['location']['city']
         
-        NodeInfoDict['connected_peers'] = NodeInfoJSON['result']['peers']
-        NodeInfoDict['max_peers']       = NodeInfoJSON['result']['qos']['max_peers']
-        NodeInfoDict['version']         = NodeInfoJSON['result']['version']
-        NodeInfoDict['city']            = NodeInfoJSON['result']['location']['city']
-
+        except Exception as e:
+            print(str(e))
+            return None
 
 
 
@@ -263,7 +247,7 @@ Node Version: %s
         self.dialog = None
         self.dialog = MDDialog(title="Subscribing...\n\n%s\n %s" %( deposit, sub_node[1]),md_bg_color=get_color_from_hex("#0d021b"))
         self.dialog.open()
-        yield 2.0
+        yield 0.6
 
         CONFIG = MeileGuiConfig.read_configuration(MeileGuiConfig, MeileGuiConfig.CONFFILE)        
         KEYNAME = CONFIG['wallet'].get('keyname', '')
@@ -335,6 +319,7 @@ Node Version: %s
         Meile.app.root.transition = SlideTransition(direction = "down")
         Meile.app.root.current = WindowNames.MAIN_WINDOW
         Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).SubResult = None
+        #Change this to switch_tab by ids
         Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).on_tab_switch(None,None,None,"Subscriptions")
     
     def closeDialog(self, inst):
@@ -343,40 +328,71 @@ Node Version: %s
             self.dialog = None
         except Exception as e:
             print(str(e))
-            return
+            self.dialog = None
         
 class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
     text = StringProperty()
     dialog = None
+    clock = None
+
        
     def get_data_used(self, allocated, consumed, node_address):
-        try:         
+        try:
+            ''' Since this function is called when opening the Subscription tab,
+                we need to do a little house keeping for the card switches and the
+                data consumed
+            '''         
             if Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node'] == node_address:
                 self.ids.node_switch.active = True
             else:
                 self.ids.node_switch.active = False
             
-            allocated = float(allocated.replace('GB',''))
+            if not self.clock and Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['id']:
+                print("Not self.clock()")
+                self.setQuotaClock(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['id'],
+                                   Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node'])
             
-            if "GB" in consumed:
-                consumed  = float(consumed.replace('GB', ''))
-            elif "MB" in consumed:
-                consumed = float(float(consumed.replace('MB', '')) / 1024)
-            elif "KB" in consumed:
-                consumed = float(float(consumed.replace('KB', '')) / (1024*1024))
-            elif "0.00B" in consumed:
-                consumed = 0.0
-            else:
-                consumed = float(float(re.findall(r'[0-9]+\.[0-9]+', consumed)[0].replace('B', '')) / (1024*1024*1024))
+            #End house keeping
+            
+            allocated = float(allocated.replace('GB',''))
+            consumed = self.compute_consumed_data(consumed)
+            
             if allocated == 0:
                 self.ids.consumed_data.text = "0%"
                 return 0
             
             self.ids.consumed_data.text = str(round(float(float(consumed/allocated)*100),2)) + "%"
-            return float(float(consumed/allocated)*100)
+            return round(float(float(consumed/allocated)*100),3)
         except Exception as e:
             print(str(e))
             return float(50)
+        
+    def compute_consumed_data(self, consumed):
+        if "GB" in consumed:
+            consumed  = float(consumed.replace('GB', ''))
+        elif "MB" in consumed:
+            consumed = float(float(consumed.replace('MB', '')) / 1024)
+        elif "KB" in consumed:
+            consumed = float(float(consumed.replace('KB', '')) / (1024*1024))
+        elif "0.00B" in consumed:
+            consumed = 0.0
+        else:
+            consumed = float(float(re.findall(r'[0-9]+\.[0-9]+', consumed)[0].replace('B', '')) / (1024*1024*1024))
+        
+        return consumed
+        
+    def connected_quota(self, allocated, consumed):
+        allocated = float(allocated.replace('GB',''))
+        consumed  = self.compute_consumed_data(consumed)
+        
+        if Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).CONNECTED:
+            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).ids.quota_pct.text = str(round(float(float(consumed/allocated)*100),2)) + "%"
+        
+        else:
+            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).ids.quota_pct.text = "0.00%"
+            
+        return round(float(float(consumed/allocated)*100),3)    
+    
         
     def add_loading_popup(self, title_text):
         self.dialog = None
@@ -389,10 +405,11 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
             self.dialog = None
         except Exception as e:
             print(str(e))
-            return
+            self.dialog = None
+        
         
     @delayable
-    def connect_to_node(self, ID, naddress, moniker, switchValue, *kwargs):
+    def connect_to_node(self, ID, naddress, moniker, switchValue, **kwargs):
         
         '''
            These two conditionals are needed to check
@@ -402,6 +419,10 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
         '''
         if Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['switch'] and naddress == Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node'] and not switchValue:
             print("DISCONNECTING!!!")
+            try:
+                self.clock.cancel()
+            except Exception as e:
+                print(str(e))
             Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).disconnect_from_node()
             return True
         
@@ -429,11 +450,15 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
             connected = HandleWalletFunctions.connect(HandleWalletFunctions, ID, naddress)
             
             if connected:
-                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node'] = naddress
-                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['switch'] = True
-                print("%s, %s" % (Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node'],
-                                  Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['switch']
-                                 ))
+                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node']      = naddress
+                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['switch']    = True
+                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['id']        = ID
+                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['allocated'] = self.allocated_text
+                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['consumed']  = self.consumed_text
+                
+                
+                self.setQuotaClock(ID, naddress)
+                
                 self.remove_loading_widget()
                 self.dialog = MDDialog(
                     title="Connected!",
@@ -460,6 +485,35 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
                                 on_release=partial(self.call_ip_get, False, "")
                             ),])
                 self.dialog.open()
+    
+    def setQuotaClock(self,ID, naddress):
+        self.clock = Clock.create_trigger(partial(self.UpdateQuotaForNode,
+                                                  Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['id'],
+                                                  Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node']),
+                                                  120)
+        self.clock()
+        
+    def UpdateQuotaForNode(self, ID, naddress, dt):
+        print("%s: Getting Quota: " % ID, end= ' ')
+        connConsumed = self.GetConsumedWhileConnected(self.compute_consumed_data(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['consumed']))
+        
+        Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).ids.quota.value = self.connected_quota(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['allocated'], connConsumed)
+        print("%s,%s - %s" % (connConsumed,
+                              Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['consumed'],
+                              Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).ids.quota.value))
+    
+        try: 
+            self.clock()
+        except:
+            pass 
+        
+    def GetConsumedWhileConnected(self, sConsumed):
+        bytes_sent = round(float(float(psutil.net_io_counters(pernic=True)['wg99'].bytes_sent) / 1073741824),3)
+        bytes_recvd = round(float(float(psutil.net_io_counters(pernic=True)['wg99'].bytes_recv) / 1073741824),3)
+        
+        total_data = str(round(float(bytes_sent + bytes_recvd)+ float(sConsumed),3)) + "GB"
+        
+        return total_data
             
     def call_ip_get(self,result, moniker,  *kwargs):
         if result:

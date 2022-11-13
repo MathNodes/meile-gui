@@ -26,7 +26,6 @@ USER = environ['SUDO_USER'] if 'SUDO_USER' in environ else environ['USER']
 PATH = environ['PATH']
 KEYRINGDIR = path.join(path.expanduser('~' + USER), '.meile-gui')
 BASEDIR  = path.join(path.expanduser('~' + USER), '.sentinelcli')
-
 APIURL   = "https://api.sentinel.mathnodes.com"
 
 NodesInfoKeys = ["Moniker","Address","Provider","Price","Country","Speed","Latency","Peers","Handshake","Version","Status"]
@@ -37,6 +36,7 @@ dash = "-"
 
 MeileConfig = MeileGuiConfig()
 sentinelcli = MeileConfig.resource_path("../bin/sentinelcli")
+RPC = "https://rpc.mathnodes.com:443"
 
 class NodeTreeData():
     NodeTree = None
@@ -51,7 +51,7 @@ class NodeTreeData():
     def get_nodes(self, latency, *kwargs):
         AllNodesInfo = []
         print("Running sentinel-cli with latency: %s" % latency)
-        nodeCMD = [sentinelcli, "query", "nodes", "--node", "https://rpc.mathnodes.com:443", "--limit", "20000", "--timeout", "%s" % latency]
+        nodeCMD = [sentinelcli, "query", "nodes", "--node", RPC, "--limit", "5000", "--timeout", "%s" % latency]
     
         proc = Popen(nodeCMD, stdout=PIPE)
         
@@ -176,29 +176,11 @@ class NodeTreeData():
                                             })
                 print("Sub not found in list")
                 k += 1
-                continue   
-            quotaCMD = [sentinelcli, 'query', 'quotas', '--node', 'https://rpc.mathnodes.com:443', '--page', '1', SubsResult[SubsInfoKeys[0]][k]]
-            proc = Popen(quotaCMD, stdout=PIPE)
-                    
-            h=1
-            for line in proc.stdout.readlines():
-                #print(line)
-                if h < 4:
-                    h += 1 
-                    continue
-                if h >=4 and '+-----------+' in str(line.decode('utf-8')):
-                    break
-                else:
-                    nodeQuota = str(line.decode('utf-8')).split("|")[2:-1]
-                    allotted = float(re.findall(r'[0-9]+\.[0-9]+', nodeQuota[0])[0])
-                    consumed = float(re.findall(r'[0-9]+\.[0-9]+', nodeQuota[1])[0])
-                    
-                    if allotted == consumed:
-                        break
-                    else:
-                        
-                            
-                        SubsFinalResult.append({
+                continue
+            
+            nodeQuota = self.GetQuota(SubsResult[SubsInfoKeys[0]][k])
+            if nodeQuota:
+                SubsFinalResult.append({
                                             FinalSubsKeys[0] : SubsResult[SubsInfoKeys[0]][k],
                                             FinalSubsKeys[1] : NodeData[NodesInfoKeys[0]],
                                             FinalSubsKeys[2] : SubsResult[SubsInfoKeys[5]][k],
@@ -208,11 +190,31 @@ class NodeTreeData():
                                             FinalSubsKeys[6] : nodeQuota[0],
                                             FinalSubsKeys[7] : nodeQuota[1]
                                             })
-           
             k += 1 
 
-        return SubsFinalResult
+        return SubsFinalResult   
 
+
+    def GetQuota(self, id):
+        quotaCMD = [sentinelcli, 'query', 'quotas', '--node', RPC, '--page', '1', id]
+        proc = Popen(quotaCMD, stdout=PIPE)
+        h=1
+        for line in proc.stdout.readlines():
+            #print(line)
+            if h < 4:
+                h += 1 
+                continue
+            if h >=4 and '+-----------+' in str(line.decode('utf-8')):
+                break
+            else:
+                nodeQuota = str(line.decode('utf-8')).split("|")[2:-1]
+                allotted = float(re.findall(r'[0-9]+\.[0-9]+', nodeQuota[0])[0])
+                consumed = float(re.findall(r'[0-9]+\.[0-9]+', nodeQuota[1])[0])
+                
+                if allotted == consumed:
+                    return None
+                else:
+                    return nodeQuota
 
 
 def get_node_infos(naddress):

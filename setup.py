@@ -8,7 +8,7 @@ with open('README.md', encoding="utf-8") as f:
 
 setup(
     name='meile-gui',
-    version='0.10.3.3',
+    version='0.10.4.1',
     description='Meile dVPN powered by the Sentinel Network',
     long_description=readme,
     long_description_content_type="text/markdown",
@@ -36,9 +36,9 @@ setup(
     ],
     package_dir={"": "src"},
     packages=find_packages(where="src"),
-    install_requires=['kivymd', 'pydash', 'treelib', 'kivyoav', 'pexpect', 'qrcode', 'save_thread_result', 'screeninfo','stripe','pycoingecko', 'mapview', 'kivy_garden'],
+    install_requires=['kivymd', 'pydash', 'treelib', 'kivyoav', 'pexpect', 'qrcode', 'save_thread_result', 'screeninfo','stripe','pycoingecko', 'mapview', 'psutil', 'unidecode'],
     package_data={'conf': ['config/config.ini'], 'bin' : ['sentinelcli', 'warp-cli','warp-svc'], 'awoc' : ['data/world.json'],
-                  'fonts': ['Roboto-BoldItalic.ttf'], 'imgs' : ["ad.png","ae.png","af.png","ag.png",
+                  'fonts': ['Roboto-BoldItalic.ttf', 'arial-unicode-ms.ttf'], 'imgs' : ["ad.png","ae.png","af.png","ag.png",
                                                               "ai.png","al.png","am.png","ao.png",
                                                               "aq.png","ar.png","as.png","atom.png",
                                                               "at.png","au.png","avg.png","aw.png",
@@ -103,7 +103,7 @@ setup(
                                                               "um.png","us.png","uy.png","uz.png","va.png",
                                                               "vc.png","ve.png","vg.png","vi.png","vn.png",
                                                               "vu.png","wf.png","ws.png","xk.png","ye.png",
-                                                              "yt.png","za.png","zm.png","zw.png", "protected.png"], 
+                                                              "yt.png","za.png","zm.png","zw.png", "protected.png", "warp.png"], 
                   'kv' : ['meile.kv'], 'main' : ['icon.png'], 'utils' :  ['coinimg/dvpn.png', 'fonts/Roboto-BoldItalic.ttf']  },
     entry_points = {
         'console_scripts': ['meile-gui = main.meile_gui:main'],

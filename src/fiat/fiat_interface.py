@@ -2,8 +2,6 @@ from kivymd.uix.menu import MDDropdownMenu
 from kivymd.app import MDApp
 from kivy.lang import Builder
 from kivy.properties import StringProperty,ObjectProperty
-
- 
 from kivy.uix.screenmanager import Screen, SlideTransition
 from kivymd.uix.button import MDFlatButton, MDRaisedButton
 from kivymd.uix.dialog import MDDialog

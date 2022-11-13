@@ -1,5 +1,15 @@
 CHANGELOG
 ========================
+# v1.2.2 (12/11/2022)
+* NEW: Real-time bandwidth usage for current session, snapshot taken every two minutes. 
+* NEW: Dependency *psutil* added - needed for bandwidth usage
+* NEW: Unicode Handling in wallet passphrase and other textfields
+* NEW: Arial unicdoe font for upload/download badwidth arrows
+* CHANGE: IP Address/Node now rectangle TextField instaed of Fill Box
+* CHANGE: Bandwidth meter for current session at top
+* UPDATE: Aligned Sort label with menu option
+* FIX: Multiple spelling and grammatical errors. Thanks to *cryptomole*
+
 # v1.2.0 (20/10/2022)
 * NEW: Clickable Pin map with total node listings
 * NEW: Refresh button in wallet screen
