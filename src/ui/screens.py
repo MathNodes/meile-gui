@@ -299,7 +299,7 @@ class MainWindow(Screen):
     Sort = SortOptions[0]
     MeileMap = None
     MeileMapBuilt = False
-    NodeSwitch = {"node" : None, "switch" : False, 'id' : None, 'consumed' : None, 'allocated' : None}
+    NodeSwitch = {"node" : None, "switch" : False, 'id' : None, 'consumed' : None, 'og_consumed' : None, 'allocated' : None}
     NewWallet = False
     box_color = ColorProperty('#fcb711')
     clock = None
@@ -540,6 +540,7 @@ class MainWindow(Screen):
                                "switch" : False,
                                'id' : None,
                                'consumed' : None,
+                               'og_consumed' : None,
                                'allocated' : None
                                }
             self.warp_disconnect(None)
@@ -1063,8 +1064,12 @@ class NodeScreen(Screen):
         if float(speedAdj[1]) < 0:
                 speedAdj[1] = 0
                 
-        speedText = str(speedAdj[0]) + speedRate[0] + "↓" + "," + str(speedAdj[1]) + speedRate[1] + "↑"
-        
+        # Values are reversed in nodeTree
+        if "0B" in str(str(speedAdj[1]) + speedRate[1]) or "0B" in str(str(speedAdj[0]) + speedRate[0]):
+            speedText = "    " + str(speedAdj[1]) + speedRate[1] + "↓" + "," + str(speedAdj[0]) + speedRate[0] + "↑"
+        else: 
+            speedText = str(speedAdj[1]) + speedRate[1] + "↓" + "," + str(speedAdj[0]) + speedRate[0] + "↑"
+            
         if "GB" in speed[0]:
             speed[0] = float(speed[0].replace("GB", '')) * 1024
         elif "MB" in speed[0]:
@@ -1078,7 +1083,7 @@ class NodeScreen(Screen):
             speed[0] = 0
         
         if "GB" in speed[1]:
-            speed[1] = float(speed[0].replace("GB", '')) * 1024    
+            speed[1] = float(speed[1].replace("GB", '')) * 1024    
         elif "MB" in speed[1]:
             speed[1] = float(speed[1].replace("MB", ''))
         elif "KB" in speed[1]:

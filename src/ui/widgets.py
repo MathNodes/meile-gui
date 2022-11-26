@@ -447,15 +447,20 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
             connected = HandleWalletFunctions.connect(HandleWalletFunctions, ID, naddress)
             
             if connected:
+                from copy import deepcopy
+                
                 Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).CONNECTED               = True
                 Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node']      = naddress
                 Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['switch']    = True
                 Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['id']        = ID
                 Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['allocated'] = self.allocated_text
                 Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['consumed']  = self.consumed_text
+                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['og_consumed']  = deepcopy(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['consumed']) 
                 
                 if not ID in Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth:
                     Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth[ID] = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch
+                else:
+                    Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth[ID]['og_consumed'] = deepcopy(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth[ID]['consumed'])
                 
                 
                 self.setQuotaClock(ID, naddress)
@@ -500,8 +505,8 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
     def UpdateQuotaForNode(self, ID, naddress, dt):
         try:
             print("%s: Getting Quota: " % ID, end= ' ')
-            startConsumption = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth[ID]['consumed']
-            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth[ID]['consumed'] = self.GetConsumedWhileConnected(self.compute_consumed_data(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth[ID]['consumed']))
+            startConsumption = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth[ID]['og_consumed']
+            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth[ID]['consumed'] = self.GetConsumedWhileConnected(self.compute_consumed_data(startConsumption))
             
             Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).ids.quota.value = self.connected_quota(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['allocated'],
                                                                                                       Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth[ID]['consumed'])

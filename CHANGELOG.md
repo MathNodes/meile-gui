@@ -1,5 +1,10 @@
 CHANGELOG
 ========================
+# v0.10.4.2 (26/11/2022)
+* FIX: Bug crash on speed text parsing for GB nodes
+* FIX: Real-time bandwidth from propagating back to accumlation
+* FIX: Spacing under bandwidth meter for nodes with errorneous speed reporting
+
 # v0.10.4.1 (13/11/2022)
 * NEW: Arial unicode fonts for bandwidth arrows
 * NEW: Persistent real-time bandwidth usage between switching nodes
