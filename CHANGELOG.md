@@ -1,5 +1,14 @@
 CHANGELOG
 ========================
+# v0.11.1.0 (28/11/2022)
+* NEW: Cities for Nodes now available in node selection window
+* NEW: Backedn server API for node locations
+
+# v0.11.0.0 (26/11/2022)
+* NEW: Allows user to rate node after disconnecting
+* NEW: Node ratings and vote count are visible in node selection window
+* NEW: Backend server API for node ratings
+
 # v0.10.4.2 (26/11/2022)
 * FIX: Bug crash on speed text parsing for GB nodes
 * FIX: Real-time bandwidth from propagating back to accumlation

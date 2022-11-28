@@ -1,0 +1,11 @@
+kivymd
+pydash
+treelib
+kivyoav
+pexpect
+qrcode
+save_thread_result
+screeninfo
+mapview
+psutil
+unidecode

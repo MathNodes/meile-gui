@@ -5,7 +5,7 @@ from cli.sentinel import  NodeTreeData
 from cli.sentinel import NodesInfoKeys, FinalSubsKeys
 from cli.sentinel import disconnect as Disconnect
 import main.main as Meile
-from ui.widgets import WalletInfoContent, MDMapCountryButton
+from ui.widgets import WalletInfoContent, MDMapCountryButton, RatingContent
 from utils.qr import QRCode
 from cli.wallet import HandleWalletFunctions
 from conf.meile_config import MeileGuiConfig
@@ -299,7 +299,7 @@ class MainWindow(Screen):
     Sort = SortOptions[0]
     MeileMap = None
     MeileMapBuilt = False
-    NodeSwitch = {"node" : None, "switch" : False, 'id' : None, 'consumed' : None, 'og_consumed' : None, 'allocated' : None}
+    NodeSwitch = {"moniker" : None, "node" : None, "switch" : False, 'id' : None, 'consumed' : None, 'og_consumed' : None, 'allocated' : None}
     NewWallet = False
     box_color = ColorProperty('#fcb711')
     clock = None
@@ -521,7 +521,7 @@ class MainWindow(Screen):
         except Exception as e:
             print(str(e))
             return False
-        
+    @mainthread    
     def disconnect_from_node(self):
         try:
             if self.CONNECTED == None:
@@ -536,14 +536,39 @@ class MainWindow(Screen):
                 print("Disconnect RTNCODE: %s" % returncode)
                 self.get_ip_address(None)
                 self.set_protected_icon(False, "")
-            self.NodeSwitch = {"node" : None,
+            
+            #self.warp_disconnect(None)
+            self.dialog = None
+            rating_dialog = RatingContent(self.NodeSwitch['moniker'], self.NodeSwitch['node'])
+            self.dialog = MDDialog(
+                title="Node Rating",
+                md_bg_color=get_color_from_hex("#0d021b"),
+                type="custom",
+                content_cls=rating_dialog,
+                buttons=[
+                    MDFlatButton(
+                        text="LATER",
+                        theme_text_color="Custom",
+                        text_color=Meile.app.theme_cls.primary_color,
+                        on_release=self.remove_loading_widget,
+                    ),
+                    MDRaisedButton(
+                        text="RATE",
+                        theme_text_color="Custom",
+                        text_color=(1,1,1,1),
+                        on_release=partial(self.WrapperSubmitRating, rating_dialog),
+                    ),
+                    ]
+                )
+            self.dialog.open()
+            self.NodeSwitch = {"moniker" : None,
+                               "node" : None,
                                "switch" : False,
                                'id' : None,
                                'consumed' : None,
                                'og_consumed' : None,
                                'allocated' : None
                                }
-            self.warp_disconnect(None)
             return True
         except Exception as e:
             print(str(e))
@@ -563,7 +588,10 @@ class MainWindow(Screen):
             self.dialog.open()
             return False 
                     
-        
+    def WrapperSubmitRating(self, rc, dt):
+        rc.SubmitRating(rc.return_rating_value(), rc.naddress)
+        self.remove_loading_widget(None)
+            
     def wallet_dialog(self):
         
         # Add a check here to see if they already have a wallet available in
@@ -1105,6 +1133,20 @@ class NodeScreen(Screen):
             speedimage = floc + "slowavg.png"
         else:
             speedimage = floc + "slow.png"
+            
+            
+        if node[NodesInfoKeys[1]].lstrip().rstrip() in self.NodeTree.NodeScores:
+            nscore = str(self.NodeTree.NodeScores[node[NodesInfoKeys[1]].lstrip().rstrip()][0])
+            votes  = str(self.NodeTree.NodeScores[node[NodesInfoKeys[1]].lstrip().rstrip()][1])
+        else:
+            nscore = "null"
+            votes  = "0"
+            
+        if node[NodesInfoKeys[1]].lstrip().rstrip() in self.NodeTree.NodeLocations:
+            city = self.NodeTree.NodeLocations[node[NodesInfoKeys[1]].lstrip().rstrip()]
+        else:
+            city = " "
+            
         self.ids.rv.data.append(
             {
                 "viewclass"    : "RecycleViewRow",
@@ -1113,6 +1155,9 @@ class NodeScreen(Screen):
                 "country_text" : node[NodesInfoKeys[4]].lstrip().rstrip(),
                 "address_text" : node[NodesInfoKeys[1]].lstrip().rstrip(),
                 "speed_text"   : speedText,
+                "node_score"   : nscore,
+                "votes"        : votes,
+                "city"         : city,
                 "speed_image"  : self.MeileConfig.resource_path(speedimage),
                 "source_image" : self.MeileConfig.resource_path(flagloc)
                 

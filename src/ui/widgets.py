@@ -6,6 +6,7 @@ from kivymd.uix.dialog import MDDialog
 from kivymd.uix.button import MDFlatButton, MDRaisedButton, MDFillRoundFlatButton
 from kivy.uix.recycleview import RecycleView
 from kivy.uix.boxlayout import BoxLayout
+from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.list import OneLineIconListItem
 from kivy.metrics import dp
@@ -37,6 +38,11 @@ from cli.wallet import HandleWalletFunctions
 from cli.sentinel import NodeTreeData
 import main.main as Meile
 
+SERVER_ADDRESS      = "https://aimokoivunen.mathnodes.com:5000"
+APIURL              = "https://api.sentinel.mathnodes.com"
+API_PING_ENDPOINT   = "/api/ping"
+API_RATING_ENDPOINT = "/api/rating"
+
 class WalletInfoContent(BoxLayout):
     def __init__(self, seed_phrase, name, address, password, **kwargs):
         super(WalletInfoContent, self).__init__(**kwargs)
@@ -62,7 +68,35 @@ class WalletInfoContent(BoxLayout):
         anim.start(label)
             
         return label
-
+    
+class RatingContent(MDBoxLayout):
+    naddress = StringProperty()
+    moniker  = StringProperty()
+    
+    def __init__(self, moniker, naddress):
+        super(RatingContent, self).__init__()
+        self.naddress = naddress
+        self.moniker  = moniker
+    
+    
+    def SubmitRating(self, rating, node_address):
+        UUID = Meile.app.root.get_screen(WindowNames.PRELOAD).UUID
+        try:
+            rating_dict = {'uuid' : "%s" % UUID, 'address' : "%s" % node_address, "rating" : rating}
+            ping = requests.post(SERVER_ADDRESS + API_RATING_ENDPOINT, json=rating_dict)
+            if ping.status_code == 200:
+                print("Rating Sent")
+            else:
+                print("Error submitting rating")
+        except Exception as e:
+            print(str(e))
+            pass
+        
+    def return_rating_value(self):
+        return self.ids.rating_slider.value
+    
+    
+    
 class SubscribeContent(BoxLayout):
     
     
@@ -168,7 +202,7 @@ class RecycleViewRow(MDCard,RectangularElevationBehavior,ThemableBehavior, Hover
         Window.set_system_cursor('arrow')
         
     def get_city_of_node(self, naddress):   
-        APIURL   = "https://api.sentinel.mathnodes.com"
+        
 
         endpoint = "/nodes/" + naddress.lstrip().rstrip()
         #print(APIURL + endpoint)
@@ -432,10 +466,8 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
             yield 0.6
             UUID = Meile.app.root.get_screen(WindowNames.PRELOAD).UUID
             try:
-                SERVER_ADDRESS = "https://aimokoivunen.mathnodes.com:5000"
-                API_ENDPOINT   = "/api/ping"
                 uuid_dict = {'uuid' : "%s" % UUID, 'os' : "L"}
-                ping = requests.post(SERVER_ADDRESS + API_ENDPOINT, json=uuid_dict)
+                ping = requests.post(SERVER_ADDRESS + API_PING_ENDPOINT, json=uuid_dict)
                 if ping.status_code == 200:
                     print('ping')
                 else:
@@ -450,6 +482,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
                 from copy import deepcopy
                 
                 Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).CONNECTED               = True
+                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['moniker']   = moniker
                 Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node']      = naddress
                 Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['switch']    = True
                 Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['id']        = ID

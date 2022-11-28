@@ -511,6 +511,9 @@ WindowManager:
     source_image: " "
     speed_image: " "
     speed_text: " "
+    node_score: " "
+    votes: " "
+    city: " "
     ripple_behavior: True
     on_press: root.subscribe_to_node(root.price_text, root.address_text, root.moniker_text)
     MDGridLayout:
@@ -541,6 +544,34 @@ WindowManager:
                 font_size: "13sp"
                 text_color: get_color_from_hex("#fcb711")
                 pos_hint: {"x" : 0, "top" : .85}
+            MDLabel:
+                text: "SCORE: "
+                theme_text_color: "Custom"
+                font_style: "Subtitle2"
+                font_size: "11sp"
+                text_color: get_color_from_hex("#ffffff")
+                pos_hint: {"x" : 0, "top" : .7}
+            MDLabel:
+                text: root.node_score
+                theme_text_color: "Custom"
+                font_style: "Subtitle2"
+                font_size: "11sp"
+                text_color: get_color_from_hex("#ffffff")
+                pos_hint: {"x" : .055, "top" : .7}
+            MDLabel:
+                text: "VOTES: "
+                theme_text_color: "Custom"
+                font_style: "Subtitle2"
+                font_size: "11sp"
+                text_color: get_color_from_hex("#ffffff")
+                pos_hint: {"x" : .125, "top" : .7}
+            MDLabel:
+                text: root.votes
+                theme_text_color: "Custom"
+                font_style: "Subtitle2"
+                font_size: "11sp"
+                text_color: get_color_from_hex("#ffffff")
+                pos_hint: {"x" : .175, "top" : .7}
                 
             Image:
                 source: root.source_image
@@ -566,7 +597,14 @@ WindowManager:
                 font_style: "H6"
                 font_size: "22sp"
                 text_color: (1,1,1,1)  
-                pos_hint: {"right" : 1.75 , "top": .8 }  
+                pos_hint: {"right" : 1.75 , "top": .8 }
+            MDLabel:    
+                text: root.city
+                theme_text_color: "Custom"
+                font_style: "Subtitle2"
+                font_size: "13sp"
+                text_color: get_color_from_hex("#fcb711")
+                pos_hint: {"right" : 1.75 , "top": .625 }  
 
     OnHoverMDRaisedButton:
         text: "Get Details"
@@ -969,7 +1007,35 @@ WindowManager:
             text: "udvpn"
             on_release: root.menu.open()
             
+<RatingContent>
+    spacing: "1dp"
+    size_hint_y: None
+    height: "100dp"
+    price_text: ""
+    naddress: " "
+    moniker: " "    
+    orientation: "vertical"
+    MDFloatLayout:
+        MDLabel:
+            id: node_moniker_text
+            text: root.moniker
+            font_size: 19
+            pos_hint: {"x" : 0.05, "center_y": .9}
+             
+        MDLabel:
+            id: node_addresss_text
+            text: root.naddress
+            font_size: 10
+            pos_hint: {"x" : 0.05, "center_y": .70}
+             
+        MDSlider:
+            id: rating_slider
+            min: 1
+            max: 10
+            value: 9
+            pos_hint: {"x" : 0.00, "center_y": .5}
             
+          
 <HelpScreen>:
     name: "helpscreen"
     title: "Help Screen"

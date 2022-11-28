@@ -1,3 +1,27 @@
+Metadata-Version: 2.1
+Name: meile-gui
+Version: 0.11.1.0
+Summary: Meile dVPN powered by the Sentinel Network
+Home-page: https://meile.app
+Author: MathNodes
+Author-email: freQniK@mathnodes.com
+License: GNU General Public License (GPL)
+Keywords: vpn,dvpn,sentinel,crypto,gui,privacy,security,decentralized
+Classifier: Development Status :: 4 - Beta
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3.10
+Classifier: License :: OSI Approved :: GNU General Public License (GPL)
+Classifier: Environment :: X11 Applications
+Classifier: Environment :: MacOS X
+Classifier: Intended Audience :: Information Technology
+Classifier: Natural Language :: English
+Classifier: Operating System :: MacOS
+Classifier: Operating System :: POSIX
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Topic :: System :: Networking
+Classifier: Topic :: Internet
+Description-Content-Type: text/markdown
+
 Meile-GUI (may•lah)
 ========================
 [![Github All Releases](https://img.shields.io/github/downloads/mathnodes/meile-gui/total?style=for-the-badge)](https://github.com/MathNodes/meile-gui/releases)
@@ -83,7 +107,7 @@ This will install `meile-gui` and all its dependencies.
 Meile dVPN GUI v0.9.3-beta is now available as a pip packages as well. To install, first install wireguard-tools and meile dependencies if you don't already have them
 
 ```
-sudo apt install -y  wireguard-tools openresolv mesa-utils libgl1-mesa-glx xclip python3-devel
+sudo apt install -y  wireguard-tools openresolv mesa-utils libgl1-mesa-glx xclip
 ```
 
 Then install via pip

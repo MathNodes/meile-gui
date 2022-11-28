@@ -27,6 +27,9 @@ PATH = environ['PATH']
 KEYRINGDIR = path.join(path.expanduser('~' + USER), '.meile-gui')
 BASEDIR  = path.join(path.expanduser('~' + USER), '.sentinelcli')
 APIURL   = "https://api.sentinel.mathnodes.com"
+SERVER_URL = "https://aimokoivunen.mathnodes.com:5000"
+NODE_SCORE_ENDPOINT = "/api/nodescores"
+NODE_LOCATION_ENDPOINT = "/api/nodelocations"
 
 NodesInfoKeys = ["Moniker","Address","Provider","Price","Country","Speed","Latency","Peers","Handshake","Version","Status"]
 SubsInfoKeys = ["ID", "Owner", "Plan", "Expiry", "Denom", "Node", "Price", "Deposit", "Free", "Status"]
@@ -40,6 +43,8 @@ RPC = "https://rpc.mathnodes.com:443"
 
 class NodeTreeData():
     NodeTree = None
+    NodeScores = {}
+    NodeLocations = {}
     
     def __init__(self, node_tree):
         if not node_tree:
@@ -112,6 +117,45 @@ class NodeTreeData():
                 pass
             
         self.NodeTree.show()
+        self.GetNodeScores()
+        self.GetNodeLocations()
+        
+    def GetNodeScores(self):
+        try:
+            r = requests.get(SERVER_URL + NODE_SCORE_ENDPOINT)
+            data = r.json()
+          
+            for nlist in data['data']:
+                print(nlist)
+                k=0
+                for nd in nlist:
+                   if k == 0:
+                       self.NodeScores[nlist[k]] = [nlist[k+1], nlist[k+2]]
+                       k += 1
+                   else:
+                       break
+            print(self.NodeScores)
+        except Exception as e:
+            print(str(e)) 
+            
+    def GetNodeLocations(self):
+        try:
+            r = requests.get(SERVER_URL + NODE_LOCATION_ENDPOINT)
+            data = r.json()
+          
+            for nlist in data['data']:
+                k=0
+                for nd in nlist:
+                   if k == 0:
+                       self.NodeLocations[nlist[k]] = nlist[k+1]
+                       k += 1
+                   else:
+                       break
+            #print(self.NodeLocations)
+        except Exception as e:
+            print(str(e)) 
+            
+             
     
     def CreateNodeTreeStructure(self, **kwargs):
         NodeTreeBase = Tree()
