@@ -30,8 +30,7 @@ import psutil
 from os import path
 from subprocess import Popen, TimeoutExpired
 
-from cli.sentinel import IBCCOINS
-#from ui.interfaces import SubscribeContent
+from typedef.konstants import IBCTokens
 from typedef.win import CoinsList, WindowNames
 from conf.meile_config import MeileGuiConfig
 from cli.wallet import HandleWalletFunctions
@@ -42,6 +41,7 @@ SERVER_ADDRESS      = "https://aimokoivunen.mathnodes.com:5000"
 APIURL              = "https://api.sentinel.mathnodes.com"
 API_PING_ENDPOINT   = "/api/ping"
 API_RATING_ENDPOINT = "/api/rating"
+TIMEOUT = 5
 
 class WalletInfoContent(BoxLayout):
     def __init__(self, seed_phrase, name, address, password, **kwargs):
@@ -78,12 +78,15 @@ class RatingContent(MDBoxLayout):
         self.naddress = naddress
         self.moniker  = moniker
     
+    def get_font(self):
+        Config = MeileGuiConfig()
+        return Config.resource_path("../fonts/arial-unicode-ms.ttf")
     
     def SubmitRating(self, rating, node_address):
         UUID = Meile.app.root.get_screen(WindowNames.PRELOAD).UUID
         try:
             rating_dict = {'uuid' : "%s" % UUID, 'address' : "%s" % node_address, "rating" : rating}
-            ping = requests.post(SERVER_ADDRESS + API_RATING_ENDPOINT, json=rating_dict)
+            ping = requests.post(SERVER_ADDRESS + API_RATING_ENDPOINT, json=rating_dict, timeout=TIMEOUT)
             if ping.status_code == 200:
                 print("Rating Sent")
             else:
@@ -133,7 +136,10 @@ class SubscribeContent(BoxLayout):
         self.ids.drop_item.current_item = CoinsList.ibc_mu_coins[0]
         self.parse_coin_deposit(self.ids.drop_item.current_item)
 
-
+    def get_font(self):
+        Config = MeileGuiConfig()
+        return Config.resource_path("../fonts/arial-unicode-ms.ttf")
+    
     def set_item(self, text_item):
         self.ids.drop_item.set_item(text_item)
         self.ids.deposit.text = self.parse_coin_deposit(text_item)
@@ -164,7 +170,25 @@ class SubscribeContent(BoxLayout):
         
 
     def return_deposit_text(self):
-        return (self.ids.deposit.text, self.naddress)
+        return (self.ids.deposit.text, self.naddress, self.moniker)
+
+
+class ProcessingSubDialog(BoxLayout):
+    moniker = StringProperty()
+    naddress = StringProperty()
+    deposit = StringProperty()
+    
+    def __init__(self, moniker, naddress, deposit):
+        super(ProcessingSubDialog, self).__init__()
+        self.moniker = moniker
+        self.naddress = naddress
+        self.deposit = deposit
+        
+    def get_font(self):
+        Config = MeileGuiConfig()
+        return Config.resource_path("../fonts/arial-unicode-ms.ttf")
+    
+        
     
 class IconListItem(OneLineIconListItem):
     icon = StringProperty()
@@ -210,7 +234,7 @@ class RecycleViewRow(MDCard,RectangularElevationBehavior,ThemableBehavior, Hover
             requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
             r = requests.get(APIURL + endpoint)
             remote_url = r.json()['result']['node']['remote_url']
-            r = requests.get(remote_url + "/status", verify=False)
+            r = requests.get(remote_url + "/status", verify=False, timeout=TIMEOUT)
             print(remote_url)
     
             NodeInfoJSON = r.json()
@@ -251,7 +275,7 @@ Node Version: %s
         subscribe_dialog = SubscribeContent(price, moniker , naddress )
         if not self.dialog:
             self.dialog = MDDialog(
-                    title="Address:",
+                    title="Node:",
                     type="custom",
                     content_cls=subscribe_dialog,
                     md_bg_color=get_color_from_hex("#0d021b"),
@@ -271,13 +295,20 @@ Node Version: %s
                     ],
                 )
             self.dialog.open()
+    
     @delayable
     def subscribe(self, subscribe_dialog, *kwargs):
         sub_node = subscribe_dialog.return_deposit_text()
+        spdialog = ProcessingSubDialog(sub_node[2], sub_node[1], sub_node[0] )
         deposit = self.reparse_coin_deposit(sub_node[0])
         self.dialog.dismiss()
         self.dialog = None
-        self.dialog = MDDialog(title="Subscribing...\n\n%s\n %s" %( deposit, sub_node[1]),md_bg_color=get_color_from_hex("#0d021b"))
+        self.dialog = MDDialog(
+                title="Subscribing...",
+                type="custom",
+                content_cls=spdialog,
+                md_bg_color=get_color_from_hex("#0d021b"),
+            )
         self.dialog.open()
         yield 0.6
 
@@ -334,7 +365,7 @@ Node Version: %s
                 pass
             
     def check_ibc_denom(self, tru_mu_deposit):
-        for ibc_coin in IBCCOINS:
+        for ibc_coin in IBCTokens.IBCCOINS:
             k = ibc_coin.keys()
             v = ibc_coin.values()
             for coin,ibc in zip(k,v):
@@ -365,6 +396,10 @@ Node Version: %s
 class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
     text = StringProperty()
     dialog = None
+    
+    def get_font(self):
+        Config = MeileGuiConfig()
+        return Config.resource_path("../fonts/arial-unicode-ms.ttf")
         
     def get_data_used(self, allocated, consumed, node_address):
         try:
@@ -384,7 +419,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
             
             #End house keeping
             
-            allocated = float(allocated.replace('GB',''))
+            allocated = self.compute_consumed_data(allocated)
             consumed = self.compute_consumed_data(consumed)
             
             if allocated == 0:
@@ -467,7 +502,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
             UUID = Meile.app.root.get_screen(WindowNames.PRELOAD).UUID
             try:
                 uuid_dict = {'uuid' : "%s" % UUID, 'os' : "L"}
-                ping = requests.post(SERVER_ADDRESS + API_PING_ENDPOINT, json=uuid_dict)
+                ping = requests.post(SERVER_ADDRESS + API_PING_ENDPOINT, json=uuid_dict, timeout=TIMEOUT)
                 if ping.status_code == 200:
                     print('ping')
                 else:

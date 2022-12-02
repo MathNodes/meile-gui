@@ -2,7 +2,7 @@ from geography.continents import OurWorld
 from ui.interfaces import Tab, LatencyContent
 from typedef.win import WindowNames, ICANHAZURL
 from cli.sentinel import  NodeTreeData
-from cli.sentinel import NodesInfoKeys, FinalSubsKeys
+from typedef.konstants import NodeKeys
 from cli.sentinel import disconnect as Disconnect
 import main.main as Meile
 from ui.widgets import WalletInfoContent, MDMapCountryButton, RatingContent
@@ -39,6 +39,8 @@ from functools import partial
 from os import path,geteuid
 from save_thread_result import ThreadWithResult
 from unidecode import unidecode
+
+TIMEOUT = 5
 
 class WalletRestore(Screen):
     screemanager = ObjectProperty()
@@ -362,6 +364,9 @@ class MainWindow(Screen):
             self.AddCountryNodePins()
             self.MeileMapBuilt = True
         
+    def get_font(self):
+        Config = MeileGuiConfig()
+        return Config.resource_path("../fonts/arial-unicode-ms.ttf")
         
     def AddCountryNodePins(self):
         try:
@@ -512,7 +517,7 @@ class MainWindow(Screen):
             
         self.old_ip = self.ip
         try: 
-            req = requests.get(ICANHAZURL)
+            req = requests.get(ICANHAZURL, timeout=TIMEOUT)
             self.ip = req.text
         
             self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.new_ip.text = self.ip
@@ -649,41 +654,59 @@ class MainWindow(Screen):
         
     def add_sub_rv_data(self, node, flagloc):
         
-        if node[FinalSubsKeys[1]] == "Offline":
+        if node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip() in self.NodeTree.NodeScores:
+            nscore = str(self.NodeTree.NodeScores[node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip()][0])
+            votes  = str(self.NodeTree.NodeScores[node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip()][1])
+        else:
+            nscore = "null"
+            votes  = "0"
+            
+        if node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip() in self.NodeTree.NodeLocations:
+            city = self.NodeTree.NodeLocations[node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip()]
+        else:
+            city = " "
+            
+        if node[NodeKeys.FinalSubsKeys[1]] == "Offline":
             self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.rv.data.append(
                  {
                      "viewclass"      : "RecycleViewSubRow",
-                     "moniker_text"   : node[FinalSubsKeys[1]].lstrip().rstrip(),
-                     "sub_id_text"    : node[FinalSubsKeys[0]].lstrip().rstrip(),
-                     "price_text"     : node[FinalSubsKeys[4]].lstrip().rstrip(),
+                     "moniker_text"   : node[NodeKeys.FinalSubsKeys[1]].lstrip().rstrip(),
+                     "sub_id_text"    : node[NodeKeys.FinalSubsKeys[0]].lstrip().rstrip(),
+                     "price_text"     : node[NodeKeys.FinalSubsKeys[4]].lstrip().rstrip(),
                      "country_text"   : "Offline",
-                     "address_text"   : node[FinalSubsKeys[2]].lstrip().rstrip(),
-                     "allocated_text" : node[FinalSubsKeys[6]].lstrip().rstrip(),
-                     "consumed_text"  : node[FinalSubsKeys[7]].lstrip().rstrip(),
+                     "address_text"   : node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip(),
+                     "allocated_text" : node[NodeKeys.FinalSubsKeys[6]].lstrip().rstrip(),
+                     "consumed_text"  : node[NodeKeys.FinalSubsKeys[7]].lstrip().rstrip(),
                      "source_image"   : self.MeileConfig.resource_path(flagloc),
+                     "score"          : nscore,
+                     "votes"          : votes,
+                     "city"           : city,
                      "md_bg_color"    : "#50507c"
                  },
              )
-            print("%s" % node[FinalSubsKeys[0]].lstrip().rstrip(),end=',')
+            print("%s" % node[NodeKeys.FinalSubsKeys[0]].lstrip().rstrip(),end=',')
             sys.stdout.flush()
             
         else:
             self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.rv.data.append(
                 {
                     "viewclass"      : "RecycleViewSubRow",
-                    "moniker_text"   : node[FinalSubsKeys[1]].lstrip().rstrip(),
-                    "sub_id_text"    : node[FinalSubsKeys[0]].lstrip().rstrip(),
-                    "price_text"     : node[FinalSubsKeys[4]].lstrip().rstrip(),
-                    "country_text"   : node[FinalSubsKeys[5]].lstrip().rstrip(),
-                    "address_text"   : node[FinalSubsKeys[2]].lstrip().rstrip(),
-                    "allocated_text" : node[FinalSubsKeys[6]].lstrip().rstrip(),
-                    "consumed_text"  : node[FinalSubsKeys[7]].lstrip().rstrip(),
+                    "moniker_text"   : node[NodeKeys.FinalSubsKeys[1]].lstrip().rstrip(),
+                    "sub_id_text"    : node[NodeKeys.FinalSubsKeys[0]].lstrip().rstrip(),
+                    "price_text"     : node[NodeKeys.FinalSubsKeys[4]].lstrip().rstrip(),
+                    "country_text"   : node[NodeKeys.FinalSubsKeys[5]].lstrip().rstrip(),
+                    "address_text"   : node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip(),
+                    "allocated_text" : node[NodeKeys.FinalSubsKeys[6]].lstrip().rstrip(),
+                    "consumed_text"  : node[NodeKeys.FinalSubsKeys[7]].lstrip().rstrip(),
                     "source_image"   : self.MeileConfig.resource_path(flagloc),
+                    "score"          : nscore,
+                    "votes"          : votes,
+                    "city"           : city,
                     "md_bg_color"    : "#0d021b"
                     
                 },
             )
-            print("%s" % node[FinalSubsKeys[0]].lstrip().rstrip(),end=',')
+            print("%s" % node[NodeKeys.FinalSubsKeys[0]].lstrip().rstrip(),end=',')
             sys.stdout.flush()
         
     def add_country_rv_data(self, NodeCountries):
@@ -792,10 +815,10 @@ class MainWindow(Screen):
             self.GetSubscriptions()
         
         for sub in self.SubResult:
-            if sub[FinalSubsKeys[5]] == "Czechia":
-                sub[FinalSubsKeys[5]] = "Czech Republic"
+            if sub[NodeKeys.FinalSubsKeys[5]] == "Czechia":
+                sub[NodeKeys.FinalSubsKeys[5]] = "Czech Republic"
             try: 
-                iso2 = OurWorld.our_world.get_country_ISO2(sub[FinalSubsKeys[5]].lstrip().rstrip()).lower()
+                iso2 = OurWorld.our_world.get_country_ISO2(sub[NodeKeys.FinalSubsKeys[5]].lstrip().rstrip()).lower()
             except:
                 iso2 = "sc"
             flagloc = floc + iso2 + ".png"
@@ -1003,7 +1026,7 @@ class NodeScreen(Screen):
         else:
             for node_child in CountryNodes:
                 node = node_child.data
-                iso2 = OurWorld.our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
+                iso2 = OurWorld.our_world.get_country_ISO2(node[NodeKeys.NodesInfoKeys[4]].lstrip().rstrip()).lower()
                 flagloc = floc + iso2 + ".png"
                 self.add_rv_data(node, flagloc)
             
@@ -1044,7 +1067,7 @@ class NodeScreen(Screen):
         for node in CountryNodes:
             NodeData.append(node.data)
             
-        NodeDataSorted = sorted(NodeData, key=lambda d: d[NodesInfoKeys[0]])
+        NodeDataSorted = sorted(NodeData, key=lambda d: d[NodeKeys.NodesInfoKeys[0]])
 
         self.meta_add_rv_data(NodeDataSorted)
         
@@ -1052,7 +1075,7 @@ class NodeScreen(Screen):
         floc = "../imgs/"
   
         for node in NodeDataSorted:
-            iso2 = OurWorld.our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
+            iso2 = OurWorld.our_world.get_country_ISO2(node[NodeKeys.NodesInfoKeys[4]].lstrip().rstrip()).lower()
             flagloc = floc + iso2 + ".png"
             self.add_rv_data(node, flagloc)
 
@@ -1061,8 +1084,8 @@ class NodeScreen(Screen):
         self.MeileConfig = MeileGuiConfig()
         speedRate = []
         floc = "../imgs/"
-        speed = node[NodesInfoKeys[5]].lstrip().rstrip().split('+')
-        speedAdj = node[NodesInfoKeys[5]].lstrip().rstrip().split('+')
+        speed = node[NodeKeys.NodesInfoKeys[5]].lstrip().rstrip().split('+')
+        speedAdj = node[NodeKeys.NodesInfoKeys[5]].lstrip().rstrip().split('+')
         
         if "GB" in speedAdj[0]:
             speedRate.append("GB")
@@ -1135,25 +1158,25 @@ class NodeScreen(Screen):
             speedimage = floc + "slow.png"
             
             
-        if node[NodesInfoKeys[1]].lstrip().rstrip() in self.NodeTree.NodeScores:
-            nscore = str(self.NodeTree.NodeScores[node[NodesInfoKeys[1]].lstrip().rstrip()][0])
-            votes  = str(self.NodeTree.NodeScores[node[NodesInfoKeys[1]].lstrip().rstrip()][1])
+        if node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip() in self.NodeTree.NodeScores:
+            nscore = str(self.NodeTree.NodeScores[node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip()][0])
+            votes  = str(self.NodeTree.NodeScores[node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip()][1])
         else:
             nscore = "null"
             votes  = "0"
             
-        if node[NodesInfoKeys[1]].lstrip().rstrip() in self.NodeTree.NodeLocations:
-            city = self.NodeTree.NodeLocations[node[NodesInfoKeys[1]].lstrip().rstrip()]
+        if node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip() in self.NodeTree.NodeLocations:
+            city = self.NodeTree.NodeLocations[node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip()]
         else:
             city = " "
             
         self.ids.rv.data.append(
             {
                 "viewclass"    : "RecycleViewRow",
-                "moniker_text" : node[NodesInfoKeys[0]].lstrip().rstrip(),
-                "price_text"   : node[NodesInfoKeys[3]].lstrip().rstrip(),
-                "country_text" : node[NodesInfoKeys[4]].lstrip().rstrip(),
-                "address_text" : node[NodesInfoKeys[1]].lstrip().rstrip(),
+                "moniker_text" : node[NodeKeys.NodesInfoKeys[0]].lstrip().rstrip(),
+                "price_text"   : node[NodeKeys.NodesInfoKeys[3]].lstrip().rstrip(),
+                "country_text" : node[NodeKeys.NodesInfoKeys[4]].lstrip().rstrip(),
+                "address_text" : node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip(),
                 "speed_text"   : speedText,
                 "node_score"   : nscore,
                 "votes"        : votes,

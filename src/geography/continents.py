@@ -20,6 +20,9 @@ class OurWorld():
                          'South America': [-21.0002179, -61.0006565]
                          }
     
+    CZ      = "Czechia"
+    CZ_FULL = "Czech Republic" 
+    
     CountryLatLong = {'Algeria': [28.0000272, 2.9999825],
                       'Angola': [-11.8775768, 17.5691241], 
                       'Benin': [9.5293472, 2.2584408], 
