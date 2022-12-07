@@ -1,5 +1,22 @@
 CHANGELOG
 ========================
+# v1.3.0 (06/12/2022)
+* NEW: Unicode Support for Moniker names
+* NEW: Rating scores in subscription tab
+* NEW: City names in subscription tabs
+* NEW: Cities for Nodes now available in node selection window
+* NEW: Backend server API for node locations
+* NEW: Allows user to rate node after disconnecting
+* NEW: Node ratings and vote count are visible in node selection window
+* NEW: Backend server API for node ratings
+* UPDATE: Enhanced Subscription dialog with Moniker and better fonts
+* UPDATE: Enhanced subscription processing dialog with nicer look
+* UPDATE: Fixed freeze on TIMEOUT in API requests (ratings,wallet,etc.)
+* UPDATE: Set requests TIMEOUT to 5 seconds
+* CHANGE: Housekeeping by adding src/typedef/konstants.py 
+* CHANGE: Housekeeping in wallet.py and sentinel.py
+
+
 # v1.2.3 (13/11/2022)
 * NEW: Persisent real-time bandwidth when switching between nodes
 * CHANGE: Handling of CONNECTED boolean

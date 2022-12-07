@@ -27,9 +27,11 @@ where `user` is your username on your system.
 This just changes the permissions of the meile-gui configuration directory back to a regular user instead of its previous permission as root. 
 
 ## Mac OS X
-Download the latest release [Mac OS X v1.2.1](https://github.com/MathNodes/meile-gui/releases/tag/v1.2.1)
+Download the latest release or package installer [Mac OS X v1.3.0](https://github.com/MathNodes/meile-gui/releases/tag/v1.2.1)
 
-Make sure to give the binary executable permissions if it doesn't have it already:
+If you are downloading the package installer, just double click on it to install Meile dVPN. You will see an icon in your Applications folder with no picture, labeled "meile-gui". This is a link to the executable. Double click on it to run. 
+
+If installing the binary (not the .pkg), make sure to give the binary executable permissions if it doesn't have it already:
 
 ```shell
 chmod +x meile-gui
@@ -53,7 +55,7 @@ The latest version of Meile GUI comes packaged as a Debian archive. Simply downl
 and run:
 
 ```shell
-sudo apt install -y ./meile-gui-v1.2.3_ubuntu22.04_amd64.deb
+sudo apt install -y ./meile-gui-v1.3.0_ubuntu22.04_amd64.deb
 ```
 
 This release will install wireguard tools (and resolvconf) alongside Meile GUI. To run the application requires root privileges on some machines and we have enforced it within the app.
@@ -68,26 +70,29 @@ Or goto your panel menu under Internet and there will be a clickable icon.
 
 Because there were issues loading certain mesa OpenGL drivers in various Debian Virtual Machines, we have included a separate .deb archive that automatically configures the system to handle the Meile dependencies. Please use this version if you are running a Debian flavor in a virutal machine (VM).
 
-[Debian/Ubuntu 20.04 Virtual Machine](https://github.com/MathNodes/meile-gui/releases/download/v1.2.3/meile-gui-v1.2.3_ubuntu2004_amd64_vm.deb)
+[Debian/Ubuntu 20.04 Virtual Machine](https://github.com/MathNodes/meile-gui/releases/download/v1.3.0/meile-gui-v1.3.0_ubuntu2004_amd64_vm.deb)
 
-[Debian/Ubuntu 22.04 Virtual Machine](https://github.com/MathNodes/meile-gui/releases/download/v1.2.3/meile-gui-v1.2.3_ubuntu2204_amd64_vm.deb)
+[Debian/Ubuntu 22.04 Virtual Machine](https://github.com/MathNodes/meile-gui/releases/download/v1.3.0/meile-gui-v1.3.0_ubuntu2204_amd64_vm.deb)
 
 ## Redhat/CentOS/Fedora (.rpm)
 
 Download the latest RPM for RedHat releases:
 
-[RedHat RPM](https://github.com/MathNodes/meile-gui/releases/download/v1.2.3/meile-gui-v1.2.3-1.fc36.x86_64.rpm)
+[RedHat RPM (fc36)](https://github.com/MathNodes/meile-gui/releases/download/v1.3.0/meile-gui-v1.3.0-1.fc36.x86_64.rpm)
+
+[RedHat RPM (fc37)](https://github.com/MathNodes/meile-gui/releases/download/v1.3.0/meile-gui-v1.3.0-1.fc37.x86_64.rpm)
+
 
 Install the rpm from a terminal:
 
 ```shell
-sudo rpm -i meile-gui-v1.2.3-1.fc36.x86_64.rpm
+sudo rpm -i meile-gui-v1.3.0-1.fc36.x86_64.rpm
 ```
 
 or to install all dependencies **(recommended)**
 
 ```shell
-sudo dnf install meile-gui-v1.2.3-1.fc36.x86_64.rpm
+sudo dnf install meile-gui-v1.3.0-1.fc36.x86_64.rpm
 ```
 
 This will install `meile-gui` and all its dependencies. 
@@ -97,7 +102,7 @@ This will install `meile-gui` and all its dependencies.
 Meile dVPN GUI v0.10.4.x is now available as a pip packages as well. These are pre-releases scheduled to be built into a binary. To install, first install wireguard-tools and meile dependencies if you don't already have them
 
 ```
-sudo apt install -y  wireguard-tools openresolv mesa-utils libgl1-mesa-glx xclip
+sudo apt install -y  wireguard-tools openresolv mesa-utils libgl1-mesa-glx xclip python3-devel
 ```
 
 Then install via pip
@@ -124,13 +129,13 @@ The FIAT gateway is not included in the pip package. This is due to certain cred
 ## Installing from Binary
 
 ```shell
-sudo apt install -y wireguard-tools openresolv mesa-utils libgl1-mesa-glx xclip
+sudo apt install -y wireguard-tools openresolv mesa-utils libgl1-mesa-glx xclip python3-devel
 ```
 
 After installing wireguard-tools, download the latest stable release at the [Release](https://github.com/MathNodes/meile-gui/releases) page and extract:
 
 ```shell
-tar xvjf meile-gui-v1.2.3.tar.bz2
+tar xvjf meile-gui-v1.3.0.tar.bz2
 ```
 
 Run & enjoy!

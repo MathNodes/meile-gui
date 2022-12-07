@@ -1,6 +1,6 @@
 from subprocess import Popen, PIPE, STDOUT
 import collections
-from os import path, environ
+from os import path
 import re
 import requests
 from urllib3.exceptions import InsecureRequestWarning
@@ -10,36 +10,22 @@ from conf.meile_config import MeileGuiConfig
 from treelib import  Tree
 from geography.continents import OurWorld
 
+from typedef.konstants import ConfParams 
+from typedef.konstants import HTTParams
+from typedef.konstants import IBCTokens
+from typedef.konstants import TextStrings
+from typedef.konstants import NodeKeys
 
-# IBC Tokens
-IBCSCRT  = 'ibc/31FEE1A2A9F9C01113F90BD0BBCCE8FD6BBB8585FAF109A2101827DD1D5B95B8'
-IBCATOM  = 'ibc/A8C2D23A1E6F95DA4E48BA349667E322BD7A6C996D8A4AAE8BA72E190F3D1477'
-IBCDEC   = 'ibc/B1C0DDB14F25279A2026BC8794E12B259F8BDA546A3C5132CCAEE4431CE36783'
-IBCOSMO  = 'ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518'
-IBCUNKWN = 'ibc/9BCB27203424535B6230D594553F1659C77EC173E36D9CF4759E7186EE747E84'
 
-IBCCOINS = [{'uscrt' : IBCSCRT}, {'uatom' : IBCATOM}, {'udec' : IBCDEC}, {'uosmo' : IBCOSMO}, {'uknwn' :IBCUNKWN}]
-
-SATOSHI = 1000000
-
-USER = environ['SUDO_USER'] if 'SUDO_USER' in environ else environ['USER']
-PATH = environ['PATH']
-KEYRINGDIR = path.join(path.expanduser('~' + USER), '.meile-gui')
-BASEDIR  = path.join(path.expanduser('~' + USER), '.sentinelcli')
-APIURL   = "https://api.sentinel.mathnodes.com"
-
-NodesInfoKeys = ["Moniker","Address","Provider","Price","Country","Speed","Latency","Peers","Handshake","Version","Status"]
-SubsInfoKeys = ["ID", "Owner", "Plan", "Expiry", "Denom", "Node", "Price", "Deposit", "Free", "Status"]
-FinalSubsKeys = [SubsInfoKeys[0], NodesInfoKeys[0],SubsInfoKeys[5], SubsInfoKeys[6], SubsInfoKeys[7], NodesInfoKeys[4], "Allocated", "Consumed" ]
-
-dash = "-"
 
 MeileConfig = MeileGuiConfig()
 sentinelcli = MeileConfig.resource_path("../bin/sentinelcli")
-RPC = "https://rpc.mathnodes.com:443"
+
 
 class NodeTreeData():
     NodeTree = None
+    NodeScores = {}
+    NodeLocations = {}
     
     def __init__(self, node_tree):
         if not node_tree:
@@ -51,7 +37,7 @@ class NodeTreeData():
     def get_nodes(self, latency, *kwargs):
         AllNodesInfo = []
         print("Running sentinel-cli with latency: %s" % latency)
-        nodeCMD = [sentinelcli, "query", "nodes", "--node", RPC, "--limit", "5000", "--timeout", "%s" % latency]
+        nodeCMD = [sentinelcli, "query", "nodes", "--node", HTTParams.RPC, "--limit", "20000", "--timeout", "%s" % latency]
     
         proc = Popen(nodeCMD, stdout=PIPE)
         
@@ -59,59 +45,96 @@ class NodeTreeData():
         
         
         for line in proc.stdout.readlines():
-            #print(line)
+            line = str(line.decode('utf-8'))
             if k < 4:  
                 k += 1 
                 continue
-            if k >=4 and '+-------+' in str(line.decode('utf-8')):
+            if k >=4 and '+-------+' in line:
                 break
-            elif "freak12techno" in str(line.decode('utf-8')):
+            elif "freak12techno" in line:
                 ninfos = []
-                ninfos.append(str(line.decode('utf-8')).split('|')[1])
-                for ninf in str(line.decode('utf-8')).split('|')[3:-1]:
+                ninfos.append(line.split('|')[1])
+                for ninf in line.split('|')[3:-1]:
                     ninfos.append(ninf)
-                AllNodesInfo.append(dict(zip(NodesInfoKeys, ninfos)))
-            elif "Testserver" in str(line.decode('utf-8')):
+                AllNodesInfo.append(dict(zip(NodeKeys.NodesInfoKeys, ninfos)))
+            elif "Testserver" in line:
                 continue
             else: 
-                ninfos = str(line.decode('utf-8')).split('|')[1:-1]
+                ninfos = line.split('|')[1:-1]
                 if ninfos[0].isspace():
                     continue
                 elif ninfos[1].isspace():
                     continue
                 else:
-                    AllNodesInfo.append(dict(zip(NodesInfoKeys, ninfos)))
-                #print(ninfos, end='\n')
+                    AllNodesInfo.append(dict(zip(NodeKeys.NodesInfoKeys, ninfos)))
         
-        #get = input("Blah: ")
-        AllNodesInfoSorted = sorted(AllNodesInfo, key=lambda d: d[NodesInfoKeys[4]])
+        AllNodesInfoSorted = sorted(AllNodesInfo, key=lambda d: d[NodeKeys.NodesInfoKeys[4]])
         
         #result = collections.defaultdict(list)
         
         self.NodeTree = self.CreateNodeTreeStructure()
         
         for d in AllNodesInfoSorted:
-            for key in NodesInfoKeys:
+            for key in NodeKeys.NodesInfoKeys:
                 d[key] = d[key].lstrip().rstrip()
-            version = d[NodesInfoKeys[9]].replace('.','')
+            version = d[NodeKeys.NodesInfoKeys[9]].replace('.','')
             if version not in ('030', '031', '032'):
                 continue
-            d[NodesInfoKeys[3]] = self.return_denom(d[NodesInfoKeys[3]])
+            d[NodeKeys.NodesInfoKeys[3]] = self.return_denom(d[NodeKeys.NodesInfoKeys[3]])
             
-            if "Czechia" in d[NodesInfoKeys[4]]:
-                d[NodesInfoKeys[4]] = "Czech Republic"
+            if  OurWorld.CZ in d[NodeKeys.NodesInfoKeys[4]]:
+                d[NodeKeys.NodesInfoKeys[4]] = OurWorld.CZ_FULL
            
-            d_continent = OurWorld.our_world.get_country_continent_name(d[NodesInfoKeys[4]])
+            d_continent = OurWorld.our_world.get_country_continent_name(d[NodeKeys.NodesInfoKeys[4]])
             try:
-                self.NodeTree.create_node(d[NodesInfoKeys[4]],d[NodesInfoKeys[4]], parent=d_continent)
+                self.NodeTree.create_node(d[NodeKeys.NodesInfoKeys[4]],d[NodeKeys.NodesInfoKeys[4]], parent=d_continent)
             except:
                 pass
             try:
-                self.NodeTree.create_node(d[NodesInfoKeys[1]], d[NodesInfoKeys[1]],parent=d[NodesInfoKeys[4]], data=d )
+                self.NodeTree.create_node(d[NodeKeys.NodesInfoKeys[1]], d[NodeKeys.NodesInfoKeys[1]],parent=d[NodeKeys.NodesInfoKeys[4]], data=d )
             except:
                 pass
             
         self.NodeTree.show()
+        self.GetNodeScores()
+        self.GetNodeLocations()
+        
+    def GetNodeScores(self):
+        try:
+            r = requests.get(HTTParams.SERVER_URL + HTTParams.NODE_SCORE_ENDPOINT, timeout=HTTParams.TIMEOUT)
+            data = r.json()
+          
+            for nlist in data['data']:
+                print(nlist)
+                k=0
+                for nd in nlist:
+                   if k == 0:
+                       self.NodeScores[nlist[k]] = [nlist[k+1], nlist[k+2]]
+                       k += 1
+                   else:
+                       break
+            print(self.NodeScores)
+        except Exception as e:
+            print(str(e)) 
+            
+    def GetNodeLocations(self):
+        try:
+            r = requests.get(HTTParams.SERVER_URL + HTTParams.NODE_LOCATION_ENDPOINT, timeout=HTTParams.TIMEOUT)
+            data = r.json()
+          
+            for nlist in data['data']:
+                k=0
+                for nd in nlist:
+                   if k == 0:
+                       self.NodeLocations[nlist[k]] = nlist[k+1]
+                       k += 1
+                   else:
+                       break
+            #print(self.NodeLocations)
+        except Exception as e:
+            print(str(e)) 
+            
+             
     
     def CreateNodeTreeStructure(self, **kwargs):
         NodeTreeBase = Tree()
@@ -126,7 +149,7 @@ class NodeTreeData():
         return NodeTreeBase
     
     def return_denom(self, tokens):
-        for ibc_coin in IBCCOINS:
+        for ibc_coin in IBCTokens.IBCCOINS:
             for denom,ibc in ibc_coin.items():
                 if ibc in tokens:
                     tokens = tokens.replace(ibc, denom)
@@ -137,7 +160,7 @@ class NodeTreeData():
         SubsNodesInfo = []
         SubsFinalResult    = []
         print("Geting Subscriptions... %s" % ADDRESS)
-        subsCMD = [sentinelcli, "query", "subscriptions", "--node", "https://rpc.mathnodes.com:443", "--status", "Active", "--limit", "100", "--address" ,ADDRESS]
+        subsCMD = [sentinelcli, "query", "subscriptions", "--node", HTTParams.RPC, "--status", "Active", "--limit", "100", "--address" ,ADDRESS]
         proc = Popen(subsCMD, stdout=PIPE)
     
         k=1
@@ -148,7 +171,7 @@ class NodeTreeData():
             else: 
                 ninfos = str(line.decode('utf-8')).lstrip().rstrip().split('|')[1:-1]
                 # List of Dictionaries
-                SubsNodesInfo.append(dict(zip(SubsInfoKeys, ninfos)))
+                SubsNodesInfo.append(dict(zip(NodeKeys.SubsInfoKeys, ninfos)))
         
         # A Dictionary of Lists
         SubsResult = collections.defaultdict(list)
@@ -160,35 +183,35 @@ class NodeTreeData():
                 SubsResult[k].append(v.lstrip().rstrip())
                 
         k=0
-        for snaddress in SubsResult[SubsInfoKeys[5]]:
+        for snaddress in SubsResult[NodeKeys.SubsInfoKeys[5]]:
             try:
                 NodeData = self.NodeTree.get_node(snaddress).data
             except AttributeError:
                 SubsFinalResult.append({
-                                            FinalSubsKeys[0] : SubsResult[SubsInfoKeys[0]][k],
-                                            FinalSubsKeys[1] : "Offline",
-                                            FinalSubsKeys[2] : SubsResult[SubsInfoKeys[5]][k],
-                                            FinalSubsKeys[3] : SubsResult[SubsInfoKeys[6]][k],
-                                            FinalSubsKeys[4] : SubsResult[SubsInfoKeys[7]][k],
-                                            FinalSubsKeys[5] : None,
-                                            FinalSubsKeys[6] : "0.00GB",
-                                            FinalSubsKeys[7] : "0.00B"
+                                            NodeKeys.FinalSubsKeys[0] : SubsResult[NodeKeys.SubsInfoKeys[0]][k],
+                                            NodeKeys.FinalSubsKeys[1] : "Offline",
+                                            NodeKeys.FinalSubsKeys[2] : SubsResult[NodeKeys.SubsInfoKeys[5]][k],
+                                            NodeKeys.FinalSubsKeys[3] : SubsResult[NodeKeys.SubsInfoKeys[6]][k],
+                                            NodeKeys.FinalSubsKeys[4] : SubsResult[NodeKeys.SubsInfoKeys[7]][k],
+                                            NodeKeys.FinalSubsKeys[5] : None,
+                                            NodeKeys.FinalSubsKeys[6] : "0.00GB",
+                                            NodeKeys.FinalSubsKeys[7] : "0.00B"
                                             })
                 print("Sub not found in list")
                 k += 1
                 continue
             
-            nodeQuota = self.GetQuota(SubsResult[SubsInfoKeys[0]][k])
+            nodeQuota = self.GetQuota(SubsResult[NodeKeys.SubsInfoKeys[0]][k])
             if nodeQuota:
                 SubsFinalResult.append({
-                                            FinalSubsKeys[0] : SubsResult[SubsInfoKeys[0]][k],
-                                            FinalSubsKeys[1] : NodeData[NodesInfoKeys[0]],
-                                            FinalSubsKeys[2] : SubsResult[SubsInfoKeys[5]][k],
-                                            FinalSubsKeys[3] : SubsResult[SubsInfoKeys[6]][k],
-                                            FinalSubsKeys[4] : SubsResult[SubsInfoKeys[7]][k],
-                                            FinalSubsKeys[5] : NodeData[NodesInfoKeys[4]],
-                                            FinalSubsKeys[6] : nodeQuota[0],
-                                            FinalSubsKeys[7] : nodeQuota[1]
+                                            NodeKeys.FinalSubsKeys[0] : SubsResult[NodeKeys.SubsInfoKeys[0]][k],
+                                            NodeKeys.FinalSubsKeys[1] : NodeData[NodeKeys.NodesInfoKeys[0]],
+                                            NodeKeys.FinalSubsKeys[2] : SubsResult[NodeKeys.SubsInfoKeys[5]][k],
+                                            NodeKeys.FinalSubsKeys[3] : SubsResult[NodeKeys.SubsInfoKeys[6]][k],
+                                            NodeKeys.FinalSubsKeys[4] : SubsResult[NodeKeys.SubsInfoKeys[7]][k],
+                                            NodeKeys.FinalSubsKeys[5] : NodeData[NodeKeys.NodesInfoKeys[4]],
+                                            NodeKeys.FinalSubsKeys[6] : nodeQuota[0],
+                                            NodeKeys.FinalSubsKeys[7] : nodeQuota[1]
                                             })
             k += 1 
 
@@ -196,7 +219,7 @@ class NodeTreeData():
 
 
     def GetQuota(self, id):
-        quotaCMD = [sentinelcli, 'query', 'quotas', '--node', RPC, '--page', '1', id]
+        quotaCMD = [sentinelcli, 'query', 'quotas', '--node', HTTParams.RPC, '--page', '1', id]
         proc = Popen(quotaCMD, stdout=PIPE)
         h=1
         for line in proc.stdout.readlines():
@@ -215,23 +238,11 @@ class NodeTreeData():
                     return None
                 else:
                     return nodeQuota
-
-
-def get_node_infos(naddress):
-    endpoint = "/nodes/" + naddress
-    
-    NodeInfoDict = {}
-    
-    r = requests.get(APIURL + endpoint)
-    
-    remote_url = r.json()['result']['node']['remote_url']
-    
-    
-
+                
 def disconnect():
     #ifCMD = ["ifconfig", "-a"]
     #ifgrepCMD = ["grep", "-oE", "wg[0-9]+"]
-    partCMD = ['pkexec', 'env', 'PATH=%s' % PATH, sentinelcli, '--home', BASEDIR, "disconnect"]
+    partCMD = ['pkexec', 'env', 'PATH=%s' % ConfParams.PATH, sentinelcli, '--home', ConfParams.BASEDIR, "disconnect"]
     
     #ifoutput = Popen(ifCMD,stdin=PIPE, stdout=PIPE, stderr=STDOUT)
     #grepoutput = Popen(ifgrepCMD, stdin=ifoutput.stdout, stdout=PIPE, stderr=STDOUT)

@@ -6,6 +6,7 @@ from kivymd.uix.dialog import MDDialog
 from kivymd.uix.button import MDFlatButton, MDRaisedButton, MDFillRoundFlatButton
 from kivy.uix.recycleview import RecycleView
 from kivy.uix.boxlayout import BoxLayout
+from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.list import OneLineIconListItem
 from kivy.metrics import dp
@@ -20,6 +21,7 @@ from kivy.core.clipboard import Clipboard
 from kivy.animation import Animation
 from kivy.clock import Clock
 
+
 from functools import partial
 from urllib3.exceptions import InsecureRequestWarning
 import requests
@@ -28,8 +30,8 @@ import psutil
 from os import path
 from subprocess import Popen, TimeoutExpired
 
-from cli.sentinel import IBCCOINS
-#from ui.interfaces import SubscribeContent
+from typedef.konstants import IBCTokens
+from typedef.konstants import HTTParams
 from typedef.win import CoinsList, WindowNames
 from conf.meile_config import MeileGuiConfig
 from cli.wallet import HandleWalletFunctions
@@ -61,7 +63,38 @@ class WalletInfoContent(BoxLayout):
         anim.start(label)
             
         return label
-
+    
+class RatingContent(MDBoxLayout):
+    naddress = StringProperty()
+    moniker  = StringProperty()
+    
+    def __init__(self, moniker, naddress):
+        super(RatingContent, self).__init__()
+        self.naddress = naddress
+        self.moniker  = moniker
+    
+    def get_font(self):
+        Config = MeileGuiConfig()
+        return Config.resource_path("../fonts/arial-unicode-ms.ttf")
+    
+    def SubmitRating(self, rating, node_address):
+        UUID = Meile.app.root.get_screen(WindowNames.PRELOAD).UUID
+        try:
+            rating_dict = {'uuid' : "%s" % UUID, 'address' : "%s" % node_address, "rating" : rating}
+            ping = requests.post(HTTParams.SERVER_URL + HTTParams.API_RATING_ENDPOINT, json=rating_dict, timeout=HTTParams.TIMEOUT)
+            if ping.status_code == 200:
+                print("Rating Sent")
+            else:
+                print("Error submitting rating")
+        except Exception as e:
+            print(str(e))
+            pass
+        
+    def return_rating_value(self):
+        return self.ids.rating_slider.value
+    
+    
+    
 class SubscribeContent(BoxLayout):
     
     
@@ -98,7 +131,10 @@ class SubscribeContent(BoxLayout):
         self.ids.drop_item.current_item = CoinsList.ibc_mu_coins[0]
         self.parse_coin_deposit(self.ids.drop_item.current_item)
 
-
+    def get_font(self):
+        Config = MeileGuiConfig()
+        return Config.resource_path("../fonts/arial-unicode-ms.ttf")
+    
     def set_item(self, text_item):
         self.ids.drop_item.set_item(text_item)
         self.ids.deposit.text = self.parse_coin_deposit(text_item)
@@ -129,7 +165,25 @@ class SubscribeContent(BoxLayout):
         
 
     def return_deposit_text(self):
-        return (self.ids.deposit.text, self.naddress)
+        return (self.ids.deposit.text, self.naddress, self.moniker)
+
+
+class ProcessingSubDialog(BoxLayout):
+    moniker = StringProperty()
+    naddress = StringProperty()
+    deposit = StringProperty()
+    
+    def __init__(self, moniker, naddress, deposit):
+        super(ProcessingSubDialog, self).__init__()
+        self.moniker = moniker
+        self.naddress = naddress
+        self.deposit = deposit
+        
+    def get_font(self):
+        Config = MeileGuiConfig()
+        return Config.resource_path("../fonts/arial-unicode-ms.ttf")
+    
+        
     
 class IconListItem(OneLineIconListItem):
     icon = StringProperty()
@@ -167,31 +221,28 @@ class RecycleViewRow(MDCard,RectangularElevationBehavior,ThemableBehavior, Hover
         Window.set_system_cursor('arrow')
         
     def get_city_of_node(self, naddress):   
-        APIURL   = "https://api.sentinel.mathnodes.com"
+        
 
         endpoint = "/nodes/" + naddress.lstrip().rstrip()
-        #print(APIURL + endpoint)
-        try: 
+        #print(HTTParams.APIURL + endpoint)
+        try:
             requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
-            r = requests.get(APIURL + endpoint)
+            r = requests.get(HTTParams.APIURL + endpoint)
             remote_url = r.json()['result']['node']['remote_url']
-            r = requests.get(remote_url + "/status", verify=False)
+            r = requests.get(remote_url + "/status", verify=False, timeout=HTTParams.TIMEOUT)
             print(remote_url)
-            
     
             NodeInfoJSON = r.json()
-            
             NodeInfoDict = {}
             
             NodeInfoDict['connected_peers'] = NodeInfoJSON['result']['peers']
             NodeInfoDict['max_peers']       = NodeInfoJSON['result']['qos']['max_peers']
             NodeInfoDict['version']         = NodeInfoJSON['result']['version']
             NodeInfoDict['city']            = NodeInfoJSON['result']['location']['city']
-        
+
         except Exception as e:
             print(str(e))
             return None
-
 
 
         if not self.dialog:
@@ -219,7 +270,7 @@ Node Version: %s
         subscribe_dialog = SubscribeContent(price, moniker , naddress )
         if not self.dialog:
             self.dialog = MDDialog(
-                    title="Address:",
+                    title="Node:",
                     type="custom",
                     content_cls=subscribe_dialog,
                     md_bg_color=get_color_from_hex("#0d021b"),
@@ -239,13 +290,20 @@ Node Version: %s
                     ],
                 )
             self.dialog.open()
+    
     @delayable
     def subscribe(self, subscribe_dialog, *kwargs):
         sub_node = subscribe_dialog.return_deposit_text()
+        spdialog = ProcessingSubDialog(sub_node[2], sub_node[1], sub_node[0] )
         deposit = self.reparse_coin_deposit(sub_node[0])
         self.dialog.dismiss()
         self.dialog = None
-        self.dialog = MDDialog(title="Subscribing...\n\n%s\n %s" %( deposit, sub_node[1]),md_bg_color=get_color_from_hex("#0d021b"))
+        self.dialog = MDDialog(
+                title="Subscribing...",
+                type="custom",
+                content_cls=spdialog,
+                md_bg_color=get_color_from_hex("#0d021b"),
+            )
         self.dialog.open()
         yield 0.6
 
@@ -302,7 +360,7 @@ Node Version: %s
                 pass
             
     def check_ibc_denom(self, tru_mu_deposit):
-        for ibc_coin in IBCCOINS:
+        for ibc_coin in IBCTokens.IBCCOINS:
             k = ibc_coin.keys()
             v = ibc_coin.values()
             for coin,ibc in zip(k,v):
@@ -329,13 +387,15 @@ Node Version: %s
         except Exception as e:
             print(str(e))
             self.dialog = None
-        
+     
 class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
     text = StringProperty()
     dialog = None
     
-
-       
+    def get_font(self):
+        Config = MeileGuiConfig()
+        return Config.resource_path("../fonts/arial-unicode-ms.ttf")
+        
     def get_data_used(self, allocated, consumed, node_address):
         try:
             ''' Since this function is called when opening the Subscription tab,
@@ -354,7 +414,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
             
             #End house keeping
             
-            allocated = float(allocated.replace('GB',''))
+            allocated = self.compute_consumed_data(allocated)
             consumed = self.compute_consumed_data(consumed)
             
             if allocated == 0:
@@ -390,9 +450,10 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
         else:
             Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).ids.quota_pct.text = "0.00%"
             Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).ids.quota.value    = 0
-            return float(0)    
+            return float(0)
+            
     
-        
+    
     def add_loading_popup(self, title_text):
         self.dialog = None
         self.dialog = MDDialog(title=title_text,md_bg_color=get_color_from_hex("#0d021b"))
@@ -404,8 +465,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
             self.dialog = None
         except Exception as e:
             print(str(e))
-            self.dialog = None
-        
+            return
         
     @delayable
     def connect_to_node(self, ID, naddress, moniker, switchValue, **kwargs):
@@ -436,10 +496,8 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
             yield 0.6
             UUID = Meile.app.root.get_screen(WindowNames.PRELOAD).UUID
             try:
-                SERVER_ADDRESS = "https://aimokoivunen.mathnodes.com:5000"
-                API_ENDPOINT   = "/api/ping"
                 uuid_dict = {'uuid' : "%s" % UUID, 'os' : "L"}
-                ping = requests.post(SERVER_ADDRESS + API_ENDPOINT, json=uuid_dict)
+                ping = requests.post(HTTParams.SERVER_URL + HTTParams.API_PING_ENDPOINT, json=uuid_dict, timeout=HTTParams.TIMEOUT)
                 if ping.status_code == 200:
                     print('ping')
                 else:
@@ -451,19 +509,25 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
             connected = HandleWalletFunctions.connect(HandleWalletFunctions, ID, naddress)
             
             if connected:
+                from copy import deepcopy
+                
                 Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).CONNECTED               = True
+                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['moniker']   = moniker
                 Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node']      = naddress
                 Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['switch']    = True
                 Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['id']        = ID
                 Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['allocated'] = self.allocated_text
                 Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['consumed']  = self.consumed_text
+                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['og_consumed']  = deepcopy(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['consumed']) 
                 
                 if not ID in Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth:
                     Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth[ID] = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch
+                else:
+                    Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth[ID]['og_consumed'] = deepcopy(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth[ID]['consumed'])
                 
                 
                 self.setQuotaClock(ID, naddress)
-                
+
                 self.remove_loading_widget()
                 self.dialog = MDDialog(
                     title="Connected!",
@@ -495,7 +559,6 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
         self.UpdateQuotaForNode(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['id'],
                                 Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node'],
                                 None)
-        
         Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).clock = Clock.create_trigger(partial(self.UpdateQuotaForNode,
                                                   Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['id'],
                                                   Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node']),
@@ -505,8 +568,8 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
     def UpdateQuotaForNode(self, ID, naddress, dt):
         try:
             print("%s: Getting Quota: " % ID, end= ' ')
-            startConsumption = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth[ID]['consumed']
-            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth[ID]['consumed'] = self.GetConsumedWhileConnected(self.compute_consumed_data(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth[ID]['consumed']))
+            startConsumption = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth[ID]['og_consumed']
+            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth[ID]['consumed'] = self.GetConsumedWhileConnected(self.compute_consumed_data(startConsumption))
             
             Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).ids.quota.value = self.connected_quota(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['allocated'],
                                                                                                       Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth[ID]['consumed'])
@@ -530,8 +593,8 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
         
         total_data = str(round(float(bytes_sent + bytes_recvd)+ float(sConsumed),3)) + "GB"
         
-        return total_data
-            
+        return total_data    
+                
     def call_ip_get(self,result, moniker,  *kwargs):
         if result:
             Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).CONNECTED = True
@@ -589,4 +652,4 @@ class MDMapCountryButton(MDFillRoundFlatButton,ThemableBehavior, HoverBehavior):
 
         self.md_bg_color = get_color_from_hex("#0d021b")
         Window.set_system_cursor('arrow')
-        
+            
