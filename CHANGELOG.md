@@ -13,7 +13,7 @@ CHANGELOG
 
 # v0.11.1.0 (28/11/2022)
 * NEW: Cities for Nodes now available in node selection window
-* NEW: Backedn server API for node locations
+* NEW: Backend server API for node locations
 
 # v0.11.0.0 (26/11/2022)
 * NEW: Allows user to rate node after disconnecting
