@@ -1,20 +1,21 @@
 from src.geography.continents import OurWorld
-from kivy.properties import BooleanProperty, StringProperty
 from src.ui.interfaces import Tab, LatencyContent
 from src.typedef.win import WindowNames, ICANHAZURL
 from src.cli.sentinel import  NodeTreeData
-from src.cli.sentinel import NodesInfoKeys, FinalSubsKeys
+from src.typedef.konstants import NodeKeys
 from src.cli.sentinel import disconnect as Disconnect
 import src.main.main as Meile
-from src.ui.widgets import  WalletInfoContent, MDMapCountryButton
+from src.ui.widgets import  WalletInfoContent, MDMapCountryButton, RatingContent
 from src.utils.qr import QRCode
 from src.cli.wallet import HandleWalletFunctions
 from src.conf.meile_config import MeileGuiConfig
 from src.typedef.win import CoinsList
 from src.fiat import fiat_interface
 from src.cli.warp import WarpHandler
+from src.adapters import HTTPRequests
 
-  
+
+from kivy.properties import BooleanProperty, StringProperty, ColorProperty  
 from kivy.uix.screenmanager import Screen, SlideTransition
 from kivymd.uix.button import MDFlatButton, MDRaisedButton,MDTextButton, MDFillRoundFlatButton
 from kivymd.uix.dialog import MDDialog
@@ -245,7 +246,7 @@ class PreLoadWindow(Screen):
         
     @delayable
     def runNodeThread(self):
-        yield 1.4
+        yield 0.6
         thread = ThreadWithResult(target=self.NodeTree.get_nodes, args=("12s",))
         thread.start()
         thread.join()
@@ -327,8 +328,11 @@ class MainWindow(Screen):
     Sort = SortOptions[0]
     MeileMap = None
     MeileMapBuilt = False
-    NodeSwitch = {"node" : None, "switch" : False}
+    NodeSwitch = {"moniker" : None, "node" : None, "switch" : False, 'id' : None, 'consumed' : None, 'og_consumed' : None, 'allocated' : None}
     NewWallet = False
+    box_color = ColorProperty('#fcb711')
+    clock = None
+    PersistentBandwidth = {}
     
     def __init__(self, node_tree, **kwargs):
         #Builder.load_file("./src/kivy/meile.kv")
@@ -384,6 +388,11 @@ class MainWindow(Screen):
             self.ids.country_map.add_widget(self.MeileMap)
             self.AddCountryNodePins()
             self.MeileMapBuilt = True
+            
+    def get_font(self):
+        Config = MeileGuiConfig()
+        return Config.resource_path("../fonts/arial-unicode-ms.ttf")
+     
             
     def AddCountryNodePins(self):
         try:
@@ -455,7 +464,6 @@ class MainWindow(Screen):
             self.add_loading_popup("Starting WARP service...")
             yield 1.3
             if WARP.start_warp_daemon():
-                
                 sleep(7)
                 self.warpd = True
             
@@ -474,6 +482,7 @@ class MainWindow(Screen):
                         sleep(3)
                         self.remove_loading_widget(None)
                         self.display_warp_success()
+                        self.warpd_disconnected = False
                         
             else:
                 print("Running WARP...")
@@ -534,7 +543,9 @@ class MainWindow(Screen):
             
         self.old_ip = self.ip
         try:
-            req = requests.get(ICANHAZURL)
+            Request = HTTPRequests.MakeRequest()
+            http = Request.hadapter()
+            req = http.get(ICANHAZURL)
             self.ip = req.text
         
             self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.new_ip.text = self.ip
@@ -544,7 +555,7 @@ class MainWindow(Screen):
             print(str(e))
             return False
             
-
+    @mainthread    
     def disconnect_from_node(self):
         try:
             if self.CONNECTED == None:
@@ -552,16 +563,47 @@ class MainWindow(Screen):
                 print("Disconnect RTNCODE: %s" % returncode)
                 self.get_ip_address(None)
                 self.set_protected_icon(False, "")
-                
             elif self.CONNECTED == False:
-                return
+                print("Disconnected!")
             else:
                 returncode, self.CONNECTED = Disconnect()
                 print("Disconnect RTNCODE: %s" % returncode)
                 self.get_ip_address(None)
                 self.set_protected_icon(False, "")
-            self.NodeSwitch = {"node" : None, "switch" : False}
-            self.warp_disconnect(None)
+            
+            #self.warp_disconnect(None)
+            self.dialog = None
+            rating_dialog = RatingContent(self.NodeSwitch['moniker'], self.NodeSwitch['node'])
+            self.dialog = MDDialog(
+                title="Node Rating",
+                md_bg_color=get_color_from_hex("#0d021b"),
+                type="custom",
+                content_cls=rating_dialog,
+                buttons=[
+                    MDFlatButton(
+                        text="LATER",
+                        theme_text_color="Custom",
+                        text_color=Meile.app.theme_cls.primary_color,
+                        on_release=self.remove_loading_widget,
+                    ),
+                    MDRaisedButton(
+                        text="RATE",
+                        theme_text_color="Custom",
+                        text_color=(1,1,1,1),
+                        on_release=partial(self.WrapperSubmitRating, rating_dialog),
+                    ),
+                    ]
+                )
+            self.dialog.open()
+            self.NodeSwitch = {"moniker" : None,
+                               "node" : None,
+                               "switch" : False,
+                               'id' : None,
+                               'consumed' : None,
+                               'og_consumed' : None,
+                               'allocated' : None
+                               }
+            return True
         except Exception as e:
             print(str(e))
             self.dialog = None
@@ -578,6 +620,11 @@ class MainWindow(Screen):
                 ]
             )
             self.dialog.open()
+            return False 
+        
+    def WrapperSubmitRating(self, rc, dt):
+        rc.SubmitRating(rc.return_rating_value(), rc.naddress)
+        self.remove_loading_widget(None)
             
           
     def wallet_dialog(self):
@@ -634,44 +681,62 @@ class MainWindow(Screen):
         Meile.app.root.transition = SlideTransition(direction = "left")
         Meile.app.root.current = WindowNames.HELP
        
-    def wallet_create(self, inst):
-        pass
-        
-    
     def add_sub_rv_data(self, node, flagloc):
         
-        if node[FinalSubsKeys[1]] == "Offline":
-           self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.rv.data.append(
-                {
-                    "viewclass"      : "RecycleViewSubRow",
-                    "moniker_text"   : node[FinalSubsKeys[1]].lstrip().rstrip(),
-                    "sub_id_text"    : node[FinalSubsKeys[0]].lstrip().rstrip(),
-                    "price_text"     : node[FinalSubsKeys[4]].lstrip().rstrip(),
-                    "country_text"   : "Offline",
-                    "address_text"   : node[FinalSubsKeys[2]].lstrip().rstrip(),
-                    "allocated_text" : node[FinalSubsKeys[6]].lstrip().rstrip(),
-                    "consumed_text"  : node[FinalSubsKeys[7]].lstrip().rstrip(),
-                    "source_image"   : self.MeileConfig.resource_path(flagloc),
-                    "md_bg_color"    : "#50507c"
-                },
-            )
-         
+        if node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip() in self.NodeTree.NodeScores:
+            nscore = str(self.NodeTree.NodeScores[node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip()][0])
+            votes  = str(self.NodeTree.NodeScores[node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip()][1])
+        else:
+            nscore = "null"
+            votes  = "0"
+            
+        if node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip() in self.NodeTree.NodeLocations:
+            city = self.NodeTree.NodeLocations[node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip()]
+        else:
+            city = " "
+            
+        if node[NodeKeys.FinalSubsKeys[1]] == "Offline":
+            self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.rv.data.append(
+                 {
+                     "viewclass"      : "RecycleViewSubRow",
+                     "moniker_text"   : node[NodeKeys.FinalSubsKeys[1]].lstrip().rstrip(),
+                     "sub_id_text"    : node[NodeKeys.FinalSubsKeys[0]].lstrip().rstrip(),
+                     "price_text"     : node[NodeKeys.FinalSubsKeys[4]].lstrip().rstrip(),
+                     "country_text"   : "Offline",
+                     "address_text"   : node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip(),
+                     "allocated_text" : node[NodeKeys.FinalSubsKeys[6]].lstrip().rstrip(),
+                     "consumed_text"  : node[NodeKeys.FinalSubsKeys[7]].lstrip().rstrip(),
+                     "source_image"   : self.MeileConfig.resource_path(flagloc),
+                     "score"          : nscore,
+                     "votes"          : votes,
+                     "city"           : city,
+                     "md_bg_color"    : "#50507c"
+                 },
+             )
+            print("%s" % node[NodeKeys.FinalSubsKeys[0]].lstrip().rstrip(),end=',')
+            sys.stdout.flush()
+            
         else:
             self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.rv.data.append(
                 {
                     "viewclass"      : "RecycleViewSubRow",
-                    "moniker_text"   : node[FinalSubsKeys[1]].lstrip().rstrip(),
-                    "sub_id_text"    : node[FinalSubsKeys[0]].lstrip().rstrip(),
-                    "price_text"     : node[FinalSubsKeys[4]].lstrip().rstrip(),
-                    "country_text"   : node[FinalSubsKeys[5]].lstrip().rstrip(),
-                    "address_text"   : node[FinalSubsKeys[2]].lstrip().rstrip(),
-                    "allocated_text" : node[FinalSubsKeys[6]].lstrip().rstrip(),
-                    "consumed_text"  : node[FinalSubsKeys[7]].lstrip().rstrip(),
+                    "moniker_text"   : node[NodeKeys.FinalSubsKeys[1]].lstrip().rstrip(),
+                    "sub_id_text"    : node[NodeKeys.FinalSubsKeys[0]].lstrip().rstrip(),
+                    "price_text"     : node[NodeKeys.FinalSubsKeys[4]].lstrip().rstrip(),
+                    "country_text"   : node[NodeKeys.FinalSubsKeys[5]].lstrip().rstrip(),
+                    "address_text"   : node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip(),
+                    "allocated_text" : node[NodeKeys.FinalSubsKeys[6]].lstrip().rstrip(),
+                    "consumed_text"  : node[NodeKeys.FinalSubsKeys[7]].lstrip().rstrip(),
                     "source_image"   : self.MeileConfig.resource_path(flagloc),
+                    "score"          : nscore,
+                    "votes"          : votes,
+                    "city"           : city,
                     "md_bg_color"    : "#0d021b"
                     
                 },
             )
+            print("%s" % node[NodeKeys.FinalSubsKeys[0]].lstrip().rstrip(),end=',')
+            sys.stdout.flush()
         
     def add_country_rv_data(self, NodeCountries):
         self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.rv.data.append(
@@ -708,7 +773,7 @@ class MainWindow(Screen):
                     text="Okay",
                     theme_text_color="Custom",
                     text_color=(1,1,1,1),
-                    on_release= self.remove_loading_widget
+                    on_release=self.remove_loading_widget
                 ),
             ],
         )
@@ -771,24 +836,22 @@ class MainWindow(Screen):
     
     @delayable
     def subs_callback(self, dt):
-        #from src.cli.sentinel import NodesDictList
-         
-        
         floc = "../imgs/"
         yield 0.314
         if not self.SubResult:
             self.GetSubscriptions()
         
         for sub in self.SubResult:
-            if sub[FinalSubsKeys[5]] == "Czechia":
-                sub[FinalSubsKeys[5]] = "Czech Republic"
+            if sub[NodeKeys.FinalSubsKeys[5]] == "Czechia":
+                sub[NodeKeys.FinalSubsKeys[5]] = "Czech Republic"
             try: 
-                iso2 = OurWorld.our_world.get_country_ISO2(sub[FinalSubsKeys[5]].lstrip().rstrip()).lower()
+                iso2 = OurWorld.our_world.get_country_ISO2(sub[NodeKeys.FinalSubsKeys[5]].lstrip().rstrip()).lower()
             except:
                 iso2 = "sc"
             flagloc = floc + iso2 + ".png"
             self.add_sub_rv_data(sub, flagloc)
         self.remove_loading_widget(None)
+
 
     @mainthread
     def on_tab_switch(self, instance_tabs, instance_tab, instance_tabs_label, tab_text):
@@ -804,8 +867,8 @@ class MainWindow(Screen):
         # Subscriptions
         #print(self.NodeTree.NodeTree.show())
         if tab_text == OurWorld.CONTINENTS[6]:
-            self.add_loading_popup("Loading...")
             self.get_config(None)
+            self.add_loading_popup("Loading...")
             if self.address:
             
                 Clock.schedule_once(self.subs_callback, 1)
@@ -907,7 +970,12 @@ class WalletScreen(Screen):
         self.SetBalances(Wallet.get_balance(self.ADDRESS))
 
     def refresh_wallet(self):
-        self.build(None)   
+        self.build(None)
+        
+    def open_fiat_interface(self):
+        Meile.app.root.add_widget(fiat_interface.FiatInterface(name=WindowNames.FIAT))
+        Meile.app.root.transistion = SlideTransition(direction="right")
+        Meile.app.root.current = WindowNames.FIAT   
     
     def return_coin_logo(self, coin):
         self.MeileConfig = MeileGuiConfig() 
@@ -965,11 +1033,7 @@ class WalletScreen(Screen):
         except:
             print("Dialog is NONE")
             return
-        
-    def open_fiat_interface(self):
-        Meile.app.root.add_widget(fiat_interface.FiatInterface(name=WindowNames.FIAT))
-        Meile.app.root.transistion = SlideTransition(direction="right")
-        Meile.app.root.current = WindowNames.FIAT
+    
     def set_previous_screen(self):
         
         Meile.app.root.remove_widget(self)
@@ -996,7 +1060,7 @@ class NodeScreen(Screen):
         else:
             for node_child in CountryNodes:
                 node = node_child.data
-                iso2 = OurWorld.our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
+                iso2 = OurWorld.our_world.get_country_ISO2(node[NodeKeys.NodesInfoKeys[4]].lstrip().rstrip()).lower()
                 flagloc = floc + iso2 + ".png"
                 self.add_rv_data(node, flagloc)
             
@@ -1037,7 +1101,7 @@ class NodeScreen(Screen):
         for node in CountryNodes:
             NodeData.append(node.data)
             
-        NodeDataSorted = sorted(NodeData, key=lambda d: d[NodesInfoKeys[0]])
+        NodeDataSorted = sorted(NodeData, key=lambda d: d[NodeKeys.NodesInfoKeys[0]])
 
         self.meta_add_rv_data(NodeDataSorted) 
         
@@ -1045,30 +1109,75 @@ class NodeScreen(Screen):
         floc = "../imgs/"
   
         for node in NodeDataSorted:
-            iso2 = OurWorld.our_world.get_country_ISO2(node[NodesInfoKeys[4]].lstrip().rstrip()).lower()
+            iso2 = OurWorld.our_world.get_country_ISO2(node[NodeKeys.NodesInfoKeys[4]].lstrip().rstrip()).lower()
             flagloc = floc + iso2 + ".png"
             self.add_rv_data(node, flagloc)
 
            
     def add_rv_data(self, node, flagloc):
         self.MeileConfig = MeileGuiConfig()
-
+        speedRate = []
         floc = "../imgs/"
-        speed = node[NodesInfoKeys[5]].lstrip().rstrip().split('+')
+        speed = node[NodeKeys.NodesInfoKeys[5]].lstrip().rstrip().split('+')
+        speedAdj = node[NodeKeys.NodesInfoKeys[5]].lstrip().rstrip().split('+')
         
-        if "MB" in speed[0]:
+        if "GB" in speedAdj[0]:
+            speedRate.append("GB")
+        elif "MB" in speedAdj[0]:
+            speedRate.append("MB")
+        elif "KB" in speedAdj[0]:
+            speedRate.append("KB")
+        else:
+            speedRate.append("B")
+        
+        if "GB" in speedAdj[1]:
+            speedRate.append("GB")       
+        elif "MB" in speedAdj[1]:
+            speedRate.append("MB")
+        elif "KB" in speedAdj[1]:
+            speedRate.append("KB")
+        else:
+            speedRate.append("B")
+        
+        
+        speedAdj[0] = speedAdj[0].replace('GB', '').replace('MB', '').replace('KB', '').replace('B', '')
+        speedAdj[1] = speedAdj[1].replace('GB', '').replace('MB', '').replace('KB', '').replace('B', '')
+        
+        if float(speedAdj[0]) < 0:
+                speedAdj[0] = 0
+                
+        if float(speedAdj[1]) < 0:
+                speedAdj[1] = 0
+                
+        # Values are reversed in nodeTree
+        if "0B" in str(str(speedAdj[1]) + speedRate[1]) or "0B" in str(str(speedAdj[0]) + speedRate[0]):
+            speedText = "    " + str(speedAdj[1]) + speedRate[1] + "↓" + "," + str(speedAdj[0]) + speedRate[0] + "↑"
+        else: 
+            speedText = str(speedAdj[1]) + speedRate[1] + "↓" + "," + str(speedAdj[0]) + speedRate[0] + "↑"
+            
+        if "GB" in speed[0]:
+            speed[0] = float(speed[0].replace("GB", '')) * 1024
+        elif "MB" in speed[0]:
             speed[0] = float(speed[0].replace("MB", ''))
         elif "KB" in speed[0]:
             speed[0] = float(float(speed[0].replace("KB", '')) / 1024 )
         else:
             speed[0] = 10
-            
-        if "MB" in speed[1]:
+        
+        if speed[0] < 0:
+            speed[0] = 0
+        
+        if "GB" in speed[1]:
+            speed[1] = float(speed[1].replace("GB", '')) * 1024    
+        elif "MB" in speed[1]:
             speed[1] = float(speed[1].replace("MB", ''))
         elif "KB" in speed[1]:
             speed[1] = float(float(speed[1].replace("KB", '')) / 1024 )
         else:
             speed[1] = 10
+        
+        if speed[1] < 0:
+            speed[1] = 0
         
         total = float(speed[0] + speed[1])
         if total >= 200:
@@ -1081,20 +1190,36 @@ class NodeScreen(Screen):
             speedimage = floc + "slowavg.png"
         else:
             speedimage = floc + "slow.png"
+            
+            
+        if node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip() in self.NodeTree.NodeScores:
+            nscore = str(self.NodeTree.NodeScores[node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip()][0])
+            votes  = str(self.NodeTree.NodeScores[node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip()][1])
+        else:
+            nscore = "null"
+            votes  = "0"
+            
+        if node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip() in self.NodeTree.NodeLocations:
+            city = self.NodeTree.NodeLocations[node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip()]
+        else:
+            city = " "
+            
         self.ids.rv.data.append(
             {
                 "viewclass"    : "RecycleViewRow",
-                "moniker_text" : node[NodesInfoKeys[0]].lstrip().rstrip(),
-                "price_text"   : node[NodesInfoKeys[3]].lstrip().rstrip(),
-                "country_text" : node[NodesInfoKeys[4]].lstrip().rstrip(),
-                "address_text" : node[NodesInfoKeys[1]].lstrip().rstrip(),
-                "speed_text"   : node[NodesInfoKeys[5]].lstrip().rstrip(),
+                "moniker_text" : node[NodeKeys.NodesInfoKeys[0]].lstrip().rstrip(),
+                "price_text"   : node[NodeKeys.NodesInfoKeys[3]].lstrip().rstrip(),
+                "country_text" : node[NodeKeys.NodesInfoKeys[4]].lstrip().rstrip(),
+                "address_text" : node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip(),
+                "speed_text"   : speedText,
+                "node_score"   : nscore,
+                "votes"        : votes,
+                "city"         : city,
                 "speed_image"  : self.MeileConfig.resource_path(speedimage),
                 "source_image" : self.MeileConfig.resource_path(flagloc)
                 
             },
-        )   
-        
+        )         
     def set_previous_screen(self):
         
         Meile.app.root.remove_widget(self)
@@ -1102,7 +1227,7 @@ class NodeScreen(Screen):
         Meile.app.root.current = WindowNames.MAIN_WINDOW
 
         
-class RecycleViewCountryRow(MDCard, RectangularElevationBehavior, ThemableBehavior, HoverBehavior):
+class RecycleViewCountryRow(MDCard, RectangularElevationBehavior,ThemableBehavior, HoverBehavior):
     text = StringProperty()
     def on_enter(self, *args):
         self.md_bg_color = get_color_from_hex("#200c3a")

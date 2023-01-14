@@ -2,38 +2,30 @@ from os import path, remove
 import pexpect
 import json
 import requests
-
 from json.decoder import JSONDecodeError
-
 from time import sleep
-
-from src.conf.meile_config import MeileGuiConfig
-from src.cli.sentinel import IBCATOM, IBCDEC, IBCOSMO, IBCSCRT, SATOSHI, APIURL
-
 import subprocess
-
 from subprocess import PIPE
 
-KEYRINGDIR = path.join(path.expanduser('~'), '.meile-gui')
-WALLETINFO = path.join(KEYRINGDIR, "infos.txt")
-SUBSCRIBEINFO = path.join(KEYRINGDIR, "subscribe.infos")
-CONNECTIONINFO = path.join(KEYRINGDIR, "connection.infos")
-WIREGUARDINFO = path.join(KEYRINGDIR, "wg.infos")
-BASEDIR  = path.join(path.expanduser('~'), '.sentinelcli')
+from src.conf.meile_config import MeileGuiConfig
+from src.typedef.konstants import IBCTokens 
+from src.typedef.konstants import ConfParams 
+from src.typedef.konstants import HTTParams 
+from src.adapters import HTTPRequests
+
 MeileConfig = MeileGuiConfig()
 sentinelcli = MeileConfig.resource_path("../bin/sentinelcli")
 sentinelbash = MeileConfig.resource_path("../bin/sentinel.sh")
 sentinel_connect_bash = MeileConfig.resource_path("../bin/sentinel-connect.sh")
-RPC = "https://rpc.mathnodes.com:443"
-
 wgbash = MeileConfig.resource_path("../bin/wg.sh")
+
 class HandleWalletFunctions():
     
     def create(self, wallet_name, keyring_passphrase, seed_phrase):
-        SCMD = '%s keys add "%s" -i --keyring-backend file --keyring-dir %s' % (sentinelcli, wallet_name, KEYRINGDIR)
+        SCMD = '%s keys add "%s" -i --keyring-backend file --keyring-dir %s' % (sentinelcli, wallet_name, ConfParams.KEYRINGDIR)
         DUPWALLET = False 
         line_numbers = [11, 21]
-        ofile =  open(WALLETINFO, "wb")    
+        ofile =  open(ConfParams.WALLETINFO, "wb")    
         
         ''' Process to handle wallet in sentinel-cli '''
         child = pexpect.spawn(SCMD)
@@ -65,7 +57,7 @@ class HandleWalletFunctions():
                 child.expect(pexpect.EOF)
                 ofile.flush()
                 ofile.closae()
-                remove(WALLETINFO)
+                remove(ConfParams.WALLETINFO)
                 return None
             else:
                 child.expect(pexpect.EOF)
@@ -81,7 +73,7 @@ class HandleWalletFunctions():
         
      
         if not DUPWALLET:
-            with open(WALLETINFO, "r") as dvpn_file:
+            with open(ConfParams.WALLETINFO, "r") as dvpn_file:
                 WalletDict = {}   
                 lines = dvpn_file.readlines()
                 addy_seed = [lines[x] for x in range(line_numbers[0], line_numbers[1] +1)]
@@ -90,23 +82,23 @@ class HandleWalletFunctions():
                 else:
                     WalletDict['address'] = addy_seed[1].split(":")[-1].lstrip().rstrip()
                 WalletDict['seed'] = lines[-1].lstrip().rstrip().replace('\n', '')
-                #remove(WALLETINFO)
+                #remove(ConfParams.WALLETINFO)
                 return WalletDict
     
         else:
-            remove(WALLETINFO)
+            remove(ConfParams.WALLETINFO)
             return None
 
     
     
     def subscribe(self, KEYNAME, NODE, DEPOSIT):
-        CONFIG = MeileGuiConfig.read_configuration(MeileGuiConfig, MeileGuiConfig.CONFFILE)
+        CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
     
-        ofile =  open(SUBSCRIBEINFO, "wb")    
+        ofile =  open(ConfParams.SUBSCRIBEINFO, "wb")    
         if not KEYNAME:
             return (False, 1337)
-        SCMD = "%s tx subscription subscribe-to-node --yes --keyring-backend file --keyring-dir %s --gas-prices 0.1udvpn --chain-id sentinelhub-2 --node %s --from '%s' '%s' %s"  % (sentinelcli, KEYRINGDIR, RPC, KEYNAME, NODE, DEPOSIT)
+        SCMD = "%s tx subscription subscribe-to-node --yes --keyring-backend file --keyring-dir %s --gas-prices 0.1udvpn --chain-id sentinelhub-2 --node %s --from '%s' '%s' %s"  % (sentinelcli, ConfParams.KEYRINGDIR, HTTParams.RPC, KEYNAME, NODE, DEPOSIT)
             
         try:
             child = pexpect.spawn(SCMD)
@@ -126,8 +118,7 @@ class HandleWalletFunctions():
         
             
     def ParseSubscribe(self):
-        SUBSCRIBEINFO = path.join(KEYRINGDIR, "subscribe.infos")
-        with open(SUBSCRIBEINFO, 'r') as sub_file:
+        with open(ConfParams.SUBSCRIBEINFO, 'r') as sub_file:
                 lines = sub_file.readlines()
                 try:
                     tx_json = json.loads(lines[2])
@@ -141,23 +132,23 @@ class HandleWalletFunctions():
                     try: 
                         sub_id = tx_json['logs'][0]['events'][4]['attributes'][0]['value']
                         if sub_id:
-                            remove(SUBSCRIBEINFO)
+                            remove(ConfParams.SUBSCRIBEINFO)
                             return (True,0)
                         else:
-                            remove(SUBSCRIBEINFO)
+                            remove(ConfParams.SUBSCRIBEINFO)
                             return (False,2.71828) 
                     except:
-                        remove(SUBSCRIBEINFO)
+                        remove(ConfParams.SUBSCRIBEINFO)
                         return (False, 3.14159)
                 elif 'insufficient' in tx_json['raw_log']:
-                    remove(SUBSCRIBEINFO)
+                    remove(ConfParams.SUBSCRIBEINFO)
                     return (False, tx_json['raw_log'])
     def connect(self, ID, address):
-        MeileConfig = MeileGuiConfig()
-        CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
+        
+        CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
         KEYNAME = CONFIG['wallet'].get('keyname', '')
-        cliCMD = "%s connect --home %s --keyring-backend file --keyring-dir %s --chain-id sentinelhub-2 --node %s --gas-prices 0.1udvpn --yes --from '%s' %s %s" % (sentinelcli, BASEDIR,  KEYRINGDIR, RPC, KEYNAME, ID, address)
+        cliCMD = "%s connect --home %s --keyring-backend file --keyring-dir %s --chain-id sentinelhub-2 --node %s --gas-prices 0.1udvpn --yes --from '%s' %s %s" % (sentinelcli, ConfParams.BASEDIR, ConfParams.KEYRINGDIR, HTTParams.RPC, KEYNAME, ID, address)
         #connCMD = '%s "%s"' % (sentinelbash, cliCMD)
         connCMD = sentinelbash + ' "%s"' % cliCMD + ' "%s"' % PASSWORD
         print(connCMD)
@@ -174,12 +165,12 @@ class HandleWalletFunctions():
         
         connectBASH = [sentinel_connect_bash]
         proc2 = subprocess.Popen(connectBASH)
-        proc2.wait(timeout=20)
+        proc2.wait(timeout=30)
         
         proc_out, proc_err = proc2.communicate()
         
         
-        if path.isfile(path.join(BASEDIR, "status.json")):
+        if path.isfile(ConfParams.WIREGUARD_STATUS):
             return True
         else:
             return False
@@ -305,29 +296,33 @@ class HandleWalletFunctions():
         '''    
 
     def get_balance(self, address):
-        endpoint = "/bank/balances/" + address
+        Request = HTTPRequests.MakeRequest()
+        http = Request.hadapter()
+        endpoint = HTTParams.BALANCES_ENDPOINT + address
         CoinDict = {'dvpn' : 0, 'scrt' : 0, 'dec'  : 0, 'atom' : 0, 'osmo' : 0}
+        
         try:
-            r = requests.get(APIURL + endpoint)
+            r = http.get(HTTParams.APIURL + endpoint)
             coinJSON = r.json()
         except:
             return None
+            
         print(coinJSON)
-        try: 
+        try:
             for coin in coinJSON['result']:
                 if "udvpn" in coin['denom']:
-                    CoinDict['dvpn'] = round(float(float(coin['amount']) / SATOSHI),4)
-                elif IBCSCRT in coin['denom']:
-                    CoinDict['scrt'] = round(float(float(coin['amount']) / SATOSHI),4)
-                elif IBCDEC in coin['denom']:
-                    CoinDict['dec'] = round(float(float(coin['amount']) / SATOSHI),4)
-                elif IBCATOM in coin['denom']:
-                    CoinDict['atom'] = round(float(float(coin['amount']) / SATOSHI),4)
-                elif IBCOSMO in coin['denom']:
-                    CoinDict['osmo'] = round(float(float(coin['amount']) / SATOSHI),4)
+                    CoinDict['dvpn'] = round(float(float(coin['amount']) /IBCTokens.SATOSHI),4)
+                elif IBCTokens.IBCSCRT in coin['denom']:
+                    CoinDict['scrt'] = round(float(float(coin['amount']) /IBCTokens.SATOSHI),4)
+                elif IBCTokens.IBCDEC in coin['denom']:
+                    CoinDict['dec'] = round(float(float(coin['amount']) /IBCTokens.SATOSHI),4)
+                elif IBCTokens.IBCATOM in coin['denom']:
+                    CoinDict['atom'] = round(float(float(coin['amount']) /IBCTokens.SATOSHI),4)
+                elif IBCTokens.IBCOSMO in coin['denom']:
+                    CoinDict['osmo'] = round(float(float(coin['amount']) /IBCTokens.SATOSHI),4)
         except Exception as e:
             print(str(e))
-            return None        
+            return None
         return CoinDict
     
 

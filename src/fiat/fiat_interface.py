@@ -34,6 +34,7 @@ from src.ui.interfaces import TXContent
 from stripe.error import CardError
 from src.conf.meile_config import MeileGuiConfig
 import src.main.main as Meile
+from src.adapters import HTTPRequests
 
 
 HotWalletAddress = scrtsxx.WALLET_ADDRESS
@@ -154,9 +155,11 @@ class FiatInterface(Screen):
         except Exception as e:
             print(str(e)) 
             print("Getting price from CryptoCompare...")
+            Request = HTTPRequests.MakeRequest()
+            http = Request.hadapter()
             HEADERS = {'authorization' : "Apikey %s" % scrtsxx.CCOMPAREAPI}
             try: 
-                r = requests.get(scrtsxx.CCOMPARE_API_URL, headers=HEADERS)
+                r = http.get(scrtsxx.CCOMPARE_API_URL, headers=HEADERS)
                 sentinel_price = r.json()['USD']
             except Exception as e:
                 print(str(e))
@@ -320,9 +323,11 @@ class FiatInterface(Screen):
         STATUS         = {'message' : None}
         USERNAME       = scrtsxx.USERNAME
         PASSWORD       = scrtsxx.PASSWORD
+        Request = HTTPRequests.MakeRequest()
+        http = Request.hadapter()
         try:
             print("Sending transfer request....")
-            ttr = requests.post(SERVER_ADDRESS + API, json=JSON, auth=HTTPBasicAuth(USERNAME, PASSWORD))
+            ttr = http.post(SERVER_ADDRESS + API, json=JSON, auth=HTTPBasicAuth(USERNAME, PASSWORD))
             if ttr.status_code == 200:
                 print("Successful Request. Parsing Data....")
                 return ttr.json()
@@ -366,7 +371,7 @@ class FiatInterface(Screen):
             print(str(e))
             
     def terms_agreement(self, active):
-        print("Active is: %s" % active)
+        #print("Active is: %s" % active)
         if active:
             self.policy = True
         else:

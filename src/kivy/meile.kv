@@ -43,44 +43,88 @@ WindowManager:
         md_bg_color: get_color_from_hex("#0d021b")
         MDFloatLayout:
             orientation: "horizontal"
-            size_hint_y: .15
+            size_hint_y: .18
             MDTextField:
+                canvas.after:
+                    Color:
+                        rgba: root.box_color if not self.focus else (0, 0, 0, 0)
+                    Line:
+                        width: dp(1)
+                        rectangle: (*self.pos, *self.size)
                 hint_text: "IP Address"
                 id: new_ip
-                mode: "fill"
-                width: "25dp"
-                size_hint_x: .18
-                pos_hint: {"x" : 0, "center_y": .5}                
-                text: ""
+                size_hint_x: .15
+                size_hint_y: .47
+                font_size: 21
+                pos_hint: {"x" : 0.01, "center_y": .67}
                 readonly: True
                 opacity: 1
-                theme_text_color: "Custom"
-                text_color: get_color_from_hex("#fcb711")
-                normal_color: app.theme_cls.accent_color
+                mode: "fill"
+                text_color_focus: '#fcb711'
+                text_color_normal: '#fcb711'
+                hint_text: 'IP Address:'
+                hint_text_color_normal: '#fcb711'
+                hint_text_color_focus: '#fcb711'
+                fill_color_normal: get_color_from_hex("#0d021b")
+                fill_color_focus: get_color_from_hex("#000000")
+                
             MDTextField:
-                hint_text: "Node"
+                canvas.after:
+                    Color:
+                        rgba: root.box_color if not self.focus else (0, 0, 0, 0)
+                    Line:
+                        width: dp(1)
+                        rectangle: (*self.pos, *self.size)
+                hint_text: "Node:"
                 id: connected_node
                 mode: "fill"
-                width: "75dp"
                 size_hint_x: .4
-                pos_hint: {"x" : .2, "center_y": .5}                
-                text: ""
+                size_hint_y: .47
+                font_size: 21
+                font_name: root.get_font()
+                pos_hint: {"x" : .18, "center_y": .67}
                 readonly: True
                 opacity: 1
+                text_color_focus: '#fcb711'
+                text_color_normal: '#fcb711'                
+                hint_text_color_normal: '#fcb711'
+                hint_text_color_focus: '#fcb711'
+                fill_color_normal: get_color_from_hex("#0d021b")
+                fill_color_focus: get_color_from_hex("#000000")
+            MDLabel:
+                text: "Bandwidth"
+                font_size: 19
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex("#fcb711")
                 normal_color: app.theme_cls.accent_color
+                pos_hint: {"x" : .01, "center_y": .2}
+            MDProgressBar:
+                id: quota
+                value: 0
+                color: app.theme_cls.accent_color
+                #back_color: get_color_from_hex("#ffffff")
+                pos_hint: {"x" : .085, "center_y" : .2 }
+                size_hint_x: .475
+                size_hint_y: .06
+            MDLabel:
+                id: quota_pct
+                text: "0.00%"
+                font_size: 19
+                theme_text_color: "Custom"
+                text_color: get_color_from_hex("#fcb711")
+                normal_color: app.theme_cls.accent_color
+                pos_hint: {"x" : .57, "center_y": .2}
             MDLabel:
                 text: "Sort"
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex("#fcb711")
                 normal_color: app.theme_cls.accent_color
-                pos_hint: {"x" : .65, "y": .25}
+                pos_hint: {"x" : .63, "y": .25}
             MDDropDownItem:
                 id: drop_item
                 pos_hint: {'x': .625, 'y': .25}
                 text: "None"
-                on_release: root.menu.open()  
+                on_release: root.menu.open() 
             TooltipMDRaisedButton:
                 tooltip_text: "VPNs encrypt your internet traffic, however DNS traffic is still in plaintext. Cloudflare's WARP will encrypt your DNS traffic ensuring no one can see your browsing history."
                 md_bg_color: get_color_from_hex("#0d021b")
@@ -469,6 +513,9 @@ WindowManager:
     source_image: " "
     speed_image: " "
     speed_text: " "
+    node_score: " "
+    votes: " "
+    city: " "
     ripple_behavior: True
     on_press: root.subscribe_to_node(root.price_text, root.address_text, root.moniker_text)
     MDGridLayout:
@@ -481,6 +528,7 @@ WindowManager:
                 theme_text_color: "Custom"
                 font_style: "H6"
                 font_size: "22sp"
+                font_name: root.get_font()
                 text_color: get_color_from_hex("#fcb711")
                 pos_hint: {"x" : 0, "top" : 1.3}
                 size_hint_x: None
@@ -499,7 +547,35 @@ WindowManager:
                 font_size: "13sp"
                 text_color: get_color_from_hex("#fcb711")
                 pos_hint: {"x" : 0, "top" : .85}
-                
+            MDLabel:
+                text: "SCORE: "
+                theme_text_color: "Custom"
+                font_style: "Subtitle2"
+                font_size: "11sp"
+                text_color: get_color_from_hex("#ffffff")
+                pos_hint: {"x" : 0, "top" : .7}
+            MDLabel:
+                text: root.node_score
+                theme_text_color: "Custom"
+                font_style: "Subtitle2"
+                font_size: "11sp"
+                text_color: get_color_from_hex("#ffffff")
+                pos_hint: {"x" : .055, "top" : .7}
+            MDLabel:
+                text: "VOTES: "
+                theme_text_color: "Custom"
+                font_style: "Subtitle2"
+                font_size: "11sp"
+                text_color: get_color_from_hex("#ffffff")
+                pos_hint: {"x" : .125, "top" : .7}
+            MDLabel:
+                text: root.votes
+                theme_text_color: "Custom"
+                font_style: "Subtitle2"
+                font_size: "11sp"
+                text_color: get_color_from_hex("#ffffff")
+                pos_hint: {"x" : .175, "top" : .7}
+                   
             Image:
                 source: root.source_image
                 # {"x", "y", "top", "bottom", "left", "right" }
@@ -508,8 +584,9 @@ WindowManager:
             MDLabel:
                 text: root.speed_text
                 theme_text_color: "Custom"
-                font_style: "Subtitle2"
-                font_size: "12sp"
+                #font_style: "Subtitle2"
+                font_name: root.get_font()
+                font_size: 22
                 text_color: 1,1,1,1
                 pos_hint: {"x" : .43 , "top": .86 }
             Image:
@@ -524,6 +601,13 @@ WindowManager:
                 font_size: "22sp"
                 text_color: (1,1,1,1)  
                 pos_hint: {"right" : 1.75 , "top": .8 }  
+            MDLabel:    
+                text: root.city
+                theme_text_color: "Custom"
+                font_style: "Subtitle2"
+                font_size: "13sp"
+                text_color: get_color_from_hex("#fcb711")
+                pos_hint: {"right" : 1.75 , "top": .625 }
 
     OnHoverMDRaisedButton:
         text: "Get Details"
@@ -557,12 +641,16 @@ WindowManager:
     source_image: " "
     speed_image: " "
     speed_text: " "
+    city: " "
+    score: " "
+    votes: " "
     MDFloatLayout:
         MDLabel:
             text: root.moniker_text
             theme_text_color: "Custom"
             font_style: "H6"
             font_size: "24sp"
+            font_name: root.get_font()
             text_color: get_color_from_hex("#fcb711")
             width: "350dp"
             pos_hint: {"x" : 0, "top" : 1.45}
@@ -578,7 +666,14 @@ WindowManager:
             font_style: "H6"
             font_size: "22sp"
             text_color: get_color_from_hex("#b2b1b1")  
-            pos_hint: {"x" : .768, "top" : 0.7}
+            pos_hint: {"x" : .768, "top" : 0.8}
+        MDLabel:    
+            text: root.city
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "13sp"
+            text_color: get_color_from_hex("#fcb711")
+            pos_hint: {"x" : .768, "top": .625 }
         MDLabel:
             text: root.address_text
             theme_text_color: "Custom"
@@ -635,7 +730,37 @@ WindowManager:
             font_size: "11sp"
             text_color: 1,1,1,1
             pos_hint: {"x" : 0.2, "top" : 1.03 }
+        MDLabel:
+            text: "Score: "
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "11sp"
+            text_color: 1,1,1,1
+            pos_hint: {"x" : 0, "top" : .875}
+        MDLabel:
+            text: root.score
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "11sp"
+            text_color: 1,1,1,1
+            pos_hint: {"x" : 0.08, "top" : .875}
+        MDLabel:
+            text: "Votes: "
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "11sp"
+            text_color: 1,1,1,1
+            pos_hint: {"x" : 0.15, "top" : .875}
+        MDLabel:
+            text: root.votes
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "11sp"
+            text_color: 1,1,1,1
+            pos_hint: {"x" : .2, "top" : .875}
+            
         MDProgressBar:
+        	id: quota
             value: root.get_data_used(root.allocated_text, root.consumed_text, root.address_text)
             color: app.theme_cls.accent_color
             #back_color: get_color_from_hex("#ffffff")
@@ -660,7 +785,7 @@ WindowManager:
             md_bg_color: get_color_from_hex("#fcb711")
             text_color: 0,0,0,1
             on_active: root.connect_to_node(root.sub_id_text,root.address_text, root.moniker_text, self.active)
-            pos_hint: {"x" : 0.015, "top" : .45 }
+            pos_hint: {"x" : 0.015, "top" : .35 }
             size_hint: None,None
         MDSeparator:
             color: 1,1,1,1
@@ -869,14 +994,28 @@ WindowManager:
     orientation: "vertical"
     spacing: "1dp"
     size_hint_y: None
-    height: "260dp"
+    height: "250dp"
     price_text: ""
     naddress: " "
-    MDBoxLayout:
-        orientation: "vertical"
+    moniker: " "
+    MDFloatLayout:
+        MDLabel:
+            id: moniker
+            text: root.moniker
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "20sp"
+            font_name: root.get_font()
+            text_color: get_color_from_hex("#fcb711")
+            pos_hint: {"x" : 0, "top" : 1.35}
         MDLabel:
             id: moniker_text
             text: root.naddress
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "9sp"
+            text_color: get_color_from_hex("#ffffff")
+            pos_hint: {"x" : 0, "top" : 1}
     
     MDBoxLayout:
         orientation: "horizontal"
@@ -923,7 +1062,73 @@ WindowManager:
             text: "udvpn"
             on_release: root.menu.open()
             
+<ProcessingSubDialog>
+    orientation: "vertical"
+    spacing: "1dp"
+    size_hint_y: None
+    height: "130dp"
+    price_text: ""
+    naddress: " "
+    moniker: " "
+    deposit: " "
+    MDFloatLayout:
+        MDLabel:
+            id: moniker
+            text: root.moniker
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "20sp"
+            font_name: root.get_font()
+            text_color: get_color_from_hex("#fcb711")
+            pos_hint: {"x" : 0, "top" : 1.35}
+        MDLabel:
+            id: naddress
+            text: root.naddress
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "9sp"
+            text_color: get_color_from_hex("#ffffff")
+            pos_hint: {"x" : 0, "top" : 1.2}
+        MDLabel:
+            id: deposit
+            text: root.deposit
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "18sp"
+            text_color: get_color_from_hex("#fcb711")
+            pos_hint: {"x" : 0, "top" : .95}
             
+<RatingContent>
+    spacing: "1dp"
+    size_hint_y: None
+    height: "100dp"
+    price_text: ""
+    naddress: " "
+    moniker: " "    
+    orientation: "vertical"
+    MDFloatLayout:
+        MDLabel:
+            id: node_moniker_text
+            text: root.moniker
+            font_name: root.get_font()
+            font_size: 19
+            pos_hint: {"x" : 0.05, "center_y": .9}
+             
+        MDLabel:
+            id: node_addresss_text
+            text: root.naddress
+            font_size: 10
+            pos_hint: {"x" : 0.05, "center_y": .70}
+             
+        MDSlider:
+            id: rating_slider
+            min: 1
+            max: 10
+            value: 9
+            pos_hint: {"x" : 0.00, "center_y": .5}
+            
+          
+    
 <HelpScreen>:
     name: "helpscreen"
     title: "Help Screen"
@@ -951,7 +1156,7 @@ WindowManager:
             text_color: get_color_from_hex("#fcb711")
         MDLabel:
             font_name: "Roboto-Bold"
-            text: "v1.2.0"
+            text: "v1.3.0"
             font_size: "16sp"
             size_hint_y: .1
             width: dp(500)
@@ -1014,7 +1219,7 @@ WindowManager:
                     halign: "center"
                 MDLabel:
                     font_name: "DejaVuSans"
-                    text: "There are two primary ways to receive tokens to purchase dVPN (the currency) subscriptions and utilize the network. 1.) You get the DVPN token on a exchange and send it to your wallet address. Current exchanges are KuCoin, HotBit, Polarity and Osmosis. Once you purchase the tokens on the exchange, you need to withdraw them to your address listed in the wallet section of this app. The tokens should appear within minutes after a withdrawal and you can begin purchasing and subscribing to Sentinel dVPN nodes through Meile. 2.) You can purchase the currency used for Meile dVPN right in our app via the 'RE-FUEL' button within the wallet. These funds will be handled by our servers and the payment processing is handled by Stripe. Once you succesfully complete a purchase, your funds should appear in your wallet within minutes of a successful purchase through our app. This is the easiest method to using Meile dVPN."
+                    text: "There are two primary ways to receive tokens to purchase dVPN (the currency) subscriptions and utilize the network. 1.) You get the DVPN token on a exchange and send it to your wallet address. Current exchanges are KuCoin, HotBit, Polarity and Osmosis. Once you purchase the tokens on the exchange, you need to withdraw them to your address listed in the wallet section of this app. The tokens should appear within minutes after a withdrawal and you can begin purchasing and subscribing to Sentinel dVPN nodes through Meile. 2.) You can purchase the currency used for Meile dVPN right in our app via the 'RE-FUEL' button within the wallet. These funds will be handled by our servers and the payment processing is handled by Stripe. Once you successfully complete a purchase, your funds should appear in your wallet within minutes of a successful purchase through our app. This is the easiest method to using Meile dVPN."
                     size_hint_y: None
                     height: self.texture_size[1]
                     size_hint_x: 1
@@ -1032,7 +1237,7 @@ WindowManager:
                     halign: "center"
                 MDLabel:
                     font_name: "DejaVuSans"
-                    text: "MathNodes uses Stripe to process payments in order to receive funds to use the dVPN. You will see that we do not even need the name of the individual. Once a payment is processed through Stripe, Mathnodes stores only the payment_id received from stripe, the address of your wallet, and the amount of tokens sent (1,000). We have to keep records some information in case there is a dispute and we need to query the orders and verify if tokens were sent to the recipient's address. We do not store your name, your credit card details, or any other information beside what we have mentioned. The full policy can be viewed at https://meile.app/policy"
+                    text: "MathNodes uses Stripe to process payments in order to receive funds to use the dVPN. You will see that we do not even need the name of the individual. Once a payment is processed through Stripe, MathNodes stores only the payment_id received from Stripe, the address of your wallet, and the amount of tokens sent (1,000). We have to keep records some information in case there is a dispute and we need to query the orders and verify if tokens were sent to the recipient's address. We do not store your name, your credit card details, or any other information beside what we have mentioned. The full policy can be viewed at https://meile.app/policy"
                     size_hint_y: None
                     height: self.texture_size[1]
                     size_hint_x: 1
@@ -1228,7 +1433,7 @@ WindowManager:
             
             MDLabel:
                 id: charge_amount
-                text:"Total Charge: $" + str(round((root.get_dvpn_price()*root.get_dvpn_qty())+1.95,2))
+                text:"Total Charge: $" + str(round((root.get_dvpn_price()*root.get_dvpn_qty())+1.25,2))
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex("#fcb711")
                 pos_hint: {"x": .40, "center_y": .33}
