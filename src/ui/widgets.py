@@ -37,6 +37,7 @@ from conf.meile_config import MeileGuiConfig
 from cli.wallet import HandleWalletFunctions
 from cli.sentinel import NodeTreeData
 import main.main as Meile
+from adapters import HTTPRequests
 
 class WalletInfoContent(BoxLayout):
     def __init__(self, seed_phrase, name, address, password, **kwargs):
@@ -75,14 +76,17 @@ class RatingContent(MDBoxLayout):
     
     def get_font(self):
         Config = MeileGuiConfig()
-        return Config.resource_path("../fonts/arial-unicode-ms.ttf")
+        return Config.resource_path("fonts/arial-unicode-ms.ttf")
     
     def SubmitRating(self, rating, node_address):
         UUID = Meile.app.root.get_screen(WindowNames.PRELOAD).UUID
         try:
             rating_dict = {'uuid' : "%s" % UUID, 'address' : "%s" % node_address, "rating" : rating}
-            ping = requests.post(HTTParams.SERVER_URL + HTTParams.API_RATING_ENDPOINT, json=rating_dict, timeout=HTTParams.TIMEOUT)
-            if ping.status_code == 200:
+            Request = HTTPRequests.MakeRequest()
+            http = Request.hadapter()
+            req = http.post(HTTParams.SERVER_URL + HTTParams.API_RATING_ENDPOINT, json=rating_dict)
+            #ping = requests.post(, json=rating_dict, timeout=HTTParams.TIMEOUT)
+            if req.status_code == 200:
                 print("Rating Sent")
             else:
                 print("Error submitting rating")
@@ -133,7 +137,7 @@ class SubscribeContent(BoxLayout):
 
     def get_font(self):
         Config = MeileGuiConfig()
-        return Config.resource_path("../fonts/arial-unicode-ms.ttf")
+        return Config.resource_path("fonts/arial-unicode-ms.ttf")
     
     def set_item(self, text_item):
         self.ids.drop_item.set_item(text_item)
@@ -181,7 +185,7 @@ class ProcessingSubDialog(BoxLayout):
         
     def get_font(self):
         Config = MeileGuiConfig()
-        return Config.resource_path("../fonts/arial-unicode-ms.ttf")
+        return Config.resource_path("fonts/arial-unicode-ms.ttf")
     
         
     
@@ -210,7 +214,7 @@ class RecycleViewRow(MDCard,RectangularElevationBehavior,ThemableBehavior, Hover
     
     def get_font(self):
         Config = MeileGuiConfig()
-        return Config.resource_path("../fonts/arial-unicode-ms.ttf")
+        return Config.resource_path("fonts/arial-unicode-ms.ttf")
     
     def on_enter(self, *args):
         self.md_bg_color = get_color_from_hex("#200c3a")
@@ -222,14 +226,17 @@ class RecycleViewRow(MDCard,RectangularElevationBehavior,ThemableBehavior, Hover
         
     def get_city_of_node(self, naddress):   
         
-
+        Request = HTTPRequests.MakeRequest()
+        http = Request.hadapter()
         endpoint = "/nodes/" + naddress.lstrip().rstrip()
         #print(HTTParams.APIURL + endpoint)
         try:
-            requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
-            r = requests.get(HTTParams.APIURL + endpoint)
+            #requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
+            #r = requests.get(HTTParams.APIURL + endpoint)
+            r = http.get(HTTParams.APIURL + endpoint)
             remote_url = r.json()['result']['node']['remote_url']
-            r = requests.get(remote_url + "/status", verify=False, timeout=HTTParams.TIMEOUT)
+            #r = requests.get(remote_url + "/status", verify=False, timeout=HTTParams.TIMEOUT)
+            r = http.get(remote_url + "/status", verify=False)
             print(remote_url)
     
             NodeInfoJSON = r.json()
@@ -293,6 +300,7 @@ Node Version: %s
     
     @delayable
     def subscribe(self, subscribe_dialog, *kwargs):
+        MeileConfig = MeileGuiConfig()
         sub_node = subscribe_dialog.return_deposit_text()
         spdialog = ProcessingSubDialog(sub_node[2], sub_node[1], sub_node[0] )
         deposit = self.reparse_coin_deposit(sub_node[0])
@@ -307,7 +315,7 @@ Node Version: %s
         self.dialog.open()
         yield 0.6
 
-        CONFIG = MeileGuiConfig.read_configuration(MeileGuiConfig, MeileGuiConfig.CONFFILE)        
+        CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)        
         KEYNAME = CONFIG['wallet'].get('keyname', '')
         
         returncode = HandleWalletFunctions.subscribe(HandleWalletFunctions, KEYNAME, sub_node[1], deposit)
@@ -329,7 +337,7 @@ Node Version: %s
         else:
             self.dialog.dismiss()
             self.dialog = MDDialog(
-            title="Error: %s" % "No wallet found!" if returncode[1] == 1337  else returncode[1],
+            title="Error: %s" % "No wallet found!" if returncode[1] == 1337  else str(returncode[1]),
             md_bg_color=get_color_from_hex("#0d021b"),
             buttons=[
                     MDFlatButton(
@@ -394,7 +402,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
     
     def get_font(self):
         Config = MeileGuiConfig()
-        return Config.resource_path("../fonts/arial-unicode-ms.ttf")
+        return Config.resource_path("fonts/arial-unicode-ms.ttf")
         
     def get_data_used(self, allocated, consumed, node_address):
         try:
@@ -496,8 +504,10 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
             yield 0.6
             UUID = Meile.app.root.get_screen(WindowNames.PRELOAD).UUID
             try:
-                uuid_dict = {'uuid' : "%s" % UUID, 'os' : "L"}
-                ping = requests.post(HTTParams.SERVER_URL + HTTParams.API_PING_ENDPOINT, json=uuid_dict, timeout=HTTParams.TIMEOUT)
+                uuid_dict = {'uuid' : "%s" % UUID, 'os' : "W"}
+                Request = HTTPRequests.MakeRequest()
+                http = Request.hadapter()
+                ping = http.post(HTTParams.SERVER_URL + HTTParams.API_PING_ENDPOINT, json=uuid_dict)
                 if ping.status_code == 200:
                     print('ping')
                 else:
@@ -608,7 +618,13 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
             self.change_dns()
         else:
             self.remove_loading_widget()
-            
+    
+    
+    '''
+    Automatic DNS resolving will be added into later versions
+    of the Meile Windows Releases.
+    This code currently does nothing but error out
+    '''
     @delayable        
     def change_dns(self):
         MeileConfig = MeileGuiConfig()

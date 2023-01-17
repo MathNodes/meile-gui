@@ -1,17 +1,18 @@
-from geography.continents import OurWorld
-from ui.interfaces import Tab, LatencyContent
-from typedef.win import WindowNames, ICANHAZURL
-from cli.sentinel import  NodeTreeData
-from typedef.konstants import NodeKeys
-from cli.sentinel import disconnect as Disconnect
 import main.main as Meile
+from geography.continents import OurWorld
+from cli.sentinel import  NodeTreeData
+from cli.wallet import HandleWalletFunctions
+from cli.warp import WarpHandler
+from cli.sentinel import disconnect as Disconnect
+from ui.interfaces import Tab, LatencyContent
 from ui.widgets import WalletInfoContent, MDMapCountryButton, RatingContent
 from utils.qr import QRCode
-from cli.wallet import HandleWalletFunctions
 from conf.meile_config import MeileGuiConfig
+from typedef.win import WindowNames, ICANHAZURL
+from typedef.konstants import NodeKeys, TextStrings
 from typedef.win import CoinsList
-from cli.warp import WarpHandler
 from fiat import fiat_interface
+from adapters import HTTPRequests
 
 from kivy.properties import BooleanProperty, StringProperty, ColorProperty
 from kivy.uix.screenmanager import Screen, SlideTransition
@@ -37,7 +38,7 @@ import copy
 import re
 from time import sleep
 from functools import partial
-from os import path,geteuid
+from os import path, chdir
 from save_thread_result import ThreadWithResult
 from unidecode import unidecode
 
@@ -195,6 +196,7 @@ class PreLoadWindow(Screen):
         
         self.GenerateUUID()
         self.CreateWarpConfig()
+        chdir(MeileGuiConfig.BASEDIR)
         
         # Schedule the functions to be called every n seconds
         Clock.schedule_once(partial(self.NodeTree.get_nodes, "13s"), 3)
@@ -228,7 +230,7 @@ class PreLoadWindow(Screen):
             
     def get_logo(self):
         Config = MeileGuiConfig()
-        return Config.resource_path("../imgs/logo_hd.png")
+        return Config.resource_path("imgs/logo_hd.png")
 
     @mainthread        
     def add_loading_popup(self, title_text):
@@ -251,8 +253,6 @@ class PreLoadWindow(Screen):
     @delayable
     def update_status_text(self, dt):
         go_button = self.manager.get_screen(WindowNames.PRELOAD).ids.go_button
-        #if geteuid() != 0:
-        #    self.add_loading_popup("Please start Meile-GUI as root. i.e., sudo -E env PATH=$PATH ./meile-gui or similarly")
 
         yield 1.0
         
@@ -310,7 +310,6 @@ class MainWindow(Screen):
 
 
     def __init__(self, node_tree, **kwargs):
-        #Builder.load_file("./src/kivy/meile.kv")
         super(MainWindow, self).__init__()
         
         self.NodeTree = node_tree
@@ -367,7 +366,7 @@ class MainWindow(Screen):
         
     def get_font(self):
         Config = MeileGuiConfig()
-        return Config.resource_path("../fonts/arial-unicode-ms.ttf")
+        return Config.resource_path("fonts/arial-unicode-ms.ttf")
         
     def AddCountryNodePins(self):
         try:
@@ -394,7 +393,7 @@ class MainWindow(Screen):
         
     def set_warp_icon(self):
         MeileConfig = MeileGuiConfig()
-        return MeileConfig.resource_path("../imgs/warp.png")
+        return MeileConfig.resource_path("imgs/warp.png")
      
     def set_protected_icon(self, setbool, moniker):
         MeileConfig = MeileGuiConfig()
@@ -404,7 +403,7 @@ class MainWindow(Screen):
         else:
             self.ids.protected.opacity = 0
             self.ids.connected_node.text = moniker
-        return MeileConfig.resource_path("../imgs/protected.png")
+        return MeileConfig.resource_path("imgs/protected.png")
 
     def get_config(self, dt):
         MeileConfig = MeileGuiConfig()
@@ -430,6 +429,22 @@ class MainWindow(Screen):
         
     @delayable    
     def start_warp(self):
+        yield 0.314
+        self.dialog = MDDialog(
+                text="Cloudflare WARP is currently not available for Windows Users",
+                md_bg_color=get_color_from_hex("#0d021b"),
+                buttons=[
+                    MDRaisedButton(
+                        text="OKAY",
+                        theme_text_color="Custom",
+                        text_color=(1,1,1,1),
+                        on_release=self.remove_loading_widget
+                    ),
+                ],
+            )
+        self.dialog.open()
+        
+        '''
         MeileConfig = MeileGuiConfig()
         WARP = WarpHandler()
         CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
@@ -495,7 +510,7 @@ class MainWindow(Screen):
                 ],
             )
             self.dialog.open()
-            
+        '''   
     @mainthread
     def warp_disconnect(self, inst):
         WARP = WarpHandler()
@@ -510,7 +525,7 @@ class MainWindow(Screen):
             
     def get_logo(self):
         self.MeileConfig = MeileGuiConfig()
-        return self.MeileConfig.resource_path("../imgs/logo.png")
+        return self.MeileConfig.resource_path("imgs/logo.png")
         
     def get_ip_address(self, dt):
         if self.dialog:
@@ -518,7 +533,9 @@ class MainWindow(Screen):
             
         self.old_ip = self.ip
         try: 
-            req = requests.get(ICANHAZURL, timeout=TIMEOUT)
+            Request = HTTPRequests.MakeRequest()
+            http = Request.hadapter()
+            req = http.get(ICANHAZURL)
             self.ip = req.text
         
             self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.new_ip.text = self.ip
@@ -810,7 +827,7 @@ class MainWindow(Screen):
     
     @delayable
     def subs_callback(self, dt):
-        floc = "../imgs/"
+        floc = "imgs/"
         yield 0.314
         if not self.SubResult:
             self.GetSubscriptions()
@@ -888,7 +905,7 @@ class MainWindow(Screen):
         self.MeileMap.center_on(loc[0], loc[1])
             
     def build_node_data(self, ncountry):
-        floc = "../imgs/"
+        floc = "imgs/"
         NodeCountries = {}
         
         iso2 = OurWorld.our_world.get_country_ISO2(ncountry.tag.lstrip().rstrip()).lower()
@@ -949,7 +966,7 @@ class WalletScreen(Screen):
     def return_coin_logo(self, coin):
         self.MeileConfig = MeileGuiConfig() 
 
-        predir = "../imgs/"
+        predir = "imgs/"
         logoDict = {} 
         for c in CoinsList.coins:
             logoDict[c] = predir + c + ".png"
@@ -1019,7 +1036,7 @@ class NodeScreen(Screen):
         self.NodeTree = node_tree
         
         
-        floc = "../imgs/"
+        floc = "imgs/"
         CountryNodes = self.NodeTree.NodeTree.children(country)
         
         if sort == Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).SortOptions[1]:
@@ -1075,7 +1092,7 @@ class NodeScreen(Screen):
         self.meta_add_rv_data(NodeDataSorted)
         
     def meta_add_rv_data(self, NodeDataSorted):  
-        floc = "../imgs/"
+        floc = "imgs/"
   
         for node in NodeDataSorted:
             iso2 = OurWorld.our_world.get_country_ISO2(node[NodeKeys.NodesInfoKeys[4]].lstrip().rstrip()).lower()
@@ -1086,7 +1103,7 @@ class NodeScreen(Screen):
     def add_rv_data(self, node, flagloc):
         self.MeileConfig = MeileGuiConfig()
         speedRate = []
-        floc = "../imgs/"
+        floc = "imgs/"
         speed = node[NodeKeys.NodesInfoKeys[5]].lstrip().rstrip().split('+')
         speedAdj = node[NodeKeys.NodesInfoKeys[5]].lstrip().rstrip().split('+')
         
@@ -1230,6 +1247,10 @@ class RecycleViewCountryRow(MDCard,RectangularElevationBehavior,ThemableBehavior
         
     
 class HelpScreen(Screen):
+    
+    def GetMeileVersion(self):
+        return TextStrings.VERSION
+        
     def set_previous_screen(self):
         
         Meile.app.root.remove_widget(self)

@@ -1,26 +1,26 @@
 from subprocess import Popen, PIPE, STDOUT
 import collections
-from os import path
+from os import path, chdir
 import re
 import requests
 from urllib3.exceptions import InsecureRequestWarning
 
-from conf.meile_config import MeileGuiConfig
-
 from treelib import  Tree
 from geography.continents import OurWorld
 
+from conf.meile_config import MeileGuiConfig
 from typedef.konstants import ConfParams 
 from typedef.konstants import HTTParams
 from typedef.konstants import IBCTokens
 from typedef.konstants import TextStrings
 from typedef.konstants import NodeKeys
+from adapters import HTTPRequests
 
 
 
 MeileConfig = MeileGuiConfig()
-sentinelcli = MeileConfig.resource_path("../bin/sentinelcli")
-
+sentinelcli = path.join(MeileConfig.BASEBINDIR, 'sentinelcli.exe')
+gsudo       = path.join(MeileConfig.BASEBINDIR, 'gsudo.exe')
 
 class NodeTreeData():
     NodeTree = None
@@ -78,7 +78,7 @@ class NodeTreeData():
             for key in NodeKeys.NodesInfoKeys:
                 d[key] = d[key].lstrip().rstrip()
             version = d[NodeKeys.NodesInfoKeys[9]].replace('.','')
-            if version not in ('030', '031', '032'):
+            if version not in ('030', '031', '032', '033', '034', '035','036','037','038','039','040'):
                 continue
             d[NodeKeys.NodesInfoKeys[3]] = self.return_denom(d[NodeKeys.NodesInfoKeys[3]])
             
@@ -100,36 +100,46 @@ class NodeTreeData():
         self.GetNodeLocations()
         
     def GetNodeScores(self):
+        Request = HTTPRequests.MakeRequest()
+        http = Request.hadapter()
         try:
-            r = requests.get(HTTParams.SERVER_URL + HTTParams.NODE_SCORE_ENDPOINT, timeout=HTTParams.TIMEOUT)
+            r = http.get(HTTParams.SERVER_URL + HTTParams.NODE_SCORE_ENDPOINT)
             data = r.json()
           
             for nlist in data['data']:
-                print(nlist)
+                #print(nlist)
                 k=0
+                self.NodeScores[nlist[k]] = [nlist[k+1], nlist[k+2]]
+                '''
                 for nd in nlist:
                    if k == 0:
                        self.NodeScores[nlist[k]] = [nlist[k+1], nlist[k+2]]
                        k += 1
                    else:
                        break
-            print(self.NodeScores)
+                '''
+            #print(self.NodeScores)
         except Exception as e:
             print(str(e)) 
             
     def GetNodeLocations(self):
+        Request = HTTPRequests.MakeRequest()
+        http = Request.hadapter()
         try:
-            r = requests.get(HTTParams.SERVER_URL + HTTParams.NODE_LOCATION_ENDPOINT, timeout=HTTParams.TIMEOUT)
+            r = http.get(HTTParams.SERVER_URL + HTTParams.NODE_LOCATION_ENDPOINT)
             data = r.json()
           
             for nlist in data['data']:
                 k=0
+                self.NodeLocations[nlist[k]] = nlist[k+1]
+                '''
                 for nd in nlist:
                    if k == 0:
                        self.NodeLocations[nlist[k]] = nlist[k+1]
                        k += 1
                    else:
                        break
+                '''
             #print(self.NodeLocations)
         except Exception as e:
             print(str(e)) 
@@ -242,7 +252,7 @@ class NodeTreeData():
 def disconnect():
     #ifCMD = ["ifconfig", "-a"]
     #ifgrepCMD = ["grep", "-oE", "wg[0-9]+"]
-    partCMD = ['pkexec', 'env', 'PATH=%s' % ConfParams.PATH, sentinelcli, '--home', ConfParams.BASEDIR, "disconnect"]
+    partCMD = [gsudo, sentinelcli, '--home', ConfParams.BASEDIR, "disconnect"]
     
     #ifoutput = Popen(ifCMD,stdin=PIPE, stdout=PIPE, stderr=STDOUT)
     #grepoutput = Popen(ifgrepCMD, stdin=ifoutput.stdout, stdout=PIPE, stderr=STDOUT)
@@ -251,9 +261,10 @@ def disconnect():
 
     #CONFFILE = path.join(BASEDIR, wgif_file)
     #wg_downCMD = ['wg-quick', 'down', CONFFILE]
-        
+    chdir(MeileConfig.BASEBINDIR)
     proc1 = Popen(partCMD)
     proc1.wait(timeout=30)
+    chdir(MeileConfig.BASEDIR)
     
     #proc = Popen(wg_downCMD, stdout=PIPE, stderr=PIPE)
     #proc_out,proc_err = proc.communicate()

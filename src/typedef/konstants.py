@@ -1,10 +1,9 @@
 from os import path, environ
 
 class ConfParams():
-    USER             = environ['SUDO_USER'] if 'SUDO_USER' in environ else environ['USER']
     PATH             = environ['PATH']
-    KEYRINGDIR       = path.join(path.expanduser('~' + USER), '.meile-gui')
-    BASEDIR          = path.join(path.expanduser('~' + USER), '.sentinelcli')
+    KEYRINGDIR       = path.join(path.expanduser('~'), '.meile-gui')
+    BASEDIR          = path.join(path.expanduser('~'), '.sentinelcli')
     WALLETINFO       = path.join(KEYRINGDIR, "infos.txt")
     SUBSCRIBEINFO    = path.join(KEYRINGDIR, "subscribe.infos")
     CONNECTIONINFO   = path.join(KEYRINGDIR, "connection.infos")
@@ -39,6 +38,7 @@ class IBCTokens():
     
 class TextStrings():
     dash = "-"
+    VERSION = "v1.4.0"
     
 class NodeKeys():
     NodesInfoKeys = ["Moniker","Address","Provider","Price","Country","Speed","Latency","Peers","Handshake","Version","Status"]

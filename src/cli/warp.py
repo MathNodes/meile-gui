@@ -10,8 +10,8 @@ class WarpHandler():
     
     def __init__(self, **kwargs):
         MeileConfig = MeileGuiConfig()
-        self.warp_daemon = MeileConfig.resource_path("../bin/warp-svc")
-        self.warp_cli    = MeileConfig.resource_path("../bin/warp-cli")
+        self.warp_daemon = MeileConfig.resource_path("bin/warp-svc")
+        self.warp_cli    = MeileConfig.resource_path("bin/warp-cli")
     
     def fork_warp(self):
         warp_daemon_cmd = "pkexec %s" % self.warp_daemon
