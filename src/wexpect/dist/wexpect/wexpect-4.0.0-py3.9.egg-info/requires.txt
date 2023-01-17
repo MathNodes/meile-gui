@@ -1,0 +1,10 @@
+pywin32>=220
+psutil>=5.0.0
+
+[test]
+coverage
+tox
+setuptools>=38.0
+codecov
+twine
+pyinstaller

@@ -1,5 +1,19 @@
 CHANGELOG
 ========================
+# v1.4.0 (17/01/2023)
+* NEW: First Windows Binary Release (Pre-release)
+* NEW: gsudo Packaged with Windows binary
+* NEW: Wireguard binary packaged with Meile binary
+* NEW: HTTPSRequests Adapater for max retries and timeout on API Calls
+* NEW: Packaging wexpect binary and collection bundle with app
+* CHANGE: Swtiched from pexpect wrapper library to wexpect wrapper library for windows compatability
+* CHANGE: Re-worked Ratings/Node Locations Logic
+* CHANGE: Removed WARP support for Windows Users
+* CHANGE: Updated Help version number routine to a constant
+* CHANGE: Pyinstaller .spec file for Windows build. Changes from Linux/ OS X Version to include release for Windows.
+* CHANGE: MapView cache now loads in .meile-gui home folder location instead of CWD
+* CHANGE: Icon logo for Kivy and for Task Bar and Desktop Icon
+
 # v1.3.0 (06/12/2022)
 * NEW: Unicode Support for Moniker names
 * NEW: Rating scores in subscription tab
