@@ -2,7 +2,7 @@ from src.geography.continents import OurWorld
 from src.ui.interfaces import Tab, LatencyContent
 from src.typedef.win import WindowNames, ICANHAZURL
 from src.cli.sentinel import  NodeTreeData
-from src.typedef.konstants import NodeKeys
+from src.typedef.konstants import NodeKeys, TextStrings
 from src.cli.sentinel import disconnect as Disconnect
 import src.main.main as Meile
 from src.ui.widgets import  WalletInfoContent, MDMapCountryButton, RatingContent
@@ -31,6 +31,8 @@ from kivymd.theming import ThemableBehavior
 from kivy.core.window import Window
 from kivymd.uix.behaviors.elevation import RectangularElevationBehavior
 from kivy_garden.mapview import MapMarkerPopup, MapView
+from kivymd.toast import toast
+
 
 from save_thread_result import ThreadWithResult
 from time import sleep
@@ -198,7 +200,8 @@ class PreLoadWindow(Screen):
         self.GenerateUUID()
         self.InstallWireguardTools()
         self.CreateWarpConfig()
-
+        chdir(MeileGuiConfig.BASEDIR)
+        
         self.runNodeThread()
         # Schedule the functions to be called every n seconds
         #Clock.schedule_once(partial(self.NodeTree.get_nodes, "12s"), 3)
@@ -623,7 +626,11 @@ class MainWindow(Screen):
             return False 
         
     def WrapperSubmitRating(self, rc, dt):
-        rc.SubmitRating(rc.return_rating_value(), rc.naddress)
+        if rc.SubmitRating(rc.return_rating_value(), rc.naddress) == 0:
+            toast(text="Rating Sent!", duration=3.5)
+        else:
+            toast(text="Error sending rating...", duration=3.5)
+
         self.remove_loading_widget(None)
             
           
@@ -1258,6 +1265,10 @@ class RecycleViewCountryRow(MDCard, RectangularElevationBehavior,ThemableBehavio
            
     
 class HelpScreen(Screen):
+    
+    def GetMeileVersion(self):
+        return TextStrings.VERSION
+    
     def set_previous_screen(self):
         
         Meile.app.root.remove_widget(self)

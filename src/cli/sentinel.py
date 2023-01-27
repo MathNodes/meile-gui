@@ -77,7 +77,7 @@ class NodeTreeData():
             for key in NodeKeys.NodesInfoKeys:
                 d[key] = d[key].lstrip().rstrip()
             version = d[NodeKeys.NodesInfoKeys[9]].replace('.','')
-            if version not in ('030', '031', '032'):
+            if version not in NodeKeys.NodeVersions:
                 continue
             d[NodeKeys.NodesInfoKeys[3]] = self.return_denom(d[NodeKeys.NodesInfoKeys[3]])
             
@@ -109,13 +109,6 @@ class NodeTreeData():
                 #print(nlist)
                 k=0
                 self.NodeScores[nlist[k]] = [nlist[k+1], nlist[k+2]]
-                #for nd in nlist:
-                #   if k == 0:
-                #       self.NodeScores[nlist[k]] = [nlist[k+1], nlist[k+2]]
-                #       k += 1
-                #   else:
-                #       break
-            #print(self.NodeScores)
         except Exception as e:
             print(str(e)) 
             
@@ -129,15 +122,6 @@ class NodeTreeData():
             for nlist in data['data']:
                 k=0
                 self.NodeLocations[nlist[k]] = nlist[k+1]
-                '''
-                for nd in nlist:
-                   if k == 0:
-                       self.NodeLocations[nlist[k]] = nlist[k+1]
-                       k += 1
-                   else:
-                       break
-                '''
-            #print(self.NodeLocations)
         except Exception as e:
             print(str(e)) 
     

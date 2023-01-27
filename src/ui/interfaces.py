@@ -11,7 +11,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivymd.uix.button import MDFlatButton, MDRaisedButton
 from kivymd.uix.tooltip import MDTooltip
 from kivy.uix.switch import Switch
-from kivy_garden.mapview.view import MapView
+from kivy_garden.mapview import MapView
 
 class Tab(MDBoxLayout, MDTabsBase):
     pass

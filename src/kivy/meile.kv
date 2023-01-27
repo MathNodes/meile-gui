@@ -1111,13 +1111,13 @@ WindowManager:
             id: node_moniker_text
             text: root.moniker
             font_name: root.get_font()
-            font_size: 19
+            font_size: 24
             pos_hint: {"x" : 0.05, "center_y": .9}
              
         MDLabel:
             id: node_addresss_text
             text: root.naddress
-            font_size: 10
+            font_size: 13
             pos_hint: {"x" : 0.05, "center_y": .70}
              
         MDSlider:
@@ -1156,7 +1156,7 @@ WindowManager:
             text_color: get_color_from_hex("#fcb711")
         MDLabel:
             font_name: "Roboto-Bold"
-            text: "v1.3.0"
+            text: root.GetMeileVersion()
             font_size: "16sp"
             size_hint_y: .1
             width: dp(500)

@@ -84,8 +84,10 @@ class RatingContent(MDBoxLayout):
             #ping = requests.post(, json=rating_dict, timeout=HTTParams.TIMEOUT)
             if req.status_code == 200:
                 print("Rating Sent")
+                return 0
             else:
                 print("Error submitting rating")
+                return 1
         except Exception as e:
             print(str(e))
             pass
