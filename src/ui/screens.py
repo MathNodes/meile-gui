@@ -30,7 +30,7 @@ from kivymd.theming import ThemableBehavior
 from kivy.core.window import Window
 from kivymd.uix.behaviors.elevation import RectangularElevationBehavior
 from kivy_garden.mapview import MapMarkerPopup, MapView
-
+from kivymd.toast import toast
 
 import requests
 import sys
@@ -193,7 +193,7 @@ class PreLoadWindow(Screen):
         super(PreLoadWindow, self).__init__()
         
         self.NodeTree = NodeTreeData(None)
-        
+        self.RewriteBIN()
         self.GenerateUUID()
         self.CreateWarpConfig()
         chdir(MeileGuiConfig.BASEDIR)
@@ -201,7 +201,9 @@ class PreLoadWindow(Screen):
         # Schedule the functions to be called every n seconds
         Clock.schedule_once(partial(self.NodeTree.get_nodes, "13s"), 3)
         Clock.schedule_interval(self.update_status_text, 0.6)
-        
+    def RewriteBIN(self):
+        MeileConfig = MeileGuiConfig()
+        MeileConfig.rewrite_bin()
     def CreateWarpConfig(self):
         MeileConfig = MeileGuiConfig()
         CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
@@ -612,7 +614,10 @@ class MainWindow(Screen):
             return False 
                     
     def WrapperSubmitRating(self, rc, dt):
-        rc.SubmitRating(rc.return_rating_value(), rc.naddress)
+        if rc.SubmitRating(rc.return_rating_value(), rc.naddress) == 0:
+            toast(duration=3.5, text="Rating Sent")
+        else:
+            toast(duration=3.5, text="Error sending rating...")
         self.remove_loading_widget(None)
             
     def wallet_dialog(self):

@@ -19,11 +19,13 @@ class MeileGuiConfig():
         return path.join(base_path, relative_path)
     
     
-    def copy_and_overwrite(self, from_path, to_path):
-        if path.exists(to_path):
-            return
+    def update_bin(self, from_path, to_path):
+        shutil.rmtree(to_path)
         shutil.copytree(from_path, to_path)
-    
+        
+    def rewrite_bin(self):
+        self.update_bin(self.resource_path("bin"), self.BASEBINDIR)
+        
     def read_configuration(self, confpath):
         """Read the configuration file at given path."""
         # copy our default config file
@@ -40,6 +42,5 @@ class MeileGuiConfig():
             
         if not path.isdir(self.IMGDIR):
             mkdir(self.IMGDIR)
-        self.copy_and_overwrite(self.resource_path("bin"), self.BASEBINDIR)
         self.CONFIG.read(confpath)
         return self.CONFIG

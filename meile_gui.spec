@@ -14,8 +14,6 @@ datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 
 block_cipher = None
 
-import sys
-sys.setrecursionlimit(500000000)
 a = Analysis(
     ['src\\main\\meile_gui.py'],
     pathex=[],

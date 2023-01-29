@@ -114,12 +114,12 @@ class HandleWalletFunctions():
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
     
-        ofile =  open(ConfParams.SUBSCRIBEINFO, "wb")
+        ofile =  open(ConfParams.SUBSCRIBEINFO, "w")
             
         if not KEYNAME:
             return (False, 1337)
         
-        SCMD = "%s tx subscription subscribe-to-node --yes --keyring-backend file --keyring-dir %s --gas-prices 0.1udvpn --chain-id sentinelhub-2 --node %s --from '%s' '%s' %s"  % (sentinelcli, ConfParams.KEYRINGDIR, HTTParams.RPC, KEYNAME, NODE, DEPOSIT)    
+        SCMD = "%s tx subscription subscribe-to-node --yes --gas-prices 0.3udvpn --keyring-backend file --keyring-dir %s --chain-id sentinelhub-2 --node %s --from '%s' '%s' %s"  % (sentinelcli, ConfParams.KEYRINGDIR, HTTParams.RPC, KEYNAME, NODE, DEPOSIT)    
         try:
             
             ''' 
@@ -141,9 +141,18 @@ class HandleWalletFunctions():
             
             child.expect(".*")
             child.sendline(PASSWORD)
-            ofile.write(bytes(child.after, 'utf-8'))
+            print(str(child.after))
+            ofile.write(str(child.after))
+            child.expect(".*")
+            child.sendline()
+            print(str(child.before))
+            print(str(child.after))
+            ofile.write(str(child.after))
             child.expect(wexpect.EOF)
-            ofile.write(bytes(child.before, 'utf-8'))
+            print(str(child.before))
+            print(str(child.after))
+            ofile.write(str(child.before))
+            ofile.write(str(child.after))
             ofile.flush()
             ofile.close()
         except wexpect.exceptions.TIMEOUT:
@@ -198,8 +207,8 @@ class HandleWalletFunctions():
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
         KEYNAME = CONFIG['wallet'].get('keyname', '')
-        connCMD = "%s %s connect --home %s --keyring-backend file --keyring-dir %s --chain-id sentinelhub-2 --node %s --gas-prices 0.1udvpn --yes --from '%s' %s %s" % (gsudo, sentinelcli, ConfParams.BASEDIR, ConfParams.KEYRINGDIR, HTTParams.RPC, KEYNAME, ID, address)
-        
+        connCMD = "%s %s connect --keyring-backend file --keyring-dir %s --chain-id sentinelhub-2 --node %s  --yes --gas-prices 0.3udvpn --from '%s' %s %s" % (gsudo, sentinelcli, ConfParams.KEYRINGDIR, HTTParams.RPC, KEYNAME, ID, address)
+        print(connCMD)
         ofile =  open(ConfParams.CONNECTIONINFO, "w")    
         chdir(MeileConfig.BASEBINDIR)
         try:
@@ -213,10 +222,21 @@ class HandleWalletFunctions():
             sys.executable = real_executable
             
             child.expect(".*")
+            ofile.write(str(child.before))
+            print(str(child.before))
             child.sendline(PASSWORD)
             ofile.write(str(child.after))
+            print(str(child.after))
+            child.expect(".*")
+            child.sendline('\n')
+            print(str(child.before))
+            print(str(child.after))
+            ofile.write(str(child.after))
             child.expect(wexpect.EOF)
+            print(str(child.before))
+            print(str(child.after))
             ofile.write(str(child.before))
+            ofile.write(str(child.after))
             
             ofile.flush()
             ofile.close()
@@ -263,4 +283,5 @@ class HandleWalletFunctions():
 
                 
     
+        
         
