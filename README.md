@@ -211,6 +211,16 @@ bash pyinstaller.cmd
 
 That's it. Navigate to the `dist` folder where the binary will be. 
 
+### Windows
+
+For windows, install the necessary pip packages found in `setup.py` and run the following with `pyinstaller`
+
+```shell
+pyinstaller meile_gui.spec
+```
+
+This will build the binary found in the `dist` directory of the Meile tree. 
+
 # Donations
 
 Because we are working on a small grant with no VC funding, any additional contributions to our developer team is more than certainly welcomed. It will help fund future releases. 
