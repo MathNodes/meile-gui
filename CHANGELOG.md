@@ -1,5 +1,7 @@
 CHANGELOG
 ========================
+# v1.4.1 (29/01/2023)
+
 # v1.4.0 (17/01/2023)
 * NEW: First Windows Binary Release (Pre-release)
 * NEW: gsudo Packaged with Windows binary
