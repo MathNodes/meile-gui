@@ -76,13 +76,14 @@ class HandleWalletFunctions():
             with open(ConfParams.WALLETINFO, "r") as dvpn_file:
                 WalletDict = {}   
                 lines = dvpn_file.readlines()
-                addy_seed = [lines[x] for x in range(line_numbers[0], line_numbers[1] +1)]
-                if "address:" in addy_seed[0]:
-                    WalletDict['address'] = addy_seed[0].split(":")[-1].lstrip().rstrip()
-                else:
-                    WalletDict['address'] = addy_seed[1].split(":")[-1].lstrip().rstrip()
-                WalletDict['seed'] = lines[-1].lstrip().rstrip().replace('\n', '')
-                #remove(ConfParams.WALLETINFO)
+                lines = [l for l in lines if l != '\n']
+                for l in lines:
+                    if "address:" in l:
+                        WalletDict['address'] = l.split(":")[-1].lstrip().rstrip()
+                        
+                WalletDict['seed'] = lines[-1].lstrip().rstrip()
+                dvpn_file.close()
+                remove(ConfParams.WALLETINFO)
                 return WalletDict
     
         else:
