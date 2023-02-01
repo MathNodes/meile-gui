@@ -1155,7 +1155,7 @@ WindowManager:
             text_color: get_color_from_hex("#fcb711")
         MDLabel:
             font_name: "Roboto-Bold"
-            text: "v1.2.2"
+            text: root.GetMeileVersion()
             font_size: "16sp"
             size_hint_y: .1
             width: dp(500)
@@ -1410,7 +1410,7 @@ WindowManager:
                 
             MDLabel:
                 id: surcharge
-                text: "Surcharge: $1.95"
+                text: "Surcharge: $1.25"
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex("ffffff")
                 pos_hint: {"x": .40, "center_y": .43}
@@ -1425,7 +1425,7 @@ WindowManager:
             
             MDLabel:
                 id: charge_amount
-                text:"Total Charge: $" + str(round((root.get_dvpn_price()*root.get_dvpn_qty())+1.95,2))
+                text:"Total Charge: $" + str(round((root.get_dvpn_price()*root.get_dvpn_qty())+1.25,2))
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex("#fcb711")
                 pos_hint: {"x": .40, "center_y": .33}

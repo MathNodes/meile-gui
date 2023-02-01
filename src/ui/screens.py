@@ -2,7 +2,7 @@ from geography.continents import OurWorld
 from ui.interfaces import Tab, LatencyContent
 from typedef.win import WindowNames, ICANHAZURL
 from cli.sentinel import  NodeTreeData
-from typedef.konstants import NodeKeys
+from typedef.konstants import NodeKeys, TextStrings
 from cli.sentinel import disconnect as Disconnect
 import main.main as Meile
 from ui.widgets import WalletInfoContent, MDMapCountryButton, RatingContent
@@ -11,6 +11,7 @@ from cli.wallet import HandleWalletFunctions
 from conf.meile_config import MeileGuiConfig
 from typedef.win import CoinsList
 from cli.warp import WarpHandler
+from adapters import HTTPRequests
 
 from kivy.properties import BooleanProperty, StringProperty, ColorProperty
 from kivy.uix.screenmanager import Screen, SlideTransition
@@ -28,7 +29,7 @@ from kivymd.theming import ThemableBehavior
 from kivy.core.window import Window
 from kivymd.uix.behaviors.elevation import RectangularElevationBehavior
 from kivy_garden.mapview import MapMarkerPopup, MapView
-
+from kivymd.toast import toast
 
 import requests
 import sys
@@ -36,7 +37,7 @@ import copy
 import re
 from time import sleep
 from functools import partial
-from os import path,geteuid
+from os import path,geteuid, chdir
 from save_thread_result import ThreadWithResult
 from unidecode import unidecode
 
@@ -194,6 +195,8 @@ class PreLoadWindow(Screen):
         
         self.GenerateUUID()
         self.CreateWarpConfig()
+        chdir(MeileGuiConfig.BASEDIR)
+        
         
         # Schedule the functions to be called every n seconds
         Clock.schedule_once(partial(self.NodeTree.get_nodes, "13s"), 3)
@@ -517,7 +520,9 @@ class MainWindow(Screen):
             
         self.old_ip = self.ip
         try: 
-            req = requests.get(ICANHAZURL, timeout=TIMEOUT)
+            Request = HTTPRequests.MakeRequest()
+            http = Request.hadapter()
+            req = http.get(ICANHAZURL)
             self.ip = req.text
         
             self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.new_ip.text = self.ip
@@ -594,7 +599,10 @@ class MainWindow(Screen):
             return False 
                     
     def WrapperSubmitRating(self, rc, dt):
-        rc.SubmitRating(rc.return_rating_value(), rc.naddress)
+        if rc.SubmitRating(rc.return_rating_value(), rc.naddress) == 0:
+            toast(text="Rating Sent!", duration=3.5)
+        else:
+            toast(text="Error sending rating...", duration=3.5)
         self.remove_loading_widget(None)
             
     def wallet_dialog(self):
@@ -1227,6 +1235,10 @@ class RecycleViewCountryRow(MDCard,RectangularElevationBehavior,ThemableBehavior
         
     
 class HelpScreen(Screen):
+    
+    def GetMeileVersion(self):
+        return TextStrings.VERSION
+    
     def set_previous_screen(self):
         
         Meile.app.root.remove_widget(self)

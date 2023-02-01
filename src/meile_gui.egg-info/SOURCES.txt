@@ -1,9 +1,13 @@
 README.md
 setup.py
+src/adapters/HTTPRequests.py
+src/adapters/__init__.py
 src/awoc/__init__.py
 src/awoc/data/world.json
 src/bin/__init__.py
 src/bin/sentinelcli
+src/bin/warp-cli
+src/bin/warp-svc
 src/cli/__init__.py
 src/cli/sentinel.py
 src/cli/wallet.py
@@ -301,6 +305,7 @@ src/meile_gui.egg-info/entry_points.txt
 src/meile_gui.egg-info/requires.txt
 src/meile_gui.egg-info/top_level.txt
 src/typedef/__init__.py
+src/typedef/konstants.py
 src/typedef/win.py
 src/ui/__init__.py
 src/ui/interfaces.py

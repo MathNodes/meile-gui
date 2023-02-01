@@ -1,5 +1,16 @@
 CHANGELOG
 ========================
+# v0.11.2.4 (01/02/2023)
+* NEW: Toast Message for Rating sent or errored out
+* NEW: Version control in Help Screen
+* NEW: Mac OS X App Bundle Release
+* FIX: Logic in Rating and Location retrieval
+* FIX: MapView Cache folder now located in ~/.meile.gui instead of CWD (fixes App Bundle)
+* FIX: Wallet logic
+* UPDATE: Sentinel-CLI for CosmWasm Sentinel Network Upgrade
+* UPDATE: Packager Installer installs App Bundle to Desktop
+* UPDATE: Improved HTTPs requests using requests adapter
+
 # v0.11.2.0 (01/12/2022)
 * NEW: Unicode Support for Moniker names
 * NEW: Rating scores in subscription tab

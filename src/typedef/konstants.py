@@ -17,6 +17,8 @@ class HTTParams():
     SERVER_URL             = "https://aimokoivunen.mathnodes.com:5000"
     NODE_SCORE_ENDPOINT    = "/api/nodescores"
     NODE_LOCATION_ENDPOINT = "/api/nodelocations"
+    API_PING_ENDPOINT      = "/api/ping"
+    API_RATING_ENDPOINT    = "/api/rating"
     RPC                    = "https://rpc.mathnodes.com:443"
     BALANCES_ENDPOINT      = "/bank/balances/"
     
@@ -37,10 +39,12 @@ class IBCTokens():
     
 class TextStrings():
     dash = "-"
+    VERSION = "v0.11.2.2"
     
 class NodeKeys():
     NodesInfoKeys = ["Moniker","Address","Provider","Price","Country","Speed","Latency","Peers","Handshake","Version","Status"]
     SubsInfoKeys  = ["ID", "Owner", "Plan", "Expiry", "Denom", "Node", "Price", "Deposit", "Free", "Status"]
     FinalSubsKeys = [SubsInfoKeys[0], NodesInfoKeys[0],SubsInfoKeys[5], SubsInfoKeys[6], SubsInfoKeys[7], NodesInfoKeys[4], "Allocated", "Consumed" ]
+    NodeVersions  = [str(item).zfill(3) for item in range(30,100)]
 
 
