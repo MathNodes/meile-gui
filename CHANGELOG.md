@@ -1,7 +1,15 @@
 CHANGELOG
 ========================
 # v1.4.1 (29/01/2023)
-
+* NEW: Toast Message for Rating sent or errored out
+* NEW: Version control in Help Screen
+* NEW: Mac OS X App Bundle Release
+* FIX: Logic in Rating and Location retrieval
+* FIX: MapView Cache folder now located in ~/.meile.gui instead of CWD (fixes App Bundle)
+* FIX: Wallet logic
+* UPDATE: Sentinel-CLI for CosmWasm Sentinel Network Upgrade
+* UPDATE: Packager Installer installs App Bundle to Desktop
+* UPDATE: Improved HTTPs requests using requests adapter
 # v1.4.0 (17/01/2023)
 * NEW: First Windows Binary Release (Pre-release)
 * NEW: gsudo Packaged with Windows binary
