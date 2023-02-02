@@ -8,7 +8,8 @@ from json.decoder import JSONDecodeError
 from conf.meile_config import MeileGuiConfig
 from typedef.konstants import IBCTokens 
 from typedef.konstants import ConfParams 
-from typedef.konstants import HTTParams 
+from typedef.konstants import HTTParams
+from adapters import HTTPRequests 
 
 MeileConfig = MeileGuiConfig()
 sentinelcli = MeileConfig.resource_path("../bin/sentinelcli")
@@ -18,7 +19,6 @@ class HandleWalletFunctions():
     def create(self, wallet_name, keyring_passphrase, seed_phrase):
         SCMD = '%s keys add "%s" -i --keyring-backend file --keyring-dir %s' % (sentinelcli, wallet_name, ConfParams.KEYRINGDIR)
         DUPWALLET = False 
-        line_numbers = [11, 21]
         ofile =  open(ConfParams.WALLETINFO, "wb")    
         
         ''' Process to handle wallet in sentinel-cli '''
@@ -43,7 +43,6 @@ class HandleWalletFunctions():
             if index == 0:
                 child.sendline(keyring_passphrase)
                 child.expect(pexpect.EOF)
-                line_numbers = [13,23]
             elif index ==1:
                 child.sendline("N")
                 print("NO Duplicating Wallet..")
@@ -70,13 +69,14 @@ class HandleWalletFunctions():
             with open(ConfParams.WALLETINFO, "r") as dvpn_file:
                 WalletDict = {}   
                 lines = dvpn_file.readlines()
-                addy_seed = [lines[x] for x in range(line_numbers[0], line_numbers[1] +1)]
-                if "address:" in addy_seed[0]:
-                    WalletDict['address'] = addy_seed[0].split(":")[-1].lstrip().rstrip()
-                else:
-                    WalletDict['address'] = addy_seed[1].split(":")[-1].lstrip().rstrip()
-                WalletDict['seed'] = lines[-1].lstrip().rstrip().replace('\n', '')
-                #remove(ConfParams.WALLETINFO)
+                lines = [l for l in lines if l != '\n']
+                for l in lines:
+                    if "address:" in l:
+                        WalletDict['address'] = l.split(":")[-1].lstrip().rstrip()
+                        
+                WalletDict['seed'] = lines[-1].lstrip().rstrip()
+                dvpn_file.close()
+                remove(ConfParams.WALLETINFO)
                 return WalletDict
     
         else:
@@ -168,11 +168,13 @@ class HandleWalletFunctions():
         return CONNECTED
 
     def get_balance(self, address):
+        Request = HTTPRequests.MakeRequest()
+        http = Request.hadapter()
         endpoint = HTTParams.BALANCES_ENDPOINT + address
         CoinDict = {'dvpn' : 0, 'scrt' : 0, 'dec'  : 0, 'atom' : 0, 'osmo' : 0}
         
         try:
-            r = requests.get(HTTParams.APIURL + endpoint, timeout=HTTParams.TIMEOUT)
+            r = http.get(HTTParams.APIURL + endpoint)
             coinJSON = r.json()
         except:
             return None

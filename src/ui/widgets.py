@@ -37,6 +37,7 @@ from conf.meile_config import MeileGuiConfig
 from cli.wallet import HandleWalletFunctions
 from cli.sentinel import NodeTreeData
 import main.main as Meile
+from adapters import HTTPRequests
 
 class WalletInfoContent(BoxLayout):
     def __init__(self, seed_phrase, name, address, password, **kwargs):
@@ -81,11 +82,15 @@ class RatingContent(MDBoxLayout):
         UUID = Meile.app.root.get_screen(WindowNames.PRELOAD).UUID
         try:
             rating_dict = {'uuid' : "%s" % UUID, 'address' : "%s" % node_address, "rating" : rating}
-            ping = requests.post(HTTParams.SERVER_URL + HTTParams.API_RATING_ENDPOINT, json=rating_dict, timeout=HTTParams.TIMEOUT)
-            if ping.status_code == 200:
+            Request = HTTPRequests.MakeRequest()
+            http = Request.hadapter()
+            req = http.post(HTTParams.SERVER_URL + HTTParams.API_RATING_ENDPOINT, json=rating_dict)
+            if req.status_code == 200:
                 print("Rating Sent")
+                return 0
             else:
                 print("Error submitting rating")
+                return 1
         except Exception as e:
             print(str(e))
             pass
@@ -155,10 +160,15 @@ class SubscribeContent(BoxLayout):
                 return self.ids.deposit.text
         except IndexError as e:
             print(str(e))
-            if self.ids.price.text:
-                self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(int(self.ids.price.text.split("udvpn")[0])/1000000)),3)) + CoinsList.ibc_mu_coins[0].replace('u','')
-                return self.ids.deposit.text
-            else:
+            try: 
+                if self.ids.price.text:
+                    self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(int(self.ids.price.text.split("udvpn")[0])/1000000)),3)) + CoinsList.ibc_mu_coins[0].replace('u','')
+                    return self.ids.deposit.text
+                else:
+                    self.ids.deposit.text = "0.0dvpn"
+                    return self.ids.deposit.text
+            except ValueError as e:
+                print(str(e))
                 self.ids.deposit.text = "0.0dvpn"
                 return self.ids.deposit.text
         
@@ -222,14 +232,15 @@ class RecycleViewRow(MDCard,RectangularElevationBehavior,ThemableBehavior, Hover
         
     def get_city_of_node(self, naddress):   
         
-
+        Request = HTTPRequests.MakeRequest()
+        http = Request.hadapter()
         endpoint = "/nodes/" + naddress.lstrip().rstrip()
         #print(HTTParams.APIURL + endpoint)
         try:
             requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
-            r = requests.get(HTTParams.APIURL + endpoint)
+            r = http.get(HTTParams.APIURL + endpoint)
             remote_url = r.json()['result']['node']['remote_url']
-            r = requests.get(remote_url + "/status", verify=False, timeout=HTTParams.TIMEOUT)
+            r = http.get(remote_url + "/status", verify=False)
             print(remote_url)
     
             NodeInfoJSON = r.json()
@@ -497,7 +508,9 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
             UUID = Meile.app.root.get_screen(WindowNames.PRELOAD).UUID
             try:
                 uuid_dict = {'uuid' : "%s" % UUID, 'os' : "L"}
-                ping = requests.post(HTTParams.SERVER_URL + HTTParams.API_PING_ENDPOINT, json=uuid_dict, timeout=HTTParams.TIMEOUT)
+                Request = HTTPRequests.MakeRequest()
+                http = Request.hadapter()
+                ping = http.post(HTTParams.SERVER_URL + HTTParams.API_PING_ENDPOINT, json=uuid_dict)
                 if ping.status_code == 200:
                     print('ping')
                 else:

@@ -15,6 +15,7 @@ from typedef.konstants import HTTParams
 from typedef.konstants import IBCTokens
 from typedef.konstants import TextStrings
 from typedef.konstants import NodeKeys
+from adapters import HTTPRequests
 
 
 
@@ -78,7 +79,7 @@ class NodeTreeData():
             for key in NodeKeys.NodesInfoKeys:
                 d[key] = d[key].lstrip().rstrip()
             version = d[NodeKeys.NodesInfoKeys[9]].replace('.','')
-            if version not in ('030', '031', '032'):
+            if version not in NodeKeys.NodeVersions:
                 continue
             d[NodeKeys.NodesInfoKeys[3]] = self.return_denom(d[NodeKeys.NodesInfoKeys[3]])
             
@@ -100,37 +101,31 @@ class NodeTreeData():
         self.GetNodeLocations()
         
     def GetNodeScores(self):
+        Request = HTTPRequests.MakeRequest()
+        http = Request.hadapter()
         try:
-            r = requests.get(HTTParams.SERVER_URL + HTTParams.NODE_SCORE_ENDPOINT, timeout=HTTParams.TIMEOUT)
+            r = http.get(HTTParams.SERVER_URL + HTTParams.NODE_SCORE_ENDPOINT)
             data = r.json()
           
             for nlist in data['data']:
-                print(nlist)
+                #print(nlist)
                 k=0
-                for nd in nlist:
-                   if k == 0:
-                       self.NodeScores[nlist[k]] = [nlist[k+1], nlist[k+2]]
-                       k += 1
-                   else:
-                       break
-            print(self.NodeScores)
+                self.NodeScores[nlist[k]] = [nlist[k+1], nlist[k+2]]
+            #print(self.NodeScores)
         except Exception as e:
             print(str(e)) 
             
     def GetNodeLocations(self):
+        Request = HTTPRequests.MakeRequest()
+        http = Request.hadapter()
         try:
-            r = requests.get(HTTParams.SERVER_URL + HTTParams.NODE_LOCATION_ENDPOINT, timeout=HTTParams.TIMEOUT)
+            r = http.get(HTTParams.SERVER_URL + HTTParams.NODE_LOCATION_ENDPOINT)
             data = r.json()
           
             for nlist in data['data']:
                 k=0
-                for nd in nlist:
-                   if k == 0:
-                       self.NodeLocations[nlist[k]] = nlist[k+1]
-                       k += 1
-                   else:
-                       break
-            #print(self.NodeLocations)
+                self.NodeLocations[nlist[k]] = nlist[k+1]
+
         except Exception as e:
             print(str(e)) 
             
@@ -252,7 +247,10 @@ def disconnect():
     #CONFFILE = path.join(BASEDIR, wgif_file)
     #wg_downCMD = ['wg-quick', 'down', CONFFILE]
         
-    proc1 = Popen(partCMD)
+    CONFFILE = path.join(ConfParams.BASEDIR, 'wg99.conf')
+    wg_downCMD = ['pkexec', 'env', 'PATH=%s' % ConfParams.PATH, 'wg-quick', 'down', CONFFILE]
+        
+    proc1 = Popen(wg_downCMD)
     proc1.wait(timeout=30)
     
     #proc = Popen(wg_downCMD, stdout=PIPE, stderr=PIPE)

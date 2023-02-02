@@ -1,5 +1,5 @@
 from os import path,environ,mkdir
-
+from subprocess import Popen
 import configparser
 import shutil
 
@@ -12,6 +12,10 @@ class MeileGuiConfig():
     CONFFILE  = path.join(BASEDIR, 'config.ini')
     IMGDIR    = path.join(BASEDIR, 'img')
     CONFIG    = configparser.ConfigParser()
+    '''
+    WASMSO    = "libwasmvm.x86_64.so"
+    LIBDIR    = "/usr/local/lib"
+    '''
     
     def resource_path(self, relative_path):
         """ Get absolute path to resource, works for dev and for PyInstaller """
@@ -35,6 +39,19 @@ class MeileGuiConfig():
             
         if not path.isdir(self.IMGDIR):
             mkdir(self.IMGDIR)
+        '''    
+        if not path.isfile(path.join(LIBDIR,self.WASMSO)):
+            print("Copying libwasmvm.x86_64.so to system library...")
+            wasmso_copy = ['pkexec', 'cp', self.resource_path(path.join('lib', self.WASMSO)), self.LIBDIR]
+            ldconfig    = ['pkexec', 'ldconfig']
+            
+            proc1 = Popen(wasmso_copy)
+            proc1.wait(timeout=30)
+            print("Running ldconfig...")
+            proc2 = Popen(ldconfig)
+            proc2.wait(timeout=30)
+        ''' 
+        
             
         self.CONFIG.read(confpath)
         return self.CONFIG
