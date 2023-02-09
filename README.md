@@ -28,22 +28,15 @@ This just changes the permissions of the meile-gui configuration directory back 
 
 ## Windows
 
-We finally produced a workable Windows build. The current release is version **1.4.0** and includes the changes as seen in the [CHANGELOG](./CHANGELOG.md)
+We finally produced a workable Windows build. The current release is version **1.4.1** and includes the changes as seen in the [CHANGELOG](./CHANGELOG.md)
 
 This release is a pre-relase for now until we have sufficient testing from the dVPN community. Our ongoing efforts will enhance this release with more functionality as time continues. We are a small team, so be patient while we search for new features and solutions.
 
-```shell
-$ sha256sum Meile.exe
-d2e1e3cedb6cefdb0c6f87c7d2e56deb62db0ea9526eb15cf98e0924dec3b01d  Meile.exe
-```
-
-Please verify the SHA-256 sum to ensure file integrity. 
-
-Download: [Meile for Windows (v1.4.0)](https://github.com/MathNodes/meile-gui/releases/tag/v1.4.0)
+Download: [Meile for Windows (v1.4.1)](https://github.com/MathNodes/meile-gui/releases/tag/v1.4.1)
 
 
 ## Mac OS X
-Download the latest release or package installer [Mac OS X v1.3.0](https://github.com/MathNodes/meile-gui/releases/tag/v1.3.0)
+Download the latest release or package installer [Mac OS X v1.4.1](https://github.com/MathNodes/meile-gui/releases/tag/v1.4.1)
 
 If you are downloading the package installer, just double click on it to install Meile dVPN. You will see an icon in your Applications folder with no picture, labeled "meile-gui". This is a link to the executable. Double click on it to run the application.
 
@@ -71,7 +64,7 @@ The latest version of Meile GUI comes packaged as a Debian archive. Simply downl
 and run:
 
 ```shell
-sudo apt install -y ./meile-gui-v1.3.0_ubuntu22.04_amd64.deb
+sudo apt install -y ./meile-gui-v1.4.1_ubuntu22.04_amd64.deb
 ```
 
 This release will install wireguard tools (and resolvconf) alongside Meile GUI. To connect to nodes or disconnect requires "sudo" privileges. You will be prompted by your system dialog to enter your username's password to give authorization to complete the connection. This is due to how Linux handles permissions with regards to network interfaces. 
@@ -86,28 +79,28 @@ Or goto your panel menu under Internet and there will be a clickable icon.
 
 Because there were issues loading certain mesa OpenGL drivers in various Debian Virtual Machines, we have included a separate .deb archive that automatically configures the system to handle the Meile dependencies. Please use this version if you are running a Debian flavor in a virutal machine (VM).
 
-[Debian/Ubuntu 20.04 Virtual Machine](https://github.com/MathNodes/meile-gui/releases/download/v1.3.0/meile-gui-v1.3.0_ubuntu2004_amd64_vm.deb)
+[Debian/Ubuntu 20.04 Virtual Machine](https://github.com/MathNodes/meile-gui/releases/download/v1.4.1/meile-gui-v1.4.1_ubuntu2004_amd64_vm.deb)
 
-[Debian/Ubuntu 22.04 Virtual Machine](https://github.com/MathNodes/meile-gui/releases/download/v1.3.0/meile-gui-v1.3.0_ubuntu2204_amd64_vm.deb)
+[Debian/Ubuntu 22.04 Virtual Machine](https://github.com/MathNodes/meile-gui/releases/download/v1.4.1/meile-gui-v1.4.1_ubuntu2204_amd64_vm.deb)
 
 ## Redhat/CentOS/Fedora (.rpm)
 
 Download the latest RPM for RedHat releases:
 
-[RedHat RPM (fc36)](https://github.com/MathNodes/meile-gui/releases/download/v1.3.0/meile-gui-v1.3.0-1.fc36.x86_64.rpm)
+[RedHat RPM (fc36)](https://github.com/MathNodes/meile-gui/releases/download/v1.4.1/meile-gui-v1.4.1-1.fc36.x86_64.rpm)
 
-[RedHat RPM (fc37)](https://github.com/MathNodes/meile-gui/releases/download/v1.3.0/meile-gui-v1.3.0-1.fc37.x86_64.rpm)
+[RedHat RPM (fc37)](https://github.com/MathNodes/meile-gui/releases/download/v1.4.1/meile-gui-v1.4.1-1.fc37.x86_64.rpm)
 
 
 Install the rpm from a terminal via *dnf* (**RECOMMENDED**):
 ```shell
-sudo dnf install meile-gui-v1.3.0-1.fc36.x86_64.rpm
+sudo dnf install meile-gui-v1.4.1-1.fc36.x86_64.rpm
 ```
 
 or via *rpm*:
 
 ```shell
-sudo rpm -i meile-gui-v1.3.0-1.fc36.x86_64.rpm
+sudo rpm -i meile-gui-v1.4.1-1.fc36.x86_64.rpm
 ```
 
 *dnf* is **recommended** as it will install all dependencies for Meile to function correctly.
