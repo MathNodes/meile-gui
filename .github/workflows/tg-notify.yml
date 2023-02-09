@@ -10,4 +10,11 @@ jobs:
         to: ${{ secrets.TELEGRAM_TO }}
         token: ${{ secrets.TELEGRAM_TOKEN }}
         message: |  #https://help.github.com/en/actions/reference/contexts-and-expression-syntax-for-github-actions#github-context
-          ${{ github.event_name }} commit in ${{ github.repository }} by "${{ github.actor }}" - Message: "${{ github.event.head_commit.message }}" -  [${{github.sha}}@${{ github.ref_name }}]. 
+            ${{ github.actor }} created commit:
+            Commit message: ${{ github.event.head_commit.message }}
+            
+            Repository: ${{ github.repository }}
+            
+            Branch: ${{ github.ref_name }}
+            
+            See changes: https://github.com/${{ github.repository }}/commit/${{github.sha}}
