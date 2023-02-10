@@ -606,10 +606,13 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
             print(str(e))
             pass 
     def init_GetConsumedWhileConnected(self, sConsumed):
-        bytes_sent = round(float(float(psutil.net_io_counters(pernic=True)['wg99'].bytes_sent) / 1073741824),3)
-        bytes_recvd = round(float(float(psutil.net_io_counters(pernic=True)['wg99'].bytes_recv) / 1073741824),3)
-        
-        return {'sent' : bytes_sent, "rcvd" : bytes_recvd}
+        try: 
+            bytes_sent = round(float(float(psutil.net_io_counters(pernic=True)['wg99'].bytes_sent) / 1073741824),3)
+            bytes_recvd = round(float(float(psutil.net_io_counters(pernic=True)['wg99'].bytes_recv) / 1073741824),3)
+            
+            return {'sent' : bytes_sent, "rcvd" : bytes_recvd}
+        except:
+            return {'sent': 0, 'rcvd' : 0}
         
     def GetConsumedWhileConnected(self, sConsumed, Bytes):
         bytes_sent = round(float(float(float(psutil.net_io_counters(pernic=True)['wg99'].bytes_sent) / 1073741824) - Bytes['sent']),3) 
