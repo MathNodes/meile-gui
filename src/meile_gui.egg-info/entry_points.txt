@@ -1,0 +1,2 @@
+[console_scripts]
+meile-gui = main.meile_gui:main

@@ -20,9 +20,12 @@ class MeileGuiConfig():
     
     
     def update_bin(self, from_path, to_path):
-        shutil.rmtree(to_path)
-        shutil.copytree(from_path, to_path)
-        
+        try: 
+            if path.exists(to_path):
+                shutil.rmtree(to_path)
+            shutil.copytree(from_path, to_path)
+        except Exception as e:
+            print(str(e))
     def rewrite_bin(self):
         self.update_bin(self.resource_path("bin"), self.BASEBINDIR)
         

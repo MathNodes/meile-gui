@@ -155,7 +155,8 @@ class HandleWalletFunctions():
             ofile.write(str(child.after))
             ofile.flush()
             ofile.close()
-        except wexpect.exceptions.TIMEOUT:
+        except Exception as e:
+            print(str(e))
             return (False, 1415)
         
         return self.ParseSubscribe(self)
@@ -240,7 +241,8 @@ class HandleWalletFunctions():
             
             ofile.flush()
             ofile.close()
-        except wexpect.exceptions.TIMEOUT:
+        except Exception as e:
+            print(str(e))
             return False
         
         if path.isfile(ConfParams.WIREGUARD_STATUS):

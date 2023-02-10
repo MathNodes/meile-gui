@@ -449,20 +449,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
         else:
             consumed = float(float(re.findall(r'[0-9]+\.[0-9]+', consumed)[0].replace('B', '')) / (1024*1024*1024))
         
-        return consumed
-        
-    def connected_quota(self, allocated, consumed):        
-        if Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).CONNECTED:
-            allocated = float(allocated.replace('GB',''))
-            consumed  = self.compute_consumed_data(consumed)
-            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).ids.quota_pct.text = str(round(float(float(consumed/allocated)*100),2)) + "%"
-            return round(float(float(consumed/allocated)*100),3)
-        else:
-            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).ids.quota_pct.text = "0.00%"
-            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).ids.quota.value    = 0
-            return float(0)
-            
-    
+        return consumed   
     
     def add_loading_popup(self, title_text):
         self.dialog = None
@@ -522,20 +509,21 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
             
             if connected:
                 from copy import deepcopy
+                mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
                 
-                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).CONNECTED               = True
-                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['moniker']   = moniker
-                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node']      = naddress
-                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['switch']    = True
-                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['id']        = ID
-                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['allocated'] = self.allocated_text
-                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['consumed']  = self.consumed_text
-                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['og_consumed']  = deepcopy(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['consumed']) 
+                mw.CONNECTED                  = True
+                mw.NodeSwitch['moniker']      = moniker
+                mw.NodeSwitch['node']         = naddress
+                mw.NodeSwitch['switch']       = True
+                mw.NodeSwitch['id']           = ID
+                mw.NodeSwitch['allocated']    = self.allocated_text
+                mw.NodeSwitch['consumed']     = self.consumed_text
+                mw.NodeSwitch['og_consumed']  = deepcopy(self.consumed_text) 
                 
-                if not ID in Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth:
-                    Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth[ID] = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch
+                if not ID in mw.PersistentBandwidth:
+                    mw.PersistentBandwidth[ID] = mw.NodeSwitch
                 else:
-                    Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth[ID]['og_consumed'] = deepcopy(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth[ID]['consumed'])
+                    mw.PersistentBandwidth[ID]['og_consumed'] = deepcopy(mw.PersistentBandwidth[ID]['consumed'])
                 
                 
                 self.setQuotaClock(ID, naddress)
@@ -566,56 +554,86 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
                                 on_release=partial(self.call_ip_get, False, "")
                             ),])
                 self.dialog.open()
-    
-    def setQuotaClock(self,ID, naddress):
-        self.UpdateQuotaForNode(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['id'],
-                                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node'],
-                                None)
-        Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).clock = Clock.create_trigger(partial(self.UpdateQuotaForNode,
-                                                  Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['id'],
-                                                  Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node']),
-                                                  120)
-        Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).clock()
+                
+    def connected_quota(self, allocated, consumed): 
+        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)       
+        if mw.CONNECTED:
+            allocated = self.compute_consumed_data(allocated)
+            consumed  = self.compute_consumed_data(consumed)
+            mw.ids.quota_pct.text = str(round(float(float(consumed/allocated)*100),2)) + "%"
+            return round(float(float(consumed/allocated)*100),3)
+        else:
+            mw.ids.quota_pct.text = "0.00%"
+            mw.ids.quota.value    = 0
+            return float(0)
         
-    def UpdateQuotaForNode(self, ID, naddress, dt):
+    def setQuotaClock(self,ID, naddress):
+        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
+        BytesDict = self.init_GetConsumedWhileConnected(mw.PersistentBandwidth[ID]['og_consumed'])
+        print(BytesDict)
+        
+        self.UpdateQuotaForNode(mw.NodeSwitch['id'],
+                                mw.NodeSwitch['node'],
+                                BytesDict,
+                                None)
+        mw.clock = Clock.create_trigger(partial(self.UpdateQuotaForNode,
+                                                  mw.NodeSwitch['id'],
+                                                  mw.NodeSwitch['node'],
+                                                  BytesDict),120)
+        
+        mw.clock()
+        
+    def UpdateQuotaForNode(self, ID, naddress,BytesDict, dt):
+        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         try:
             print("%s: Getting Quota: " % ID, end= ' ')
-            startConsumption = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth[ID]['og_consumed']
-            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth[ID]['consumed'] = self.GetConsumedWhileConnected(self.compute_consumed_data(startConsumption))
+            startConsumption = mw.PersistentBandwidth[ID]['og_consumed']
+            mw.PersistentBandwidth[ID]['consumed'] = self.GetConsumedWhileConnected(self.compute_consumed_data(startConsumption),BytesDict)
             
-            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).ids.quota.value = self.connected_quota(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['allocated'],
-                                                                                                      Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth[ID]['consumed'])
-            print("%s,%s - %s%%" % (Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth[ID]['consumed'],
-                                  startConsumption,
-                                  Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).ids.quota.value))
+            mw.ids.quota.value = self.connected_quota(mw.PersistentBandwidth[ID]['allocated'],
+                                                      mw.PersistentBandwidth[ID]['consumed'])
+            
+            print("%s,%s - %s%%" % (mw.PersistentBandwidth[ID]['consumed'], startConsumption, mw.ids.quota.value))
         except Exception as e:
             print("Error getting bandwidth!")
             print(str(e))
             
         try: 
-            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).clock()
+            mw.clock()
         except Exception as e:
             print("Error running clock()")
             print(str(e))
             pass 
         
-    def GetConsumedWhileConnected(self, sConsumed):
-        bytes_sent = round(float(float(psutil.net_io_counters(pernic=True)['wg99'].bytes_sent) / 1073741824),3)
-        bytes_recvd = round(float(float(psutil.net_io_counters(pernic=True)['wg99'].bytes_recv) / 1073741824),3)
+    def init_GetConsumedWhileConnected(self, sConsumed):
+        try: 
+            bytes_sent = round(float(float(psutil.net_io_counters(pernic=True)['wg99'].bytes_sent) / 1073741824),3)
+            bytes_recvd = round(float(float(psutil.net_io_counters(pernic=True)['wg99'].bytes_recv) / 1073741824),3)
+    
+            return {'sent' : bytes_sent, "rcvd" : bytes_recvd}
+        except Exception as e:
+            return {'sent' : 0, "rcvd" : 0}
+            
         
+    def GetConsumedWhileConnected(self, sConsumed, Bytes):
+        bytes_sent = round(float(float(float(psutil.net_io_counters(pernic=True)['wg99'].bytes_sent) / 1073741824) - Bytes['sent']),3) 
+        bytes_recvd = round(float(float(float(psutil.net_io_counters(pernic=True)['wg99'].bytes_recv) / 1073741824) - Bytes['rcvd']),3)  
+
         total_data = str(round(float(bytes_sent + bytes_recvd)+ float(sConsumed),3)) + "GB"
-        
-        return total_data    
+        #print("Total Data: %s" % total_data, end=' ')
+        return total_data     
                 
     def call_ip_get(self,result, moniker,  *kwargs):
+        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
+        
         if result:
-            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).CONNECTED = True
-            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).set_protected_icon(True, moniker)
+            mw.CONNECTED = True
+            mw.set_protected_icon(True, moniker)
         else:
-            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).CONNECTED = False
+            mw.CONNECTED = False
             self.ids.node_switch.active = False
             
-        if not Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).get_ip_address(None):
+        if not mw.get_ip_address(None):
             self.remove_loading_widget()
             self.change_dns()
         else:

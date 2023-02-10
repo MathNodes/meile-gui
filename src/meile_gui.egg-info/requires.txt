@@ -1,0 +1,14 @@
+kivymd
+pydash
+treelib
+kivyoav
+wexpect
+pexpect
+qrcode
+save_thread_result
+screeninfo
+stripe
+pycoingecko
+mapview
+psutil
+unidecode
