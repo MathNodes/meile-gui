@@ -1,0 +1,20 @@
+name: tg-notify
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Update status
+      uses: appleboy/telegram-action@master
+      with:
+        to: ${{ secrets.TELEGRAM_TO }}
+        token: ${{ secrets.TELEGRAM_TOKEN }}
+        message: |  #https://help.github.com/en/actions/reference/contexts-and-expression-syntax-for-github-actions#github-context
+            ${{ github.actor }} created commit:
+            Commit message: ${{ github.event.head_commit.message }}
+            
+            Repository: ${{ github.repository }}
+            
+            Branch: ${{ github.ref_name }}
+            
+            See changes: https://github.com/${{ github.repository }}/commit/${{github.sha}}
