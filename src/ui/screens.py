@@ -431,6 +431,7 @@ class MainWindow(Screen):
         
     @delayable    
     def start_warp(self):
+        '''
         yield 0.314
         self.dialog = MDDialog(
                 text="Cloudflare WARP is currently not available for Windows Users",
@@ -512,7 +513,7 @@ class MainWindow(Screen):
                 ],
             )
             self.dialog.open()
-        '''   
+           
     @mainthread
     def warp_disconnect(self, inst):
         WARP = WarpHandler()

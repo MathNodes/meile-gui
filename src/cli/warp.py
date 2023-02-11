@@ -4,17 +4,20 @@ from conf.meile_config import MeileGuiConfig
 import multiprocessing
 from multiprocessing import Process
 from time import sleep
+from os import path
 class WarpHandler():
+    MeileConfig = MeileGuiConfig()
     warp_daemon = None
     warp_cli    = None
+    gsudo       = path.join(MeileConfig.BASEBINDIR, 'gsudo.exe')
     
     def __init__(self, **kwargs):
-        MeileConfig = MeileGuiConfig()
-        self.warp_daemon = MeileConfig.resource_path("bin/warp-svc")
-        self.warp_cli    = MeileConfig.resource_path("bin/warp-cli")
+        #MeileConfig = MeileGuiConfig()
+        self.warp_daemon = path.join(self.MeileConfig.BASEBINDIR, "warp-svc.exe")
+        self.warp_cli    = path.join(self.MeileConfig.BASEBINDIR, "warp-cli.exe")
     
     def fork_warp(self):
-        warp_daemon_cmd = "pkexec %s" % self.warp_daemon
+        warp_daemon_cmd = "%s %s" % (self.gsudo, self.warp_daemon)
         warp_srvc_proc = Popen(warp_daemon_cmd, shell=True,close_fds=True)
         
         
@@ -23,7 +26,7 @@ class WarpHandler():
         
         print("Starting WARP service...")
         
-        multiprocessing.get_context('fork')
+        multiprocessing.get_context('spawn')
         warp_fork = Process(target=self.fork_warp)
         warp_fork.run()
         sleep(7)
