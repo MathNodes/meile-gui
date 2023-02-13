@@ -161,13 +161,18 @@ class SubscribeContent(BoxLayout):
                 return self.ids.deposit.text
         except IndexError as e:
             print(str(e))
-            if self.ids.price.text:
-                self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(int(self.ids.price.text.split("udvpn")[0])/1000000)),3)) + CoinsList.ibc_mu_coins[0].replace('u','')
-                return self.ids.deposit.text
-            else:
+            try: 
+                if self.ids.price.text:
+                    self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(int(self.ids.price.text.split("udvpn")[0])/1000000)),3)) + CoinsList.ibc_mu_coins[0].replace('u','')
+                    return self.ids.deposit.text
+                else:
+                    self.ids.deposit.text = "0.0dvpn"
+                    return self.ids.deposit.text
+            except ValueError as e:
+                print(str(e))
                 self.ids.deposit.text = "0.0dvpn"
                 return self.ids.deposit.text
-        
+            
         
 
     def return_deposit_text(self):

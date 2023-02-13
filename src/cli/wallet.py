@@ -169,7 +169,8 @@ class HandleWalletFunctions():
                 lines = sub_file.readlines()
                 k = 0
                 for l in lines:
-                    print(l)
+                    if "Error" in l:
+                        return(False, l)
                     if k >=1:
                         try:
                             tx_json = json.loads(l)
