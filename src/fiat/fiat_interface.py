@@ -184,11 +184,11 @@ class FiatInterface(Screen):
             self.dialog.dismiss()
             self.dialog = None
         if not button:
-            self.dialog = MDDialog(title=status,md_bg_color=get_color_from_hex("#0d021b"))
+            self.dialog = MDDialog(title=status,md_bg_color=get_color_from_hex("#121212"))
         elif button and not button2:
             self.dialog = MDDialog(
                                 title=status,
-                                md_bg_color=get_color_from_hex("#0d021b"),
+                                md_bg_color=get_color_from_hex("#121212"),
                                 
                                 buttons=[
                                 MDRaisedButton(
@@ -201,7 +201,7 @@ class FiatInterface(Screen):
         else:
             self.dialog = MDDialog(
                                 title=status,
-                                md_bg_color=get_color_from_hex("#0d021b"),
+                                md_bg_color=get_color_from_hex("#121212"),
                                 
                                 buttons=[
                                 MDFlatButton(
@@ -290,7 +290,7 @@ class FiatInterface(Screen):
                     title="STATUS: ",
                     type="custom",
                     content_cls=tx_dialog,
-                    md_bg_color=get_color_from_hex("#0d021b"),
+                    md_bg_color=get_color_from_hex("#121212"),
                     buttons=[
                         MDRaisedButton(
                             text="OKAY",

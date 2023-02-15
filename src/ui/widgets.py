@@ -128,7 +128,7 @@ class SubscribeContent(BoxLayout):
         ]
         self.menu = MDDropdownMenu(
             caller=self.ids.drop_item,
-            background_color=get_color_from_hex("#0d021b"),
+            background_color=get_color_from_hex("#121212"),
             items=menu_items,
             position="center",
             width_mult=4,
@@ -228,7 +228,7 @@ class RecycleViewRow(MDCard,RectangularElevationBehavior,ThemableBehavior, Hover
         Window.set_system_cursor('hand')
         
     def on_leave(self, *args):
-        self.md_bg_color = get_color_from_hex("#0d021b")
+        self.md_bg_color = get_color_from_hex("#121212")
         Window.set_system_cursor('arrow')
         
     def get_city_of_node(self, naddress):   
@@ -261,7 +261,7 @@ class RecycleViewRow(MDCard,RectangularElevationBehavior,ThemableBehavior, Hover
 
         if not self.dialog:
             self.dialog = MDDialog(
-                md_bg_color=get_color_from_hex("#0d021b"),
+                md_bg_color=get_color_from_hex("#121212"),
                 text='''
 City: %s
 Connected Peers:  %s  
@@ -287,7 +287,7 @@ Node Version: %s
                     title="Node:",
                     type="custom",
                     content_cls=subscribe_dialog,
-                    md_bg_color=get_color_from_hex("#0d021b"),
+                    md_bg_color=get_color_from_hex("#121212"),
                     buttons=[
                         MDFlatButton(
                             text="CANCEL",
@@ -317,7 +317,7 @@ Node Version: %s
                 title="Subscribing...",
                 type="custom",
                 content_cls=spdialog,
-                md_bg_color=get_color_from_hex("#0d021b"),
+                md_bg_color=get_color_from_hex("#121212"),
             )
         self.dialog.open()
         yield 0.6
@@ -331,7 +331,7 @@ Node Version: %s
             self.dialog.dismiss()
             self.dialog = MDDialog(
                 title="Successful!",
-                md_bg_color=get_color_from_hex("#0d021b"),
+                md_bg_color=get_color_from_hex("#121212"),
                 buttons=[
                         MDFlatButton(
                             text="OK",
@@ -345,7 +345,7 @@ Node Version: %s
             self.dialog.dismiss()
             self.dialog = MDDialog(
             title="Error: %s" % "No wallet found!" if returncode[1] == 1337  else str(returncode[1]),
-            md_bg_color=get_color_from_hex("#0d021b"),
+            md_bg_color=get_color_from_hex("#121212"),
             buttons=[
                     MDFlatButton(
                         text="OK",
@@ -458,7 +458,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
     
     def add_loading_popup(self, title_text):
         self.dialog = None
-        self.dialog = MDDialog(title=title_text,md_bg_color=get_color_from_hex("#0d021b"))
+        self.dialog = MDDialog(title=title_text,md_bg_color=get_color_from_hex("#121212"))
         self.dialog.open()
         
     def remove_loading_widget(self):
@@ -536,7 +536,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
                 self.remove_loading_widget()
                 self.dialog = MDDialog(
                     title="Connected!",
-                    md_bg_color=get_color_from_hex("#0d021b"),
+                    md_bg_color=get_color_from_hex("#121212"),
                     buttons=[
                             MDFlatButton(
                                 text="OK",
@@ -550,7 +550,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
                 self.remove_loading_widget()
                 self.dialog = MDDialog(
                     title="Something went wrong. Not connected",
-                    md_bg_color=get_color_from_hex("#0d021b"),
+                    md_bg_color=get_color_from_hex("#121212"),
                     buttons=[
                             MDFlatButton(
                                 text="OK",
@@ -691,6 +691,6 @@ class MDMapCountryButton(MDFillRoundFlatButton,ThemableBehavior, HoverBehavior):
         '''The method will be called when the mouse cursor goes beyond
         the borders of the current widget.'''
 
-        self.md_bg_color = get_color_from_hex("#0d021b")
+        self.md_bg_color = get_color_from_hex("#121212")
         Window.set_system_cursor('arrow')
             

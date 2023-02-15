@@ -40,7 +40,7 @@ WindowManager:
     name: "main"
     MDBoxLayout:
         orientation: 'vertical'
-        md_bg_color: get_color_from_hex("#0d021b")
+        md_bg_color: get_color_from_hex("#121212")
         MDFloatLayout:
             orientation: "horizontal"
             size_hint_y: .18
@@ -65,7 +65,7 @@ WindowManager:
                 hint_text: 'IP Address:'
                 hint_text_color_normal: '#fcb711'
                 hint_text_color_focus: '#fcb711'
-                fill_color_normal: get_color_from_hex("#0d021b")
+                fill_color_normal: get_color_from_hex("#121212")
                 fill_color_focus: get_color_from_hex("#000000")
             MDTextField:
                 canvas.after:
@@ -88,7 +88,7 @@ WindowManager:
                 text_color_normal: '#fcb711'                
                 hint_text_color_normal: '#fcb711'
                 hint_text_color_focus: '#fcb711'
-                fill_color_normal: get_color_from_hex("#0d021b")
+                fill_color_normal: get_color_from_hex("#121212")
                 fill_color_focus: get_color_from_hex("#000000")
             MDLabel:
                 text: "Bandwidth"
@@ -126,7 +126,7 @@ WindowManager:
                 on_release: root.menu.open()  
             TooltipMDRaisedButton:
                 tooltip_text: "VPNs encrypt your internet traffic, however DNS traffic is still in plaintext. Cloudflare's WARP will encrypt your DNS traffic ensuring no one can see your browsing history."
-                md_bg_color: get_color_from_hex("#0d021b")
+                md_bg_color: get_color_from_hex("#121212")
                 pos_hint: {'x' : .72, 'center_y': .5}
                 on_press: root.start_warp()
                 
@@ -166,12 +166,12 @@ WindowManager:
             id: country_map
             orientation: "horizontal"
             NodeRV:
-                md_bg_color: get_color_from_hex("#0d021b")    
+                md_bg_color: get_color_from_hex("#121212")    
                 id: rv
          
         MDBottomNavigation:
             size_hint_y: .1
-            panel_color: get_color_from_hex("#0d021b")
+            panel_color: get_color_from_hex("#121212")
             text_color_normal: get_color_from_hex("#fcb711")
             text_color_active: get_color_from_hex("#fad783")
             selected_color_background: get_color_from_hex("#200c3a")
@@ -205,7 +205,7 @@ WindowManager:
         ActionBar:
             background_normal: ''
             background_down: ''
-            background_color: get_color_from_hex("#0d021b")
+            background_color: get_color_from_hex("#121212")
             ActionView:
                 ActionPrevious:
                     icon: "arrow-left-circle"
@@ -320,7 +320,7 @@ WindowManager:
     ActionBar:
         background_normal: ''
         background_down: ''
-        background_color: get_color_from_hex("#0d021b")
+        background_color: get_color_from_hex("#121212")
         ActionView:
             ActionPrevious:
                 icon: "arrow-left-circle"
@@ -336,7 +336,7 @@ WindowManager:
     ActionBar:
         background_normal: ''
         background_down: ''
-        background_color: get_color_from_hex("#0d021b")
+        background_color: get_color_from_hex("#121212")
         ActionView:
             ActionPrevious:
                 icon: "arrow-left-circle"
@@ -415,7 +415,7 @@ WindowManager:
             pos: self.pos
             size: self.size
     RecycleGridLayout:
-        md_bg_color: get_color_from_hex("#0d021b")
+        md_bg_color: get_color_from_hex("#121212")
         cols:1
         default_size: dp(200), dp(150)
         default_size_hint: 1, None
@@ -462,7 +462,7 @@ WindowManager:
     country_text: " "
     source_image: " "
     on_press: root.show_country_nodes(root.country_text)
-    md_bg_color: get_color_from_hex("#0d021b")
+    md_bg_color: get_color_from_hex("#121212")
     MDGridLayout:
         cols: 1
         padding: 20,0,0,0
@@ -503,7 +503,7 @@ WindowManager:
     padding: 10,10
     border_radius: 20
     radius: [10]
-    md_bg_color: get_color_from_hex("#0d021b")
+    md_bg_color: get_color_from_hex("#121212")
     moniker_text: "."
     country_text: "."
     price_text: "."
@@ -628,7 +628,7 @@ WindowManager:
     padding: 10,10
     border_radius: 20
     radius: [10]
-    md_bg_color: get_color_from_hex("#0d021b")
+    md_bg_color: get_color_from_hex("#121212")
     moniker_text: "."
     sub_id_text: " "
     country_text: "."
@@ -1134,7 +1134,7 @@ WindowManager:
     ActionBar:
         background_normal: ''
         background_down: ''
-        background_color: get_color_from_hex("#0d021b")
+        background_color: get_color_from_hex("#121212")
         ActionView:
             ActionPrevious:
                 icon: "arrow-left-circle"
@@ -1440,7 +1440,7 @@ WindowManager:
     ActionBar:
         background_normal: ''
         background_down: ''
-        background_color: get_color_from_hex("#0d021b")
+        background_color: get_color_from_hex("#121212")
         ActionView:
             ActionPrevious:
                 icon: "arrow-left-circle"
