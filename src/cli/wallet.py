@@ -115,12 +115,15 @@ class HandleWalletFunctions():
     def ParseSubscribe(self):
         with open(ConfParams.SUBSCRIBEINFO, 'r') as sub_file:
                 lines = sub_file.readlines()
+                for l in lines:
+                    if "Error" in l:
+                        return(False, l)
                 try:
                     tx_json = json.loads(lines[2])
-                except JSONDecodeError as e:
+                except Exception as e:
                     try: 
                         tx_json = json.loads(lines[3])
-                    except JSONDecodeError as e2:
+                    except Exception as e2:
                         return(False, 1.1459265357)
                         
                 if tx_json['data']:
