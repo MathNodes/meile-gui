@@ -123,7 +123,7 @@ class SubscribeContent(BoxLayout):
         ]
         self.menu = MDDropdownMenu(
             caller=self.ids.drop_item,
-            background_color=get_color_from_hex("#0d021b"),
+            background_color=get_color_from_hex("#121212"),
             items=menu_items,
             position="center",
             width_mult=4,
@@ -222,7 +222,7 @@ class RecycleViewRow(MDCard,RectangularElevationBehavior, ThemableBehavior, Hove
         Window.set_system_cursor('hand')
         
     def on_leave(self, *args):
-        self.md_bg_color = get_color_from_hex("#0d021b")
+        self.md_bg_color = get_color_from_hex("#121212")
         Window.set_system_cursor('arrow')
         
     def get_city_of_node(self, naddress):   
@@ -255,7 +255,7 @@ class RecycleViewRow(MDCard,RectangularElevationBehavior, ThemableBehavior, Hove
 
         if not self.dialog:
             self.dialog = MDDialog(
-                md_bg_color=get_color_from_hex("#0d021b"),
+                md_bg_color=get_color_from_hex("#121212"),
                 text='''
 City: %s
 Connected Peers:  %s  
@@ -281,7 +281,7 @@ Node Version: %s
                     title="Node:",
                     type="custom",
                     content_cls=subscribe_dialog,
-                    md_bg_color=get_color_from_hex("#0d021b"),
+                    md_bg_color=get_color_from_hex("#121212"),
                     buttons=[
                         MDFlatButton(
                             text="CANCEL",
@@ -310,7 +310,7 @@ Node Version: %s
                 title="Subscribing...",
                 type="custom",
                 content_cls=spdialog,
-                md_bg_color=get_color_from_hex("#0d021b"),
+                md_bg_color=get_color_from_hex("#121212"),
             )
         self.dialog.open()
         yield 0.6
@@ -324,7 +324,7 @@ Node Version: %s
             self.dialog.dismiss()
             self.dialog = MDDialog(
                 title="Successful!",
-                md_bg_color=get_color_from_hex("#0d021b"),
+                md_bg_color=get_color_from_hex("#121212"),
                 buttons=[
                         MDFlatButton(
                             text="OK",
@@ -338,7 +338,7 @@ Node Version: %s
             self.dialog.dismiss()
             self.dialog = MDDialog(
             title="Error: %s" % "No wallet found!" if returncode[1] == 1337  else returncode[1],
-            md_bg_color=get_color_from_hex("#0d021b"),
+            md_bg_color=get_color_from_hex("#121212"),
             buttons=[
                     MDFlatButton(
                         text="OK",
@@ -453,22 +453,10 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
         
         return consumed
         
-    def connected_quota(self, allocated, consumed):        
-        if Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).CONNECTED:
-            allocated = float(allocated.replace('GB',''))
-            consumed  = self.compute_consumed_data(consumed)
-            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).ids.quota_pct.text = str(round(float(float(consumed/allocated)*100),2)) + "%"
-            return round(float(float(consumed/allocated)*100),3)
-        else:
-            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).ids.quota_pct.text = "0.00%"
-            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).ids.quota.value    = 0
-            return float(0)    
-    
-     
         
     def add_loading_popup(self, title_text):
         self.dialog = None
-        self.dialog = MDDialog(title=title_text,md_bg_color=get_color_from_hex("#0d021b"))
+        self.dialog = MDDialog(title=title_text,md_bg_color=get_color_from_hex("#121212"))
         self.dialog.open()
     def remove_loading_widget(self):
         try:
@@ -524,20 +512,21 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
             
             if connected:
                 from copy import deepcopy
+                mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
+
+                mw.CONNECTED                  = True
+                mw.NodeSwitch['moniker']      = moniker
+                mw.NodeSwitch['node']         = naddress
+                mw.NodeSwitch['switch']       = True
+                mw.NodeSwitch['id']           = ID
+                mw.NodeSwitch['allocated']    = self.allocated_text
+                mw.NodeSwitch['consumed']     = self.consumed_text
+                mw.NodeSwitch['og_consumed']  = deepcopy(self.consumed_text) 
                 
-                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).CONNECTED               = True
-                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['moniker']   = moniker
-                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node']      = naddress
-                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['switch']    = True
-                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['id']        = ID
-                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['allocated'] = self.allocated_text
-                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['consumed']  = self.consumed_text
-                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['og_consumed']  = deepcopy(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['consumed']) 
-                
-                if not ID in Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth:
-                    Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth[ID] = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch
+                if not ID in mw.PersistentBandwidth:
+                    mw.PersistentBandwidth[ID] = mw.NodeSwitch
                 else:
-                    Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth[ID]['og_consumed'] = deepcopy(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth[ID]['consumed'])
+                    mw.PersistentBandwidth[ID]['og_consumed'] = deepcopy(mw.PersistentBandwidth[ID]['consumed'])
                 
                 
                 self.setQuotaClock(ID, naddress)
@@ -545,7 +534,7 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
                 self.remove_loading_widget()
                 self.dialog = MDDialog(
                     title="Connected!",
-                    md_bg_color=get_color_from_hex("#0d021b"),
+                    md_bg_color=get_color_from_hex("#121212"),
                     buttons=[
                             MDFlatButton(
                                 text="OK",
@@ -559,7 +548,7 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
                 self.remove_loading_widget()
                 self.dialog = MDDialog(
                     title="Something went wrong. Not connected",
-                    md_bg_color=get_color_from_hex("#0d021b"),
+                    md_bg_color=get_color_from_hex("#121212"),
                     buttons=[
                             MDFlatButton(
                                 text="OK",
@@ -568,42 +557,76 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
                                 on_release=partial(self.call_ip_get, False, "")
                             ),])
                 self.dialog.open()
-                                 
+    def connected_quota(self, allocated, consumed): 
+        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)       
+        if mw.CONNECTED:
+            allocated = self.compute_consumed_data(allocated)
+            consumed  = self.compute_consumed_data(consumed)
+            mw.ids.quota_pct.text = str(round(float(float(consumed/allocated)*100),2)) + "%"
+            return round(float(float(consumed/allocated)*100),3)
+        else:
+            mw.ids.quota_pct.text = "0.00%"
+            mw.ids.quota.value    = 0
+            return float(0)                 
+                        
     def setQuotaClock(self,ID, naddress):
-        self.UpdateQuotaForNode(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['id'],
-                                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node'],
+        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
+        BytesDict = self.init_GetConsumedWhileConnected(mw.PersistentBandwidth[ID]['og_consumed'])
+        print(BytesDict)
+        
+        self.UpdateQuotaForNode(mw.NodeSwitch['id'],
+                                mw.NodeSwitch['node'],
+                                BytesDict,
                                 None)
         
-        Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).clock = Clock.create_trigger(partial(self.UpdateQuotaForNode,
-                                                  Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['id'],
-                                                  Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node']),
-                                                  120)
-        Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).clock()
+        mw.clock = Clock.create_trigger(partial(self.UpdateQuotaForNode,
+                                                  mw.NodeSwitch['id'],
+                                                  mw.NodeSwitch['node'],
+                                                  BytesDict),120)
         
-    def UpdateQuotaForNode(self, ID, naddress, dt):
+        mw.clock()
+
+        
+    def UpdateQuotaForNode(self, ID, naddress, BytesDict, dt):
+        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         try:
             print("%s: Getting Quota: " % ID, end= ' ')
-            startConsumption = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth[ID]['og_consumed']
-            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth[ID]['consumed'] = self.GetConsumedWhileConnected(self.compute_consumed_data(startConsumption))
+            startConsumption = mw.PersistentBandwidth[ID]['og_consumed']
+            mw.PersistentBandwidth[ID]['consumed'] = self.GetConsumedWhileConnected(self.compute_consumed_data(startConsumption))
             
-            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).ids.quota.value = self.connected_quota(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['allocated'],
-                                                                                                      Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth[ID]['consumed'])
-            print("%s,%s - %s%%" % (Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).PersistentBandwidth[ID]['consumed'],
-                                  startConsumption,
-                                  Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).ids.quota.value))
+            mw.ids.quota.value = self.connected_quota(mw.NodeSwitch['allocated'],
+                                                      mw.PersistentBandwidth[ID]['consumed'])
+            
+            print("%s,%s - %s%%" % (mw.PersistentBandwidth[ID]['consumed'],startConsumption,mw.ids.quota.value))
+            
         except Exception as e:
             print("Error getting bandwidth!")
             print(str(e))
             
         try: 
-            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).clock()
+            mw.clock()
         except Exception as e:
             print("Error running clock()")
             print(str(e))
             pass 
         
+    def init_GetConsumedWhileConnected(self, sConsumed):
+        nic = "utun"
+        bytes_sent = 0
+        bytes_recvd = 0
+        try:
+            for tun_k in range(0,7):
+                try: 
+                    bytes_sent += round(float(float(psutil.net_io_counters(pernic=True)[nic+str(tun_k)].bytes_sent) / 1073741824),3)
+                    bytes_recvd += round(float(float(psutil.net_io_counters(pernic=True)[nic+str(tun_k)].bytes_recv) / 1073741824),3)
+                except: 
+                    pass
+                
+            return {'sent' : bytes_sent, "rcvd" : bytes_recvd}
+        except Exception as e:
+            return {'sent' : 0, "rcvd" : 0}
         
-    def GetConsumedWhileConnected(self, sConsumed):
+    def GetConsumedWhileConnected(self, sConsumed, Bytes):
         nic = "utun"
         bytes_sent = 0
         bytes_recvd = 0
@@ -613,19 +636,23 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
                 bytes_recvd += round(float(float(psutil.net_io_counters(pernic=True)[nic+str(tun_k)].bytes_recv) / 1073741824),3)
             except: 
                 pass
-        total_data = str(round(float(bytes_sent + bytes_recvd)+ float(sConsumed),3)) + "GB"
+            
+        bytes_sent  = bytes_sent - Bytes['sent']
+        bytes_recvd = bytes_recvd - bytes['rcvd']
+        total_data  = str(round(float(bytes_sent + bytes_recvd)+ float(sConsumed),3)) + "GB"
         
         return total_data
         
     def call_ip_get(self,result, moniker,  *kwargs):
+        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         if result:
-            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).CONNECTED = True
-            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).set_protected_icon(True, moniker)
+            mw.CONNECTED = True
+            mw.set_protected_icon(True, moniker)
         else:
-            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).CONNECTED = False
+            mw.CONNECTED = False
             self.ids.node_switch.active = False
             
-        if not Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).get_ip_address(None):
+        if not mw.get_ip_address(None):
             self.remove_loading_widget()
             self.change_dns()
         else:
@@ -665,7 +692,7 @@ class MDMapCountryButton(MDFillRoundFlatButton,ThemableBehavior, HoverBehavior):
         '''The method will be called when the mouse cursor goes beyond
         the borders of the current widget.'''
 
-        self.md_bg_color = get_color_from_hex("#0d021b")
+        self.md_bg_color = get_color_from_hex("#121212")
         Window.set_system_cursor('arrow')
         
     
