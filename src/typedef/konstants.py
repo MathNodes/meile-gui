@@ -39,7 +39,7 @@ class IBCTokens():
     
 class TextStrings():
     dash = "-"
-    VERSION = "v0.11.3.0"
+    VERSION = "v0.11.3.1"
     
 class NodeKeys():
     NodesInfoKeys = ["Moniker","Address","Provider","Price","Country","Speed","Latency","Peers","Handshake","Version","Status"]
