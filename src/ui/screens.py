@@ -197,7 +197,6 @@ class PreLoadWindow(Screen):
         self.CreateWarpConfig()
         chdir(MeileGuiConfig.BASEDIR)
         
-        
         # Schedule the functions to be called every n seconds
         Clock.schedule_once(partial(self.NodeTree.get_nodes, "13s"), 3)
         Clock.schedule_interval(self.update_status_text, 0.6)
@@ -360,7 +359,7 @@ class MainWindow(Screen):
     
     def build_meile_map(self):
         if not self.MeileMapBuilt: 
-            self.MeileMap = MapView(lat=50.6394, lon=3.057, zoom=3)
+            self.MeileMap = MapView(lat=50.6394, lon=3.057, zoom=2)
             source = MapSource(url="https://server.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}.png",
                                cache_key="meile-map-canvas-dark-grey-base", 
                                tile_size=512,
@@ -608,7 +607,7 @@ class MainWindow(Screen):
         if rc.SubmitRating(rc.return_rating_value(), rc.naddress) == 0:
             toast(text="Rating Sent!", duration=3.5)
         else:
-            toast(text="Error sending rating...", duration=3.5)
+            toast(text="Error submitting rating...", duration=3.5)
         self.remove_loading_widget(None)
             
     def wallet_dialog(self):
