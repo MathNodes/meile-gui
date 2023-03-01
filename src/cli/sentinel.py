@@ -18,7 +18,6 @@ from typedef.konstants import NodeKeys
 from adapters import HTTPRequests
 
 
-
 MeileConfig = MeileGuiConfig()
 sentinelcli = MeileConfig.resource_path("../bin/sentinelcli")
 
@@ -108,10 +107,8 @@ class NodeTreeData():
             data = r.json()
           
             for nlist in data['data']:
-                #print(nlist)
                 k=0
                 self.NodeScores[nlist[k]] = [nlist[k+1], nlist[k+2]]
-            #print(self.NodeScores)
         except Exception as e:
             print(str(e)) 
             
@@ -151,6 +148,7 @@ class NodeTreeData():
         
     
         return tokens
+    
     def get_subscriptions(self, ADDRESS):
         SubsNodesInfo = []
         SubsFinalResult    = []
@@ -218,7 +216,6 @@ class NodeTreeData():
         proc = Popen(quotaCMD, stdout=PIPE)
         h=1
         for line in proc.stdout.readlines():
-            #print(line)
             if h < 4:
                 h += 1 
                 continue
