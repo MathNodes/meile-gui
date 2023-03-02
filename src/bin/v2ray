@@ -1,0 +1,2 @@
+#!/bin/bash
+V2RAY_LOCATION_ASSET="${V2RAY_LOCATION_ASSET:-/opt/homebrew/Cellar/v2ray/5.3.0/share/v2ray}" exec "/opt/homebrew/Cellar/v2ray/5.3.0/libexec/v2ray"  "$@"

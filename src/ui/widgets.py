@@ -466,7 +466,7 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
             
     
     @delayable
-    def connect_to_node(self, ID, naddress, moniker, switchValue, **kwargs):
+    def connect_to_node(self, ID, naddress, moniker, type, switchValue, **kwargs):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         '''
            These two conditionals are needed to check
@@ -507,7 +507,7 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
                 print(str(e))
                 pass
             
-            connected = HandleWalletFunctions.connect(HandleWalletFunctions, ID, naddress)
+            connected = HandleWalletFunctions.connect(HandleWalletFunctions, ID, naddress, type)
             
             if connected:
                 from copy import deepcopy
@@ -591,7 +591,7 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
         try:
             print("%s: Getting Quota: " % ID, end= ' ')
             startConsumption = mw.PersistentBandwidth[ID]['og_consumed']
-            mw.PersistentBandwidth[ID]['consumed'] = self.GetConsumedWhileConnected(self.compute_consumed_data(startConsumption))
+            mw.PersistentBandwidth[ID]['consumed'] = self.GetConsumedWhileConnected(self.compute_consumed_data(startConsumption),BytesDict)
             
             mw.ids.quota.value = self.connected_quota(mw.NodeSwitch['allocated'],
                                                       mw.PersistentBandwidth[ID]['consumed'])

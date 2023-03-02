@@ -17,6 +17,8 @@ MeileConfig = MeileGuiConfig()
 sentinelcli = MeileConfig.resource_path("../bin/sentinelcli")
 sentinelbash = MeileConfig.resource_path("../bin/sentinel.sh")
 sentinel_connect_bash = MeileConfig.resource_path("../bin/sentinel-connect.sh")
+v2ray_connect_bash = MeileConfig.resource_path("../bin/v2ray.sh")
+tun2socks_connect_bash = MeileConfig.resource_path("../bin/tun2socks.sh")
 wgbash = MeileConfig.resource_path("../bin/wg.sh")
 
 class HandleWalletFunctions():
@@ -149,7 +151,7 @@ class HandleWalletFunctions():
                         return (False, tx_json['raw_log'])
                 else:
                     return(False, "Error loading JSON")
-    def connect(self, ID, address):
+    def connect(self, ID, address, type):
         
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
@@ -169,18 +171,21 @@ class HandleWalletFunctions():
             pass
         proc_out,proc_err = proc1.communicate()
         
-        connectBASH = [sentinel_connect_bash]
-        proc2 = subprocess.Popen(connectBASH)
-        proc2.wait(timeout=30)
-        
-        proc_out, proc_err = proc2.communicate()
-        
-        
-        if path.isfile(ConfParams.WIREGUARD_STATUS):
-            return True
-        else:
-            return False
-
+        if type == "WireGuard":
+            connectBASH = [sentinel_connect_bash]
+            proc2 = subprocess.Popen(connectBASH)
+            proc2.wait(timeout=30)
+            
+            proc_out, proc_err = proc2.communicate()
+            
+            
+            if path.isfile(ConfParams.WIREGUARD_STATUS):
+                return True
+            else:
+                return False
+        else: 
+            v2rayBASH = [v2ray_connect_bash]
+            
         
         '''
         proc = subprocess.Popen(connCMD, 

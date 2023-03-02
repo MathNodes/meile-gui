@@ -795,7 +795,7 @@ WindowManager:
             #text: "Connect"
             md_bg_color: get_color_from_hex("#fcb711")
             text_color: 0,0,0,1
-            on_active: root.connect_to_node(root.sub_id_text,root.address_text, root.moniker_text, self.active)
+            on_active: root.connect_to_node(root.sub_id_text,root.address_text, root.moniker_text, root.type_text, self.active)
             pos_hint: {"x" : 0.015, "top" : .35 }
             size_hint: None,None
         MDLabel:
