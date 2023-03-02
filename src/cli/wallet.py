@@ -119,34 +119,36 @@ class HandleWalletFunctions():
         
             
     def ParseSubscribe(self):
+        SUBJSON = False
         with open(ConfParams.SUBSCRIBEINFO, 'r') as sub_file:
                 lines = sub_file.readlines()
                 for l in lines:
                     if "Error" in l:
                         return(False, l)
-                try:
-                    tx_json = json.loads(lines[2])
-                except JSONDecodeError as e:
-                    try: 
-                        tx_json = json.loads(lines[3])
-                    except JSONDecodeError as e2:
-                        return(False, 1.1459265357)
-                   
-                if tx_json['data']:
-                    try: 
-                        sub_id = tx_json['logs'][0]['events'][4]['attributes'][0]['value']
-                        if sub_id:
-                            remove(ConfParams.SUBSCRIBEINFO)
-                            return (True,0)
-                        else:
-                            remove(ConfParams.SUBSCRIBEINFO)
-                            return (False,2.71828) 
-                    except:
-                        remove(ConfParams.SUBSCRIBEINFO)
-                        return (False, 3.14159)
-                elif 'insufficient' in tx_json['raw_log']:
-                    remove(ConfParams.SUBSCRIBEINFO)
-                    return (False, tx_json['raw_log'])
+                for l in lines:
+                    try:
+                        tx_json = json.loads(l)
+                        SUBJSON = True
+                    except Exception as e:
+                        continue
+                if SUBJSON:            
+                    if tx_json['data']:
+                        try: 
+                            sub_id = tx_json['logs'][0]['events'][4]['attributes'][0]['value']
+                            if sub_id:
+                                #remove(ConfParams.SUBSCRIBEINFO)
+                                return (True,0)
+                            else:
+                                #remove(ConfParams.SUBSCRIBEINFO)
+                                return (False,2.71828) 
+                        except:
+                            #remove(ConfParams.SUBSCRIBEINFO)
+                            return (False, 3.14159)
+                    elif 'insufficient' in tx_json['raw_log']:
+                        #remove(ConfParams.SUBSCRIBEINFO)
+                        return (False, tx_json['raw_log'])
+                else:
+                    return(False, "Error loading JSON")
     def connect(self, ID, address):
         
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)

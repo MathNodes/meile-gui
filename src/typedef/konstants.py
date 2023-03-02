@@ -39,12 +39,12 @@ class IBCTokens():
     
 class TextStrings():
     dash = "-"
-    VERSION = "v1.4.3"
+    VERSION = "v1.5.0"
     
 class NodeKeys():
-    NodesInfoKeys = ["Moniker","Address","Provider","Price","Country","Speed","Latency","Peers","Handshake","Version","Status"]
+    NodesInfoKeys = ["Moniker","Address","Provider","Price","Country","Speed","Latency","Peers","Handshake","Type","Version","Status"]
     SubsInfoKeys  = ["ID", "Owner", "Plan", "Expiry", "Denom", "Node", "Price", "Deposit", "Free", "Status"]
-    FinalSubsKeys = [SubsInfoKeys[0], NodesInfoKeys[0],SubsInfoKeys[5], SubsInfoKeys[6], SubsInfoKeys[7], NodesInfoKeys[4], "Allocated", "Consumed" ]
+    FinalSubsKeys = [SubsInfoKeys[0], NodesInfoKeys[0],SubsInfoKeys[5], SubsInfoKeys[6], SubsInfoKeys[7], NodesInfoKeys[4], "Allocated", "Consumed", NodesInfoKeys[9]]
     NodeVersions  = [str(item).zfill(3) for item in range (30,100)]
 
 

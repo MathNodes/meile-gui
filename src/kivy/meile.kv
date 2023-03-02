@@ -509,6 +509,7 @@ WindowManager:
     country_text: "."
     price_text: "."
     address_text: "."
+    type_text: "WireGuard"
     city_text: " "
     source_image: " "
     speed_image: " "
@@ -540,6 +541,13 @@ WindowManager:
                 font_size: "10sp"
                 text_color: (0/255.0,141/255.0,155/255.0,255/255.0)
                 pos_hint: {"x" : 0, "top" : 1.1}
+            MDLabel:
+                text: root.type_text
+                theme_text_color: "Custom"
+                font_style: "Subtitle2"
+                font_size: "10sp"
+                text_color: get_color_from_hex("#ffffff")
+                pos_hint: {"x" : 0, "top" : .985}
             MDLabel:
                 text: root.price_text
                 theme_text_color: "Custom"
@@ -631,6 +639,7 @@ WindowManager:
     radius: [10]
     md_bg_color: get_color_from_hex("#121212")
     moniker_text: "."
+    type_text: "."
     sub_id_text: " "
     country_text: "."
     price_text: "."
@@ -655,9 +664,11 @@ WindowManager:
             width: "350dp"
             pos_hint: {"x" : 0, "top" : 1.45}
             size_hint_x: None
+        
         Image:
             id: country_image
             source: root.source_image
+            size: self.texture_size
             pos_hint: {"x" : .3, "top" : 1.25}
             
         MDLabel:    
@@ -787,6 +798,16 @@ WindowManager:
             on_active: root.connect_to_node(root.sub_id_text,root.address_text, root.moniker_text, self.active)
             pos_hint: {"x" : 0.015, "top" : .35 }
             size_hint: None,None
+        MDLabel:
+            text: root.type_text
+            theme_text_color: "Custom"
+            font_style: "H6"
+            font_size: "12sp"
+            width: "100dp"
+            font_name: root.get_font()
+            text_color: get_color_from_hex("#ffffff")
+            pos_hint: {"x" : .085, "top" : .665}
+            size_hint_x: None
         MDSeparator:
             color: 1,1,1,1
             pos_hint: {"x" : 0, "top" : .0 }
