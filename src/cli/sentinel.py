@@ -231,13 +231,20 @@ class NodeTreeData():
                     return nodeQuota
 
     
-def disconnect():
+def disconnect(v2ray):
     partCMD = [sentinel_disconnect_bash, '%s disconnect' % sentinelcli]
     
     proc1 = Popen(partCMD)
     proc1.wait(timeout=20)
     
     proc_out,proc_err = proc1.communicate()
+    
+    if v2ray:
+        tun2routes_connect_bash = MeileConfig.resource_path("../bin/tun2routes.sh")
+        connectBASH = tun2routes_connect_bash + " down"
+        proc2 = Popen(connectBASH, shell=True)
+        proc2.wait(timeout=30)
+        proc_out,proc_err = proc2.communicate()
     
     return proc1.returncode, False
 

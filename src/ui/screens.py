@@ -13,6 +13,8 @@ from src.typedef.win import CoinsList
 from src.fiat import fiat_interface
 from src.cli.warp import WarpHandler
 from src.adapters import HTTPRequests
+from src.cli.v2ray import V2RayHandler
+from src.cli.tun2socks import Tun2socksHandler
 
 
 from kivy.properties import BooleanProperty, StringProperty, ColorProperty  
@@ -336,6 +338,7 @@ class MainWindow(Screen):
     box_color = ColorProperty('#fcb711')
     clock = None
     PersistentBandwidth = {}
+    ConnectedDict = {'v2ray_pid' : None, 'tun2socks_pid' : None, 'result' : False}
     
     def __init__(self, node_tree, **kwargs):
         #Builder.load_file("./src/kivy/meile.kv")
@@ -568,15 +571,31 @@ class MainWindow(Screen):
     @mainthread    
     def disconnect_from_node(self):
         try:
-            if self.CONNECTED == None:
-                returncode, self.CONNECTED = Disconnect()
+            if self.ConnectedDict['v2ray_pid'] is not None and self.ConnectedDict['tun2socks_pid'] is not None:
+                V2Ray = V2RayHandler()
+                Tun2socks = Tun2socksHandler()
+                V2Ray.v2ray_pid = self.ConnectedDict['v2ray_pid']
+                Tun2socks.tun2socks_pid = self.ConnectedDict['tun2socks_pid']
+                try:
+                    V2Ray.kill_daemon()
+                    Tun2socks.kill_daemon()
+                    returncode, self.CONNECTED = Disconnect(True)
+                    print("Disconnect RTNCODE: %s" % returncode)
+                    self.get_ip_address(None)
+                    self.set_protected_icon(False, "")
+                except Exception as e:
+                    print(str(e))
+                    print("Something went wrong")
+                    
+            elif self.CONNECTED == None:
+                returncode, self.CONNECTED = Disconnect(False)
                 print("Disconnect RTNCODE: %s" % returncode)
                 self.get_ip_address(None)
                 self.set_protected_icon(False, "")
             elif self.CONNECTED == False:
                 print("Disconnected!")
             else:
-                returncode, self.CONNECTED = Disconnect()
+                returncode, self.CONNECTED = Disconnect(False)
                 print("Disconnect RTNCODE: %s" % returncode)
                 self.get_ip_address(None)
                 self.set_protected_icon(False, "")

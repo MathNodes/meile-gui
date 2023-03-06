@@ -6,20 +6,23 @@ from json.decoder import JSONDecodeError
 from time import sleep
 import subprocess
 from subprocess import PIPE
+import psutil
 
 from src.conf.meile_config import MeileGuiConfig
 from src.typedef.konstants import IBCTokens 
 from src.typedef.konstants import ConfParams 
 from src.typedef.konstants import HTTParams 
 from src.adapters import HTTPRequests
+from src.cli.v2ray import V2RayHandler
+from src.cli.tun2socks import Tun2socksHandler
+
 
 MeileConfig = MeileGuiConfig()
 sentinelcli = MeileConfig.resource_path("../bin/sentinelcli")
 sentinelbash = MeileConfig.resource_path("../bin/sentinel.sh")
 sentinel_connect_bash = MeileConfig.resource_path("../bin/sentinel-connect.sh")
-v2ray_connect_bash = MeileConfig.resource_path("../bin/v2ray.sh")
-tun2socks_connect_bash = MeileConfig.resource_path("../bin/tun2socks.sh")
-wgbash = MeileConfig.resource_path("../bin/wg.sh")
+tun2routes_connect_bash = MeileConfig.resource_path("../bin/tun2routes.sh")
+#wgbash = MeileConfig.resource_path("../bin/wg.sh")
 
 class HandleWalletFunctions():
     
@@ -166,6 +169,7 @@ class HandleWalletFunctions():
         try:
             proc1 = subprocess.Popen(connCMD, shell=True)
             proc1.wait(timeout=60)
+            pid1 = proc1.pid
         except subprocess.TimeoutExpired as e:
             print(str(e))
             pass
@@ -175,16 +179,39 @@ class HandleWalletFunctions():
             connectBASH = [sentinel_connect_bash]
             proc2 = subprocess.Popen(connectBASH)
             proc2.wait(timeout=30)
-            
+            pid2 = proc2.pid
             proc_out, proc_err = proc2.communicate()
             
             
-            if path.isfile(ConfParams.WIREGUARD_STATUS):
-                return True
+            if psutil.net_if_addrs().get("utun3"):
+                return {"v2ray_pid" : None, "tun2socks_pid" : None, "result": True}
             else:
-                return False
+                return {"v2ray_pid" : None, "tun2socks_pid" : None, "result": False}
         else: 
-            v2rayBASH = [v2ray_connect_bash]
+            V2Ray = V2RayHandler()
+            V2Ray.start_daemon()
+            Tun2Socks = Tun2socksHandler()
+            Tun2Socks.start_daemon()
+            connectBASH = tun2routes_connect_bash + " up"
+            proc2 = subprocess.Popen(connectBASH, shell=True)
+            proc2.wait(timeout=30)
+            proc_out,proc_err = proc2.communicate()
+            
+            if psutil.net_if_addrs().get("utun123"):
+                v2raydict = {"v2ray_pid" : V2Ray.v2ray_pid, "tun2socks_pid" : Tun2Socks.tun2socks_pid, "result": True}
+                print(v2raydict) 
+                return v2raydict
+            else:
+                try: 
+                    V2Ray.kill_daemon()
+                    Tun2Socks.kill_daemon()
+                except Exception as e: 
+                    print(str(e))
+                    
+                v2raydict = {"v2ray_pid" : V2Ray.v2ray_pid, "tun2socks_pid" : Tun2Socks.tun2socks_pid, "result": False}
+                print(v2raydict)
+                return v2raydict
+            
             
         
         '''
