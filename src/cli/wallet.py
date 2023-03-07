@@ -21,7 +21,7 @@ MeileConfig = MeileGuiConfig()
 sentinelcli = MeileConfig.resource_path("../bin/sentinelcli")
 sentinelbash = MeileConfig.resource_path("../bin/sentinel.sh")
 sentinel_connect_bash = MeileConfig.resource_path("../bin/sentinel-connect.sh")
-tun2routes_connect_bash = MeileConfig.resource_path("../bin/tun2routes.sh")
+v2ray_tun2routes_connect_bash = MeileConfig.resource_path("../bin/tun2routes.sh")
 #wgbash = MeileConfig.resource_path("../bin/wg.sh")
 
 class HandleWalletFunctions():
@@ -188,27 +188,31 @@ class HandleWalletFunctions():
             else:
                 return {"v2ray_pid" : None, "tun2socks_pid" : None, "result": False}
         else: 
-            V2Ray = V2RayHandler()
-            V2Ray.start_daemon()
+            V2Ray = V2RayHandler(v2ray_tun2routes_connect_bash + " up")
+            V2Ray.start_daemon() 
+            sleep(5)
+            '''
             Tun2Socks = Tun2socksHandler()
             Tun2Socks.start_daemon()
             connectBASH = tun2routes_connect_bash + " up"
             proc2 = subprocess.Popen(connectBASH, shell=True)
             proc2.wait(timeout=30)
             proc_out,proc_err = proc2.communicate()
+            '''
             
             if psutil.net_if_addrs().get("utun123"):
-                v2raydict = {"v2ray_pid" : V2Ray.v2ray_pid, "tun2socks_pid" : Tun2Socks.tun2socks_pid, "result": True}
+                v2raydict = {"v2ray_pid" : V2Ray.v2ray_pid, "result": True}
                 print(v2raydict) 
                 return v2raydict
             else:
                 try: 
                     V2Ray.kill_daemon()
-                    Tun2Socks.kill_daemon()
+                    #V2Ray.kill_daemon()
+                    #Tun2Socks.kill_daemon()
                 except Exception as e: 
                     print(str(e))
                     
-                v2raydict = {"v2ray_pid" : V2Ray.v2ray_pid, "tun2socks_pid" : Tun2Socks.tun2socks_pid, "result": False}
+                v2raydict = {"v2ray_pid" : V2Ray.v2ray_pid,  "result": False}
                 print(v2raydict)
                 return v2raydict
             

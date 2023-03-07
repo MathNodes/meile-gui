@@ -16,10 +16,12 @@ from src.typedef.konstants import IBCTokens
 from src.typedef.konstants import TextStrings
 from src.typedef.konstants import NodeKeys
 from src.adapters import HTTPRequests
+from src.cli.v2ray import V2RayHandler
 
 MeileConfig = MeileGuiConfig()
 sentinelcli = MeileConfig.resource_path("../bin/sentinelcli")
 sentinel_disconnect_bash = MeileConfig.resource_path("../bin/sentinel-disconnect.sh")
+v2ray_tun2routes_connect_bash = MeileConfig.resource_path("../bin/tun2routes.sh")
 
 class NodeTreeData():
     NodeTree = None
@@ -240,11 +242,12 @@ def disconnect(v2ray):
     proc_out,proc_err = proc1.communicate()
     
     if v2ray:
-        tun2routes_connect_bash = MeileConfig.resource_path("../bin/tun2routes.sh")
-        connectBASH = tun2routes_connect_bash + " down"
-        proc2 = Popen(connectBASH, shell=True)
-        proc2.wait(timeout=30)
-        proc_out,proc_err = proc2.communicate()
+        try:
+            V2Ray = V2RayHandler(v2ray_tun2routes_connect_bash + " down")
+            v2ray.kill_daemon()
+        except Exception as e:
+            print(str(e))
+            return proc1.returncode, True
     
     return proc1.returncode, False
 
