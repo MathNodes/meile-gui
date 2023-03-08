@@ -14,7 +14,6 @@ from src.fiat import fiat_interface
 from src.cli.warp import WarpHandler
 from src.adapters import HTTPRequests
 from src.cli.v2ray import V2RayHandler
-from src.cli.tun2socks import Tun2socksHandler
 
 
 from kivy.properties import BooleanProperty, StringProperty, ColorProperty  
@@ -404,7 +403,7 @@ class MainWindow(Screen):
             
     def get_font(self):
         Config = MeileGuiConfig()
-        return Config.resource_path("../fonts/arial-unicode-ms.ttf")
+        return Config.resource_path("../fonts/mplus-2c-bold.ttf")
      
             
     def AddCountryNodePins(self):

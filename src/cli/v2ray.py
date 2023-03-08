@@ -10,8 +10,8 @@ class V2RayHandler():
     v2ray_pid    = None
     
     def __init__(self, script, **kwargs):
-        MeileConfig = MeileGuiConfig()
-        self.v2ray_script = MeileConfig.resource_path(script)
+        self.v2ray_script = script
+        print(self.v2ray_script)
     
     def fork_v2ray(self):
         v2ray_daemon_cmd = "%s" % self.v2ray_script
@@ -29,13 +29,12 @@ class V2RayHandler():
         multiprocessing.get_context('fork')
         warp_fork = Process(target=self.fork_v2ray)
         warp_fork.run()
-        sleep(5)
+        sleep(1.5)
         return True
     
     def kill_daemon(self):
-        v2ray_tun2routes_connect_bash = MeileConfig.resource_path("../bin/tun2routes.sh")
-        connectBASH = v2ray_tun2routes_connect_bash + " down"
-        proc2 = Popen(connectBASH, shell=True)
+        proc2 = Popen(self.v2ray_script, shell=True)
         proc2.wait(timeout=30)
         proc_out,proc_err = proc2.communicate()
+        return proc2.returncode
         

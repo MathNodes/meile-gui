@@ -234,22 +234,22 @@ class NodeTreeData():
 
     
 def disconnect(v2ray):
-    partCMD = [sentinel_disconnect_bash, '%s disconnect' % sentinelcli]
-    
-    proc1 = Popen(partCMD)
-    proc1.wait(timeout=20)
-    
-    proc_out,proc_err = proc1.communicate()
-    
     if v2ray:
         try:
             V2Ray = V2RayHandler(v2ray_tun2routes_connect_bash + " down")
-            v2ray.kill_daemon()
+            rc = V2Ray.kill_daemon()
+            return rc, False
         except Exception as e:
             print(str(e))
             return proc1.returncode, True
+    else: 
+        partCMD = [sentinel_disconnect_bash, '%s disconnect' % sentinelcli]
     
-    return proc1.returncode, False
+        proc1 = Popen(partCMD)
+        proc1.wait(timeout=20)
+        
+        proc_out,proc_err = proc1.communicate()
+        return proc1.returncode, False
 
 
     

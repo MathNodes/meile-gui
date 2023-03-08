@@ -14,7 +14,6 @@ from src.typedef.konstants import ConfParams
 from src.typedef.konstants import HTTParams 
 from src.adapters import HTTPRequests
 from src.cli.v2ray import V2RayHandler
-from src.cli.tun2socks import Tun2socksHandler
 
 
 MeileConfig = MeileGuiConfig()
@@ -190,7 +189,7 @@ class HandleWalletFunctions():
         else: 
             V2Ray = V2RayHandler(v2ray_tun2routes_connect_bash + " up")
             V2Ray.start_daemon() 
-            sleep(5)
+            sleep(25)
             '''
             Tun2Socks = Tun2socksHandler()
             Tun2Socks.start_daemon()
@@ -206,6 +205,7 @@ class HandleWalletFunctions():
                 return v2raydict
             else:
                 try: 
+                    V2Ray.v2ray_script = v2ray_tun2routes_connect_bash + " down"
                     V2Ray.kill_daemon()
                     #V2Ray.kill_daemon()
                     #Tun2Socks.kill_daemon()

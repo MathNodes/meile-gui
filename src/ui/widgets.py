@@ -72,7 +72,7 @@ class RatingContent(MDBoxLayout):
     
     def get_font(self):
         Config = MeileGuiConfig()
-        return Config.resource_path("../fonts/arial-unicode-ms.ttf")
+        return Config.resource_path("../fonts/mplus-2c-bold.ttf")
     
     def SubmitRating(self, rating, node_address):
         UUID = Meile.app.root.get_screen(WindowNames.PRELOAD).UUID
@@ -134,7 +134,7 @@ class SubscribeContent(BoxLayout):
 
     def get_font(self):
         Config = MeileGuiConfig()
-        return Config.resource_path("../fonts/arial-unicode-ms.ttf")
+        return Config.resource_path("../fonts/mplus-2c-bold.ttf")
     
     def set_item(self, text_item):
         self.ids.drop_item.set_item(text_item)
@@ -185,7 +185,7 @@ class ProcessingSubDialog(BoxLayout):
         
     def get_font(self):
         Config = MeileGuiConfig()
-        return Config.resource_path("../fonts/arial-unicode-ms.ttf")
+        return Config.resource_path("../fonts/mplus-2c-bold.ttf")
     
   
     
@@ -215,7 +215,7 @@ class RecycleViewRow(MDCard,RectangularElevationBehavior, ThemableBehavior, Hove
     
     def get_font(self):
         Config = MeileGuiConfig()
-        return Config.resource_path("../fonts/arial-unicode-ms.ttf")
+        return Config.resource_path("../fonts/mplus-2c-bold.ttf")
     
     def on_enter(self, *args):
         self.md_bg_color = get_color_from_hex("#200c3a")
@@ -403,7 +403,7 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
     
     def get_font(self):
         Config = MeileGuiConfig()
-        return Config.resource_path("../fonts/arial-unicode-ms.ttf")
+        return Config.resource_path("../fonts/mplus-2c-bold.ttf")
         
     def get_data_used(self, allocated, consumed, node_address):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
@@ -611,14 +611,14 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
             pass 
         
     def init_GetConsumedWhileConnected(self, sConsumed):
-        nic = "utun"
+        nic = ["utun0", "utun1", "utun2", "utun3", "utun4", "utun5", "utun6", "utun7", "utun123"]
         bytes_sent = 0
         bytes_recvd = 0
         try:
-            for tun_k in range(0,7):
+            for tun_k in nic:
                 try: 
-                    bytes_sent += round(float(float(psutil.net_io_counters(pernic=True)[nic+str(tun_k)].bytes_sent) / 1073741824),3)
-                    bytes_recvd += round(float(float(psutil.net_io_counters(pernic=True)[nic+str(tun_k)].bytes_recv) / 1073741824),3)
+                    bytes_sent += round(float(float(psutil.net_io_counters(pernic=True)[str(tun_k)].bytes_sent) / 1073741824),3)
+                    bytes_recvd += round(float(float(psutil.net_io_counters(pernic=True)[str(tun_k)].bytes_recv) / 1073741824),3)
                 except: 
                     pass
                 
@@ -627,13 +627,13 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
             return {'sent' : 0, "rcvd" : 0}
         
     def GetConsumedWhileConnected(self, sConsumed, Bytes):
-        nic = "utun"
+        nic = ["utun0", "utun1", "utun2", "utun3", "utun4", "utun5", "utun6", "utun7", "utun123"]
         bytes_sent = 0
         bytes_recvd = 0
-        for tun_k in range(0,7):
+        for tun_k in nic:
             try: 
-                bytes_sent += round(float(float(psutil.net_io_counters(pernic=True)[nic+str(tun_k)].bytes_sent) / 1073741824),3)
-                bytes_recvd += round(float(float(psutil.net_io_counters(pernic=True)[nic+str(tun_k)].bytes_recv) / 1073741824),3)
+                bytes_sent += round(float(float(psutil.net_io_counters(pernic=True)[str(tun_k)].bytes_sent) / 1073741824),3)
+                bytes_recvd += round(float(float(psutil.net_io_counters(pernic=True)[str(tun_k)].bytes_recv) / 1073741824),3)
             except: 
                 pass
             
