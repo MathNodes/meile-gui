@@ -638,7 +638,7 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
                 pass
             
         bytes_sent  = bytes_sent - Bytes['sent']
-        bytes_recvd = bytes_recvd - bytes['rcvd']
+        bytes_recvd = bytes_recvd - Bytes['rcvd']
         total_data  = str(round(float(bytes_sent + bytes_recvd)+ float(sConsumed),3)) + "GB"
         
         return total_data
