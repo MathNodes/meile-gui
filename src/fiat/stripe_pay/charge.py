@@ -29,7 +29,7 @@ class StripePayments():
         payment = stripe.Charge.create(
                     amount= int(float(amount)*100),                  # convert amount to cents
                     currency='usd',
-                    description='Example charge',
+                    description='VPN Subscription',
                     source=tokenid,
                     )
     

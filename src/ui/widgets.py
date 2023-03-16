@@ -236,13 +236,9 @@ class RecycleViewRow(MDCard,RectangularElevationBehavior,ThemableBehavior, Hover
         Request = HTTPRequests.MakeRequest()
         http = Request.hadapter()
         endpoint = "/nodes/" + naddress.lstrip().rstrip()
-        #print(HTTParams.APIURL + endpoint)
         try:
-            #requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
-            #r = requests.get(HTTParams.APIURL + endpoint)
             r = http.get(HTTParams.APIURL + endpoint)
             remote_url = r.json()['result']['node']['remote_url']
-            #r = requests.get(remote_url + "/status", verify=False, timeout=HTTParams.TIMEOUT)
             r = http.get(remote_url + "/status", verify=False)
             print(remote_url)
     
@@ -389,11 +385,12 @@ Node Version: %s
     def closeDialogReturnToSubscriptions(self,inst):
         self.dialog.dismiss()
         self.dialog = None
+        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         Meile.app.root.transition = SlideTransition(direction = "down")
         Meile.app.root.current = WindowNames.MAIN_WINDOW
-        Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).SubResult = None
+        mw.SubResult = None
         #Change this to switch_tab by ids
-        Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).on_tab_switch(None,None,None,"Subscriptions")
+        mw.on_tab_switch(None,None,None,"Subscriptions")
     
     def closeDialog(self, inst):
         try:
@@ -412,20 +409,20 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
         return Config.resource_path("fonts/arial-unicode-ms.ttf")
         
     def get_data_used(self, allocated, consumed, node_address):
+        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         try:
             ''' Since this function is called when opening the Subscription tab,
                 we need to do a little house keeping for the card switches and the
                 data consumed
             '''         
-            if Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node'] == node_address:
+            if mw.NodeSwitch['node'] == node_address:
                 self.ids.node_switch.active = True
             else:
                 self.ids.node_switch.active = False
             
-            if not Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).clock and Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['id']:
+            if not mw.clock and mw.NodeSwitch['id']:
                 print("Not clock()")
-                self.setQuotaClock(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['id'],
-                                   Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node'])
+                self.setQuotaClock(mw.NodeSwitch['id'], mw.NodeSwitch['node'])
             
             #End house keeping
             
@@ -471,25 +468,25 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
         
     @delayable
     def connect_to_node(self, ID, naddress, moniker, switchValue, **kwargs):
-        
+        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         '''
            These two conditionals are needed to check
            and verify the switch in the sub card and ensure
            it is on, when connected, and does not try to disconnect
            or reconnect. 
         '''
-        if Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['switch'] and naddress == Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeSwitch['node'] and not switchValue:
+        if mw.NodeSwitch['switch'] and naddress == mw.NodeSwitch['node'] and not switchValue:
             print("DISCONNECTING!!!")
             try:
-                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).clock.cancel()
-                Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).clock = None
+                mw.clock.cancel()
+                mw.clock = None
             except Exception as e:
                 print(str(e))
-            if Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).disconnect_from_node():
+            if mw.disconnect_from_node():
                 self.connected_quota(None, None)
             return True
         
-        if Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).CONNECTED:
+        if mw.CONNECTED:
             return 
         
         if switchValue:
@@ -514,7 +511,6 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
             
             if connected:
                 from copy import deepcopy
-                mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
                 
                 mw.CONNECTED                  = True
                 mw.NodeSwitch['moniker']      = moniker

@@ -29,7 +29,7 @@ from kivymd.uix.behaviors import HoverBehavior
 from kivymd.theming import ThemableBehavior
 from kivy.core.window import Window
 from kivymd.uix.behaviors.elevation import RectangularElevationBehavior
-from kivy_garden.mapview import MapMarkerPopup, MapView
+from kivy_garden.mapview import MapMarkerPopup, MapView, MapSource
 from kivymd.toast import toast
 
 import requests
@@ -358,10 +358,18 @@ class MainWindow(Screen):
         
     
     def build_meile_map(self):
-        if not self.MeileMapBuilt: 
+        if not self.MeileMapBuilt:
+            self.MeileMap = MapView(lat=50.6394, lon=3.057, zoom=2)
+            source = MapSource(url="https://server.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}.png",
+                               cache_key="meile-map-canvas-dark-grey-base", 
+                               tile_size=512,
+                               image_ext="png",
+                               attribution="@ Meile")
+            self.MeileMap.map_source = source 
+            '''
             self.MeileMap = MapView(lat=50.6394, lon=3.057, zoom=3)
             self.MeileMap.map_source = "osm"
-            
+            '''
             self.ids.country_map.add_widget(self.MeileMap)
             self.AddCountryNodePins()
             self.MeileMapBuilt = True
@@ -695,6 +703,7 @@ class MainWindow(Screen):
                  {
                      "viewclass"      : "RecycleViewSubRow",
                      "moniker_text"   : node[NodeKeys.FinalSubsKeys[1]].lstrip().rstrip(),
+                     "type_text"      : node[NodeKeys.FinalSubsKeys[8]].lstrip().rstrip(),
                      "sub_id_text"    : node[NodeKeys.FinalSubsKeys[0]].lstrip().rstrip(),
                      "price_text"     : node[NodeKeys.FinalSubsKeys[4]].lstrip().rstrip(),
                      "country_text"   : "Offline",
@@ -716,6 +725,7 @@ class MainWindow(Screen):
                 {
                     "viewclass"      : "RecycleViewSubRow",
                     "moniker_text"   : node[NodeKeys.FinalSubsKeys[1]].lstrip().rstrip(),
+                    "type_text"      : node[NodeKeys.FinalSubsKeys[8]].lstrip().rstrip(),
                     "sub_id_text"    : node[NodeKeys.FinalSubsKeys[0]].lstrip().rstrip(),
                     "price_text"     : node[NodeKeys.FinalSubsKeys[4]].lstrip().rstrip(),
                     "country_text"   : node[NodeKeys.FinalSubsKeys[5]].lstrip().rstrip(),
@@ -1203,6 +1213,7 @@ class NodeScreen(Screen):
                 "price_text"   : node[NodeKeys.NodesInfoKeys[3]].lstrip().rstrip(),
                 "country_text" : node[NodeKeys.NodesInfoKeys[4]].lstrip().rstrip(),
                 "address_text" : node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip(),
+                "type_text"    : node[NodeKeys.NodesInfoKeys[9]].lstrip().rstrip(),
                 "speed_text"   : speedText,
                 "node_score"   : nscore,
                 "votes"        : votes,

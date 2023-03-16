@@ -136,25 +136,62 @@ class HandleWalletFunctions():
                     sys.executable = os.path.join(sys._MEIPASS, "wexpect", "wexpect.exe")
             except AttributeError:
                 pass
-            child = wexpect.spawn(SCMD)
-            sys.executable = real_executable
+            try:
+                child = wexpect.spawn(SCMD)
+                sys.executable = real_executable
+            except Exception as e:
+                print("Error Spawning sentinelcli...")
+                print(str(e))
+                return (False, "Error Spawning sentinelcli")
             
-            child.expect(".*")
-            child.sendline(PASSWORD)
-            print(str(child.after))
-            ofile.write(str(child.after))
-            child.expect(".*")
-            child.sendline()
-            print(str(child.before))
-            print(str(child.after))
-            ofile.write(str(child.after))
-            child.expect(wexpect.EOF)
-            print(str(child.before))
-            print(str(child.after))
-            ofile.write(str(child.before))
-            ofile.write(str(child.after))
-            ofile.flush()
-            ofile.close()
+            try: 
+                child.expect(".*")
+                child.sendline(PASSWORD)
+            except Exception as e:
+                print("Error expecting value and sending wallet passphrase")
+                print(str(e))
+                return (False, "Error Expecting initial value/wallet passphrase")
+            #print(str(child.after))
+            try:
+                ofile.write(str(child.after))
+            except Exception as e:
+                print("Error writing subscribe info to file")
+                print(str(e))
+                return (False, "Error writing subscribe info to file")
+            
+            try:
+                child.expect(".*")
+                child.sendline()
+            except Exception as e:
+                print("Error expecting second data.")
+                print(str(e))
+                return (False, "Error expecting second data")
+            #print(str(child.before))
+            #print(str(child.after))
+            try:
+                ofile.write(str(child.after))
+            except Exception as e:
+                print("Error writing child.after 2nd data")
+                print(str(e))
+                return (False, "Error writing child.after 2nd data")
+            
+            try:
+                child.expect(wexpect.EOF)
+            except Exception as e:
+                print("Error receiving EOF")
+                print(str(e))
+                return (False, "Error receiving EOF")
+            #print(str(child.before))
+            #print(str(child.after))
+            try:
+                ofile.write(str(child.before))
+                ofile.write(str(child.after))
+                ofile.flush()
+                ofile.close()
+            except Exception as e:
+                print("ERROR writing final file subscription data")
+                print(str(e))
+                return (False, "Error writing final file subscription data ")
         except Exception as e:
             print(str(e))
             return (False, 1415)
@@ -164,13 +201,39 @@ class HandleWalletFunctions():
         
             
     def ParseSubscribe(self):
-        JSONLOADED = False
+        SUBJSON = False
         with open(ConfParams.SUBSCRIBEINFO, 'r') as sub_file:
                 lines = sub_file.readlines()
                 k = 0
                 for l in lines:
                     if "Error" in l:
                         return(False, l)
+                    
+                for l in lines:
+                    try:
+                        tx_json = json.loads(l)
+                        SUBJSON = True
+                    except Exception as e:
+                        continue
+                if SUBJSON:            
+                    if tx_json['data']:
+                        try: 
+                            sub_id = tx_json['logs'][0]['events'][4]['attributes'][0]['value']
+                            if sub_id:
+                                #remove(ConfParams.SUBSCRIBEINFO)
+                                return (True,0)
+                            else:
+                                #remove(ConfParams.SUBSCRIBEINFO)
+                                return (False,2.71828) 
+                        except:
+                            #remove(ConfParams.SUBSCRIBEINFO)
+                            return (False, 3.14159)
+                    elif 'insufficient' in tx_json['raw_log']:
+                        #remove(ConfParams.SUBSCRIBEINFO)
+                        return (False, tx_json['raw_log'])
+                else:
+                    return(False, "Error loading JSON")
+                '''
                     if k >=1:
                         try:
                             tx_json = json.loads(l)
@@ -204,6 +267,7 @@ class HandleWalletFunctions():
                         return (False, tx_json['raw_log'])
                 else:
                     return(False, 1.1459265357)
+                '''
     def connect(self, ID, address):
 
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)

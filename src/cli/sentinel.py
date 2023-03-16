@@ -77,7 +77,7 @@ class NodeTreeData():
         for d in AllNodesInfoSorted:
             for key in NodeKeys.NodesInfoKeys:
                 d[key] = d[key].lstrip().rstrip()
-            version = d[NodeKeys.NodesInfoKeys[9]].replace('.','')
+            version = d[NodeKeys.NodesInfoKeys[10]].replace('.','')
             if version not in NodeKeys.NodeVersions:
                 continue
             d[NodeKeys.NodesInfoKeys[3]] = self.return_denom(d[NodeKeys.NodesInfoKeys[3]])
@@ -107,7 +107,6 @@ class NodeTreeData():
             data = r.json()
           
             for nlist in data['data']:
-                #print(nlist)
                 k=0
                 self.NodeScores[nlist[k]] = [nlist[k+1], nlist[k+2]]
                 '''
@@ -206,6 +205,7 @@ class NodeTreeData():
                                             NodeKeys.FinalSubsKeys[5] : None,
                                             NodeKeys.FinalSubsKeys[6] : "0.00GB",
                                             NodeKeys.FinalSubsKeys[7] : "0.00B"
+                                            NodeKeys.FinalSubsKeys[8] : "None"
                                             })
                 print("Sub not found in list")
                 k += 1
@@ -222,6 +222,7 @@ class NodeTreeData():
                                             NodeKeys.FinalSubsKeys[5] : NodeData[NodeKeys.NodesInfoKeys[4]],
                                             NodeKeys.FinalSubsKeys[6] : nodeQuota[0],
                                             NodeKeys.FinalSubsKeys[7] : nodeQuota[1]
+                                            NodeKeys.FinalSubsKeys[8] : NodeData[NodeKeys.NodesInfoKeys[9]]
                                             })
             k += 1 
 
