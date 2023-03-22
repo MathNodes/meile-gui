@@ -1,5 +1,25 @@
 CHANGELOG
 ========================
+# v0.12.0.0 (22/03/2023)
+* NEW: sentinelcli 0.3.0 
+* NEW: v2ray support added
+* NEW: v2ray 5.1.0 binary added
+* NEW: tun2socks binary for TCP routing to Sentinel v2ray nodes
+* NEW: Node type listing in node window and subscription (v2ray/wireguard)
+* NEW: routes.sh for handling v2ray node connection
+* CHANGE: Cosolidated colors to konstants.py
+* CHANGE: Consolidate fonts to konstants.py
+* CHANGE: Logic in real-time bandwidth to handle random tunXXX interface
+* CHANGE: mc-plus2 font for unicode characters
+* UPDATED: Connection logic to handle v2ray nodes
+* UPDATED: Disconnect logic to handle v2ray nodes 
+* FIX: Real-time bandwidth report when switching between nodes
+* FIX: Unicode font problem 
+* FIX: IBC Coin listing crash
+* FIX: Node version reporting
+
+
+
 # v0.11.2.4 (01/02/2023)
 * NEW: Toast Message for Rating sent or errored out
 * NEW: Version control in Help Screen

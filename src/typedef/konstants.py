@@ -39,12 +39,16 @@ class IBCTokens():
     
 class TextStrings():
     dash = "-"
-    VERSION = "v0.11.3.1"
+    VERSION = "v0.12.0.0"
+    
+class MeileColors():
+    DIALOG_BG_COLOR = "#121212"
+    FONT_FACE = "../fonts/mplus-2c-bold.ttf"
     
 class NodeKeys():
-    NodesInfoKeys = ["Moniker","Address","Provider","Price","Country","Speed","Latency","Peers","Handshake","Version","Status"]
+    NodesInfoKeys = ["Moniker","Address","Provider","Price","Country","Speed","Latency","Peers","Handshake","Type","Version","Status"]
     SubsInfoKeys  = ["ID", "Owner", "Plan", "Expiry", "Denom", "Node", "Price", "Deposit", "Free", "Status"]
-    FinalSubsKeys = [SubsInfoKeys[0], NodesInfoKeys[0],SubsInfoKeys[5], SubsInfoKeys[6], SubsInfoKeys[7], NodesInfoKeys[4], "Allocated", "Consumed" ]
+    FinalSubsKeys = [SubsInfoKeys[0], NodesInfoKeys[0],SubsInfoKeys[5], SubsInfoKeys[6], SubsInfoKeys[7], NodesInfoKeys[4], "Allocated", "Consumed", NodesInfoKeys[9]]
     NodeVersions  = [str(item).zfill(3) for item in range(30,100)]
 
 

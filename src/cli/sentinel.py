@@ -16,11 +16,12 @@ from typedef.konstants import IBCTokens
 from typedef.konstants import TextStrings
 from typedef.konstants import NodeKeys
 from adapters import HTTPRequests
+from cli.v2ray import V2RayHandler
 
 
 MeileConfig = MeileGuiConfig()
 sentinelcli = MeileConfig.resource_path("../bin/sentinelcli")
-
+v2ray_tun2routes_connect_bash = MeileConfig.resource_path("../bin/routes.sh")
 
 class NodeTreeData():
     NodeTree = None
@@ -77,7 +78,7 @@ class NodeTreeData():
         for d in AllNodesInfoSorted:
             for key in NodeKeys.NodesInfoKeys:
                 d[key] = d[key].lstrip().rstrip()
-            version = d[NodeKeys.NodesInfoKeys[9]].replace('.','')
+            version = d[NodeKeys.NodesInfoKeys[10]].replace('.','')
             if version not in NodeKeys.NodeVersions:
                 continue
             d[NodeKeys.NodesInfoKeys[3]] = self.return_denom(d[NodeKeys.NodesInfoKeys[3]])
@@ -188,7 +189,8 @@ class NodeTreeData():
                                             NodeKeys.FinalSubsKeys[4] : SubsResult[NodeKeys.SubsInfoKeys[7]][k],
                                             NodeKeys.FinalSubsKeys[5] : None,
                                             NodeKeys.FinalSubsKeys[6] : "0.00GB",
-                                            NodeKeys.FinalSubsKeys[7] : "0.00B"
+                                            NodeKeys.FinalSubsKeys[7] : "0.00B",
+                                            NodeKeys.FinalSubsKeys[8] : "None"
                                             })
                 print("Sub not found in list")
                 k += 1
@@ -204,7 +206,8 @@ class NodeTreeData():
                                             NodeKeys.FinalSubsKeys[4] : SubsResult[NodeKeys.SubsInfoKeys[7]][k],
                                             NodeKeys.FinalSubsKeys[5] : NodeData[NodeKeys.NodesInfoKeys[4]],
                                             NodeKeys.FinalSubsKeys[6] : nodeQuota[0],
-                                            NodeKeys.FinalSubsKeys[7] : nodeQuota[1]
+                                            NodeKeys.FinalSubsKeys[7] : nodeQuota[1],
+                                            NodeKeys.FinalSubsKeys[8] : NodeData[NodeKeys.NodesInfoKeys[9]]
                                             })
             k += 1 
 
@@ -231,27 +234,23 @@ class NodeTreeData():
                 else:
                     return nodeQuota
                 
-def disconnect():
-    #ifCMD = ["ifconfig", "-a"]
-    #ifgrepCMD = ["grep", "-oE", "wg[0-9]+"]
-    #partCMD = ['pkexec', 'env', 'PATH=%s' % ConfParams.PATH, sentinelcli, '--home', ConfParams.BASEDIR, "disconnect"]
-    #partCMD  = ['pkexec', 'env', 'PATH=%s' % ConfParams.PATH, 'wg-quick', 'down']
-    #ifoutput = Popen(ifCMD,stdin=PIPE, stdout=PIPE, stderr=STDOUT)
-    #grepoutput = Popen(ifgrepCMD, stdin=ifoutput.stdout, stdout=PIPE, stderr=STDOUT)
-    #wgif = grepoutput.communicate()[0]
-    #wgif_file = str(wgif.decode('utf-8')).replace("\n", '') + ".conf"
-
-    #CONFFILE = path.join(BASEDIR, wgif_file)
-    CONFFILE = path.join(ConfParams.BASEDIR, 'wg99.conf')
-    wg_downCMD = ['pkexec', 'env', 'PATH=%s' % ConfParams.PATH, 'wg-quick', 'down', CONFFILE]
-        
-    proc1 = Popen(wg_downCMD)
-    proc1.wait(timeout=30)
+def disconnect(v2ray):
+    if v2ray:
+        try:
+            V2Ray = V2RayHandler(v2ray_tun2routes_connect_bash + " down")
+            rc = V2Ray.kill_daemon()
+            return rc, False
+        except Exception as e:
+            print(str(e))
+            return 1, True
+    else:
+        CONFFILE = path.join(ConfParams.BASEDIR, 'wg99.conf')
+        wg_downCMD = ['pkexec', 'env', 'PATH=%s' % ConfParams.PATH, 'wg-quick', 'down', CONFFILE]
+            
+        proc1 = Popen(wg_downCMD)
+        proc1.wait(timeout=30)
     
-    #proc = Popen(wg_downCMD, stdout=PIPE, stderr=PIPE)
-    #proc_out,proc_err = proc.communicate()
-    
-    return proc1.returncode, False
-
+        proc_out,proc_err = proc1.communicate()
+        return proc1.returncode, False
 
     

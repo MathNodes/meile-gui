@@ -30,8 +30,7 @@ import psutil
 from os import path
 from subprocess import Popen, TimeoutExpired
 
-from typedef.konstants import IBCTokens
-from typedef.konstants import HTTParams
+from typedef.konstants import IBCTokens, HTTParams, MeileColors
 from typedef.win import CoinsList, WindowNames
 from conf.meile_config import MeileGuiConfig
 from cli.wallet import HandleWalletFunctions
@@ -76,7 +75,7 @@ class RatingContent(MDBoxLayout):
     
     def get_font(self):
         Config = MeileGuiConfig()
-        return Config.resource_path("../fonts/arial-unicode-ms.ttf")
+        return Config.resource_path(MeileColors.FONT_FACE)
     
     def SubmitRating(self, rating, node_address):
         UUID = Meile.app.root.get_screen(WindowNames.PRELOAD).UUID
@@ -127,7 +126,7 @@ class SubscribeContent(BoxLayout):
         ]
         self.menu = MDDropdownMenu(
             caller=self.ids.drop_item,
-            background_color=get_color_from_hex("#121212"),
+            background_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
             items=menu_items,
             position="center",
             width_mult=4,
@@ -138,7 +137,7 @@ class SubscribeContent(BoxLayout):
 
     def get_font(self):
         Config = MeileGuiConfig()
-        return Config.resource_path("../fonts/arial-unicode-ms.ttf")
+        return Config.resource_path(MeileColors.FONT_FACE)
     
     def set_item(self, text_item):
         self.ids.drop_item.set_item(text_item)
@@ -191,7 +190,7 @@ class ProcessingSubDialog(BoxLayout):
         
     def get_font(self):
         Config = MeileGuiConfig()
-        return Config.resource_path("../fonts/arial-unicode-ms.ttf")
+        return Config.resource_path(MeileColors.FONT_FACE)
     
         
     
@@ -220,14 +219,14 @@ class RecycleViewRow(MDCard,RectangularElevationBehavior,ThemableBehavior, Hover
     
     def get_font(self):
         Config = MeileGuiConfig()
-        return Config.resource_path("../fonts/arial-unicode-ms.ttf")
+        return Config.resource_path(MeileColors.FONT_FACE)
     
     def on_enter(self, *args):
         self.md_bg_color = get_color_from_hex("#200c3a")
         Window.set_system_cursor('hand')
         
     def on_leave(self, *args):
-        self.md_bg_color = get_color_from_hex("#121212")
+        self.md_bg_color = get_color_from_hex(MeileColors.DIALOG_BG_COLOR)
         Window.set_system_cursor('arrow')
         
     def get_city_of_node(self, naddress):   
@@ -235,7 +234,6 @@ class RecycleViewRow(MDCard,RectangularElevationBehavior,ThemableBehavior, Hover
         Request = HTTPRequests.MakeRequest()
         http = Request.hadapter()
         endpoint = "/nodes/" + naddress.lstrip().rstrip()
-        #print(APIURL + endpoint)
         try:
             requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
             r = http.get(HTTParams.APIURL + endpoint)
@@ -258,7 +256,7 @@ class RecycleViewRow(MDCard,RectangularElevationBehavior,ThemableBehavior, Hover
 
         if not self.dialog:
             self.dialog = MDDialog(
-                md_bg_color=get_color_from_hex("#121212"),
+                md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
                 text='''
 City: %s
 Connected Peers:  %s  
@@ -284,7 +282,7 @@ Node Version: %s
                     title="Node:",
                     type="custom",
                     content_cls=subscribe_dialog,
-                    md_bg_color=get_color_from_hex("#121212"),
+                    md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
                     buttons=[
                         MDFlatButton(
                             text="CANCEL",
@@ -313,7 +311,7 @@ Node Version: %s
                 title="Subscribing...",
                 type="custom",
                 content_cls=spdialog,
-                md_bg_color=get_color_from_hex("#121212"),
+                md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
             )
         self.dialog.open()
         yield 0.6
@@ -327,7 +325,7 @@ Node Version: %s
             self.dialog.dismiss()
             self.dialog = MDDialog(
                 title="Successful!",
-                md_bg_color=get_color_from_hex("#121212"),
+                md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
                 buttons=[
                         MDFlatButton(
                             text="OK",
@@ -341,7 +339,7 @@ Node Version: %s
             self.dialog.dismiss()
             self.dialog = MDDialog(
             title="Error: %s" % "No wallet found!" if returncode[1] == 1337  else returncode[1],
-            md_bg_color=get_color_from_hex("#121212"),
+            md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
             buttons=[
                     MDFlatButton(
                         text="OK",
@@ -390,7 +388,7 @@ Node Version: %s
         Meile.app.root.current = WindowNames.MAIN_WINDOW
         mw.SubResult = None
         #Change this to switch_tab by ids
-        mw.on_tab_switch(None,None,None,"Subscriptions")
+        mw.ids.android_tabs.switch_tab("Subscriptions")
     
     def closeDialog(self, inst):
         try:
@@ -406,7 +404,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
     
     def get_font(self):
         Config = MeileGuiConfig()
-        return Config.resource_path("../fonts/arial-unicode-ms.ttf")
+        return Config.resource_path(MeileColors.FONT_FACE)
         
     def get_data_used(self, allocated, consumed, node_address):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
@@ -456,7 +454,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
     
     def add_loading_popup(self, title_text):
         self.dialog = None
-        self.dialog = MDDialog(title=title_text,md_bg_color=get_color_from_hex("#121212"))
+        self.dialog = MDDialog(title=title_text,md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR))
         self.dialog.open()
         
     def remove_loading_widget(self):
@@ -468,7 +466,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
             return
         
     @delayable
-    def connect_to_node(self, ID, naddress, moniker, switchValue, **kwargs):
+    def connect_to_node(self, ID, naddress, moniker, type, switchValue, **kwargs):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         '''
            These two conditionals are needed to check
@@ -508,10 +506,12 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
                 print(str(e))
                 pass
             
-            connected = HandleWalletFunctions.connect(HandleWalletFunctions, ID, naddress)
+            from copy import deepcopy
+            connected = HandleWalletFunctions.connect(HandleWalletFunctions, ID, naddress, type)
+            mw.ConnectedDict = deepcopy(connected)
             
-            if connected:
-                from copy import deepcopy
+            if connected['result']:
+                
                 mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
                 mw.CONNECTED               = True
                 mw.NodeSwitch['moniker']   = moniker
@@ -534,7 +534,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
                 self.remove_loading_widget()
                 self.dialog = MDDialog(
                     title="Connected!",
-                    md_bg_color=get_color_from_hex("#121212"),
+                    md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
                     buttons=[
                             MDFlatButton(
                                 text="OK",
@@ -548,7 +548,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
                 self.remove_loading_widget()
                 self.dialog = MDDialog(
                     title="Something went wrong. Not connected",
-                    md_bg_color=get_color_from_hex("#121212"),
+                    md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
                     buttons=[
                             MDFlatButton(
                                 text="OK",
@@ -603,13 +603,11 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
                                   mw.ids.quota.value))
         except Exception as e:
             print("Error getting bandwidth!")
-            print(str(e))
             
         try: 
             mw.clock()
         except Exception as e:
             print("Error running clock()")
-            print(str(e))
             pass 
     def init_GetConsumedWhileConnected(self, sConsumed):
         try: 
@@ -617,14 +615,43 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
             bytes_recvd = round(float(float(psutil.net_io_counters(pernic=True)['wg99'].bytes_recv) / 1073741824),3)
             
             return {'sent' : bytes_sent, "rcvd" : bytes_recvd}
-        except:
-            return {'sent': 0, 'rcvd' : 0}
+        except KeyError:
+            for iface in psutil.net_if_addrs().keys():
+                if "tun" in iface:
+                    IFACE = iface
+                    print(IFACE)
+                    break
+            try:     
+                bytes_sent = round(float(float(psutil.net_io_counters(pernic=True)[IFACE].bytes_sent) / 1073741824),3)
+                bytes_recvd = round(float(float(psutil.net_io_counters(pernic=True)[IFACE].bytes_recv) / 1073741824),3)
+                
+                return {'sent' : bytes_sent, "rcvd" : bytes_recvd}
+            except Exception as e:
+                print(str(e))
+                return {'sent': 0, 'rcvd' : 0}
+            
         
     def GetConsumedWhileConnected(self, sConsumed, Bytes):
-        bytes_sent = round(float(float(float(psutil.net_io_counters(pernic=True)['wg99'].bytes_sent) / 1073741824) - Bytes['sent']),3) 
-        bytes_recvd = round(float(float(float(psutil.net_io_counters(pernic=True)['wg99'].bytes_recv) / 1073741824) - Bytes['rcvd']),3)  
-        
-        total_data = str(round(float(bytes_sent + bytes_recvd)+ float(sConsumed),3)) + "GB"
+        try: 
+            bytes_sent = round(float(float(float(psutil.net_io_counters(pernic=True)['wg99'].bytes_sent) / 1073741824) - Bytes['sent']),3) 
+            bytes_recvd = round(float(float(float(psutil.net_io_counters(pernic=True)['wg99'].bytes_recv) / 1073741824) - Bytes['rcvd']),3)  
+            
+            total_data = str(round(float(bytes_sent + bytes_recvd)+ float(sConsumed),3)) + "GB"
+        except KeyError:
+            for iface in psutil.net_if_addrs().keys():
+                if "tun" in iface:
+                    IFACE = iface
+                    break
+                
+            try: 
+                bytes_sent = round(float(float(float(psutil.net_io_counters(pernic=True)[IFACE].bytes_sent) / 1073741824) - Bytes['sent']),3) 
+                bytes_recvd = round(float(float(float(psutil.net_io_counters(pernic=True)[IFACE].bytes_recv) / 1073741824) - Bytes['rcvd']),3)  
+            
+                total_data = str(round(float(bytes_sent + bytes_recvd)+ float(sConsumed),3)) + "GB"
+            except Exception as e:
+                print(str(e))
+                total_data = "0GB"
+                
         print("Total Data: %s" % total_data, end=' ')
         return total_data    
                 
@@ -685,6 +712,6 @@ class MDMapCountryButton(MDFillRoundFlatButton,ThemableBehavior, HoverBehavior):
         '''The method will be called when the mouse cursor goes beyond
         the borders of the current widget.'''
 
-        self.md_bg_color = get_color_from_hex("#121212")
+        self.md_bg_color = get_color_from_hex(MeileColors.DIALOG_BG_COLOR)
         Window.set_system_cursor('arrow')
             
