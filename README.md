@@ -13,18 +13,8 @@ Meile dVPN GUI for Linux &amp; OS X Powered by the Sentinel Network - a blockcha
 
 # Full Version
 
-The full version 1.4 has been released to GitHub. Branches include **main**, **osx**, **windows**, **fiat**, **osx-fiat**, **pip**. The exception is that we did not include the scrtsxx.py which contains credentials for the FIAT gateway. Please navigate the various branches to understand the different interworkings. 
+The full version 1.5.1 has been released to GitHub. Branches include **main**, **osx**, **windows**, **fiat**, **osx-fiat**, **pip**. The exception is that we did not include the scrtsxx.py which contains credentials for the FIAT gateway. Please navigate the various branches to understand the different interworkings. 
 
-
-## Note: 
-If you have an older version (<0.9.5-beta.1) of Meile on your system, running the following is mandatory to allow newer versions to work:
-
-```shell
-sudo chown -R user:user /home/user/.meile-gui
-```
-where `user` is your username on your system. 
-
-This just changes the permissions of the meile-gui configuration directory back to a regular user instead of its previous permission as root. 
 
 ## Windows
 
@@ -36,22 +26,11 @@ Download: [Meile for Windows (v1.4.1)](https://github.com/MathNodes/meile-gui/re
 
 
 ## Mac OS X
-Download the latest release or package installer [Mac OS X v1.4.1](https://github.com/MathNodes/meile-gui/releases/tag/v1.4.1)
+Download the latest release as a DMG: [Mac OS X v1.5.1](https://github.com/MathNodes/meile-gui/releases/tag/v1.5.1)
 
-If you are downloading the package installer, just double click on it to install Meile dVPN. You will see an icon in your Applications folder with no picture, labeled "meile-gui". This is a link to the executable. Double click on it to run the application.
+The OS X M1/M2 and Intel builds are packaged as a disk image (DMG). To install, simply download the correct DMG for your architecture (Intel or Apple Silicon). Double click on the DMG file and move the Meile app bundle to your desktop or to the Applications folder. 
 
-If installing the binary (not the .pkg), make sure to give the binary executable permissions if it does not have it already:
-
-```shell
-chmod +x meile-gui
-```
-
-Then run:
-```shell
-./meile-gui
-```
-
-Or double click on the the icon in Finder. No brew install is required for this version as we have bundled wireguard-tools for the M1 and Intel release. Please note Applie Silicon (M1/M2) is a different build than Apple Intel. Select your version for your Mac chipset. 
+You may need to press "control" + click to open it as we have not yet been accepted to the Apple Developer program in order to sign our applications and make them ready for the Apple Store. The above method will present a dialog warning you the app was downloaded from the internet. Just approve this and give it a short time and the app will open. 
 
 ### NOTE:
 pip install is not currently available for Mac OS X. We are working on bringing this as a separate packages. 
@@ -61,13 +40,13 @@ pip install is not currently available for Mac OS X. We are working on bringing 
 
 The latest version of Meile GUI comes packaged as a Debian archive. Simply download the latest release: [https://github.com/MathNodes/meile-gui/releases/](https://github.com/MathNodes/meile-gui/releases/)
 
-and run:
+and run apt for your build:
 
 ```shell
-sudo apt install -y ./meile-gui-v1.4.1_ubuntu22.04_amd64.deb
+sudo apt install -y ./meile-gui-v1.5.1_ubuntu22.04_amd64.deb
 ```
 
-This release will install wireguard tools (and resolvconf) alongside Meile GUI. To connect to nodes or disconnect requires "sudo" privileges. You will be prompted by your system dialog to enter your username's password to give authorization to complete the connection. This is due to how Linux handles permissions with regards to network interfaces. 
+This release will install wireguard tools, resolvconf, curl, and net-tools alongside the Meile GUI. To connect to nodes or disconnect requires "sudo" privileges. You will be prompted by your system dialog to enter your username's password to give authorization to complete the connection. This is due to how Linux handles permissions with regards to network interfaces. 
 
 ```shell
 meile-gui
@@ -79,17 +58,17 @@ Or goto your panel menu under Internet and there will be a clickable icon.
 
 Because there were issues loading certain mesa OpenGL drivers in various Debian Virtual Machines, we have included a separate .deb archive that automatically configures the system to handle the Meile dependencies. Please use this version if you are running a Debian flavor in a virutal machine (VM).
 
-[Debian/Ubuntu 20.04 Virtual Machine](https://github.com/MathNodes/meile-gui/releases/download/v1.4.1/meile-gui-v1.4.1_ubuntu2004_amd64_vm.deb)
+[Debian/Ubuntu 20.04 Virtual Machine](https://github.com/MathNodes/meile-gui/releases/download/v1.5.1/meile-gui-v1.5.1_ubuntu2004_amd64_vm.deb)
 
-[Debian/Ubuntu 22.04 Virtual Machine](https://github.com/MathNodes/meile-gui/releases/download/v1.4.1/meile-gui-v1.4.1_ubuntu2204_amd64_vm.deb)
+[Debian/Ubuntu 22.04 Virtual Machine](https://github.com/MathNodes/meile-gui/releases/download/v1.5.1/meile-gui-v1.5.1_ubuntu2204_amd64_vm.deb)
 
 ## Redhat/CentOS/Fedora (.rpm)
 
 Download the latest RPM for RedHat releases:
 
-[RedHat RPM (fc36)](https://github.com/MathNodes/meile-gui/releases/download/v1.4.1/meile-gui-v1.4.1-1.fc36.x86_64.rpm)
+[RedHat RPM (fc36)](https://github.com/MathNodes/meile-gui/releases/download/v1.5.1/meile-gui-v1.5.1-1.fc36.x86_64.rpm)
 
-[RedHat RPM (fc37)](https://github.com/MathNodes/meile-gui/releases/download/v1.4.1/meile-gui-v1.4.1-1.fc37.x86_64.rpm)
+[RedHat RPM (fc37)](https://github.com/MathNodes/meile-gui/releases/download/v1.5.1/meile-gui-v1.5.1-1.fc37.x86_64.rpm)
 
 
 Install the rpm from a terminal via *dnf* (**RECOMMENDED**):
@@ -111,7 +90,7 @@ sudo rpm -i meile-gui-v1.4.1-1.fc36.x86_64.rpm
 Meile dVPN GUI v0.11.2 is now available as a pip packages as well. These are pre-releases scheduled to be built into a binary. To install, first install **wireguard-tools** and **Meile** dependencies if you don't already have them
 
 ```
-sudo apt install -y  wireguard-tools openresolv mesa-utils libgl1-mesa-glx xclip python3-devel
+sudo apt install -y  wireguard-tools openresolv mesa-utils libgl1-mesa-glx xclip python3-devel curl net-tools
 ```
 
 Then install via pip
@@ -137,25 +116,14 @@ The FIAT gateway is not included in the pip package. This is due to certain cred
 
 We consider the pip releases to be pre-releases of the compiled binaries. Pip is considered the bleeding edge of Meile releases
 
-## Installing from Binary
-
-```shell
-sudo apt install -y wireguard-tools openresolv mesa-utils libgl1-mesa-glx xclip python3-devel
-```
-
-After installing wireguard-tools, download the latest stable release at the [Release](https://github.com/MathNodes/meile-gui/releases) page and extract:
-
-```shell
-tar xvjf meile-gui-v1.3.0.tar.bz2
-```
-
-Run & enjoy!
+## Help
 
 Please make comments, suggestions, and issues on the issues page here at GitHub. If you are a GitHub newb, you can join us in our various open messaging channels:
 
 * Telegram [MathNodes-Telegram](http://t.me/MathNodes)
 * Discord [MathNodes-Discord](https://discord.gg/HQrHXZJHQq) in the Meile channel, 
 * Session [Session Open Group](http://session.mathnodes.com/mathnodes-dvpn-oxen-dero?public_key=8585d7f3fb44f4f40fb1685a0cf10627dd24467a9379eafbb7ba08e5607e9c21)
+
 Session:
 ![session](./img/session_qr.png)
 

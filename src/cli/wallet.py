@@ -2,6 +2,8 @@ from os import path, remove
 import pexpect
 import json
 import requests
+import psutil
+from time import sleep 
 
 from json.decoder import JSONDecodeError 
 
@@ -9,10 +11,13 @@ from conf.meile_config import MeileGuiConfig
 from typedef.konstants import IBCTokens 
 from typedef.konstants import ConfParams 
 from typedef.konstants import HTTParams
-from adapters import HTTPRequests 
+from adapters import HTTPRequests
+from cli.v2ray import V2RayHandler
 
 MeileConfig = MeileGuiConfig()
 sentinelcli = MeileConfig.resource_path("../bin/sentinelcli")
+v2ray_tun2routes_connect_bash = MeileConfig.resource_path("../bin/routes.sh")
+
 
 class HandleWalletFunctions():
     
@@ -119,6 +124,7 @@ class HandleWalletFunctions():
                 for l in lines:
                     if "Error" in l:
                         return(False, l)
+
                 for l in lines:
                     try:
                         tx_json = json.loads(l)
@@ -143,16 +149,15 @@ class HandleWalletFunctions():
                         return (False, tx_json['raw_log'])
                 else:
                     return(False, "Error loading JSON")
-                
-    def connect(self, ID, address):
+    def connect(self, ID, address, type):
 
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
         KEYNAME = CONFIG['wallet'].get('keyname', '')
         connCMD = "pkexec env PATH=%s %s connect --home %s --keyring-backend file --keyring-dir %s --chain-id sentinelhub-2 --node %s --gas-prices 0.1udvpn --yes --from '%s' %s %s" % (ConfParams.PATH, sentinelcli, ConfParams.BASEDIR, ConfParams.KEYRINGDIR, HTTParams.RPC, KEYNAME, ID, address)
-        
+            
         ofile =  open(ConfParams.CONNECTIONINFO, "wb")    
-
+    
         try:
             child = pexpect.spawn(connCMD)
             child.logfile = ofile
@@ -164,14 +169,40 @@ class HandleWalletFunctions():
             ofile.flush()
             ofile.close()
         except pexpect.exceptions.TIMEOUT:
-            return False
-        
-        if path.isfile(ConfParams.WIREGUARD_STATUS):
-            CONNECTED = True
-        else:
-            CONNECTED = False
+            return {"v2ray_pid" : None,  "result": False}
             
-        return CONNECTED
+        if type == "WireGuard":
+            if psutil.net_if_addrs().get("wg99"):
+                return {"v2ray_pid" : None,  "result": True}
+            else:
+                return {"v2ray_pid" : None,  "result": False}
+        else: 
+            TUNIFACE = False
+            V2Ray = V2RayHandler(v2ray_tun2routes_connect_bash + " up")
+            V2Ray.start_daemon() 
+            sleep(15)
+
+            for iface in psutil.net_if_addrs().keys():
+                if "tun" in iface:
+                    TUNIFACE = True
+                    break
+                
+            if TUNIFACE:
+                v2raydict = {"v2ray_pid" : V2Ray.v2ray_pid, "result": True}
+                print(v2raydict) 
+                return v2raydict
+            else:
+                try: 
+                    V2Ray.v2ray_script = v2ray_tun2routes_connect_bash + " down"
+                    V2Ray.kill_daemon()
+                    #V2Ray.kill_daemon()
+                    #Tun2Socks.kill_daemon()
+                except Exception as e: 
+                    print(str(e))
+                    
+                v2raydict = {"v2ray_pid" : V2Ray.v2ray_pid,  "result": False}
+                print(v2raydict)
+                return v2raydict
 
     def get_balance(self, address):
         Request = HTTPRequests.MakeRequest()

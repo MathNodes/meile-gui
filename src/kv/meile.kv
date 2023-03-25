@@ -508,6 +508,7 @@ WindowManager:
     country_text: "."
     price_text: "."
     address_text: "."
+    type_text: "."
     city_text: " "
     source_image: " "
     speed_image: " "
@@ -531,7 +532,7 @@ WindowManager:
                 text_color: get_color_from_hex("#fcb711")
                 pos_hint: {"x" : 0, "top" : 1.3}
                 size_hint_x: None
-                width: "400dp"
+                width: "500dp"
             MDLabel:
                 text: root.address_text
                 theme_text_color: "Custom"
@@ -539,6 +540,13 @@ WindowManager:
                 font_size: "10sp"
                 text_color: (0/255.0,141/255.0,155/255.0,255/255.0)
                 pos_hint: {"x" : 0, "top" : 1.1}
+            MDLabel:
+                text: root.type_text
+                theme_text_color: "Custom"
+                font_style: "Subtitle2"
+                font_size: "10sp"
+                text_color: get_color_from_hex("#ffffff")
+                pos_hint: {"x" : 0, "top" : .985}
             MDLabel:
                 text: root.price_text
                 theme_text_color: "Custom"
@@ -614,9 +622,6 @@ WindowManager:
         text_color: 0,0,0,1
         on_press: root.get_city_of_node(root.address_text)
         
-        
-    MDSeparator:
-        color: 1,1,1,1
 
 <OnHoverMDRaisedButton>:
 
@@ -630,6 +635,7 @@ WindowManager:
     radius: [10]
     md_bg_color: get_color_from_hex("#121212")
     moniker_text: "."
+    type_text: "."
     sub_id_text: " "
     country_text: "."
     price_text: "."
@@ -651,7 +657,7 @@ WindowManager:
             font_size: "24sp"
             font_name: root.get_font()
             text_color: get_color_from_hex("#fcb711")
-            width: "350dp"
+            width: "500dp"
             pos_hint: {"x" : 0, "top" : 1.45}
             size_hint_x: None
         Image:
@@ -783,12 +789,19 @@ WindowManager:
             #text: "Connect"
             md_bg_color: get_color_from_hex("#fcb711")
             text_color: 0,0,0,1
-            on_active: root.connect_to_node(root.sub_id_text,root.address_text, root.moniker_text, self.active)
+            on_active: root.connect_to_node(root.sub_id_text,root.address_text, root.moniker_text, root.type_text, self.active)
             pos_hint: {"x" : 0, "top" : .55 }
             size_hint: None,None
-        MDSeparator:
-            color: 1,1,1,1
-            pos_hint: {"x" : 0, "top" : .0 }
+        MDLabel:
+            text: root.type_text
+            theme_text_color: "Custom"
+            font_style: "H6"
+            font_size: "12sp"
+            width: "100dp"
+            font_name: root.get_font()
+            text_color: get_color_from_hex("#ffffff")
+            pos_hint: {"x" : .105, "top" : .665}
+            size_hint_x: None
          
 <YellowSwitch>:
     size_hint: None, None
