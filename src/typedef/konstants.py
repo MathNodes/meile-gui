@@ -39,7 +39,12 @@ class IBCTokens():
 class TextStrings():
     dash = "-"
     VERSION = "v1.5.1"
-    
+
+class MeileColors():
+    DIALOG_BG_COLOR = "#121212"
+    FONT_FACE = "../fonts/mplus-2c-bold.ttf"
+
+
 class NodeKeys():
     NodesInfoKeys = ["Moniker","Address","Provider","Price","Country","Speed","Latency","Peers","Handshake","Type","Version","Status"]
     SubsInfoKeys  = ["ID", "Owner", "Plan", "Expiry", "Denom", "Node", "Price", "Deposit", "Free", "Status"]

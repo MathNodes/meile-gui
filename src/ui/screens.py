@@ -8,29 +8,29 @@ from ui.interfaces import Tab, LatencyContent
 from ui.widgets import WalletInfoContent, MDMapCountryButton, RatingContent
 from utils.qr import QRCode
 from conf.meile_config import MeileGuiConfig
-from typedef.win import WindowNames, ICANHAZURL
-from typedef.konstants import NodeKeys, TextStrings
-from typedef.win import CoinsList
+from typedef.win import WindowNames, ICANHAZURL, CoinsList
+from typedef.konstants import NodeKeys, TextStrings, MeileColors
 from fiat import fiat_interface
 from adapters import HTTPRequests
+from cli.v2ray import V2RayHandler
 
 from kivy.properties import BooleanProperty, StringProperty, ColorProperty
 from kivy.uix.screenmanager import Screen, SlideTransition
-from kivymd.uix.button import MDFlatButton, MDRaisedButton,MDTextButton, MDFillRoundFlatButton
-from kivymd.uix.dialog import MDDialog
 from kivy.clock import Clock, mainthread
-from kivyoav.delayed import delayable
 from kivy.properties import ObjectProperty
-from kivymd.uix.card import MDCard
 from kivy.utils import get_color_from_hex
 from kivy.metrics import dp
-from kivymd.uix.menu import MDDropdownMenu
-from kivymd.uix.behaviors import HoverBehavior
-from kivymd.theming import ThemableBehavior
 from kivy.core.window import Window
-from kivymd.uix.behaviors.elevation import RectangularElevationBehavior
 from kivy_garden.mapview import MapMarkerPopup, MapView, MapSource
 from kivymd.toast import toast
+from kivymd.theming import ThemableBehavior
+from kivymd.uix.card import MDCard
+from kivymd.uix.button import MDFlatButton, MDRaisedButton,MDTextButton, MDFillRoundFlatButton
+from kivymd.uix.dialog import MDDialog
+from kivymd.uix.behaviors.elevation import RectangularElevationBehavior
+from kivymd.uix.menu import MDDropdownMenu
+from kivymd.uix.behaviors import HoverBehavior
+from kivyoav.delayed import delayable
 
 import requests
 import sys
@@ -41,8 +41,6 @@ from functools import partial
 from os import path, chdir
 from save_thread_result import ThreadWithResult
 from unidecode import unidecode
-
-TIMEOUT = 5
 
 class WalletRestore(Screen):
     screemanager = ObjectProperty()
@@ -90,7 +88,7 @@ class WalletRestore(Screen):
                     seed_text = seed_phrase
                     button_text = "RESTORE"
                 self.dialog = MDDialog(
-                    md_bg_color=get_color_from_hex("#121212"),
+                    md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
                     text="Seed: %s\n\nName: %s\nPassword: %s" %
                      (
                      seed_text,
@@ -166,7 +164,7 @@ class WalletRestore(Screen):
         self.dialog = MDDialog(
                 type="custom",
                 content_cls=WalletInfo,
-                md_bg_color=get_color_from_hex("#121212"),
+                md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
 
                 buttons=[
                     MDRaisedButton(
@@ -239,7 +237,7 @@ class PreLoadWindow(Screen):
         self.dialog = None
         self.dialog = MDDialog(
             title=title_text,
-            md_bg_color=get_color_from_hex("#121212"),
+            md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
             buttons=[
                 MDFlatButton(
                     text="OKAY",
@@ -309,6 +307,7 @@ class MainWindow(Screen):
     box_color = ColorProperty('#fcb711')
     clock = None
     PersistentBandwidth = {}
+    ConnectedDict = {'v2ray_pid' : None,  'result' : False}
 
 
     def __init__(self, node_tree, **kwargs):
@@ -331,7 +330,7 @@ class MainWindow(Screen):
         ]
         self.menu = MDDropdownMenu(
             caller=self.ids.drop_item,
-            background_color=get_color_from_hex("#121212"),
+            background_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
             items=menu_items,
             position="center",
             width_mult=4,
@@ -366,17 +365,14 @@ class MainWindow(Screen):
                                image_ext="png",
                                attribution="@ Meile")
             self.MeileMap.map_source = source 
-            '''
-            self.MeileMap = MapView(lat=50.6394, lon=3.057, zoom=3)
-            self.MeileMap.map_source = "osm"
-            '''
+            
             self.ids.country_map.add_widget(self.MeileMap)
             self.AddCountryNodePins()
             self.MeileMapBuilt = True
         
     def get_font(self):
         Config = MeileGuiConfig()
-        return Config.resource_path("fonts/arial-unicode-ms.ttf")
+        return Config.resource_path(MeileColors.FONT_FACE)
         
     def AddCountryNodePins(self):
         try:
@@ -386,7 +382,7 @@ class MainWindow(Screen):
                     marker = MapMarkerPopup(lat=loc[0], lon=loc[1])
                     marker.add_widget(MDMapCountryButton(text='%s - %s' %(ncountry.tag, len(self.NodeTree.NodeTree.children(ncountry.tag))),
                                                    theme_text_color="Custom",
-                                                   md_bg_color=get_color_from_hex("#121212"),
+                                                   md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
                                                    text_color=(1,1,1,1),
                                                    on_release=partial(self.load_country_nodes, ncountry.tag)
                                                    ))
@@ -425,7 +421,7 @@ class MainWindow(Screen):
         
         self.dialog = MDDialog(
             text="You are now using DoH (DNS-over-HTTPS) and your DNS traffic is encrypted from prying eyes.",
-            md_bg_color=get_color_from_hex("#121212"),
+            md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
             buttons=[
                 MDRaisedButton(
                     text="Okay",
@@ -443,7 +439,7 @@ class MainWindow(Screen):
         yield 0.314
         self.dialog = MDDialog(
                 text="Cloudflare WARP is currently not available for Windows Users",
-                md_bg_color=get_color_from_hex("#121212"),
+                md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
                 buttons=[
                     MDRaisedButton(
                         text="OKAY",
@@ -510,7 +506,7 @@ class MainWindow(Screen):
             #self.remove_loading_widget(None)
             self.dialog = MDDialog(
                 text="Disconnecting from WARP and using system DNS...",
-                md_bg_color=get_color_from_hex("#121212"),
+                md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
                 buttons=[
                     MDRaisedButton(
                         text="OKAY",
@@ -558,15 +554,25 @@ class MainWindow(Screen):
     @mainthread    
     def disconnect_from_node(self):
         try:
-            if self.CONNECTED == None:
-                returncode, self.CONNECTED = Disconnect()
+            if self.ConnectedDict['v2ray_pid'] is not None:
+                try:
+                    returncode, self.CONNECTED = Disconnect(True)
+                    print("Disconnect RTNCODE: %s" % returncode)
+                    self.get_ip_address(None)
+                    self.set_protected_icon(False, "")
+                except Exception as e:
+                    print(str(e))
+                    print("Something went wrong")
+            
+            elif self.CONNECTED == None:
+                returncode, self.CONNECTED = Disconnect(False)
                 print("Disconnect RTNCODE: %s" % returncode)
                 self.get_ip_address(None)
                 self.set_protected_icon(False, "")
             elif self.CONNECTED == False:
                 print("Disconnected!")
             else:
-                returncode, self.CONNECTED = Disconnect()
+                returncode, self.CONNECTED = Disconnect(False)
                 print("Disconnect RTNCODE: %s" % returncode)
                 self.get_ip_address(None)
                 self.set_protected_icon(False, "")
@@ -576,7 +582,7 @@ class MainWindow(Screen):
             rating_dialog = RatingContent(self.NodeSwitch['moniker'], self.NodeSwitch['node'])
             self.dialog = MDDialog(
                 title="Node Rating",
-                md_bg_color=get_color_from_hex("#121212"),
+                md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
                 type="custom",
                 content_cls=rating_dialog,
                 buttons=[
@@ -609,7 +615,7 @@ class MainWindow(Screen):
             self.dialog = None
             self.dialog = MDDialog(
             text="Error disconnecting from node",
-            md_bg_color=get_color_from_hex("#121212"),
+            md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
             buttons=[
                 MDFlatButton(
                     text="Okay",
@@ -641,7 +647,7 @@ class MainWindow(Screen):
         if not self.address:
             self.dialog = MDDialog(
                 text="Wallet Restore/Create",
-                md_bg_color=get_color_from_hex("#121212"),
+                md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
                 buttons=[
                     MDFlatButton(
                         text="CREATE",
@@ -736,7 +742,7 @@ class MainWindow(Screen):
                     "score"          : nscore,
                     "votes"          : votes,
                     "city"           : city,
-                    "md_bg_color"    : "#121212"
+                    "md_bg_color"    : MeileColors.DIALOG_BG_COLOR
                     
                 },
             )
@@ -756,7 +762,7 @@ class MainWindow(Screen):
     @mainthread
     def add_loading_popup(self, title_text):
         self.dialog = None
-        self.dialog = MDDialog(title=title_text,md_bg_color=get_color_from_hex("#121212"))
+        self.dialog = MDDialog(title=title_text,md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR))
         self.dialog.open()
         
     @mainthread
@@ -772,7 +778,7 @@ class MainWindow(Screen):
     def sub_address_error(self):
         self.dialog = MDDialog(
             text="Error Loading Subscriptions... No wallet found",
-            md_bg_color=get_color_from_hex("#121212"),
+            md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
             buttons=[
                 MDRaisedButton(
                     text="Okay",
@@ -791,7 +797,7 @@ class MainWindow(Screen):
                     title="Latency:",
                     type="custom",
                     content_cls=lc,
-                    md_bg_color=get_color_from_hex("#121212"),
+                    md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
                     buttons=[
                         MDFlatButton(
                             text="CANCEL",
@@ -862,7 +868,6 @@ class MainWindow(Screen):
 
     @mainthread
     def on_tab_switch(self, instance_tabs, instance_tab, instance_tabs_label, tab_text):
-        #from src.cli.sentinel import ConNodes, NodesDictList
         self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.rv.data = []
         if not tab_text:
             tab_text = OurWorld.CONTINENTS[0]
@@ -872,7 +877,6 @@ class MainWindow(Screen):
             
             
         # Subscriptions
-        #print(self.NodeTree.NodeTree.show())
         if tab_text == OurWorld.CONTINENTS[6]:
             self.get_config(None)
             self.add_loading_popup("Loading...")
@@ -1016,7 +1020,7 @@ class WalletScreen(Screen):
             self.dvpn_text = str("0.0") + " dvpn"
             self.dialog = MDDialog(
                 text="Error Loading Wallet Balance. Please try again later.",
-                md_bg_color=get_color_from_hex("#121212"),
+                md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
                 buttons=[
                     MDRaisedButton(
                         text="OKay",
@@ -1239,7 +1243,7 @@ class RecycleViewCountryRow(MDCard,RectangularElevationBehavior,ThemableBehavior
         Window.set_system_cursor('hand')
         
     def on_leave(self, *args):
-        self.md_bg_color = get_color_from_hex("#121212")
+        self.md_bg_color = get_color_from_hex(MeileColors.DIALOG_BG_COLOR)
         Window.set_system_cursor('arrow')
     
     def show_country_nodes(self, country):

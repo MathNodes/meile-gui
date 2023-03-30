@@ -15,12 +15,14 @@ from typedef.konstants import IBCTokens
 from typedef.konstants import TextStrings
 from typedef.konstants import NodeKeys
 from adapters import HTTPRequests
+from cli.v2ray import V2RayHandler
 
 
 
 MeileConfig = MeileGuiConfig()
 sentinelcli = path.join(MeileConfig.BASEBINDIR, 'sentinelcli.exe')
 gsudo       = path.join(MeileConfig.BASEBINDIR, 'gsudo.exe')
+v2ray_tun2routes_connect_bash = MeileConfig.resource_path("../bin/routes.sh")
 
 class NodeTreeData():
     NodeTree = None
@@ -204,7 +206,7 @@ class NodeTreeData():
                                             NodeKeys.FinalSubsKeys[4] : SubsResult[NodeKeys.SubsInfoKeys[7]][k],
                                             NodeKeys.FinalSubsKeys[5] : None,
                                             NodeKeys.FinalSubsKeys[6] : "0.00GB",
-                                            NodeKeys.FinalSubsKeys[7] : "0.00B"
+                                            NodeKeys.FinalSubsKeys[7] : "0.00B",
                                             NodeKeys.FinalSubsKeys[8] : "None"
                                             })
                 print("Sub not found in list")
@@ -221,7 +223,7 @@ class NodeTreeData():
                                             NodeKeys.FinalSubsKeys[4] : SubsResult[NodeKeys.SubsInfoKeys[7]][k],
                                             NodeKeys.FinalSubsKeys[5] : NodeData[NodeKeys.NodesInfoKeys[4]],
                                             NodeKeys.FinalSubsKeys[6] : nodeQuota[0],
-                                            NodeKeys.FinalSubsKeys[7] : nodeQuota[1]
+                                            NodeKeys.FinalSubsKeys[7] : nodeQuota[1],
                                             NodeKeys.FinalSubsKeys[8] : NodeData[NodeKeys.NodesInfoKeys[9]]
                                             })
             k += 1 
@@ -250,27 +252,25 @@ class NodeTreeData():
                 else:
                     return nodeQuota
                 
-def disconnect():
-    #ifCMD = ["ifconfig", "-a"]
-    #ifgrepCMD = ["grep", "-oE", "wg[0-9]+"]
-    partCMD = [gsudo, sentinelcli, '--home', ConfParams.BASEDIR, "disconnect"]
-    
-    #ifoutput = Popen(ifCMD,stdin=PIPE, stdout=PIPE, stderr=STDOUT)
-    #grepoutput = Popen(ifgrepCMD, stdin=ifoutput.stdout, stdout=PIPE, stderr=STDOUT)
-    #wgif = grepoutput.communicate()[0]
-    #wgif_file = str(wgif.decode('utf-8')).replace("\n", '') + ".conf"
-
-    #CONFFILE = path.join(BASEDIR, wgif_file)
-    #wg_downCMD = ['wg-quick', 'down', CONFFILE]
-    chdir(MeileConfig.BASEBINDIR)
-    proc1 = Popen(partCMD)
-    proc1.wait(timeout=30)
-    chdir(MeileConfig.BASEDIR)
-    
-    #proc = Popen(wg_downCMD, stdout=PIPE, stderr=PIPE)
-    #proc_out,proc_err = proc.communicate()
-    
-    return proc1.returncode, False
+def disconnect(v2ray):
+    if v2ray:
+        try:
+            V2Ray = V2RayHandler(v2ray_tun2routes_connect_bash + " down")
+            rc = V2Ray.kill_daemon()
+            return rc, False
+        except Exception as e:
+            print(str(e))
+            return 1, True
+        
+    else:    
+        partCMD = [gsudo, sentinelcli, '--home', ConfParams.BASEDIR, "disconnect"]
+        
+        chdir(MeileConfig.BASEBINDIR)
+        proc1 = Popen(partCMD)
+        proc1.wait(timeout=30)
+        chdir(MeileConfig.BASEDIR)
+        
+        return proc1.returncode, False
 
 
     

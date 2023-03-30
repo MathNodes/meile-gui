@@ -12,11 +12,13 @@ from typedef.konstants import IBCTokens
 from typedef.konstants import ConfParams 
 from typedef.konstants import HTTParams 
 from adapters import HTTPRequests
+from cli.v2ray import V2RayHandler
 
 MeileConfig  = MeileGuiConfig()
 sentinelcli  = path.join(MeileConfig.BASEBINDIR, 'sentinelcli.exe')
 sentinelcli  = sentinelcli.replace('\\','/')
 gsudo        = path.join(MeileConfig.BASEBINDIR, 'gsudo.exe')
+v2ray_tun2routes_connect_bash = MeileConfig.resource_path("../bin/routes.sh")
 
 class HandleWalletFunctions():
     
@@ -233,42 +235,8 @@ class HandleWalletFunctions():
                         return (False, tx_json['raw_log'])
                 else:
                     return(False, "Error loading JSON")
-                '''
-                    if k >=1:
-                        try:
-                            tx_json = json.loads(l)
-                            JSONLOADED = True
-                            print(tx_json)
-                            print("JSON LOADED!")
-                            break
-                        except JSONDecodeError as e:
-                            print("NO JSON LINE")
-                            k += 1
-                            continue
-                    k += 1
-                        
-                if JSONLOADED:        
-                    if tx_json['data']:
-                        try: 
-                            print(tx_json['logs'][0]['events'][4]['attributes'][0]['value'])
-                            sub_id = tx_json['logs'][0]['events'][4]['attributes'][0]['value']
-                            if sub_id:
-                                #remove(ConfParams.SUBSCRIBEINFO)
-                                return (True,0)
-                            else:
-                                #remove(ConfParams.SUBSCRIBEINFO)
-                                return (False,2.71828) 
-                        except Exception as e:
-                            print(str(e))
-                            #remove(ConfParams.SUBSCRIBEINFO)
-                            return (False, 3.14159)
-                    elif 'insufficient' in tx_json['raw_log']:
-                        #remove(ConfParams.SUBSCRIBEINFO)
-                        return (False, tx_json['raw_log'])
-                else:
-                    return(False, 1.1459265357)
-                '''
-    def connect(self, ID, address):
+                
+    def connect(self, ID, address, type):
 
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
@@ -310,13 +278,49 @@ class HandleWalletFunctions():
             print(str(e))
             return False
         
+        if type == "WireGuard":
+            if psutil.net_if_addrs().get("wg99"):
+                return {"v2ray_pid" : None,  "result": True}
+            else:
+                return {"v2ray_pid" : None,  "result": False}
+        else: 
+            TUNIFACE = False
+            V2Ray = V2RayHandler(v2ray_tun2routes_connect_bash + " up")
+            V2Ray.start_daemon() 
+            sleep(15)
+
+            for iface in psutil.net_if_addrs().keys():
+                if "tun" in iface:
+                    TUNIFACE = True
+                    break
+                
+            if TUNIFACE:
+                v2raydict = {"v2ray_pid" : V2Ray.v2ray_pid, "result": True}
+                print(v2raydict) 
+                return v2raydict
+            else:
+                try: 
+                    V2Ray.v2ray_script = v2ray_tun2routes_connect_bash + " down"
+                    V2Ray.kill_daemon()
+                    #V2Ray.kill_daemon()
+                    #Tun2Socks.kill_daemon()
+                except Exception as e: 
+                    print(str(e))
+                    
+                v2raydict = {"v2ray_pid" : V2Ray.v2ray_pid,  "result": False}
+                print(v2raydict)
+                return v2raydict
+        
+        
+        
+        '''
         if path.isfile(ConfParams.WIREGUARD_STATUS):
             CONNECTED = True
         else:
             CONNECTED = False
         chdir(MeileConfig.BASEDIR)
         return CONNECTED
-
+        '''
     def get_balance(self, address):
         Request = HTTPRequests.MakeRequest()
         http = Request.hadapter()
