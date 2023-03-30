@@ -7,11 +7,12 @@ import sys
 
 
 class MeileGuiConfig():
-    BASEDIR    = path.join(path.expanduser('~'), '.meile-gui')
-    BASEBINDIR = path.join(BASEDIR, 'bin')
-    CONFFILE   = path.join(BASEDIR, 'config.ini')
-    IMGDIR     = path.join(BASEDIR, 'img')
-    CONFIG     = configparser.ConfigParser()
+    BASEDIR     = path.join(path.expanduser('~'), '.meile-gui')
+    SENTINELDIR = path.join(path.expanduser('~'), '.sentinelcli')
+    BASEBINDIR  = path.join(BASEDIR, 'bin')
+    CONFFILE    = path.join(BASEDIR, 'config.ini')
+    IMGDIR      = path.join(BASEDIR, 'img')
+    CONFIG      = configparser.ConfigParser()
     
     def resource_path(self, relative_path):
         """ Get absolute path to resource, works for dev and for PyInstaller """
