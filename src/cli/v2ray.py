@@ -39,7 +39,7 @@ class V2RayHandler():
         default_gateway = gateways['default'][netifaces.AF_INET][0]
         
         SERVER = self.read_v2ray_config(MeileConfig)
-        wifidx = self.get_wifi_idx()
+        wifidx = self.get_wifi_idx(default_gateway)
         
         batfile = open(routes_bat, 'w')
         
@@ -69,6 +69,7 @@ class V2RayHandler():
         SERVER = self.read_v2ray_config(MeileConfig)
         gateways = netifaces.gateways()
         default_gateway = gateways['default'][netifaces.AF_INET][0]
+        wifidx = self.get_wifi_idx(default_gateway)
         
         routes_bat = path.join(MeileConfig.BASEBINDIR, 'delroutes.bat')
         
@@ -77,7 +78,7 @@ class V2RayHandler():
         batfile.write('TASKKILL /F /IM tun2socks.exe\n')
         batfile.write('TASKKILL /F /IM v2ray.exe\n')
         batfile.write('netsh interface set interface name="wintun" disable\n')
-        batfile.write('route del 0.0.0.0 mask 0.0.0.0 192.168.123.1 if 0 metric 5\n')
+        batfile.write('route del 0.0.0.0 mask 0.0.0.0 192.168.123.1 if %s metric 5\n' % wifidx)
         batfile.write('route del %s mask 255.255.255.255 %s\n' % (SERVER, default_gateway))
         batfile.flush()
         batfile.close()
@@ -99,8 +100,9 @@ class V2RayHandler():
         
         return JSON['outbounds'][0]['settings']['vnext'][0]['address']
     
-    def get_wifi_idx(self):
+    def get_wifi_idx(self, gateway):
         from scapy.arch.windows import *
         for iface in get_windows_if_list():
-            if "Wi-Fi" in iface['name']:
-                return iface['index']
+            for ip in iface['ips']:
+                if ip == gateway:
+                    return iface['index']
