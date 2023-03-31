@@ -39,15 +39,17 @@ class V2RayHandler():
         default_gateway = gateways['default'][netifaces.AF_INET][0]
         
         SERVER = self.read_v2ray_config(MeileConfig)
-        wifidx = self.get_wifi_idx(default_gateway)
+        #wifidx = self.get_primary_if_idx(netifaces.gateways()['default'][netifaces.AF_INET][1])
         
         batfile = open(routes_bat, 'w')
         
         #batfile.write('START /B %s/%s run -c %s/v2ray_config.json' % (MeileConfig.BASEBINDIR, self.v2rayproc, MeileConfig.SENTINELDIR))
-        batfile.write('START /B %s/%s -device wintun -proxy socks5://127.0.0.1:1080\n' % (MeileConfig.BASEBINDIR,self.tunproc))
-        batfile.write('netsh interface ip set address name="wintun" source=static addr=192.168.123.1 mask=255.255.255.0 gateway=none\n')
-        batfile.write('route add 0.0.0.0 mask 0.0.0.0 192.168.123.1 if %s metric 5\n' % wifidx)
-        batfile.write('route add %s mask 255.255.255.255 %s' % (SERVER, default_gateway))
+        batfile.write('START /B %s/%s -device tun://tun00 -proxy socks5://127.0.0.1:1080\n' % (MeileConfig.BASEBINDIR,self.tunproc))
+        batfile.write('timeout /t 5\n')
+        batfile.write('netsh interface ip set address "tun00" static address=10.10.10.2 mask=255.255.255.0 gateway=10.10.10.1\n')
+        batfile.write('netsh interface ip set dns name="tun00" static 1.1.1.1\n')
+        batfile.write('route add %s %s metric 5\n' % (SERVER, default_gateway))
+        batfile.write('route add 0.0.0.0 mask 0.0.0.0 10.10.10.1')
         batfile.flush()
         batfile.close()
         
@@ -61,25 +63,23 @@ class V2RayHandler():
     
     def kill_daemon(self):
         MeileConfig = MeileGuiConfig()
-        for proc in psutil.process_iter():
-            print(proc.name())
-            if proc.name() == tunproc or proc.name() == v2rayproc:
-                proc.kill()
         
         SERVER = self.read_v2ray_config(MeileConfig)
         gateways = netifaces.gateways()
+        print(gateways['default'][netifaces.AF_INET])
         default_gateway = gateways['default'][netifaces.AF_INET][0]
-        wifidx = self.get_wifi_idx(default_gateway)
+        #wifidx = self.get_primary_if_idx(netifaces.gateways()['default'][netifaces.AF_INET][1])
         
         routes_bat = path.join(MeileConfig.BASEBINDIR, 'delroutes.bat')
         
         batfile = open(routes_bat, 'w')
         
+        batfile.write('route delete %s %s metric 5\n' % (SERVER, default_gateway))
+        batfile.write('route delete 0.0.0.0 mask 0.0.0.0 10.10.10.1\n')
+        batfile.write('netsh interface set interface name="tun00" disable\n')
+        batfile.write('timeout /t 3\n')
         batfile.write('TASKKILL /F /IM tun2socks.exe\n')
         batfile.write('TASKKILL /F /IM v2ray.exe\n')
-        batfile.write('netsh interface set interface name="wintun" disable\n')
-        batfile.write('route del 0.0.0.0 mask 0.0.0.0 192.168.123.1 if %s metric 5\n' % wifidx)
-        batfile.write('route del %s mask 255.255.255.255 %s\n' % (SERVER, default_gateway))
         batfile.flush()
         batfile.close()
         
@@ -99,10 +99,12 @@ class V2RayHandler():
         JSON = json.loads(v2ray)
         
         return JSON['outbounds'][0]['settings']['vnext'][0]['address']
-    
-    def get_wifi_idx(self, gateway):
-        from scapy.arch.windows import *
+    '''
+    def get_primary_if_idx(self, guid):
+        from scapy.arch.windows import get_windows_if_list
         for iface in get_windows_if_list():
-            for ip in iface['ips']:
-                if ip == gateway:
-                    return iface['index']
+            print("%s: %s" % (iface['guid'], guid))
+            if iface['guid'] == guid:
+                return iface['index']
+                
+    '''
