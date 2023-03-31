@@ -32,27 +32,28 @@ class V2RayHandler():
     def start_daemon(self):
         
         print("Starting v2ray service...")
-        routes_bat = path.join(MeileConfig.BASEBINDIR, 'routes.bat')
         MeileConfig = MeileGuiConfig()
+        routes_bat = path.join(MeileConfig.BASEBINDIR, 'routes.bat')
         
         gateways = netifaces.gateways()
         default_gateway = gateways['default'][netifaces.AF_INET][0]
         
         SERVER = self.read_v2ray_config(MeileConfig)
+        wifidx = self.get_wifi_idx()
         
         batfile = open(routes_bat, 'w')
         
-        batfile.write('START /B %s/%s run -c %s/v2ray_config.json' % (MeileConfig.BASEBINDIR, self.v2rayproc, MeileConfig.SENTINELDIR))
-        batfile.write('START /B %s/%s -device wintun -proxy socks5://127.0.0.1:1080\n' % MeileConfig.BASEBINDIR,self.tunproc)
+        #batfile.write('START /B %s/%s run -c %s/v2ray_config.json' % (MeileConfig.BASEBINDIR, self.v2rayproc, MeileConfig.SENTINELDIR))
+        batfile.write('START /B %s/%s -device wintun -proxy socks5://127.0.0.1:1080\n' % (MeileConfig.BASEBINDIR,self.tunproc))
         batfile.write('netsh interface ip set address name="wintun" source=static addr=192.168.123.1 mask=255.255.255.0 gateway=none\n')
-        batfile.write('route add 0.0.0.0 mask 0.0.0.0 192.168.123.1 if 0 metric 5\n')
+        batfile.write('route add 0.0.0.0 mask 0.0.0.0 192.168.123.1 if %s metric 5\n' % wifidx)
         batfile.write('route add %s mask 255.255.255.255 %s' % (SERVER, default_gateway))
         batfile.flush()
         batfile.close()
         
         self.v2ray_script = routes_bat
         
-        multiprocessing.get_context('fork')
+        multiprocessing.get_context('spawn')
         fork = Process(target=self.fork_v2ray)
         fork.run()
         sleep(1.5)
@@ -97,3 +98,9 @@ class V2RayHandler():
         JSON = json.loads(v2ray)
         
         return JSON['outbounds'][0]['settings']['vnext'][0]['address']
+    
+    def get_wifi_idx(self):
+        from scapy.arch.windows import *
+        for iface in get_windows_if_list():
+            if "Wi-Fi" in iface['name']:
+                return iface['index']

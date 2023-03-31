@@ -622,9 +622,6 @@ WindowManager:
         text_color: 0,0,0,1
         on_press: root.get_city_of_node(root.address_text)
         
-        
-    MDSeparator:
-        color: 1,1,1,1
 
 <OnHoverMDRaisedButton>:
 
@@ -792,7 +789,7 @@ WindowManager:
             #text: "Connect"
             md_bg_color: get_color_from_hex("#fcb711")
             text_color: 0,0,0,1
-            on_active: root.connect_to_node(root.sub_id_text,root.address_text, root.moniker_text, self.active)
+            on_active: root.connect_to_node(root.sub_id_text,root.address_text, root.moniker_text, root.type_text, self.active)
             pos_hint: {"x" : 0, "top" : .55 }
             size_hint: None,None
         MDLabel:
@@ -803,7 +800,7 @@ WindowManager:
             width: "100dp"
             font_name: root.get_font()
             text_color: get_color_from_hex("#ffffff")
-            pos_hint: {"x" : .085, "top" : .665}
+            pos_hint: {"x" : .1, "top" : .665}
             size_hint_x: None
 
          
