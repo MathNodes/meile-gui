@@ -1,291 +1,114 @@
-from kivymd.app import MDApp
-from kivy.lang import Builder
-from kivy.properties import StringProperty
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.recycleview import RecycleView
-from kivy.uix.popup import Popup
-from kivymd.uix.card import MDCard
-from kivy.uix.image import Image
+import wexpect
+from os import path, environ
+from pathlib import Path
+import sys
 
- 
-from kivy.uix.screenmanager import Screen, SlideTransition
-from kivymd.uix.button import MDFlatButton, MDRaisedButton
-from kivymd.uix.dialog import MDDialog
-from kivy.clock import Clock
-from kivyoav.delayed import delayable
-from kivy.properties import ObjectProperty
-from kivy.uix.screenmanager import ScreenManager
-from kivymd.uix.relativelayout import MDRelativeLayout
+BASEDIR    = path.join(path.expanduser('~'), '.meile-gui')
+BASEBINDIR = path.join(BASEDIR, 'bin')
+sentinelcli  = path.abspath(path.join(path.abspath(BASEBINDIR), 'sentinelcli.exe'))
 
 
+class ConfParams():
+    PATH             = environ['PATH']
+    KEYRINGDIR       = path.join(path.expanduser('~'), '.meile-gui')
+    BASEDIR          = path.join(path.expanduser('~'), '.sentinelcli')
+    WALLETINFO       = path.join(KEYRINGDIR, "infos.txt")
+    SUBSCRIBEINFO    = path.join(KEYRINGDIR, "subscribe.infos")
+    CONNECTIONINFO   = path.join(KEYRINGDIR, "connection.infos")
+    WIREGUARD_STATUS = path.join(BASEDIR, "status.json")
+  
 
 
-Builder.load_string('''
-#: import get_color_from_hex kivy.utils.get_color_from_hex
-
-<WalletRestore>:
-    name: "walletrestore"
-    title: "Blargy"
-    wallet_address: "secret1uhwwgwc7x5cm5xdmn99xnucxz296lyua688wjj"
-    MDBoxLayout:
-        orientation: "vertical"
-        MDToolbar:
-            id: toolbar
-            title: "Wallet"
-            md_bg_color: get_color_from_hex("#FFB908")
-            height: "100dp"
-            type: "top"
+class HandleWalletFunctions():
     
-            MDTextField:
-                hint_text: "Address"
-                mode: "fill"
-                size_hint_x: 1.2
-                pos_hint: {"center_x" : .5, "center_y": .5}
-                text: root.wallet_address
-                readonly: True
-                opacity: 1
-                theme_text_color: "Custom"
-                text_color: get_color_from_hex("#000000")
-                normal_color: app.theme_cls.accent_color
-            
-
-    ClickableTextFieldRoundSeed:
-        id: seed
-        size_hint_x: None
-        width: "300dp"
-        height: "300dp"
-        hint_text: "Seed Phrase"
-        pos_hint: {"center_x": .5, "center_y": .80}
- 
-    MDLabel:
-        text: "Leave blank if creating a new wallet"
-        theme_text_color: "Custom"
-        text_color: get_color_from_hex("#4a4545")
-        pos_hint: {"x": .47, "center_y": .74}
-        font_size: "12dp"
-     
-     
-    ClickableTextFieldRoundName:
-        id: name
-        size_hint_x: None
-        width: "300dp"
-        height: "300dp"
-        hint_text: "Wallet Name"
-        pos_hint: {"center_x": .5, "center_y": .67}
-    MDLabel:
-        id: wallet_name_warning
-        opacity: 0
-        text: "You must give the wallet a name"
-        theme_text_color: "Custom"
-        text_color: get_color_from_hex("f42121")
-        pos_hint: {"x": .47, "center_y": .61}
-        font_size: "12dp"
+    def create(self, wallet_name, keyring_passphrase, seed_phrase):
+        SCMD = '%s keys add "%s" -i --keyring-backend file --keyring-dir %s' % (sentinelcli, wallet_name, ConfParams.KEYRINGDIR)
+        DUPWALLET = False 
         
-    ClickableTextFieldRoundPass:
-        id: password
-        size_hint_x: None
-        width: "300dp"
-        height: "300dp"
-        hint_text: "Wallet Password"
-        pos_hint: {"center_x": .5, "center_y": .55}
+        ofile =  open(ConfParams.WALLETINFO, "w")    
         
-    MDLabel:
-        id: wallet_password_warning
-        opacity: 0
-        text: "Cannot be blank"
-        theme_text_color: "Custom"
-        text_color: get_color_from_hex("f42121")
-        pos_hint: {"x": .47, "center_y": .49}
-        font_size: "12dp"
-    
+        ''' Process to handle wallet in sentinel-cli '''
+        real_executable = sys.executable
+        try:
+            if sys._MEIPASS is not None:
+                sys.executable = os.path.join(sys._MEIPASS, "wexpect", "wexpect.exe")
+        except AttributeError:
+            pass
+        child = wexpect.spawn(SCMD)
+        sys.executable = real_executable
+
         
-    MDRaisedButton:
-        id: restore_wallet_button
-        text: "Restore"
-        pos_hint: {"center_x": .5, "center_y": .4}
-        on_press: root.restore_wallet_from_seed_phrase()
+        # > Enter your bip39 mnemonic, or hit enter to generate one.
+        child.expect(".*")
         
-<ClickableTextFieldRoundSeed>:
-    size_hint_y: None
-    height: seed_phrase.height
-
-    MDTextField:
-        id: seed_phrase
-        hint_text: root.hint_text
-        text: root.text
-        password: False
-        icon_left: "key-variant"
-        mode: "rectangle"
-
-    MDIconButton:
-        icon: "eye-off"
-        pos_hint: {"center_y": .5}
-        pos: seed_phrase.width - self.width + dp(8), 0
-        theme_text_color: "Hint"
-        on_release:
-            self.icon = "eye" if self.icon == "eye-off" else "eye-off"
-            seed_phrase.password = False if seed_phrase.password is True else True
-
-
-<ClickableTextFieldRoundName>:
-    size_hint_y: None
-    height: wallet_name.height
-
-    MDTextField:
-        id: wallet_name
-        hint_text: root.hint_text
-        text: root.text
-        password: False
-        icon_left: "key-variant"
-        mode: "rectangle"
-
-    MDIconButton:
-        icon: "eye-off"
-        pos_hint: {"center_y": .5}
-        pos: wallet_name.width - self.width + dp(8), 0
-        theme_text_color: "Hint"
-        on_release:
-            self.icon = "eye" if self.icon == "eye-off" else "eye-off"
-            wallet_name.password = False if wallet_name.password is True else True
-            
-<ClickableTextFieldRoundPass>:
-    size_hint_y: None
-    height: wallet_password.height
-
-    MDTextField:
-        id: wallet_password
-        hint_text: root.hint_text
-        text: root.text
-        password: False
-        icon_left: "key-variant"
-        mode: "rectangle"
-
-    MDIconButton:
-        icon: "eye-off"
-        pos_hint: {"center_y": .5}
-        pos: wallet_password.width - self.width + dp(8), 0
-        theme_text_color: "Hint"
-        on_release:
-            self.icon = "eye" if self.icon == "eye-off" else "eye-off"
-            wallet_password.password = False if wallet_password.password is True else True
-
-<WalletInfoContent>
-    orientation: "vertical"
-    spacing: "4dp"
-    size_hint_y: None
-    height: "260dp"
-    seed_phrase: ""
-    wallet_address: ""
-    wallet_password: ""
-    wallet_name: ""
-
-    MDTextField:
-        multiline: True
-        hint_text: "Mnemonic Seed"
-        text: root.seed_phrase
-    MDTextField:
-        hint_text: "Wallet"
-        mode: "rectangle"
-        text: root.wallet_name
-    
-    MDTextField:
-        hint_text: "Address"
-        mode: "rectangle"
-        text: root.wallet_address
-    
-    MDTextField:
-        hint_text: "Password"
-        mode: "rectangle"
-        text: root.wallet_password
-
-
-                    
-''')
-
-
-class WalletInfoContent(BoxLayout):
-    def __init__(self, seed_phrase, name, address, password, **kwargs):
-        super(WalletInfoContent, self).__init__()
-        self.seed_phrase = seed_phrase
-        self.wallet_address = address
-        self.wallet_password = password
-        self.wallet_name = name
-        
-class WindowManager(ScreenManager):
-    pass
-class ClickableTextFieldRoundSeed(MDRelativeLayout):
-    text = StringProperty()
-    hint_text = StringProperty()
-    
-class ClickableTextFieldRoundName(MDRelativeLayout):
-    text = StringProperty()
-    hint_text = StringProperty()
-    
-class ClickableTextFieldRoundPass(MDRelativeLayout):
-    text = StringProperty()
-    hint_text = StringProperty()
-
-class WalletRestore(Screen):
-    dialog = None
-    def __init__(self, **kwargs):
-        super(WalletRestore, self).__init__()
-        
-       
-    def restore_wallet_from_seed_phrase(self):
-        print(self.manager.get_screen("walletrestore").ids.wallet_name_warning.text)
-        print(self.manager.get_screen("walletrestore").ids.wallet_password_warning.text)
-        if not self.manager.get_screen("walletrestore").ids.name.ids.wallet_name.text and not self.manager.get_screen("walletrestore").ids.password.ids.wallet_password.text:
-            self.manager.get_screen("walletrestore").ids.wallet_name_warning.opacity = 1
-            self.manager.get_screen("walletrestore").ids.wallet_password_warning.opacity = 1
-            return
-        elif not self.manager.get_screen("walletrestore").ids.password.ids.wallet_password.text:
-            self.manager.get_screen("walletrestore").ids.wallet_password_warning.opacity = 1
-            return
-        elif not self.manager.get_screen("walletrestore").ids.name.ids.wallet_name.text:
-            self.manager.get_screen("walletrestore").ids.wallet_name_warning.opacity = 1
-            return 
+        # Send line to generate new, or send seed_phrase to recover
+        if seed_phrase:
+            child.sendline(seed_phrase)
         else:
-            if not self.dialog:
-                WalletInfo = WalletInfoContent(self.manager.get_screen("walletrestore").ids.seed.ids.seed_phrase.text,
-                                               self.manager.get_screen("walletrestore").ids.name.ids.wallet_name.text,
-                                               "sent1hfkgxzrkhxdxdwjy8d74jhc4dcw5e9zm7vfzh4", 
-                                               self.manager.get_screen("walletrestore").ids.password.ids.wallet_password.text)
-                self.dialog = MDDialog(
-                    type="custom",
-                    content_cls=WalletInfo,
-                    
-                    buttons=[
-                        MDFlatButton(
-                            text="Cancel",
-                            theme_text_color="Custom",
-                            text_color=(1,1,1,1),
-                            on_release=self.cancel,
-                        ),
-                        MDRaisedButton(
-                            text="Restore",
-                            theme_text_color="Custom",
-                            text_color=(1,1,1,1),
-                            on_release= self.wallet_restore
-                        ),
-                    ],
-                )
-                self.dialog.open()
-    def cancel(self):
-        self.dialog.dismiss()
+            child.sendline()
         
-    def wallet_restore(self):
-        pass
-    
-class TestApp(MDApp):
-    title = "Blargy"
-    
-    def build(self):
         
-        manager = WindowManager()
-        manager.add_widget(WalletRestore(name="walletrestore"))
+        ofile.write(str(child.after)  + '\n')    
+        child.expect(".*")
+        child.sendline()
+        ofile.write(str(child.after)  + '\n')
+        child.expect("Enter .*")
+        child.sendline(keyring_passphrase)
+        ofile.write(str(child.after)  + '\n')
+        try:
+            index = child.expect(["Re-enter.", "override.", wexpect.EOF])
+            if index == 0:
+                child.sendline(keyring_passphrase)
+                ofile.write(str(child.after)  + '\n')
+                child.expect(wexpect.EOF)
+                ofile.write(str(child.before) + '\n')
+                line_numbers = [18,38]
+            elif index ==1:
+                child.sendline("N")
+                ofile.write(str(child.after)  + '\n')
+                print("NO Duplicating Wallet..")
+                DUPWALLET = True
+                child.expect(wexpect.EOF)
+                ofile.write(str(child.before) + '\n')
+                ofile.flush()
+                ofile.close()
+                remove(ConfParams.WALLETINFO)
+                return None
+            else:
+                child.expect(wexpect.EOF)
+                ofile.write(str(child.before) + '\n')
+                
+        except Exception as e:
+            child.expect(wexpect.EOF)
+            ofile.write(str(child.before) + '\n')
+            print("passing: %s" % str(e))
+            pass
         
-        return manager
+        
+        ofile.flush()
+        ofile.close()
+      
+        
+     
+        if not DUPWALLET:
+            with open(ConfParams.WALLETINFO, "r") as dvpn_file:
+                WalletDict = {}   
+                lines = dvpn_file.readlines()
+                lines = [l for l in lines if l != '\n']
+                for l in lines:
+                    if "address:" in l:
+                        WalletDict['address'] = l.split(":")[-1].lstrip().rstrip()
+                        
+                WalletDict['seed'] = lines[-1].lstrip().rstrip()
+                remove(ConfParams.WALLETINFO)
+                return WalletDict
     
-if __name__ == "__main__":
-    app = TestApp()
-    app.run()
+        else:
+            remove(ConfParams.WALLETINFO)
+            return None
+
+
+if __name__ == "__main__": 
+    Wallet = HandleWalletFunctions()
+    WalletDict = Wallet.create("Blargy", "blargy101", "sad can clay sponsor credit rough pottery mimic pigeon damp wash slide unlock foam path cigar shock palace object hobby midnight peasant fly used")
+    print(WalletDict)

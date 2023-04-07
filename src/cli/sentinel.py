@@ -1,23 +1,18 @@
-from subprocess import Popen, PIPE, STDOUT
+
 import collections
-from os import path, chdir
 import re
 import requests
 from urllib3.exceptions import InsecureRequestWarning
+from os import path, chdir, system
+from subprocess import Popen, PIPE, STDOUT
 
 from treelib import  Tree
 from geography.continents import OurWorld
 
 from conf.meile_config import MeileGuiConfig
-from typedef.konstants import ConfParams 
-from typedef.konstants import HTTParams
-from typedef.konstants import IBCTokens
-from typedef.konstants import TextStrings
-from typedef.konstants import NodeKeys
+from typedef.konstants import ConfParams, HTTParams, IBCTokens, TextStrings, NodeKeys
 from adapters import HTTPRequests
 from cli.v2ray import V2RayHandler
-
-
 
 MeileConfig = MeileGuiConfig()
 sentinelcli = path.join(MeileConfig.BASEBINDIR, 'sentinelcli.exe')
@@ -72,17 +67,18 @@ class NodeTreeData():
         
         AllNodesInfoSorted = sorted(AllNodesInfo, key=lambda d: d[NodeKeys.NodesInfoKeys[4]])
         
-        #result = collections.defaultdict(list)
-        
         self.NodeTree = self.CreateNodeTreeStructure()
         
         for d in AllNodesInfoSorted:
             for key in NodeKeys.NodesInfoKeys:
                 d[key] = d[key].lstrip().rstrip()
+            
             version = d[NodeKeys.NodesInfoKeys[10]].replace('.','')
             if version not in NodeKeys.NodeVersions:
                 continue
+            
             d[NodeKeys.NodesInfoKeys[3]] = self.return_denom(d[NodeKeys.NodesInfoKeys[3]])
+            d[NodeKeys.NodesInfoKeys[3]] = self.parse_coin_deposit(d[NodeKeys.NodesInfoKeys[3]])
             
             if  OurWorld.CZ in d[NodeKeys.NodesInfoKeys[4]]:
                 d[NodeKeys.NodesInfoKeys[4]] = OurWorld.CZ_FULL
@@ -111,15 +107,7 @@ class NodeTreeData():
             for nlist in data['data']:
                 k=0
                 self.NodeScores[nlist[k]] = [nlist[k+1], nlist[k+2]]
-                '''
-                for nd in nlist:
-                   if k == 0:
-                       self.NodeScores[nlist[k]] = [nlist[k+1], nlist[k+2]]
-                       k += 1
-                   else:
-                       break
-                '''
-            #print(self.NodeScores)
+              
         except Exception as e:
             print(str(e)) 
             
@@ -133,15 +121,7 @@ class NodeTreeData():
             for nlist in data['data']:
                 k=0
                 self.NodeLocations[nlist[k]] = nlist[k+1]
-                '''
-                for nd in nlist:
-                   if k == 0:
-                       self.NodeLocations[nlist[k]] = nlist[k+1]
-                       k += 1
-                   else:
-                       break
-                '''
-            #print(self.NodeLocations)
+               
         except Exception as e:
             print(str(e)) 
             
@@ -164,9 +144,31 @@ class NodeTreeData():
             for denom,ibc in ibc_coin.items():
                 if ibc in tokens:
                     tokens = tokens.replace(ibc, denom)
-        
-    
         return tokens
+    
+    
+    def parse_coin_deposit(self, tokens):
+        UnitAmounts = []
+        tokenString = ""
+        pattern = r"([0-9]+)"
+        
+        if tokens.isspace() or not tokens:
+            return ' '
+        
+        elif ',' in tokens:
+            for deposit in tokens.split(','):
+                amt = re.split(pattern,deposit)
+                UnitAmounts.append(amt)
+        else:
+            amt = re.split(pattern,tokens)
+            UnitAmounts.append(amt)
+            
+        for u in UnitAmounts:
+            tokenString += str(round(float(float(u[1]) / IBCTokens.SATOSHI),4)) + str(IBCTokens.UNITTOKEN[u[2]]) + ','
+        
+        return tokenString[0:-1]
+
+        
     def get_subscriptions(self, ADDRESS):
         SubsNodesInfo = []
         SubsFinalResult    = []
@@ -262,13 +264,23 @@ def disconnect(v2ray):
             print(str(e))
             return 1, True
         
-    else:    
-        partCMD = [gsudo, sentinelcli, '--home', ConfParams.BASEDIR, "disconnect"]
+    else:
+        
+        MeileConfig = MeileGuiConfig()
+        
+        with open(path.join(MeileConfig.BASEBINDIR, 'disconnect.bat'), 'w') as DISBATFILE:
+            DISBATFILE.write("%s --home %s disconnect\n" % (sentinelcli, ConfParams.BASEDIR))
+            DISBATFILE.write("TASKKILL /F /IM WireGuard.exe\n")
+            
+        DISBATFILE.flush()
+        DISBATFILE.close()
+               
+        partCMD = [gsudo, path.join(MeileConfig.BASEBINDIR, 'disconnect.bat')]
         
         chdir(MeileConfig.BASEBINDIR)
         proc1 = Popen(partCMD)
         proc1.wait(timeout=30)
-        chdir(MeileConfig.BASEDIR)
+        chdir(MeileConfig.BASEDIR)  
         
         return proc1.returncode, False
 

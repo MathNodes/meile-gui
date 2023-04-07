@@ -1209,7 +1209,7 @@ class NodeScreen(Screen):
             city = self.NodeTree.NodeLocations[node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip()]
         else:
             city = " "
-            
+        
         self.ids.rv.data.append(
             {
                 "viewclass"    : "RecycleViewRow",
@@ -1233,8 +1233,7 @@ class NodeScreen(Screen):
         Meile.app.root.remove_widget(self)
         Meile.app.root.transistion = SlideTransition(direction="down")
         Meile.app.root.current = WindowNames.MAIN_WINDOW
-
-        
+            
 class RecycleViewCountryRow(MDCard,RectangularElevationBehavior,ThemableBehavior, HoverBehavior):
     text = StringProperty()    
     

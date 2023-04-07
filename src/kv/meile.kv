@@ -532,7 +532,7 @@ WindowManager:
                 text_color: get_color_from_hex("#fcb711")
                 pos_hint: {"x" : 0, "top" : 1.3}
                 size_hint_x: None
-                width: "400dp"
+                width: "500dp"
             MDLabel:
                 text: root.address_text
                 theme_text_color: "Custom"
@@ -657,7 +657,7 @@ WindowManager:
             font_size: "24sp"
             font_name: root.get_font()
             text_color: get_color_from_hex("#fcb711")
-            width: "350dp"
+            width: "500dp"
             pos_hint: {"x" : 0, "top" : 1.45}
             size_hint_x: None
         Image:
@@ -1041,6 +1041,7 @@ WindowManager:
             max: 314
             value: 34
             on_value: root.parse_coin_deposit(root.ids.drop_item.current_item)
+            on_touch_up: root.get_usd()
             
         MDLabel:
             text: str(int(slider1.value)) + " GB" 
@@ -1048,7 +1049,7 @@ WindowManager:
             width: 75
     MDBoxLayout:
         orientation: "horizontal"
-        size_hint_x: .8
+        #size_hint_x: .8
         spacing: 20
         
         MDTextField:
@@ -1057,8 +1058,6 @@ WindowManager:
             mode: "fill"
             text: ""
             size_hint_y: .65
-            width: "50dp"
-            height: "30dp"
             readonly: True
         
         MDTextField:
@@ -1067,8 +1066,8 @@ WindowManager:
             mode: "fill"
             text: root.price_text
             size_hint_y: .65
-            width: "50dp"
-            height: "30dp"
+            size_hint_x: .3
+            opacity: 0
             readonly: True
             
         MDDropDownItem:
@@ -1076,6 +1075,16 @@ WindowManager:
             pos_hint: {'center_x': .5, 'center_y': .5}
             text: "udvpn"
             on_release: root.menu.open()
+            
+        MDLabel:
+        	id: usd_price
+        	text: "$0.00"
+        	theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "14sp"
+            font_name: root.get_font()
+            text_color: get_color_from_hex("#fcb711")
+            
 <ProcessingSubDialog>
     orientation: "vertical"
     spacing: "1dp"
