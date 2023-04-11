@@ -12,6 +12,10 @@ from kivymd.uix.button import MDFlatButton, MDRaisedButton
 from kivymd.uix.tooltip import MDTooltip
 from kivy.uix.switch import Switch
 from kivy_garden.mapview.view import MapView
+from kivymd.uix.behaviors import RoundedRectangularElevationBehavior, CircularElevationBehavior, RectangularRippleBehavior, CircularRippleBehavior
+from kivymd.uix.fitimage.fitimage import FitImage
+from kivy.uix.behaviors import ButtonBehavior
+
 
 class Tab(MDBoxLayout, MDTabsBase):
     pass
@@ -57,4 +61,6 @@ class ContinentMap(MapView):
 class FullImage(Image):
     pass
 class FullImage2(Image):
+    pass
+class DisplayPic(CircularElevationBehavior, ButtonBehavior, FitImage):
     pass

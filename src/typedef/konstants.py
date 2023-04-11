@@ -44,6 +44,7 @@ class TextStrings():
 class MeileColors():
     DIALOG_BG_COLOR = "#121212"
     FONT_FACE = "../fonts/mplus-2c-bold.ttf"
+    MAP_MARKER = "../imgs/location_pin.png"
     
 class NodeKeys():
     NodesInfoKeys = ["Moniker","Address","Provider","Price","Country","Speed","Latency","Peers","Handshake","Type","Version","Status"]

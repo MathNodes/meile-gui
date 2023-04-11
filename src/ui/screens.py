@@ -373,7 +373,8 @@ class MainWindow(Screen):
                                cache_key="meile-map-canvas-dark-grey-base", 
                                tile_size=512,
                                image_ext="png",
-                               attribution="@ Meile")
+                               attribution="@ Meile",
+                               size_hint=(.7,1))
             #self.MeileMap.map_source = "osm"
             self.MeileMap.map_source = source
             
@@ -386,11 +387,12 @@ class MainWindow(Screen):
         return Config.resource_path(MeileColors.FONT_FACE)
         
     def AddCountryNodePins(self):
+        Config = MeileGuiConfig()
         try:
             for continent in self.MeileLand.CONTINENTS:
                 for ncountry in self.NodeTree.NodeTree.children(continent):
                     loc = self.MeileLand.CountryLatLong[ncountry.tag]
-                    marker = MapMarkerPopup(lat=loc[0], lon=loc[1])
+                    marker = MapMarkerPopup(lat=loc[0], lon=loc[1], source=Config.resource_path(MeileColors.MAP_MARKER))
                     marker.add_widget(MDMapCountryButton(text='%s - %s' %(ncountry.tag, len(self.NodeTree.NodeTree.children(ncountry.tag))),
                                                    theme_text_color="Custom",
                                                    md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),

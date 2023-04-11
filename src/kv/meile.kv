@@ -168,6 +168,7 @@ WindowManager:
             NodeRV:
                 md_bg_color: get_color_from_hex("#121212")    
                 id: rv
+                size_hint: (.3,1)
          
         MDBottomNavigation:
             size_hint_y: .1
@@ -200,7 +201,7 @@ WindowManager:
     name: "nodes"
     MDBoxLayout:
         orientation: "vertical"
-        NodeRV:
+        NodeRV2:
             id: rv
         ActionBar:
             background_normal: ''
@@ -406,11 +407,35 @@ WindowManager:
     
 <NodeRV>:
     key_viewclass: "viewclass"
+    bar_width: dp(8)
+    scroll_type: ["bars", "content"]
+    canvas.before:
+        Color:
+            rgba: get_color_from_hex("#212021")
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    RecycleBoxLayout:
+        md_bg_color: get_color_from_hex("#121212")
+        #cols: 1
+        default_size: dp(75), dp(50)
+        default_size_hint: 1, None
+        size_hint_y: None
+        height: self.minimum_height
+        #orientation: 'lr-tb' 
+        orientation: "vertical"
+        spacing: 2
+        #padding: 1,1,1,1
+        
+        
+
+<NodeRV2>:
+    key_viewclass: "viewclass"
     bar_width: dp(12)
     scroll_type: ["bars", "content"]
     canvas.before:
         Color:
-            rgba: get_color_from_hex("#fccf62")
+            rgba: get_color_from_hex("#212021")
         Rectangle:
             pos: self.pos
             size: self.size
@@ -422,12 +447,8 @@ WindowManager:
         size_hint_y: None
         height: self.minimum_height
         orientation: 'lr-tb' 
-        spacing: 15
-        padding: 4,4,4,4
-        
-        
-
-
+        spacing: 5
+        padding: 1,1,1,1
         
 <-FullImage>:
     keep_ratio: True
@@ -450,50 +471,81 @@ WindowManager:
             
                        
 <RecycleViewCountryRow>:
-    size_hint_y: None
-    height: self.height
-    size: "180dp", "150dp"
+    size_hint_y: 1
+    size_hint_x: .7
+    #height: self.height
+    #size: "50dp", "50dp"
     type_swipe: "hand"
-    pos_hint: {"center_x": .5, "center_y": .5}
-    padding: 10,10
+    #pos_hint: {"center_x": .5, "center_y": .5}
+    padding: 1,1
     border_radius: 20
-    radius: [10]
+    #radius: [10]
     num_text: ""
     country_text: " "
     source_image: " "
     on_press: root.show_country_nodes(root.country_text)
     md_bg_color: get_color_from_hex("#121212")
-    MDGridLayout:
-        cols: 1
-        padding: 20,0,0,0
+    MDBoxLayout:
+        #rows: 1
+        #padding: 15,0,0,0
+        #size_hint: (.3,1)
+        orientation: "horizontal"
+        #BoxLayout:
+        #    size_hint: (.3,1)
+        #    orientation: 'vertical'
+        #    FloatLayout:
+        #        canvas:
+        #            Color:
+        #                rgb: 1, 1, 1
+        ##            Ellipse:
+        #                pos: 280, 200
+        #                size: 36 , 36 
+        #                source: root.source_image
+        #                angle_start: 0
+        #                angle_end: 360
+        
+        DisplayPic:
+            source: root.source_image
+            elevation: dp(3)
+            size_hint: None, None
+            size: dp(45), dp(45)
+            radius: dp(360)
+            pos_hint: {'center_x': .12, 'center_y': .5}
+            on_release: print("clicked")
         MDFloatLayout:
+            #MDIconButton:
+            #    icon: root.source_image
+            #    icon_size: "36sp"
+            #    pos_hint: {"x" : 0.025, "top" : 1.425}
             MDLabel:
                 text: root.country_text
                 id: country
                 theme_text_color: "Custom"
                 font_style: "H6"
-                font_size: "24sp"
+                font_size: "16sp"
                 text_color: get_color_from_hex("#fcb711")
-                pos_hint: {"x" : 0, "top" : 1.3}
-                size_hint_x: None
-                width: "200dp"
+                pos_hint: {"x" : .135, "top" : 1.375}
+                #size_hint_x: None
             MDLabel:
                 text: root.num_text
                 id: country
                 theme_text_color: "Custom"
                 font_style: "H6"
-                font_size: "18sp"
+                font_size: "12sp"
                 text_color: get_color_from_hex("#ffffff")
-                pos_hint: {"x" : 0, "top" : 1.0}
-                size_hint_x: None
-                width: "200dp"
-            Image:
-                source: root.source_image
-                # {"x", "y", "top", "bottom", "left", "right" }
-                pos_hint: {"x" : .9, "top" : 1.175 }
-            
-    MDSeparator:
-        color: 1,1,1,1
+                pos_hint: {"x" : .135, "top" : .975}
+                #size_hint_x: None
+            #Image:
+            #    source: root.source_image
+            #    # {"x", "y", "top", "bottom", "left", "right" }
+            #    pos_hint: {"x" : 1, "top" : .9 }
+            #    size_hint
+            #    allow_stretch: True
+            #    keep_ratio: True
+            #    size_hint_y: None
+            #    size_hint_x: None
+            #    width: self.parent.width
+            #    height: self.parent.width/self.image_ratio
                     
 <RecycleViewRow>:
     size_hint_y: None
