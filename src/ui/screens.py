@@ -5,7 +5,7 @@ from cli.sentinel import  NodeTreeData
 from typedef.konstants import NodeKeys, TextStrings, MeileColors
 from cli.sentinel import disconnect as Disconnect
 import main.main as Meile
-from ui.widgets import WalletInfoContent, MDMapCountryButton, RatingContent
+from ui.widgets import WalletInfoContent, MDMapCountryButton, RatingContent, NodeRV, NodeRV2
 from utils.qr import QRCode
 from cli.wallet import HandleWalletFunctions
 from conf.meile_config import MeileGuiConfig
@@ -41,8 +41,7 @@ from functools import partial
 from os import path,geteuid, chdir
 from save_thread_result import ThreadWithResult
 from unidecode import unidecode
-
-TIMEOUT = 5
+from copy import copy
 
 class WalletRestore(Screen):
     screemanager = ObjectProperty()
@@ -278,11 +277,6 @@ class PreLoadWindow(Screen):
         else:
             self.manager.get_screen(WindowNames.PRELOAD).status_text = self.StatusMessages[self.k]
             self.k += 1
-            
-
-        
-        
-        
  
     def switch_window(self):
         Meile.app.root.add_widget(MainWindow(name=WindowNames.MAIN_WINDOW, node_tree=self.NodeTree))
@@ -349,7 +343,6 @@ class MainWindow(Screen):
         
     def build(self, dt):
         OurWorld.CONTINENTS.remove(OurWorld.CONTINENTS[1])
-        OurWorld.CONTINENTS.append("Subscriptions")
         #OurWorld.CONTINENTS.append("Search")
         
         for name_tab in OurWorld.CONTINENTS:
@@ -357,7 +350,7 @@ class MainWindow(Screen):
             self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.android_tabs.add_widget(tab)
         
         self.get_ip_address(None)
-        
+    
         self.on_tab_switch(
             None,
             None,
@@ -663,88 +656,7 @@ class MainWindow(Screen):
             self.dialog.open()
         else:
             self.build_wallet_interface()
-            
-    def wallet_restore(self, NewWallet, inst):
-        if NewWallet:
-            self.NewWallet = True
-        else:
-            self.NewWallet = False
-            
-        self.dialog.dismiss()
-        self.dialog = None
-        Meile.app.manager.add_widget(WalletRestore(name=WindowNames.WALLET_RESTORE))
-        Meile.app.root.transition = SlideTransition(direction = "right")
-        Meile.app.root.current = WindowNames.WALLET_RESTORE
-            
-    def build_wallet_interface(self):
-        Meile.app.root.add_widget(WalletScreen(name=WindowNames.WALLET, ADDRESS=self.address))
-        Meile.app.root.transition = SlideTransition(direction = "up")
-        Meile.app.root.current = WindowNames.WALLET
-        
-    def build_help_screen_interface(self):
-        Meile.app.root.add_widget(HelpScreen(name=WindowNames.HELP))
-        Meile.app.root.transition = SlideTransition(direction = "left")
-        Meile.app.root.current = WindowNames.HELP
-        
-    def add_sub_rv_data(self, node, flagloc):
-        
-        if node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip() in self.NodeTree.NodeScores:
-            nscore = str(self.NodeTree.NodeScores[node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip()][0])
-            votes  = str(self.NodeTree.NodeScores[node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip()][1])
-        else:
-            nscore = "null"
-            votes  = "0"
-            
-        if node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip() in self.NodeTree.NodeLocations:
-            city = self.NodeTree.NodeLocations[node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip()]
-        else:
-            city = " "
-            
-        if node[NodeKeys.FinalSubsKeys[1]] == "Offline":
-            self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.rv.data.append(
-                 {
-                     "viewclass"      : "RecycleViewSubRow",
-                     "moniker_text"   : node[NodeKeys.FinalSubsKeys[1]].lstrip().rstrip(),
-                     "type_text"      : node[NodeKeys.FinalSubsKeys[8]].lstrip().rstrip(),
-                     "sub_id_text"    : node[NodeKeys.FinalSubsKeys[0]].lstrip().rstrip(),
-                     "price_text"     : node[NodeKeys.FinalSubsKeys[4]].lstrip().rstrip(),
-                     "country_text"   : "Offline",
-                     "address_text"   : node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip(),
-                     "allocated_text" : node[NodeKeys.FinalSubsKeys[6]].lstrip().rstrip(),
-                     "consumed_text"  : node[NodeKeys.FinalSubsKeys[7]].lstrip().rstrip(),
-                     "source_image"   : self.MeileConfig.resource_path(flagloc),
-                     "score"          : nscore,
-                     "votes"          : votes,
-                     "city"           : city,
-                     "md_bg_color"    : "#50507c"
-                 },
-             )
-            print("%s" % node[NodeKeys.FinalSubsKeys[0]].lstrip().rstrip(),end=',')
-            sys.stdout.flush()
-            
-        else:
-            self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.rv.data.append(
-                {
-                    "viewclass"      : "RecycleViewSubRow",
-                    "moniker_text"   : node[NodeKeys.FinalSubsKeys[1]].lstrip().rstrip(),
-                    "type_text"      : node[NodeKeys.FinalSubsKeys[8]].lstrip().rstrip(),
-                    "sub_id_text"    : node[NodeKeys.FinalSubsKeys[0]].lstrip().rstrip(),
-                    "price_text"     : node[NodeKeys.FinalSubsKeys[4]].lstrip().rstrip(),
-                    "country_text"   : node[NodeKeys.FinalSubsKeys[5]].lstrip().rstrip(),
-                    "address_text"   : node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip(),
-                    "allocated_text" : node[NodeKeys.FinalSubsKeys[6]].lstrip().rstrip(),
-                    "consumed_text"  : node[NodeKeys.FinalSubsKeys[7]].lstrip().rstrip(),
-                    "source_image"   : self.MeileConfig.resource_path(flagloc),
-                    "score"          : nscore,
-                    "votes"          : votes,
-                    "city"           : city,
-                    "md_bg_color"    : MeileColors.DIALOG_BG_COLOR
-                    
-                },
-            )
-            print("%s" % node[NodeKeys.FinalSubsKeys[0]].lstrip().rstrip(),end=',')
-            sys.stdout.flush()
-        
+               
     def add_country_rv_data(self, NodeCountries):
         self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.rv.data.append(
             {
@@ -769,23 +681,6 @@ class MainWindow(Screen):
         except Exception as e:
             print(str(e))
             pass
-        
-    @mainthread
-    def sub_address_error(self):
-        self.dialog = MDDialog(
-            text="Error Loading Subscriptions... No wallet found",
-            md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
-            buttons=[
-                MDRaisedButton(
-                    text="Okay",
-                    theme_text_color="Custom",
-                    text_color=(1,1,1,1),
-                    on_release=self.remove_loading_widget
-                ),
-            ],
-        )
-        self.dialog.open()
-    
     
     def refresh_nodes_and_subs(self):
         lc = LatencyContent()
@@ -815,80 +710,30 @@ class MainWindow(Screen):
     def Refresh(self, latency, *kwargs):
         self.remove_loading_widget(None)
         
-        self.add_loading_popup("Reloading Nodes & Subscriptions...")
+        self.add_loading_popup("Reloading Nodes...")
         yield 0.5
         try: 
             self.NodeTree.NodeTree = None
             thread = ThreadWithResult(target=self.NodeTree.get_nodes, args=(latency.return_latency(),)) 
-            #Clock.schedule_once(self.NodeTree.get_nodes, 0.2)
             thread.start()
             thread.join()
         except Exception as e:
             print(str(e))
             pass
-        self.SubResult = None
         self.remove_loading_widget(None)
         #self.on_tab_switch(None, None, None, "Subscriptions")
         
-    def GetSubscriptions(self):
-        try: 
-            thread = ThreadWithResult(target=self.NodeTree.get_subscriptions, args=(self.address,))
-            thread.start()
-            thread.join()    
-            self.SubResult = thread.result
-        except Exception as e:
-            print(str(e))
-            return None
-    
-    
-    
-    @delayable
-    def subs_callback(self, dt):
-        floc = "../imgs/"
-        yield 0.314
-        if not self.SubResult:
-            self.GetSubscriptions()
-        
-        for sub in self.SubResult:
-            if sub[NodeKeys.FinalSubsKeys[5]] == "Czechia":
-                sub[NodeKeys.FinalSubsKeys[5]] = "Czech Republic"
-            try: 
-                iso2 = OurWorld.our_world.get_country_ISO2(sub[NodeKeys.FinalSubsKeys[5]].lstrip().rstrip()).lower()
-            except:
-                iso2 = "sc"
-            flagloc = floc + iso2 + ".png"
-            self.add_sub_rv_data(sub, flagloc)
-        self.remove_loading_widget(None)
-
 
     @mainthread
     def on_tab_switch(self, instance_tabs, instance_tab, instance_tabs_label, tab_text):
-        #from src.cli.sentinel import ConNodes, NodesDictList
         self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.rv.data = []
+        
         if not tab_text:
             tab_text = OurWorld.CONTINENTS[0]
             
         # Check to build Map
         self.build_meile_map()
             
-            
-        # Subscriptions
-        #print(self.NodeTree.NodeTree.show())
-        if tab_text == OurWorld.CONTINENTS[6]:
-            self.get_config(None)
-            self.add_loading_popup("Loading...")
-            if self.address:
-                
-                Clock.schedule_once(self.subs_callback, 1)
-                self.ids.country_map.remove_widget(self.MeileMap)
-                self.MeileMapBuilt = False
-                #Subscriptions = get_subscriptions(NodesDictList, address)
-                return 
-            else:
-                self.remove_loading_widget(None)
-                self.sub_address_error()
-                return
-
         # use lambda in future
         if tab_text == OurWorld.CONTINENTS[0]:
             for ncountry in self.NodeTree.NodeTree.children(OurWorld.CONTINENTS[0]):
@@ -916,7 +761,8 @@ class MainWindow(Screen):
                 self.get_continent_coordinates(OurWorld.CONTINENTS[5])            
         # Search Criteria
         else:
-            pass      
+            pass   
+           
     def get_continent_coordinates(self, c):
         loc = self.MeileLand.ContinentLatLong[c]
         self.MeileMap.center_on(loc[0], loc[1])
@@ -934,11 +780,37 @@ class MainWindow(Screen):
         
         return NodeCountries
     
+    def wallet_restore(self, NewWallet, inst):
+        if NewWallet:
+            self.NewWallet = True
+        else:
+            self.NewWallet = False
+            
+        self.dialog.dismiss()
+        self.dialog = None
+        Meile.app.manager.add_widget(WalletRestore(name=WindowNames.WALLET_RESTORE))
+        Meile.app.root.transition = SlideTransition(direction = "right")
+        Meile.app.root.current = WindowNames.WALLET_RESTORE
+            
+    def build_wallet_interface(self):
+        Meile.app.root.add_widget(WalletScreen(name=WindowNames.WALLET, ADDRESS=self.address))
+        Meile.app.root.transition = SlideTransition(direction = "up")
+        Meile.app.root.current = WindowNames.WALLET
+        
+    def build_help_screen_interface(self):
+        Meile.app.root.add_widget(HelpScreen(name=WindowNames.HELP))
+        Meile.app.root.transition = SlideTransition(direction = "left")
+        Meile.app.root.current = WindowNames.HELP
+    
     def switch_window(self, window):
         Meile.app.root.transition = SlideTransition(direction = "up")
         Meile.app.root.current = window
         
-        
+    def switch_to_sub_window(self):
+        Meile.app.root.add_widget(SubscriptionScreen(name=WindowNames.SUBSCRIPTIONS, node_tree=self.NodeTree))
+        Meile.app.root.transition = SlideTransition(direction = "left")
+        Meile.app.root.current = WindowNames.SUBSCRIPTIONS
+            
     def load_country_nodes(self, country, *kwargs):
         NodeTree = NodeTreeData(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeTree.NodeTree)
         try:
@@ -1041,6 +913,152 @@ class WalletScreen(Screen):
         Meile.app.root.transistion = SlideTransition(direction="down")
         Meile.app.root.current = WindowNames.MAIN_WINDOW
 
+class SubscriptionScreen(Screen):
+    SubResult = None
+    
+    def __init__(self, node_tree,  **kwargs):
+        super(SubscriptionScreen, self).__init__()
+        self.NodeTree = node_tree
+        
+        self.get_config(None)
+        self.add_loading_popup("Loading...")
+        
+        if self.address:
+            Clock.schedule_once(self.subs_callback, 0.25)
+            return 
+        else:
+            self.remove_loading_widget(None)
+            self.sub_address_error()
+            return
+        
+    def GetSubscriptions(self):
+        try: 
+            thread = ThreadWithResult(target=self.NodeTree.get_subscriptions, args=(self.address,))
+            thread.start()
+            thread.join()    
+            self.SubResult = thread.result
+        except Exception as e:
+            print(str(e))
+            return None
+        
+    @delayable
+    def subs_callback(self, dt):
+        floc = "../imgs/"
+        yield 0.314
+        
+        if not self.SubResult:
+            self.GetSubscriptions()
+        
+        for sub in self.SubResult:
+            if sub[NodeKeys.FinalSubsKeys[5]] == "Czechia":
+                sub[NodeKeys.FinalSubsKeys[5]] = "Czech Republic"
+            try: 
+                iso2 = OurWorld.our_world.get_country_ISO2(sub[NodeKeys.FinalSubsKeys[5]].lstrip().rstrip()).lower()
+            except:
+                iso2 = "sc"
+            flagloc = floc + iso2 + ".png"
+            self.add_sub_rv_data(sub, flagloc)
+        self.remove_loading_widget(None)  
+         
+    def add_sub_rv_data(self, node, flagloc):
+        
+        if node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip() in self.NodeTree.NodeScores:
+            nscore = str(self.NodeTree.NodeScores[node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip()][0])
+            votes  = str(self.NodeTree.NodeScores[node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip()][1])
+        else:
+            nscore = "null"
+            votes  = "0"
+            
+        if node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip() in self.NodeTree.NodeLocations:
+            city = self.NodeTree.NodeLocations[node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip()]
+        else:
+            city = " "
+            
+        if node[NodeKeys.FinalSubsKeys[1]] == "Offline":
+            self.ids.rv.data.append(
+                 {
+                     "viewclass"      : "RecycleViewSubRow",
+                     "moniker_text"   : node[NodeKeys.FinalSubsKeys[1]].lstrip().rstrip(),
+                     "type_text"      : node[NodeKeys.FinalSubsKeys[8]].lstrip().rstrip(),
+                     "sub_id_text"    : node[NodeKeys.FinalSubsKeys[0]].lstrip().rstrip(),
+                     "price_text"     : node[NodeKeys.FinalSubsKeys[4]].lstrip().rstrip(),
+                     "country_text"   : "Offline",
+                     "address_text"   : node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip(),
+                     "allocated_text" : node[NodeKeys.FinalSubsKeys[6]].lstrip().rstrip(),
+                     "consumed_text"  : node[NodeKeys.FinalSubsKeys[7]].lstrip().rstrip(),
+                     "source_image"   : self.MeileConfig.resource_path(flagloc),
+                     "score"          : nscore,
+                     "votes"          : votes,
+                     "city"           : city,
+                     "md_bg_color"    : "#50507c"
+                 },
+             )
+            print("%s" % node[NodeKeys.FinalSubsKeys[0]].lstrip().rstrip(),end=',')
+            sys.stdout.flush()
+            
+        else:
+            self.ids.rv.data.append(
+                {
+                    "viewclass"      : "RecycleViewSubRow",
+                    "moniker_text"   : node[NodeKeys.FinalSubsKeys[1]].lstrip().rstrip(),
+                    "type_text"      : node[NodeKeys.FinalSubsKeys[8]].lstrip().rstrip(),
+                    "sub_id_text"    : node[NodeKeys.FinalSubsKeys[0]].lstrip().rstrip(),
+                    "price_text"     : node[NodeKeys.FinalSubsKeys[4]].lstrip().rstrip(),
+                    "country_text"   : node[NodeKeys.FinalSubsKeys[5]].lstrip().rstrip(),
+                    "address_text"   : node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip(),
+                    "allocated_text" : node[NodeKeys.FinalSubsKeys[6]].lstrip().rstrip(),
+                    "consumed_text"  : node[NodeKeys.FinalSubsKeys[7]].lstrip().rstrip(),
+                    "source_image"   : self.MeileConfig.resource_path(flagloc),
+                    "score"          : nscore,
+                    "votes"          : votes,
+                    "city"           : city,
+                    "md_bg_color"    : MeileColors.DIALOG_BG_COLOR
+                    
+                },
+            )
+            print("%s" % node[NodeKeys.FinalSubsKeys[0]].lstrip().rstrip(),end=',')
+            sys.stdout.flush()
+            
+    def get_config(self, dt):
+        self.MeileConfig = MeileGuiConfig()
+        CONFIG = self.MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
+        self.address = CONFIG['wallet'].get("address")  
+          
+    @mainthread
+    def add_loading_popup(self, title_text):
+        self.dialog = None
+        self.dialog = MDDialog(title=title_text,md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR))
+        self.dialog.open()
+        
+    @mainthread
+    def remove_loading_widget(self, dt):
+        try:
+            self.dialog.dismiss()
+            self.dialog = None
+        except Exception as e:
+            print(str(e))
+            pass
+        
+    @mainthread
+    def sub_address_error(self):
+        self.dialog = MDDialog(
+            text="Error Loading Subscriptions... No wallet found",
+            md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
+            buttons=[
+                MDRaisedButton(
+                    text="Okay",
+                    theme_text_color="Custom",
+                    text_color=(1,1,1,1),
+                    on_release=self.remove_loading_widget
+                ),
+            ],
+        )
+        self.dialog.open()
+        
+    def set_previous_screen(self):
+        Meile.app.root.transistion = SlideTransition(direction="right")
+        Meile.app.root.current = WindowNames.MAIN_WINDOW
+        
 class NodeScreen(Screen):
     NodeTree = None
     Country = None

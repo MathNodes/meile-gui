@@ -36,6 +36,10 @@ class IBCTokens():
     
     IBCCOINS = [{'uscrt' : IBCSCRT}, {'uatom' : IBCATOM}, {'udec' : IBCDEC}, {'uosmo' : IBCOSMO}, {'uknwn' :IBCUNKWN}]
     
+    UNITTOKEN = {'uscrt' : 'scrt', 'uatom' : 'atom' , 'uosmo' : 'osmo', 'udec' : 'dec', 'udvpn' : 'dvpn'}
+
+    CoinGeckoIDS = {'scrt' : 'secret', 'atom' : 'cosmos', 'dvpn' : 'sentinel', 'osmo' : 'osmosis', 'dec' : 'decentr'}
+    
     
 class TextStrings():
     dash = "-"
@@ -50,6 +54,6 @@ class NodeKeys():
     NodesInfoKeys = ["Moniker","Address","Provider","Price","Country","Speed","Latency","Peers","Handshake","Type","Version","Status"]
     SubsInfoKeys  = ["ID", "Owner", "Plan", "Expiry", "Denom", "Node", "Price", "Deposit", "Free", "Status"]
     FinalSubsKeys = [SubsInfoKeys[0], NodesInfoKeys[0],SubsInfoKeys[5], SubsInfoKeys[6], SubsInfoKeys[7], NodesInfoKeys[4], "Allocated", "Consumed", NodesInfoKeys[9]]
-    NodeVersions  = [str(item).zfill(3) for item in range(30,100)]
+    NodeVersions  = [str(item).zfill(3) for item in range(30,1000)]
 
 

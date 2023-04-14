@@ -1,32 +1,31 @@
 from kivy.properties import BooleanProperty, StringProperty
+from kivy.metrics import dp
+from kivyoav.delayed import delayable
+from kivy.utils import get_color_from_hex
+from kivy.animation import Animation
+from kivy.clock import Clock
+from kivy.core.window import Window
+from kivy.core.clipboard import Clipboard
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
+from kivy.uix.recycleview import RecycleView
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.screenmanager import Screen, SlideTransition
 from kivymd.uix.label import MDLabel
 from kivymd.uix.card import MDCard
 from kivymd.uix.dialog import MDDialog
 from kivymd.uix.button import MDFlatButton, MDRaisedButton, MDFillRoundFlatButton
-from kivy.uix.recycleview import RecycleView
-from kivy.uix.boxlayout import BoxLayout
+from kivymd.uix.behaviors import HoverBehavior
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.list import OneLineIconListItem
-from kivy.metrics import dp
-from kivyoav.delayed import delayable
-from kivy.uix.screenmanager import Screen, SlideTransition
-from kivy.utils import get_color_from_hex
-from kivymd.uix.behaviors import HoverBehavior
-from kivymd.theming import ThemableBehavior
-from kivy.core.window import Window
 from kivymd.uix.behaviors.elevation import RectangularElevationBehavior
-from kivy.core.clipboard import Clipboard
-from kivy.animation import Animation
-from kivy.clock import Clock
+from kivymd.theming import ThemableBehavior
 
-
-from functools import partial
-from urllib3.exceptions import InsecureRequestWarning
 import requests
 import re
 import psutil
+from functools import partial
+from urllib3.exceptions import InsecureRequestWarning
 from os import path
 from subprocess import Popen, TimeoutExpired
 
@@ -105,6 +104,8 @@ class SubscribeContent(BoxLayout):
     price_text = StringProperty()
     moniker = StringProperty()
     naddress = StringProperty()
+    coin_price = "0.00"
+
     
     menu = None
     def __init__ (self, price, moniker, naddress):
@@ -113,7 +114,7 @@ class SubscribeContent(BoxLayout):
         self.price_text = price
         self.moniker = moniker
         self.naddress = naddress
-        self.parse_coin_deposit("udvpn")
+        self.parse_coin_deposit("dvpn")
         
         menu_items = [
             {
@@ -147,12 +148,12 @@ class SubscribeContent(BoxLayout):
     def parse_coin_deposit(self, mu_coin):
         try:
             if self.price_text:
-                mu_coin_amt = re.findall(r'[0-9]+' + mu_coin, self.price_text)[0]
+                mu_coin_amt = re.findall(r'[0-9]+.[0-9]+' + mu_coin, self.price_text)[0]
                 if mu_coin_amt:
-                    self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(int(mu_coin_amt.split(mu_coin)[0])/1000000)),3)) + self.ids.drop_item.current_item.replace('u','') 
+                    self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(mu_coin_amt.split(mu_coin)[0])),4)) + self.ids.drop_item.current_item.replace('u','') 
                     return self.ids.deposit.text
                 else:
-                    self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(int(self.ids.price.text.split("udvpn")[0])/1000000)),3)) + self.ids.drop_item.current_item.replace('u','')
+                    self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(self.ids.price.text.split("dvpn")[0])),4)) + self.ids.drop_item.current_item.replace('u','')
                     return self.ids.deposit.text
             else:
                 self.ids.deposit.text = "0.0dvpn"
@@ -161,7 +162,7 @@ class SubscribeContent(BoxLayout):
             print(str(e))
             try: 
                 if self.ids.price.text:
-                    self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(int(self.ids.price.text.split("udvpn")[0])/1000000)),3)) + CoinsList.ibc_mu_coins[0].replace('u','')
+                    self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(self.ids.price.text.split("dvpn")[0])),4)) + CoinsList.ibc_mu_coins[0].replace('u','')
                     return self.ids.deposit.text
                 else:
                     self.ids.deposit.text = "0.0dvpn"
@@ -175,6 +176,41 @@ class SubscribeContent(BoxLayout):
 
     def return_deposit_text(self):
         return (self.ids.deposit.text, self.naddress, self.moniker)
+    
+    # Should be async
+    def get_usd(self):
+        depost_ret = self.return_deposit_text()
+        amt = re.findall(r"[0-9]+.[0-9]+",depost_ret[0])[0]
+        coin = self.ids.drop_item.current_item
+
+        Request = HTTPRequests.MakeRequest()
+        http = Request.hadapter()
+        if coin == "dec":
+            URL = "https://ascendex.com/api/pro/v1/spot/ticker?symbol=DEC/USDT"
+            try: 
+                r = http.get(URL)
+                print(r.json())
+                self.coin_price = r.json()['data']['high']
+            except:
+                self.coin_price = 0.0
+        else:
+            URL = "https://api.coinstats.app/public/v1/tickers?exchange=KuCoin&pair=%s-USDT" % coin.upper()
+            try: 
+                r = http.get(URL)
+                print(r.json())
+                self.coin_price = r.json()['tickers'][0]['price']
+            except:
+                self.coin_price = 0.0
+
+            
+        self.ids.usd_price.text = '$' + str(round(float(self.coin_price) * float(amt),3))
+
+        return True
+
+    def CGCallback(self, cgid, dt):
+        cg = CoinGeckoAPI()
+        cg_price = cg.get_price(ids=[cgid], vs_currencies='usd')
+        self.coin_price = cg_price[cgid]['usd']
 
 
 class ProcessingSubDialog(BoxLayout):
