@@ -271,9 +271,8 @@ def disconnect(v2ray):
         with open(path.join(MeileConfig.BASEBINDIR, 'disconnect.bat'), 'w') as DISBATFILE:
             DISBATFILE.write("%s --home %s disconnect\n" % (sentinelcli, ConfParams.BASEDIR))
             DISBATFILE.write("TASKKILL /F /IM WireGuard.exe\n")
-            
-        DISBATFILE.flush()
-        DISBATFILE.close()
+            DISBATFILE.flush()
+            DISBATFILE.close()
                
         partCMD = [gsudo, path.join(MeileConfig.BASEBINDIR, 'disconnect.bat')]
         

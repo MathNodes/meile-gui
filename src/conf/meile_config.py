@@ -2,8 +2,9 @@ from os import path,environ,mkdir
 
 import configparser
 import shutil
-
+import subprocess
 import sys
+from time import sleep
 
 
 class MeileGuiConfig():
@@ -19,12 +20,32 @@ class MeileGuiConfig():
         base_path = getattr(sys, '_MEIPASS', path.dirname(path.abspath(__file__)))
         return path.join(base_path, relative_path)
     
+    def process_exists(self, process_name):
+        call = 'TASKLIST', '/FI', 'imagename eq %s' % process_name
+        # use buildin check_output right away
+        output = subprocess.check_output(call).decode()
+        # check in last line for process name
+        last_line = output.strip().split('\r\n')[-1]
+        # because Fail message could be translated
+        return last_line.lower().startswith(process_name.lower())
     
+    def kill_process(self, process_name):
+        call = '%s TASKKILL /F /IM %s' % (self.resource_path("bin/gsudo.exe"),process_name)
+        subprocess.Popen(call, shell=True)
+        
     def update_bin(self, from_path, to_path):
-        try: 
-            if path.exists(to_path):
-                shutil.rmtree(to_path)
-            shutil.copytree(from_path, to_path)
+        try:
+            if self.process_exists("WireGuard.exe"):
+                print("WireGuard is running!")
+                self.kill_process("WireGuard.exe")
+                sleep(5)
+                if path.exists(to_path):
+                    shutil.rmtree(to_path)
+                shutil.copytree(from_path, to_path)
+            else: 
+                if path.exists(to_path):
+                    shutil.rmtree(to_path)
+                shutil.copytree(from_path, to_path)
         except Exception as e:
             print(str(e))
     def rewrite_bin(self):
