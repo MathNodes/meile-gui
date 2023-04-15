@@ -27,8 +27,6 @@ from urllib3.exceptions import InsecureRequestWarning
 from os import path
 from subprocess import Popen, TimeoutExpired
 
-from pycoingecko import CoinGeckoAPI
-
 import requests
 import re
 import psutil
@@ -157,7 +155,7 @@ class SubscribeContent(BoxLayout):
                     self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(mu_coin_amt.split(mu_coin)[0])),4)) + self.ids.drop_item.current_item.replace('u','') 
                     return self.ids.deposit.text
                 else:
-                    self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(self.ids.price.text.split("uvpn")[0])),4)) + self.ids.drop_item.current_item.replace('u','')
+                    self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(self.ids.price.text.split("dvpn")[0])),4)) + self.ids.drop_item.current_item.replace('u','')
                     return self.ids.deposit.text
             else:
                 self.ids.deposit.text = "0.0dvpn"
@@ -181,28 +179,35 @@ class SubscribeContent(BoxLayout):
     def return_deposit_text(self):
         return (self.ids.deposit.text, self.naddress, self.moniker)
 
+    # Should be async
     def get_usd(self):
         depost_ret = self.return_deposit_text()
         amt = re.findall(r"[0-9]+.[0-9]+",depost_ret[0])[0]
-        print(amt)
         coin = self.ids.drop_item.current_item
-        
-        CGID = IBCTokens.CoinGeckoIDS[coin]
-        
-        try: 
-            Clock.schedule_once(partial(self.CGCallback, CGID))
-        except Exception as e:
-            print("Error getting coin price")
-            print(str(e))
-            
+
+        Request = HTTPRequests.MakeRequest()
+        http = Request.hadapter()
+        if coin == "dec":
+            URL = "https://ascendex.com/api/pro/v1/spot/ticker?symbol=DEC/USDT"
+            try: 
+                r = http.get(URL)
+                print(r.json())
+                self.coin_price = r.json()['data']['high']
+            except:
+                self.coin_price = 0.0
+        else:
+            URL = "https://api.coinstats.app/public/v1/tickers?exchange=KuCoin&pair=%s-USDT" % coin.upper()
+            try: 
+                r = http.get(URL)
+                print(r.json())
+                self.coin_price = r.json()['tickers'][0]['price']
+            except:
+                self.coin_price = 0.0
+
+
         self.ids.usd_price.text = '$' + str(round(float(self.coin_price) * float(amt),3))
-        
+
         return True
-    
-    def CGCallback(self, cgid):
-        cg = CoinGeckoAPI()
-        cg_price = cg.get_price(ids=[cgid], vs_currencies='usd')
-        self.coin_price = cg_price[cgid]['usd']
 
 class ProcessingSubDialog(BoxLayout):
     moniker = StringProperty()
