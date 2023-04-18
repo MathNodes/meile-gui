@@ -8,10 +8,10 @@ from ui.interfaces import Tab, LatencyContent
 from ui.widgets import WalletInfoContent, MDMapCountryButton, RatingContent
 from utils.qr import QRCode
 from conf.meile_config import MeileGuiConfig
-from typedef.win import WindowNames, ICANHAZURL, CoinsList
+from typedef.win import WindowNames, ICANHAZURL, ICANHAZDNS, CoinsList
 from typedef.konstants import NodeKeys, TextStrings, MeileColors
 from fiat import fiat_interface
-from adapters import HTTPRequests
+from adapters import HTTPRequests, DNSRequests
 from cli.v2ray import V2RayHandler
 
 from kivy.properties import BooleanProperty, StringProperty, ColorProperty
@@ -540,14 +540,22 @@ class MainWindow(Screen):
             
         self.old_ip = self.ip
         try: 
-            Request = HTTPRequests.MakeRequest()
-            http = Request.hadapter()
-            req = http.get(ICANHAZURL)
-            self.ip = req.text
-        
-            self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.new_ip.text = self.ip
-            return True
-            #self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.old_ip.text = "Old IP: " + self.old_ip
+            # First check DNS can resolv
+            resolver = DNSRequests.MakeDNSRequest(domain=ICANHAZDNS, timeout=0.3, lifetime=0.5)
+            icanhazip = resolver.DNSRequest()
+            if icanhazip:
+                print("%s:%s" % (ICANHAZDNS, icanhazip))
+                Request = HTTPRequests.MakeRequest()
+                http = Request.hadapter()
+                req = http.get(ICANHAZURL)
+                self.ip = req.text
+            
+                self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.new_ip.text = self.ip
+                return True
+                #self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.old_ip.text = "Old IP: " + self.old_ip
+            else:
+                print("Error resolving ICANHAZIP... defaulting...")
+                return False
         except Exception as e:
             print(str(e))
             return False
