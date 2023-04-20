@@ -1,5 +1,17 @@
 CHANGELOG
 ========================
+# v0.13.1.0 (19/04/2023)
+* NEW: Meile Cache API backed for Node Types (residential, datacenter, etc.)
+* NEW: MDIcon Tooltip for node type on node screen
+
+# v0.13.0.0 (12/04/2023)
+* NEW: 70% map, 30% country nodes cards
+* NEW: Map pin marker to yellow pin
+* NEW: Subscription nav bar icon
+* NEW: Subscription screen
+* CHANGE: Rounded circle flag in front of country label
+
+
 # v0.12.0.0 (22/03/2023)
 * NEW: sentinelcli 0.3.0 
 * NEW: v2ray support added
