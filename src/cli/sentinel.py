@@ -140,7 +140,6 @@ class NodeTreeData():
         except Exception as e:
             print(str(e))     
              
-        print(self.NodeTypes)
     def CreateNodeTreeStructure(self, **kwargs):
         NodeTreeBase = Tree()
         RootTag = "CONTINENTS"

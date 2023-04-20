@@ -8,7 +8,7 @@ from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.recyclegridlayout import RecycleGridLayout
 from kivy.uix.image import Image
 from kivy.uix.boxlayout import BoxLayout
-from kivymd.uix.button import MDFlatButton, MDRaisedButton
+from kivymd.uix.button import MDFlatButton, MDRaisedButton, MDIconButton
 from kivymd.uix.tooltip import MDTooltip
 from kivy.uix.switch import Switch
 from kivy_garden.mapview.view import MapView
@@ -34,6 +34,10 @@ class LatencyContent(BoxLayout):
 class YellowSwitch(Switch):
     pass
 class TooltipMDRaisedButton(MDRaisedButton, MDTooltip):
+    pass
+
+
+class TooltipMDIconButton(MDIconButton, MDTooltip):
     pass
 
 class WindowManager(ScreenManager):

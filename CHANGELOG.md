@@ -1,5 +1,10 @@
 CHANGELOG
 ========================
+# v0.13.2.0 (20/04/2023)
+* FIX: setup.py to include pin marker
+* ADD: DNSRequests Adapter
+* NEW: Merge Windows commit e11f398 for faster DNS resolver checks on errors
+
 # v0.13.1.0 (19/04/2023)
 * NEW: Meile Cache API backed for Node Types (residential, datacenter, etc.)
 * NEW: MDIcon Tooltip for node type on node screen
