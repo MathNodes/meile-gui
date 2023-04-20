@@ -233,6 +233,10 @@ class IconListItem(OneLineIconListItem):
 class NodeRV(RecycleView):    
     pass
 
+class NodeRV2(RecycleView):    
+    pass
+
+
 class OnHoverMDRaisedButton(MDRaisedButton, HoverBehavior):
     def on_enter(self, *args):
         self.md_bg_color = get_color_from_hex("#fad783")

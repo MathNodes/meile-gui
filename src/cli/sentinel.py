@@ -20,9 +20,10 @@ gsudo       = path.join(MeileConfig.BASEBINDIR, 'gsudo.exe')
 v2ray_tun2routes_connect_bash = MeileConfig.resource_path("../bin/routes.sh")
 
 class NodeTreeData():
-    NodeTree = None
-    NodeScores = {}
+    NodeTree      = None
+    NodeScores    = {}
     NodeLocations = {}
+    NodeTypes     = {}
     
     def __init__(self, node_tree):
         if not node_tree:
@@ -96,6 +97,7 @@ class NodeTreeData():
         self.NodeTree.show()
         self.GetNodeScores()
         self.GetNodeLocations()
+        self.GetNodeTypes()
         
     def GetNodeScores(self):
         Request = HTTPRequests.MakeRequest()
@@ -126,7 +128,20 @@ class NodeTreeData():
             print(str(e)) 
             
              
-    
+    def GetNodeTypes(self):
+        Request = HTTPRequests.MakeRequest()
+        http = Request.hadapter()
+        try:
+            r = http.get(HTTParams.SERVER_URL + HTTParams.NODE_TYPE_ENDPOINT)
+            data = r.json()
+
+            for nlist in data['data']:
+                k=0
+                self.NodeTypes[nlist[k]] = nlist[k+3]
+
+        except Exception as e:
+            print(str(e))     
+
     def CreateNodeTreeStructure(self, **kwargs):
         NodeTreeBase = Tree()
         RootTag = "CONTINENTS"

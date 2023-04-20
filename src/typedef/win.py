@@ -9,6 +9,7 @@ class WindowNames():
     WALLET         = "wallet"
     HELP           = "helpscreen"
     FIAT           = "fiatgateway"
+    SUBSCRIPTIONS  = "subscriptions"
     
     
 class CoinsList():

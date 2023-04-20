@@ -8,28 +8,27 @@ from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.recyclegridlayout import RecycleGridLayout
 from kivy.uix.image import Image
 from kivy.uix.boxlayout import BoxLayout
-from kivymd.uix.button import MDFlatButton, MDRaisedButton
+from kivymd.uix.button import MDFlatButton, MDRaisedButton, MDIconButton
 from kivymd.uix.tooltip import MDTooltip
 from kivy.uix.switch import Switch
 from kivy_garden.mapview.view import MapView
+from kivymd.uix.behaviors import RoundedRectangularElevationBehavior, CircularElevationBehavior, RectangularRippleBehavior, CircularRippleBehavior
+from kivymd.uix.fitimage.fitimage import FitImage
+from kivy.uix.behaviors import ButtonBehavior 
 
 class Tab(MDBoxLayout, MDTabsBase):
     pass
 
-'''
-class SubscribeContent(BoxLayout):
-    price_text = StringProperty()
-    
-    def __init_ (self, price):
-        self.price_text = price
-'''
-class LatencyContent(BoxLayout):
-    
+class LatencyContent(BoxLayout):  
     def return_latency(self):
         return self.ids.latency.text
+    
 class YellowSwitch(Switch):
     pass
 class TooltipMDRaisedButton(MDRaisedButton, MDTooltip):
+    pass
+
+class TooltipMDIconButton(MDIconButton, MDTooltip):
     pass
 class WindowManager(ScreenManager):
     pass
@@ -56,18 +55,13 @@ class FullImage(Image):
 class FullImage2(Image):
     pass
 
-
+class DisplayPic(CircularElevationBehavior, ButtonBehavior, FitImage):
+    pass
 
 class ClickableTextFieldRoundCC(MDRelativeLayout):
     text = StringProperty()
     hint_text = StringProperty()
     
-'''
-class ClickableTextFieldRoundName(MDRelativeLayout):
-    text = StringProperty()
-    hint_text = StringProperty()
-
-'''
 class ClickableTextFieldRoundCVV(MDRelativeLayout):
     text = StringProperty()
     hint_text = StringProperty()
