@@ -457,7 +457,6 @@ WindowManager:
 
 <NodeRV2>:
     md_bg_color: get_color_from_hex("#121212")    
-    id: rv2
     size_hint: (1,1)
     key_viewclass: "viewclass"
     bar_width: dp(12)
@@ -469,6 +468,7 @@ WindowManager:
             pos: self.pos
             size: self.size
     RecycleGridLayout:
+        id: grid
         md_bg_color: get_color_from_hex("#121212")
         cols:1
         default_size: dp(200), dp(150)
@@ -565,6 +565,8 @@ WindowManager:
     node_score: " "
     votes: " "
     city: " "
+    icon: ""
+    tooltip: ""
     ripple_behavior: True
     on_press: root.subscribe_to_node(root.price_text, root.address_text, root.moniker_text)
     MDGridLayout:
@@ -589,6 +591,10 @@ WindowManager:
                 font_size: "10sp"
                 text_color: (0/255.0,141/255.0,155/255.0,255/255.0)
                 pos_hint: {"x" : 0, "top" : 1.1}
+            TooltipMDIconButton:
+                icon: root.icon
+                tooltip_text: root.tooltip
+                pos_hint: {"x" : .265, "top" : .80}
             MDLabel:
                 text: root.type_text
                 theme_text_color: "Custom"
@@ -1594,3 +1600,5 @@ WindowManager:
    
 <ContinentMap>:
     zoom: 3
+
+<TooltipMDIconButton@MDIconButton+MDTooltip>

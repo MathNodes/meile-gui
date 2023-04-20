@@ -1,5 +1,5 @@
 from geography.continents import OurWorld
-from ui.interfaces import Tab, LatencyContent
+from ui.interfaces import Tab, LatencyContent, TooltipMDIconButton
 from typedef.win import WindowNames, ICANHAZURL
 from cli.sentinel import  NodeTreeData
 from typedef.konstants import NodeKeys, TextStrings, MeileColors
@@ -1223,6 +1223,21 @@ class NodeScreen(Screen):
         else:
             city = " "
             
+        if node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip() in self.NodeTree.NodeTypes:
+            if self.NodeTree.NodeTypes[node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip()] == NodeKeys.Nodetypes[0]:
+                IconButton  = "alpha-r-circle"
+                ToolTipText = "Residential"
+            elif self.NodeTree.NodeTypes[node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip()] == NodeKeys.Nodetypes[1]:
+                IconButton  = "alpha-b-circle"
+                ToolTipText = "Business"
+            else:
+                IconButton  = "alpha-d-circle"
+                ToolTipText = "Datacenter"
+        else:
+            IconButton  = "alpha-r-circle"
+            ToolTipText = "Residential"
+            
+        
         self.ids.rv.data.append(
             {
                 "viewclass"    : "RecycleViewRow",
@@ -1235,6 +1250,8 @@ class NodeScreen(Screen):
                 "node_score"   : nscore,
                 "votes"        : votes,
                 "city"         : city,
+                "icon"         : IconButton,
+                "tooltip"      : ToolTipText,
                 "speed_image"  : self.MeileConfig.resource_path(speedimage),
                 "source_image" : self.MeileConfig.resource_path(flagloc)
                 

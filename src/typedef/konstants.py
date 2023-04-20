@@ -17,6 +17,7 @@ class HTTParams():
     SERVER_URL             = "https://aimokoivunen.mathnodes.com:5000"
     NODE_SCORE_ENDPOINT    = "/api/nodescores"
     NODE_LOCATION_ENDPOINT = "/api/nodelocations"
+    NODE_TYPE_ENDPOINT     = "/api/nodetypes"
     API_PING_ENDPOINT      = "/api/ping"
     API_RATING_ENDPOINT    = "/api/rating"
     RPC                    = "https://rpc.mathnodes.com:443"
@@ -55,5 +56,6 @@ class NodeKeys():
     SubsInfoKeys  = ["ID", "Owner", "Plan", "Expiry", "Denom", "Node", "Price", "Deposit", "Free", "Status"]
     FinalSubsKeys = [SubsInfoKeys[0], NodesInfoKeys[0],SubsInfoKeys[5], SubsInfoKeys[6], SubsInfoKeys[7], NodesInfoKeys[4], "Allocated", "Consumed", NodesInfoKeys[9]]
     NodeVersions  = [str(item).zfill(3) for item in range(30,1000)]
+    Nodetypes = ['residential', 'business', 'hosting']
 
 
