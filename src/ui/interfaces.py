@@ -8,10 +8,13 @@ from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.recyclegridlayout import RecycleGridLayout
 from kivy.uix.image import Image
 from kivy.uix.boxlayout import BoxLayout
-from kivymd.uix.button import MDFlatButton, MDRaisedButton
+from kivymd.uix.button import MDFlatButton, MDRaisedButton, MDIconButton
 from kivymd.uix.tooltip import MDTooltip
 from kivy.uix.switch import Switch
 from kivy_garden.mapview import MapView
+from kivymd.uix.behaviors import RoundedRectangularElevationBehavior, CircularElevationBehavior, RectangularRippleBehavior, CircularRippleBehavior
+from kivymd.uix.fitimage.fitimage import FitImage
+from kivy.uix.behaviors import ButtonBehavior
 
 class Tab(MDBoxLayout, MDTabsBase):
     pass
@@ -33,6 +36,8 @@ class YellowSwitch(Switch):
 class TooltipMDRaisedButton(MDRaisedButton, MDTooltip):
     pass
 
+class TooltipMDIconButton(MDIconButton, MDTooltip):
+    pass
 
 class WindowManager(ScreenManager):
     pass
@@ -58,6 +63,9 @@ class FullImage(Image):
     pass
 
 class FullImage2(Image):
+    pass
+
+class DisplayPic(CircularElevationBehavior, ButtonBehavior, FitImage):
     pass
 
 class ClickableTextFieldRoundCC(MDRelativeLayout):

@@ -1,9 +1,10 @@
 
 from subprocess import Popen
-from src.conf.meile_config import MeileGuiConfig
 import multiprocessing
 from multiprocessing import Process
 from time import sleep
+
+from conf.meile_config import MeileGuiConfig
 
 class WarpHandler():
     warp_daemon = None
@@ -11,8 +12,8 @@ class WarpHandler():
     
     def __init__(self, **kwargs):
         MeileConfig = MeileGuiConfig()
-        self.warp_daemon = MeileConfig.resource_path("../bin/warpas.sh")
-        self.warp_cli    = MeileConfig.resource_path("../bin/warp-cli")
+        self.warp_daemon = MeileConfig.resource_path("bin/warpas.sh")
+        self.warp_cli    = MeileConfig.resource_path("bin/warp-cli")
     
     def fork_warp(self):
         warp_daemon_cmd = "%s" % self.warp_daemon

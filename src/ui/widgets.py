@@ -1,39 +1,38 @@
 from kivy.properties import BooleanProperty, StringProperty
+from kivy.metrics import dp
+from kivy.utils import get_color_from_hex
+from kivy.core.window import Window
+from kivy.core.clipboard import Clipboard
+from kivy.animation import Animation
+from kivy.clock import Clock
+from kivy.uix.recycleview import RecycleView
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.screenmanager import Screen, SlideTransition
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivymd.uix.card import MDCard
 from kivymd.uix.label import MDLabel
 from kivymd.uix.dialog import MDDialog
 from kivymd.uix.button import MDFlatButton, MDRaisedButton, MDFillRoundFlatButton
-from kivy.uix.recycleview import RecycleView
-from kivy.uix.boxlayout import BoxLayout
 from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.list import OneLineIconListItem
 from kivymd.uix.boxlayout import MDBoxLayout
-from kivy.metrics import dp
-from kivyoav.delayed import delayable
-from kivy.uix.screenmanager import Screen, SlideTransition
-from kivy.utils import get_color_from_hex
 from kivymd.uix.behaviors import HoverBehavior
-from kivymd.theming import ThemableBehavior
-from kivy.core.window import Window
 from kivymd.uix.behaviors.elevation import RectangularElevationBehavior
-from kivy.core.clipboard import Clipboard
-from kivy.animation import Animation
-from kivy.clock import Clock
+from kivymd.theming import ThemableBehavior
+from kivyoav.delayed import delayable
 
-from functools import partial
 import re
 import psutil
 from os import path
 from subprocess import Popen, TimeoutExpired
+from functools import partial
 
-from src.typedef.konstants import IBCTokens
-from src.typedef.konstants import HTTParams
-from src.typedef.win import CoinsList, WindowNames
-from src.conf.meile_config import MeileGuiConfig
-from src.cli.wallet import HandleWalletFunctions
-import src.main.main as Meile
-from src.adapters import HTTPRequests
+import main.main as Meile
+from typedef.konstants import IBCTokens, HTTParams, MeileColors
+from typedef.win import CoinsList, WindowNames
+from conf.meile_config import MeileGuiConfig
+from cli.wallet import HandleWalletFunctions
+from adapters import HTTPRequests
 
 class WalletInfoContent(BoxLayout):
     def __init__(self, seed_phrase, name, address, password, **kwargs):
@@ -72,7 +71,7 @@ class RatingContent(MDBoxLayout):
     
     def get_font(self):
         Config = MeileGuiConfig()
-        return Config.resource_path("../fonts/mplus-2c-bold.ttf")
+        return Config.resource_path(MeileColors.FONT_FACE)
     
     def SubmitRating(self, rating, node_address):
         UUID = Meile.app.root.get_screen(WindowNames.PRELOAD).UUID
@@ -97,11 +96,10 @@ class RatingContent(MDBoxLayout):
     
 
 class SubscribeContent(BoxLayout):
-    
-    
     price_text = StringProperty()
     moniker = StringProperty()
     naddress = StringProperty()
+    coin_price = "0.00"
     
     menu = None
     def __init__ (self, price, moniker, naddress):
@@ -110,7 +108,7 @@ class SubscribeContent(BoxLayout):
         self.price_text = price
         self.moniker = moniker
         self.naddress = naddress
-        self.parse_coin_deposit("udvpn")
+        self.parse_coin_deposit("dvpn")
         
         menu_items = [
             {
@@ -123,7 +121,7 @@ class SubscribeContent(BoxLayout):
         ]
         self.menu = MDDropdownMenu(
             caller=self.ids.drop_item,
-            background_color=get_color_from_hex("#121212"),
+            background_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
             items=menu_items,
             position="center",
             width_mult=4,
@@ -134,7 +132,7 @@ class SubscribeContent(BoxLayout):
 
     def get_font(self):
         Config = MeileGuiConfig()
-        return Config.resource_path("../fonts/mplus-2c-bold.ttf")
+        return Config.resource_path(MeileColors.FONT_FACE)
     
     def set_item(self, text_item):
         self.ids.drop_item.set_item(text_item)
@@ -144,12 +142,12 @@ class SubscribeContent(BoxLayout):
     def parse_coin_deposit(self, mu_coin):
         try:
             if self.price_text:
-                mu_coin_amt = re.findall(r'[0-9]+' + mu_coin, self.price_text)[0]
+                mu_coin_amt = re.findall(r'[0-9]+.[0-9]+' + mu_coin, self.price_text)[0]
                 if mu_coin_amt:
-                    self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(int(mu_coin_amt.split(mu_coin)[0])/1000000)),3)) + self.ids.drop_item.current_item.replace('u','') 
+                    self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(mu_coin_amt.split(mu_coin)[0])),4)) + self.ids.drop_item.current_item  
                     return self.ids.deposit.text
                 else:
-                    self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(int(self.ids.price.text.split("udvpn")[0])/1000000)),3)) + self.ids.drop_item.current_item.replace('u','')
+                    self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(self.ids.price.text.split("dvpn")[0])),4)) + self.ids.drop_item.current_item
                     return self.ids.deposit.text
             else:
                 self.ids.deposit.text = "0.0dvpn"
@@ -158,7 +156,7 @@ class SubscribeContent(BoxLayout):
             print(str(e))
             try: 
                 if self.ids.price.text:
-                    self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(int(self.ids.price.text.split("udvpn")[0])/1000000)),3)) + CoinsList.ibc_mu_coins[0].replace('u','')
+                    self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(self.ids.price.text.split("dvpn")[0])),4)) + CoinsList.ibc_mu_coins[0]
                     return self.ids.deposit.text
                 else:
                     self.ids.deposit.text = "0.0dvpn"
@@ -167,10 +165,41 @@ class SubscribeContent(BoxLayout):
                 print(str(e))
                 self.ids.deposit.text = "0.0dvpn"
                 return self.ids.deposit.text
-        
+    
        
     def return_deposit_text(self):
         return (self.ids.deposit.text, self.naddress, self.moniker)
+    
+    # Should be async
+    def get_usd(self):
+        depost_ret = self.return_deposit_text()
+        amt = re.findall(r"[0-9]+.[0-9]+",depost_ret[0])[0]
+        coin = self.ids.drop_item.current_item
+
+        Request = HTTPRequests.MakeRequest()
+        http = Request.hadapter()
+        if coin == "dec":
+            URL = "https://ascendex.com/api/pro/v1/spot/ticker?symbol=DEC/USDT"
+            try: 
+                r = http.get(URL)
+                print(r.json())
+                self.coin_price = r.json()['data']['high']
+            except:
+                self.coin_price = 0.0
+        else:
+            URL = "https://api.coinstats.app/public/v1/tickers?exchange=KuCoin&pair=%s-USDT" % coin.upper()
+            try: 
+                r = http.get(URL)
+                print(r.json())
+                self.coin_price = r.json()['tickers'][0]['price']
+            except:
+                self.coin_price = 0.0
+
+        floatprice = float(round(float(self.coin_price) * float(amt),3))
+        self.ids.usd_price.text = '$' + str(format(floatprice, '.3f'))
+
+        return True
+    
     
 class ProcessingSubDialog(BoxLayout):
     moniker = StringProperty()
@@ -185,7 +214,7 @@ class ProcessingSubDialog(BoxLayout):
         
     def get_font(self):
         Config = MeileGuiConfig()
-        return Config.resource_path("../fonts/mplus-2c-bold.ttf")
+        return Config.resource_path(MeileColors.FONT_FACE)
     
   
     
@@ -194,6 +223,9 @@ class IconListItem(OneLineIconListItem):
 
 
 class NodeRV(RecycleView):    
+    pass
+
+class NodeRV2(RecycleView):    
     pass
 
 
@@ -215,14 +247,14 @@ class RecycleViewRow(MDCard,RectangularElevationBehavior, ThemableBehavior, Hove
     
     def get_font(self):
         Config = MeileGuiConfig()
-        return Config.resource_path("../fonts/mplus-2c-bold.ttf")
+        return Config.resource_path(MeileColors.FONT_FACE)
     
     def on_enter(self, *args):
         self.md_bg_color = get_color_from_hex("#200c3a")
         Window.set_system_cursor('hand')
         
     def on_leave(self, *args):
-        self.md_bg_color = get_color_from_hex("#121212")
+        self.md_bg_color = get_color_from_hex(MeileColors.DIALOG_BG_COLOR)
         Window.set_system_cursor('arrow')
         
     def get_city_of_node(self, naddress):   
@@ -251,7 +283,7 @@ class RecycleViewRow(MDCard,RectangularElevationBehavior, ThemableBehavior, Hove
 
         if not self.dialog:
             self.dialog = MDDialog(
-                md_bg_color=get_color_from_hex("#121212"),
+                md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
                 text='''
 City: %s
 Connected Peers:  %s  
@@ -277,7 +309,7 @@ Node Version: %s
                     title="Node:",
                     type="custom",
                     content_cls=subscribe_dialog,
-                    md_bg_color=get_color_from_hex("#121212"),
+                    md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
                     buttons=[
                         MDFlatButton(
                             text="CANCEL",
@@ -306,7 +338,7 @@ Node Version: %s
                 title="Subscribing...",
                 type="custom",
                 content_cls=spdialog,
-                md_bg_color=get_color_from_hex("#121212"),
+                md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
             )
         self.dialog.open()
         yield 0.6
@@ -320,7 +352,7 @@ Node Version: %s
             self.dialog.dismiss()
             self.dialog = MDDialog(
                 title="Successful!",
-                md_bg_color=get_color_from_hex("#121212"),
+                md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
                 buttons=[
                         MDFlatButton(
                             text="OK",
@@ -334,7 +366,7 @@ Node Version: %s
             self.dialog.dismiss()
             self.dialog = MDDialog(
             title="Error: %s" % "No wallet found!" if returncode[1] == 1337  else returncode[1],
-            md_bg_color=get_color_from_hex("#121212"),
+            md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
             buttons=[
                     MDFlatButton(
                         text="OK",
@@ -383,8 +415,6 @@ Node Version: %s
         Meile.app.root.current = WindowNames.MAIN_WINDOW
         mw.SubResult = None
         
-        #Change this to switch_tab by ids
-        mw.on_tab_switch(None,None,None,"Subscriptions")
  
     def closeDialog(self, inst):
         try:
@@ -403,7 +433,7 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
     
     def get_font(self):
         Config = MeileGuiConfig()
-        return Config.resource_path("../fonts/mplus-2c-bold.ttf")
+        return Config.resource_path(MeileColors.FONT_FACE)
         
     def get_data_used(self, allocated, consumed, node_address):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
@@ -453,7 +483,7 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
         
     def add_loading_popup(self, title_text):
         self.dialog = None
-        self.dialog = MDDialog(title=title_text,md_bg_color=get_color_from_hex("#121212"))
+        self.dialog = MDDialog(title=title_text,md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR))
         self.dialog.open()
         
     def remove_loading_widget(self):
@@ -533,7 +563,7 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
                 self.remove_loading_widget()
                 self.dialog = MDDialog(
                     title="Connected!",
-                    md_bg_color=get_color_from_hex("#121212"),
+                    md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
                     buttons=[
                             MDFlatButton(
                                 text="OK",
@@ -547,7 +577,7 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
                 self.remove_loading_widget()
                 self.dialog = MDDialog(
                     title="Something went wrong. Not connected",
-                    md_bg_color=get_color_from_hex("#121212"),
+                    md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
                     buttons=[
                             MDFlatButton(
                                 text="OK",
@@ -692,7 +722,7 @@ class MDMapCountryButton(MDFillRoundFlatButton,ThemableBehavior, HoverBehavior):
         '''The method will be called when the mouse cursor goes beyond
         the borders of the current widget.'''
 
-        self.md_bg_color = get_color_from_hex("#121212")
+        self.md_bg_color = get_color_from_hex(MeileColors.DIALOG_BG_COLOR)
         Window.set_system_cursor('arrow')
         
     

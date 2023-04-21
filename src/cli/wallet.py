@@ -8,19 +8,17 @@ import subprocess
 from subprocess import PIPE
 import psutil
 
-from src.conf.meile_config import MeileGuiConfig
-from src.typedef.konstants import IBCTokens 
-from src.typedef.konstants import ConfParams 
-from src.typedef.konstants import HTTParams 
-from src.adapters import HTTPRequests
-from src.cli.v2ray import V2RayHandler
+from conf.meile_config import MeileGuiConfig
+from typedef.konstants import IBCTokens, ConfParams, HTTParams 
+from adapters import HTTPRequests
+from cli.v2ray import V2RayHandler
 
 
 MeileConfig = MeileGuiConfig()
-sentinelcli = MeileConfig.resource_path("../bin/sentinelcli")
-sentinelbash = MeileConfig.resource_path("../bin/sentinel.sh")
-sentinel_connect_bash = MeileConfig.resource_path("../bin/sentinel-connect.sh")
-v2ray_tun2routes_connect_bash = MeileConfig.resource_path("../bin/tun2routes.sh")
+sentinelcli = MeileConfig.resource_path("bin/sentinelcli")
+sentinelbash = MeileConfig.resource_path("bin/sentinel.sh")
+sentinel_connect_bash = MeileConfig.resource_path("bin/sentinel-connect.sh")
+v2ray_tun2routes_connect_bash = MeileConfig.resource_path("bin/tun2routes.sh")
 #wgbash = MeileConfig.resource_path("../bin/wg.sh")
 
 class HandleWalletFunctions():
@@ -190,14 +188,6 @@ class HandleWalletFunctions():
             V2Ray = V2RayHandler(v2ray_tun2routes_connect_bash + " up")
             V2Ray.start_daemon() 
             sleep(25)
-            '''
-            Tun2Socks = Tun2socksHandler()
-            Tun2Socks.start_daemon()
-            connectBASH = tun2routes_connect_bash + " up"
-            proc2 = subprocess.Popen(connectBASH, shell=True)
-            proc2.wait(timeout=30)
-            proc_out,proc_err = proc2.communicate()
-            '''
             
             if psutil.net_if_addrs().get("utun123"):
                 v2raydict = {"v2ray_pid" : V2Ray.v2ray_pid, "result": True}
@@ -216,127 +206,6 @@ class HandleWalletFunctions():
                 print(v2raydict)
                 return v2raydict
             
-            
-        
-        '''
-        proc = subprocess.Popen(connCMD, 
-                        stdin=subprocess.PIPE, 
-                        stdout=subprocess.PIPE, 
-                        stderr=subprocess.PIPE)
-        
-        proc.stdin.write(b'%b + \n' % bytes(PASSWORD, 'utf-8'))
-        proc.stdin.flush()
-        proc.stdin.write(b'%b + \n' % bytes(osx_password, 'utf-8'))
-        proc.stdin.flush()
-        
-        stdout,stderr = proc.communicate()
-        print(stdout)
-        print(stderr)
-
-        
-        
-        ofile =  open(CONNECTIONINFO, "wb")    
-
-
-        child = pexpect.spawn(connCMD)
-        child.logfile = ofile
-
-        try:
-            child.expect(".*")
-            child.sendline(PASSWORD)
-            child.expect(".*")
-            index = child.expect(["Error*", "wg-quick*", pexpect.EOF])
-            if index == 0:
-                ofile.flush()
-                ofile.close()
-                return False
-            elif index == 1:
-                child.sendline(osx_password)
-                child.expect(pexpect.EOF)
-            else:
-                print('Im larry')
-        except Exception as e:
-            print(str(e))
-            ofile.flush()
-            ofile.close()
-            return False
-        
-        ofile.flush()
-        ofile.close()
-        
-        
-        from python_wireguard import Client, ServerConnection, Key
-        
-        wg = wgconfig.WGConfig(path.join(BASEDIR, 'wg99.conf'))
-        wg.read_file()
-        
-        private_key = wg.interface['PrivateKey']
-        peers_keys = wg.peers.keys()
-        for k in peers_keys:
-            public_key = k
-            
-            
-        endpoint = wg.peers[public_key]['Endpoint']
-        srv_ip,srv_port = endpoint.split(':')    
-        local_ip = wg.interface['Address']
-
-        
-        client = Client('wg-client', Key(private_key), local_ip)
-        
-        srv_key = Key(public_key)
-        
-        
-        
-        server_conn = ServerConnection(srv_key, srv_ip, srv_port)
-        
-        client.set_server(server_conn)
-        client.connect()
-        
-        
-        
-        wg = "wg-quick up %s" % path.join(BASEDIR, "wg99.conf")
-        wgCMD = "%s %s" % (sentinelbash, wg)
-        #wgCMD = ['wg-quick', 'up', path.join(BASEDIR, "wg99.conf")]
-        #wgCMD = [sentinelbash,  'up', path.join(BASEDIR, "wg99.conf")]
-        #proc = subprocess.Popen(wgCMD, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-        
-        #stdout,stderr = proc.communicate()
-        
-        #print(stdout)
-        #print(stderr)
-        
-        
-        
-        ofile = open(WIREGUARDINFO, "wb")
-        try:
-            
-            child = pexpect.spawn(wgCMD)
-            child.logfile = ofile
-            index = child.expect(["Error*", "wg-quick*", pexpect.EOF])
-            if index == 0:
-                ofile.flush()
-                ofile.close()
-                return False
-            elif index == 1:
-                child.sendline(osx_password)
-                child.expect(pexpect.EOF)
-            else:
-                pass
-        except Exception as e:
-            print(str(e))
-            ofile.flush()
-            ofile.close()
-            return False 
-            
-        ofile.flush()
-        ofile.close()
-        
-        if path.isfile(path.join(BASEDIR, "status.json")):
-            return True
-        else:
-            return False
-        '''    
-
     def get_balance(self, address):
         Request = HTTPRequests.MakeRequest()
         http = Request.hadapter()

@@ -1,7 +1,7 @@
-from src.ui.interfaces import WindowManager
-from src.ui.screens import MainWindow,  PreLoadWindow, WalletRestore
-from src.typedef.win import WindowNames
-from src.conf.meile_config import MeileGuiConfig
+from ui.interfaces import WindowManager
+from ui.screens import MainWindow,  PreLoadWindow, WalletRestore
+from typedef.win import WindowNames
+from conf.meile_config import MeileGuiConfig
 
 from kivy.lang import Builder
 from kivymd.app import MDApp
@@ -9,7 +9,7 @@ from kivymd.theming import ThemeManager
 from kivy.utils import get_color_from_hex
 from kivy.config import Config
 MeileConfig = MeileGuiConfig()
-Config.set('kivy','window_icon',MeileConfig.resource_path("../imgs/icon.png"))
+Config.set('kivy','window_icon',MeileConfig.resource_path("imgs/icon.png"))
         
 #import tkinter as tk
 
@@ -18,7 +18,7 @@ from AppKit import NSScreen
 import threading
 class MyMainApp(MDApp):
     title = "Meile dVPN"
-    icon  = MeileConfig.resource_path("../imgs/icon.png")
+    icon  = MeileConfig.resource_path("imgs/icon.png")
     manager = None
     def __init__(self,**kwargs):
         super(MyMainApp,self).__init__(**kwargs)
@@ -40,7 +40,7 @@ class MyMainApp(MDApp):
           
     def build(self):
 
-        kv = Builder.load_file(MeileConfig.resource_path("../kivy/meile.kv"))
+        kv = Builder.load_file(MeileConfig.resource_path("kv/meile.kv"))
         
         self.manager = WindowManager()
         theme = ThemeManager()

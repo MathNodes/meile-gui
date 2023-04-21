@@ -25,16 +25,17 @@ import requests
 from requests.auth import HTTPBasicAuth
 from pycoingecko import CoinGeckoAPI 
 
-from src.fiat.stripe_pay.charge import HotwalletFuncs as HandleWalletFunctions
-from src.fiat.stripe_pay.charge import StripePayments
-from src.fiat.stripe_pay import scrtsxx
+from fiat.stripe_pay.charge import HotwalletFuncs as HandleWalletFunctions
+from fiat.stripe_pay.charge import StripePayments
+from fiat.stripe_pay import scrtsxx
 
-from src.typedef.win import WindowNames
-from src.ui.interfaces import TXContent
+from typedef.win import WindowNames
+from typedef.konstants import MeileColors
+from ui.interfaces import TXContent
 from stripe.error import CardError
-from src.conf.meile_config import MeileGuiConfig
-import src.main.main as Meile
-from src.adapters import HTTPRequests
+from conf.meile_config import MeileGuiConfig
+import main.main as Meile
+from adapters import HTTPRequests
 
 
 HotWalletAddress = scrtsxx.WALLET_ADDRESS
@@ -187,11 +188,11 @@ class FiatInterface(Screen):
             self.dialog.dismiss()
             self.dialog = None
         if not button:
-            self.dialog = MDDialog(title=status,md_bg_color=get_color_from_hex("#121212"))
+            self.dialog = MDDialog(title=status,md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR))
         elif button and not button2:
             self.dialog = MDDialog(
                                 title=status,
-                                md_bg_color=get_color_from_hex("#121212"),
+                                md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
                                 
                                 buttons=[
                                 MDRaisedButton(
@@ -204,7 +205,7 @@ class FiatInterface(Screen):
         else:
             self.dialog = MDDialog(
                                 title=status,
-                                md_bg_color=get_color_from_hex("#121212"),
+                                md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
                                 
                                 buttons=[
                                 MDFlatButton(
@@ -293,7 +294,7 @@ class FiatInterface(Screen):
                     title="STATUS: ",
                     type="custom",
                     content_cls=tx_dialog,
-                    md_bg_color=get_color_from_hex("#121212"),
+                    md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
                     buttons=[
                         MDRaisedButton(
                             text="OKAY",

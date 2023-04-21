@@ -25,7 +25,7 @@ class MeileGuiConfig():
         return path.isfile(path.join(self.BASEBINDIR, 'wg-quick'))
         
     def check_wireguard_install(self):
-        self.copy_and_overwrite(self.resource_path("../bin"), self.BASEBINDIR)
+        self.copy_and_overwrite(self.resource_path("bin/"), self.BASEBINDIR)
         if self.is_tool("wg-quick") is None:
             return False
         else:

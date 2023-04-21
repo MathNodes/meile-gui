@@ -1,4 +1,4 @@
-import src.awoc as awoc
+import awoc as awoc
 
 class OurWorld():
     our_world = awoc.AWOC()

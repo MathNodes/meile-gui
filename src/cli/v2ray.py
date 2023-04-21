@@ -1,9 +1,10 @@
 from subprocess import Popen
-from src.conf.meile_config import MeileGuiConfig
 import multiprocessing
 from multiprocessing import Process
 from time import sleep
 import psutil
+
+from conf.meile_config import MeileGuiConfig
 
 class V2RayHandler():
     v2ray_script = None

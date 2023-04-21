@@ -1,4 +1,5 @@
 ICANHAZURL = "https://icanhazip.com"
+ICANHAZDNS = "icanhazip.com"
 
 class WindowNames():
     WALLET_RESTORE = "walletrestore"
@@ -8,12 +9,13 @@ class WindowNames():
     WALLET         = "wallet"
     HELP           = "helpscreen"
     FIAT           = "fiatgateway"
+    SUBSCRIPTIONS  = "subscriptions"
 
 
     
     
 class CoinsList():
     SATOSHI = 1000000
-    ibc_mu_coins = ["udvpn", "uscrt", "uosmo", "uatom", "udec"]
+    ibc_mu_coins = ["dvpn", "scrt", "osmo", "atom", "dec"]
     ibc_coins  = { "dvpn" : "udvpn", "scrt" : "uscrt", "osmo": "uosmo", "atom" : "uatom", "dec" : "udec"}
     coins = ["atom", "dec", "dvpn", "osmo", "scrt"]
