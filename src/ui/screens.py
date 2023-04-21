@@ -939,11 +939,14 @@ class SubscriptionScreen(Screen):
             return
         
     def GetSubscriptions(self):
+        
+        mw = self.manager.get_screen(WindowNames.MAIN_WINDOW)
+        
         try: 
             thread = ThreadWithResult(target=self.NodeTree.get_subscriptions, args=(self.address,))
             thread.start()
             thread.join()    
-            self.SubResult = thread.result
+            mw.SubResult = thread.result
         except Exception as e:
             print(str(e))
             return None
@@ -952,11 +955,12 @@ class SubscriptionScreen(Screen):
     def subs_callback(self, dt):
         floc = "../imgs/"
         yield 0.314
+        mw = self.manager.get_screen(WindowNames.MAIN_WINDOW)
         
-        if not self.SubResult:
+        if not mw.SubResult:
             self.GetSubscriptions()
         
-        for sub in self.SubResult:
+        for sub in mw.SubResult:
             if sub[NodeKeys.FinalSubsKeys[5]] == "Czechia":
                 sub[NodeKeys.FinalSubsKeys[5]] = "Czech Republic"
             try: 
@@ -1063,6 +1067,7 @@ class SubscriptionScreen(Screen):
         self.dialog.open()
         
     def set_previous_screen(self):
+        Meile.app.root.remove_widget(self)
         Meile.app.root.transistion = SlideTransition(direction="right")
         Meile.app.root.current = WindowNames.MAIN_WINDOW
         

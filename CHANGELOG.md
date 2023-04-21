@@ -1,5 +1,10 @@
 CHANGELOG
 ========================
+# v0.13.2.1 (21/04/2023)
+* FIX: Not loading new subs. Redraw subs screen
+* FIX: Crash on New subscription trying to switch to (null) subs tab.
+* UPDATE: Use MainWindow.SubResult
+
 # v0.13.2.0 (20/04/2023)
 * FIX: setup.py to include pin marker
 * ADD: DNSRequests Adapter

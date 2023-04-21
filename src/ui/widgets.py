@@ -426,9 +426,7 @@ Node Version: %s
         Meile.app.root.transition = SlideTransition(direction = "down")
         Meile.app.root.current = WindowNames.MAIN_WINDOW
         mw.SubResult = None
-        #Change this to switch_tab by ids
-        mw.ids.android_tabs.switch_tab("Subscriptions")
-    
+        
     def closeDialog(self, inst):
         try:
             self.dialog.dismiss()
