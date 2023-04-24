@@ -202,6 +202,7 @@ class PreLoadWindow(Screen):
     def RewriteBIN(self):
         MeileConfig = MeileGuiConfig()
         MeileConfig.rewrite_bin()
+        
     def CreateWarpConfig(self):
         MeileConfig = MeileGuiConfig()
         CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
@@ -544,7 +545,7 @@ class MainWindow(Screen):
         self.old_ip = self.ip
         try: 
             # First check DNS can resolv
-            resolver = DNSRequests.MakeDNSRequest(domain=ICANHAZDNS, timeout=1, lifetime=1.2)
+            resolver = DNSRequests.MakeDNSRequest(domain=ICANHAZDNS, timeout=1.7, lifetime=2)
             icanhazip = resolver.DNSRequest()
             if icanhazip:
                 print("%s:%s" % (ICANHAZDNS, icanhazip))

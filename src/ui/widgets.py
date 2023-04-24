@@ -26,6 +26,7 @@ from functools import partial
 from urllib3.exceptions import InsecureRequestWarning
 from os import path
 from subprocess import Popen, TimeoutExpired
+from time import sleep 
 
 import requests
 import re
@@ -642,6 +643,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
             pass 
         
     def init_GetConsumedWhileConnected(self, sConsumed):
+        sleep(3)
         try: 
             bytes_sent = round(float(float(psutil.net_io_counters(pernic=True)['wg99'].bytes_sent) / 1073741824),3)
             bytes_recvd = round(float(float(psutil.net_io_counters(pernic=True)['wg99'].bytes_recv) / 1073741824),3)
@@ -650,6 +652,10 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
         except KeyError:
             for iface in psutil.net_if_addrs().keys():
                 if "tun" in iface:
+                    IFACE = iface
+                    print(IFACE)
+                    break
+                elif "wg" in iface:
                     IFACE = iface
                     print(IFACE)
                     break
@@ -662,16 +668,6 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
                 print(str(e))
                 return {'sent': 0, 'rcvd' : 0}
         
-        '''
-        try: 
-            bytes_sent = round(float(float(psutil.net_io_counters(pernic=True)['wg99'].bytes_sent) / 1073741824),3)
-            bytes_recvd = round(float(float(psutil.net_io_counters(pernic=True)['wg99'].bytes_recv) / 1073741824),3)
-    
-            return {'sent' : bytes_sent, "rcvd" : bytes_recvd}
-        except Exception as e:
-            return {'sent' : 0, "rcvd" : 0}
-            
-        '''
     def GetConsumedWhileConnected(self, sConsumed, Bytes):
         try: 
             bytes_sent = round(float(float(float(psutil.net_io_counters(pernic=True)['wg99'].bytes_sent) / 1073741824) - Bytes['sent']),3) 
@@ -683,6 +679,10 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
                 if "tun" in iface:
                     IFACE = iface
                     break
+                elif "wg" in iface:
+                    IFACE = iface
+                    break
+                    
                 
             try: 
                 bytes_sent = round(float(float(float(psutil.net_io_counters(pernic=True)[IFACE].bytes_sent) / 1073741824) - Bytes['sent']),3) 

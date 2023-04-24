@@ -41,7 +41,6 @@ class NodeTreeData():
         
         k=1
         
-        
         for line in proc.stdout.readlines():
             line = str(line.decode('utf-8'))
             if k < 4:  
@@ -67,12 +66,12 @@ class NodeTreeData():
                     AllNodesInfo.append(dict(zip(NodeKeys.NodesInfoKeys, ninfos)))
         
         AllNodesInfoSorted = sorted(AllNodesInfo, key=lambda d: d[NodeKeys.NodesInfoKeys[4]])
-        
         self.NodeTree = self.CreateNodeTreeStructure()
         
         for d in AllNodesInfoSorted:
             for key in NodeKeys.NodesInfoKeys:
                 d[key] = d[key].lstrip().rstrip()
+                
             
             version = d[NodeKeys.NodesInfoKeys[10]].replace('.','')
             if version not in NodeKeys.NodeVersions:

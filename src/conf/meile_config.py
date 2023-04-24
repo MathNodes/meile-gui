@@ -22,11 +22,13 @@ class MeileGuiConfig():
     
     def process_exists(self, process_name):
         call = 'TASKLIST', '/FI', 'imagename eq %s' % process_name
-        # use buildin check_output right away
-        output = subprocess.check_output(call).decode()
-        # check in last line for process name
+        try:
+            output = subprocess.check_output(call).decode('windows-1252')
+        except:
+            print("Decoding error, reverting....")
+            output = subprocess.check_output(call).decode(errors='ignore')
+        
         last_line = output.strip().split('\r\n')[-1]
-        # because Fail message could be translated
         return last_line.lower().startswith(process_name.lower())
     
     def kill_process(self, process_name):
@@ -38,7 +40,7 @@ class MeileGuiConfig():
             if self.process_exists("WireGuard.exe"):
                 print("WireGuard is running!")
                 self.kill_process("WireGuard.exe")
-                sleep(5)
+                sleep(10)
                 if path.exists(to_path):
                     shutil.rmtree(to_path)
                 shutil.copytree(from_path, to_path)
@@ -47,7 +49,11 @@ class MeileGuiConfig():
                     shutil.rmtree(to_path)
                 shutil.copytree(from_path, to_path)
         except Exception as e:
+            print("Process name codec error... Defaulting....")
             print(str(e))
+            if path.exists(to_path):
+                shutil.rmtree(to_path)
+            shutil.copytree(from_path, to_path)
     def rewrite_bin(self):
         self.update_bin(self.resource_path("bin"), self.BASEBINDIR)
         
