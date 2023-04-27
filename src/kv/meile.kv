@@ -168,6 +168,7 @@ WindowManager:
             NodeRV:
                 md_bg_color: get_color_from_hex("#121212")    
                 id: rv
+                size_hint: (.3,1)
          
         MDBottomNavigation:
             size_hint_y: .1
@@ -180,7 +181,14 @@ WindowManager:
                 text: "Wallet"
                 icon: "wallet"
                 on_tab_release: root.wallet_dialog()
-                on_tab_press: 
+                on_tab_press:
+                
+            MDBottomNavigationItem:
+                name: "subscriptions"
+                text: "Subscriptions"
+                icon: "book-open-variant"
+                on_tab_release: root.switch_to_sub_window()
+                 
             MDBottomNavigationItem:
                 name: "Refresh"
                 text: "Refresh"
@@ -200,7 +208,7 @@ WindowManager:
     name: "nodes"
     MDBoxLayout:
         orientation: "vertical"
-        NodeRV:
+        NodeRV2:
             id: rv
         ActionBar:
             background_normal: ''
@@ -212,7 +220,23 @@ WindowManager:
                     title: 'Go Back'
                     with_previous: True
                     on_release: root.set_previous_screen() 
-    
+<SubscriptionScreen>
+    name: "subscriptions"
+    MDBoxLayout:
+        orientation: "vertical"
+        NodeRV2:
+            id: rv
+        ActionBar:
+            background_normal: ''
+            background_down: ''
+            background_color: get_color_from_hex("#121212")
+            ActionView:
+                ActionPrevious:
+                    icon: "arrow-left-circle"
+                    title: 'Go Back'
+                    with_previous: True
+                    on_release: root.set_previous_screen()
+                    
 <WalletScreen>:
     name: "wallet"
     wallet_name: ""
@@ -406,15 +430,40 @@ WindowManager:
     
 <NodeRV>:
     key_viewclass: "viewclass"
+    bar_width: dp(8)
+    scroll_type: ["bars", "content"]
+    canvas.before:
+        Color:
+            rgba: get_color_from_hex("#212021")
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    RecycleBoxLayout:
+        md_bg_color: get_color_from_hex("#121212")
+        #cols: 1
+        default_size: dp(75), dp(50)
+        default_size_hint: 1, None
+        size_hint_y: None
+        height: self.minimum_height
+        #orientation: 'lr-tb' 
+        orientation: "vertical"
+        spacing: 2
+        #padding: 1,1,1,1
+
+<NodeRV2>: 
+    md_bg_color: get_color_from_hex("#121212")    
+    size_hint: (1,1)       
+    key_viewclass: "viewclass"
     bar_width: dp(12)
     scroll_type: ["bars", "content"]
     canvas.before:
         Color:
-            rgba: get_color_from_hex("#fccf62")
+            rgba: get_color_from_hex("#212021")
         Rectangle:
             pos: self.pos
             size: self.size
     RecycleGridLayout:
+        id: grid
         md_bg_color: get_color_from_hex("#121212")
         cols:1
         default_size: dp(200), dp(150)
@@ -422,8 +471,8 @@ WindowManager:
         size_hint_y: None
         height: self.minimum_height
         orientation: 'lr-tb' 
-        spacing: 15
-        padding: 4,4,4,4
+        spacing: 5
+        padding: 1,1,1,1
         
         
 
@@ -450,50 +499,48 @@ WindowManager:
             
                        
 <RecycleViewCountryRow>:
-    size_hint_y: None
-    height: self.height
-    size: "180dp", "150dp"
+    size_hint_y: 1
+    size_hint_x: .7
+    #height: self.height
+    #size: "50dp", "50dp"
     type_swipe: "hand"
-    pos_hint: {"center_x": .5, "center_y": .5}
-    padding: 10,10
+    #pos_hint: {"center_x": .5, "center_y": .5}
+    padding: 1,1
     border_radius: 20
-    radius: [10]
+    #radius: [10]
     num_text: ""
     country_text: " "
     source_image: " "
     on_press: root.show_country_nodes(root.country_text)
     md_bg_color: get_color_from_hex("#121212")
-    MDGridLayout:
-        cols: 1
-        padding: 20,0,0,0
+    MDBoxLayout:
+        DisplayPic:
+            source: root.source_image
+            elevation: dp(3)
+            size_hint: None, None
+            size: dp(45), dp(45)
+            radius: dp(360)
+            pos_hint: {'center_x': .12, 'center_y': .5}
+            on_release: print("clicked")
         MDFloatLayout:
             MDLabel:
                 text: root.country_text
                 id: country
                 theme_text_color: "Custom"
                 font_style: "H6"
-                font_size: "24sp"
+                font_size: "16sp"
                 text_color: get_color_from_hex("#fcb711")
-                pos_hint: {"x" : 0, "top" : 1.3}
-                size_hint_x: None
-                width: "200dp"
+                pos_hint: {"x" : .125, "top" : 1.20}
+                #size_hint_x: None
             MDLabel:
                 text: root.num_text
                 id: country
                 theme_text_color: "Custom"
                 font_style: "H6"
-                font_size: "18sp"
+                font_size: "12sp"
                 text_color: get_color_from_hex("#ffffff")
-                pos_hint: {"x" : 0, "top" : 1.0}
-                size_hint_x: None
-                width: "200dp"
-            Image:
-                source: root.source_image
-                # {"x", "y", "top", "bottom", "left", "right" }
-                pos_hint: {"x" : .9, "top" : 1.175 }
-            
-    MDSeparator:
-        color: 1,1,1,1
+                pos_hint: {"x" : .125, "top" : .80}
+                #size_hint_x: None
                     
 <RecycleViewRow>:
     size_hint_y: None
@@ -516,6 +563,8 @@ WindowManager:
     node_score: " "
     votes: " "
     city: " "
+    icon: ""
+    tooltip: ""
     ripple_behavior: True
     on_press: root.subscribe_to_node(root.price_text, root.address_text, root.moniker_text)
     MDGridLayout:
@@ -540,6 +589,10 @@ WindowManager:
                 font_size: "10sp"
                 text_color: (0/255.0,141/255.0,155/255.0,255/255.0)
                 pos_hint: {"x" : 0, "top" : 1.1}
+            TooltipMDIconButton:
+                icon: root.icon
+                tooltip_text: root.tooltip
+                pos_hint: {"x" : .265, "top" : .80}
             MDLabel:
                 text: root.type_text
                 theme_text_color: "Custom"
@@ -1040,6 +1093,7 @@ WindowManager:
             max: 314
             value: 34
             on_value: root.parse_coin_deposit(root.ids.drop_item.current_item)
+            on_touch_up: root.get_usd()
             
         MDLabel:
             text: str(int(slider1.value)) + " GB" 
@@ -1047,7 +1101,7 @@ WindowManager:
             width: 75
     MDBoxLayout:
         orientation: "horizontal"
-        size_hint_x: .8
+        #size_hint_x: .8
         spacing: 20
         
         MDTextField:
@@ -1056,8 +1110,6 @@ WindowManager:
             mode: "fill"
             text: ""
             size_hint_y: .65
-            width: "50dp"
-            height: "30dp"
             readonly: True
         
         MDTextField:
@@ -1066,15 +1118,25 @@ WindowManager:
             mode: "fill"
             text: root.price_text
             size_hint_y: .65
-            width: "50dp"
-            height: "30dp"
             readonly: True
+            size_hint_x: .1
+            opacity: 0
             
         MDDropDownItem:
             id: drop_item
             pos_hint: {'center_x': .5, 'center_y': .5}
-            text: "udvpn"
+            text: "dvpn"
             on_release: root.menu.open()
+            
+        MDLabel:
+            id: usd_price
+            text: "$0.00"
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "14sp"
+            font_name: root.get_font()
+            text_color: get_color_from_hex("#fcb711")
+            
 <ProcessingSubDialog>
     orientation: "vertical"
     spacing: "1dp"
@@ -1535,3 +1597,5 @@ WindowManager:
    
 <ContinentMap>:
     zoom: 3
+
+<TooltipMDIconButton@MDIconButton+MDTooltip>

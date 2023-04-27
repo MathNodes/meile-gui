@@ -4,17 +4,13 @@ from os import path
 import re
 import requests
 from urllib3.exceptions import InsecureRequestWarning
-
-from conf.meile_config import MeileGuiConfig
+from subprocess import Popen, PIPE, STDOUT
 
 from treelib import  Tree
-from geography.continents import OurWorld
 
-from typedef.konstants import ConfParams 
-from typedef.konstants import HTTParams
-from typedef.konstants import IBCTokens
-from typedef.konstants import TextStrings
-from typedef.konstants import NodeKeys
+from geography.continents import OurWorld
+from conf.meile_config import MeileGuiConfig
+from typedef.konstants import ConfParams, HTTParams, IBCTokens, TextStrings, NodeKeys
 from adapters import HTTPRequests
 from cli.v2ray import V2RayHandler
 
@@ -24,9 +20,10 @@ sentinelcli = MeileConfig.resource_path("../bin/sentinelcli")
 v2ray_tun2routes_connect_bash = MeileConfig.resource_path("../bin/routes.sh")
 
 class NodeTreeData():
-    NodeTree = None
-    NodeScores = {}
+    NodeTree      = None
+    NodeScores    = {}
     NodeLocations = {}
+    NodeTypes     = {}
     
     def __init__(self, node_tree):
         if not node_tree:
@@ -78,10 +75,13 @@ class NodeTreeData():
         for d in AllNodesInfoSorted:
             for key in NodeKeys.NodesInfoKeys:
                 d[key] = d[key].lstrip().rstrip()
+            
             version = d[NodeKeys.NodesInfoKeys[10]].replace('.','')
             if version not in NodeKeys.NodeVersions:
                 continue
+            
             d[NodeKeys.NodesInfoKeys[3]] = self.return_denom(d[NodeKeys.NodesInfoKeys[3]])
+            d[NodeKeys.NodesInfoKeys[3]] = self.parse_coin_deposit(d[NodeKeys.NodesInfoKeys[3]])
             
             if  OurWorld.CZ in d[NodeKeys.NodesInfoKeys[4]]:
                 d[NodeKeys.NodesInfoKeys[4]] = OurWorld.CZ_FULL
@@ -99,6 +99,7 @@ class NodeTreeData():
         self.NodeTree.show()
         self.GetNodeScores()
         self.GetNodeLocations()
+        self.GetNodeTypes()
         
     def GetNodeScores(self):
         Request = HTTPRequests.MakeRequest()
@@ -123,11 +124,23 @@ class NodeTreeData():
             for nlist in data['data']:
                 k=0
                 self.NodeLocations[nlist[k]] = nlist[k+1]
-            #print(self.NodeLocations)
+            
         except Exception as e:
             print(str(e)) 
             
-             
+    def GetNodeTypes(self):
+        Request = HTTPRequests.MakeRequest()
+        http = Request.hadapter()
+        try:
+            r = http.get(HTTParams.SERVER_URL + HTTParams.NODE_TYPE_ENDPOINT)
+            data = r.json()
+
+            for nlist in data['data']:
+                k=0
+                self.NodeTypes[nlist[k]] = nlist[k+3]
+
+        except Exception as e:
+            print(str(e))
     
     def CreateNodeTreeStructure(self, **kwargs):
         NodeTreeBase = Tree()
@@ -147,8 +160,28 @@ class NodeTreeData():
                 if ibc in tokens:
                     tokens = tokens.replace(ibc, denom)
         
-    
         return tokens
+    
+    def parse_coin_deposit(self, tokens):
+        UnitAmounts = []
+        tokenString = ""
+        pattern = r"([0-9]+)"
+
+        if tokens.isspace() or not tokens:
+            return ' '
+
+        elif ',' in tokens:
+            for deposit in tokens.split(','):
+                amt = re.split(pattern,deposit)
+                UnitAmounts.append(amt)
+        else:
+            amt = re.split(pattern,tokens)
+            UnitAmounts.append(amt)
+
+        for u in UnitAmounts:
+            tokenString += str(round(float(float(u[1]) / IBCTokens.SATOSHI),4)) + str(IBCTokens.UNITTOKEN[u[2]]) + ','
+
+        return tokenString[0:-1]
     
     def get_subscriptions(self, ADDRESS):
         SubsNodesInfo = []

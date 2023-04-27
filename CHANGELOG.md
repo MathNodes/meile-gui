@@ -1,5 +1,23 @@
 CHANGELOG
 ========================
+# v1.6.3 (27/04/2023)
+* ADD: DNSRequests Adapter
+* NEW: 70% map, 30% country nodes cards
+* NEW: Map pin marker to yellow pin
+* NEW: Subscription nav bar icon
+* NEW: Subscription screen
+* NEW: Merge Windows commit e11f398 for faster DNS resolver checks on errors
+* NEW: Meile Cache API backed for Node Types (residential, datacenter, etc.)
+* NEW: MDIcon Tooltip for node type on node screen
+* NEW: Optimized App bundle for OS X (Apple Silicon). Larger download size, faster loading (less unpacking at launch)
+* CHANGE: Rounded circle flag in front of country label
+* FIX: setup.py to include pin marker
+* FIX: Not loading new subs. Redraw subs screen
+* FIX: Crash on New subscription trying to switch to (null) subs tab.
+* UPDATE: Use MainWindow.SubResult
+* UPDATE: Set DNS timeout to 2s. 
+* UPDATE: Load existing subs for faster processing
+
 # v1.5.1 (22/03/2023)
 * NEW: sentinelcli 0.3.0 
 * NEW: v2ray support added
