@@ -280,11 +280,23 @@ class HandleWalletFunctions():
             print(str(e))
             return False
         
+        
+        with open(ConfParams.CONNECTIONINFO, "r") as connection_file:
+            lines = connection_file.readlines()
+            
+            for l in lines:
+                if "Error" in l:
+                    return {"v2ray_pid" : None,  "result": False, "status" : l}
+                
+        connection_file.close()           
+        sleep(5)
+        
         if type == "WireGuard":
             if psutil.net_if_addrs().get("wg99"):
-                return {"v2ray_pid" : None,  "result": True}
+                return {"v2ray_pid" : None,  "result": True, "status" : "wg99"}
+            
             else:
-                return {"v2ray_pid" : None,  "result": False}
+                return {"v2ray_pid" : None,  "result": False, "status" : "Error bringing up wireguard interface"}
         else: 
             TUNIFACE = False
             V2Ray = V2RayHandler(v2ray_tun2routes_connect_bash + " up")
@@ -297,7 +309,7 @@ class HandleWalletFunctions():
                     break
                 
             if TUNIFACE:
-                v2raydict = {"v2ray_pid" : V2Ray.v2ray_pid, "result": True}
+                v2raydict = {"v2ray_pid" : V2Ray.v2ray_pid, "result": True, "status" : TUNIFACE}
                 print(v2raydict) 
                 return v2raydict
             else:
@@ -309,20 +321,10 @@ class HandleWalletFunctions():
                 except Exception as e: 
                     print(str(e))
                     
-                v2raydict = {"v2ray_pid" : V2Ray.v2ray_pid,  "result": False}
+                v2raydict = {"v2ray_pid" : V2Ray.v2ray_pid,  "result": False, "status": "Error connecting to v2ray node: %s" % TUNIFACE}
                 print(v2raydict)
                 return v2raydict
         
-        
-        
-        '''
-        if path.isfile(ConfParams.WIREGUARD_STATUS):
-            CONNECTED = True
-        else:
-            CONNECTED = False
-        chdir(MeileConfig.BASEDIR)
-        return CONNECTED
-        '''
     def get_balance(self, address):
         Request = HTTPRequests.MakeRequest()
         http = Request.hadapter()

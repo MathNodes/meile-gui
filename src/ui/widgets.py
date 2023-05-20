@@ -546,7 +546,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
             connected = HandleWalletFunctions.connect(HandleWalletFunctions, ID, naddress, type)
             mw.ConnectedDict = deepcopy(connected)
             
-            if connected:
+            if connected['result']:
                 
                 mw.CONNECTED                  = True
                 mw.NodeSwitch['moniker']      = moniker
@@ -581,7 +581,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
             else:
                 self.remove_loading_widget()
                 self.dialog = MDDialog(
-                    title="Something went wrong. Not connected",
+                    title="Something went wrong. Not connected: %s" % connected['status'],
                     md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
                     buttons=[
                             MDFlatButton(

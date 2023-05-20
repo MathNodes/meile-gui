@@ -545,7 +545,7 @@ class MainWindow(Screen):
         self.old_ip = self.ip
         try: 
             # First check DNS can resolv
-            resolver = DNSRequests.MakeDNSRequest(domain=ICANHAZDNS, timeout=1.7, lifetime=2)
+            resolver = DNSRequests.MakeDNSRequest(domain=ICANHAZDNS, timeout=2.7, lifetime=3)
             icanhazip = resolver.DNSRequest()
             if icanhazip:
                 print("%s:%s" % (ICANHAZDNS, icanhazip))
