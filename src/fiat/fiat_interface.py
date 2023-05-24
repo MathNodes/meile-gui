@@ -51,13 +51,18 @@ class FiatInterface(Screen):
     policy = False
     my_wallet_address = None
     DVPNOptions = [1000,2000,5000,10000]
+    DECOptions  = [1000,2000,3000,5000]
+    SCRTOptions = [5,10,15,30]
+    TokenOptions = ['dvpn', 'dec', 'scrt']
+    CoinOptions = {'dvpn' : DVPNOptions, 'dec' : DECOptions, 'scrt' : SCRTOptions}
+    CoinGeckoAPI = {'scrt' : 'secret', 'dvpn' : 'sentinel', 'dec' : 'decentr'}
     idvpn = 0
     CONFIG = None
     clock = None
+    SelectedCoin = 'dvpn'
     def __init__(self, **kwargs):
         super(FiatInterface, self).__init__()
-        self.clock = Clock.create_trigger(self.set_dvpn_price, 20)
-        self.clock()
+        
         menu_items = [
             {
                 "viewclass": "OneLineListItem",
@@ -79,7 +84,7 @@ class FiatInterface(Screen):
                 "text": f"{i}",
                 "height": dp(56),
                 "on_release": lambda x=f"{i}": self.set_year(x),
-            } for i in range(2022,2035)
+            } for i in range(2023,2035)
         ]
         self.menu_year = MDDropdownMenu(
             caller=self.ids.year_list,
@@ -93,7 +98,7 @@ class FiatInterface(Screen):
                 "viewclass": "OneLineListItem",
                 "text": f"{i}",
                 "height": dp(56),
-                "on_release": lambda x=f"{i}": self.set_dvpn_qty(x),
+                "on_release": lambda x=f"{i}": self.set_token_qty(x),
             } for i in self.DVPNOptions
         ]
         self.menu_dvpn_qty = MDDropdownMenu(
@@ -104,7 +109,24 @@ class FiatInterface(Screen):
         )
         self.menu_dvpn_qty.bind()
         
+        menu_items = [
+            {
+                "viewclass": "OneLineListItem",
+                "text": f"{i}",
+                "height": dp(56),
+                "on_release": lambda x=f"{i}": self.set_token(x),
+            } for i in self.TokenOptions
+        ]
+        self.menu_token = MDDropdownMenu(
+            caller=self.ids.dvpn_qty_menu,
+            items=menu_items,
+            position="center",
+            width_mult=4,
+        )
+        self.menu_token.bind()
         
+        self.clock = Clock.create_trigger(partial(self.set_token_price,self.SelectedCoin), 20)
+        self.clock()
     
     @delayable
     def pay(self):
@@ -115,7 +137,7 @@ class FiatInterface(Screen):
             self.ids.cvv_code_warning.opacity = 1
             
         else:
-            if self.get_dvpn_price() > 0:
+            if self.get_token_price(self.SelectedCoin) > 0:
                 if self.policy:
                     self.ProcessingDialog("Checking wallet for sufficient coins....", False,False)
                     yield 2
@@ -126,12 +148,11 @@ class FiatInterface(Screen):
                         self.ProcessingDialog("Error retrieving Wallet Pool Balance. Please try again later.", True, False)
                         print(str(e))
                         return
-                    if CoinDict:    
-                        if CoinDict['dvpn'] > self.DVPNOptions[self.idvpn]:
+                    if CoinDict:
+                        if CoinDict[self.SelectedCoin] > self.CoinOptions[self.SelectedCoinn][self.idvpn]:
                             self.ProcessingDialog("Coins are available. Continue with Charge?",True, True)
                         else:
-                            self.ProcessingDialog("There are not enough coins in our wallet pool. Please try your purchase again later. Your credit card has not be charged for this transaction."
-                                                  ,True, False)
+                            self.ProcessingDialog("There are not enough coins in our wallet pool. Please try your purchase again later. Your credit card has not be charged for this transaction.",True, False)
                     else: 
                         self.ProcessingDialog("Error retrieving Wallet Pool Balance. Please try again later.", True, False)
                         return
@@ -142,16 +163,22 @@ class FiatInterface(Screen):
             else:
                 self.ProcessingDialog("We could not get an accurate DVPN price at the moment. Please try your order again later.", True, False)
                 return 
-                
-        
-    def set_dvpn_price(self, dt):
-        self.ids.dvpn_price.text = "DVPN: $" + str(self.get_dvpn_price())
+
+    def set_token_price(self, token, dt):
+        self.ids.dvpn_price.text = "%s: $" % token.upper() + str(self.get_token_price(token))
          
-    def get_dvpn_price(self):
+    def get_token_price(self, token):
+        
+        cg_api_keyword = self.CoinGeckoAPI[self.TokenOptions[0]]
+        
+        for key,value in self.CoinGeckoAPI.items():
+            if token == key:
+                cg_api_keyword = value
+        
         try: 
             cg = CoinGeckoAPI()
-            cg_price = cg.get_price(ids=['sentinel'], vs_currencies='usd')
-            sentinel_price = cg_price['sentinel']['usd']
+            cg_price = cg.get_price(ids=[cg_api_keyword], vs_currencies='usd')
+            token_price = cg_price[cg_api_keyword]['usd']
         except Exception as e:
             print(str(e)) 
             print("Getting price from CryptoCompare...")
@@ -159,18 +186,22 @@ class FiatInterface(Screen):
             http = Request.hadapter()
             HEADERS = {'authorization' : "Apikey %s" % scrtsxx.CCOMPAREAPI}
             try: 
-                r = http.get(scrtsxx.CCOMPARE_API_URL, headers=HEADERS)
+                r = http.get(scrtsxx.CCOMPARE_API_URL % token.upper(), headers=HEADERS)
                 sentinel_price = r.json()['USD']
             except Exception as e:
                 print(str(e))
                 return 0
         
-        print("Current price of dvpn: %s" % sentinel_price)
+        print("Current price of %s: %s" % (token.upper(),token_price))
         try: 
+            self.clock.cancel()
+            self.clock = Clock.create_trigger(partial(self.set_token_price,token), 20)
             self.clock()
         except:
             pass 
-        return round(float(sentinel_price)*1.05, 8)
+        
+        self.ids.dvpn_price.text = "%s: $" % token.upper() + str(round(float(token_price)*1.05, 8))
+        return round(float(token_price)*1.05, 8)
         
         
     def get_my_wallet_address(self):
@@ -222,14 +253,15 @@ class FiatInterface(Screen):
                                                        self.month,
                                                        self.year,
                                                        self.ids.cvvnum.ids.cvvnum.text,
-                                                       self.my_wallet_address)
+                                                       self.my_wallet_address,
+                                                       self.menu_token.current_item)
                                 )]
                                 ,)
         self.dialog.open()
         
     
     @delayable
-    def ProcessPayment(self, ccnum, ccmonth, ccyear, cvv, wallet_address, inst):
+    def ProcessPayment(self, ccnum, ccmonth, ccyear, cvv, wallet_address, token, inst):
         self.ProcessingDialog("Creating Charge...", False, False)
         CHARGEFILE = open(path.join(self.CONFIG.BASEDIR, 'stripe_payment.log'), 'a+')
         DATEFORMAT = '%Y-%m-%d.%H:%M:%S'
@@ -240,13 +272,18 @@ class FiatInterface(Screen):
         #print("CVV: %s" % cvv)
         print("Wallet Address: %s" % wallet_address)
         try:
-            token = StripeInstance.generate_card_token(ccnum, ccmonth, ccyear, cvv)
+            stripe_token = StripeInstance.generate_card_token(ccnum, ccmonth, ccyear, cvv)
         except CardError as e:
             print(str(e))
             self.ProcessingDialog("Error Processing Payment. Your card has not been charged.", True, False)
             return
         try:
-            payment_status = StripeInstance.create_payment_charge(token, str(round((self.get_dvpn_price()*self.DVPNOptions[self.idvpn])+self.GetSurchargeAmount(),2)))
+            if token == self.TokenOptions[0]:
+                payment_status = StripeInstance.create_payment_charge(stripe_token, str(round((self.get_token_price(token)*self.DVPNOptions[self.idvpn])+self.GetSurchargeAmount(),2)))
+            elif token == self.TokenOptions[1]:
+                payment_status = StripeInstance.create_payment_charge(stripe_token, str(round((self.get_token_price(token)*self.DECOptions[self.idvpn])+self.GetSurchargeAmount(),2)))
+            else:
+                payment_status = StripeInstance.create_payment_charge(stripe_token, str(round((self.get_token_price(token)*self.SCRTOptions[self.idvpn])+self.GetSurchargeAmount(),2)))
         except Exception as e:
             print(str(e))
             self.ProcessingDialog("Error Processing Payment. Your card has not been charged.", True, False)
@@ -264,7 +301,7 @@ class FiatInterface(Screen):
         if payment_retrieval['paid']:
             self.ProcessingDialog("Charge Successful. Conducting transfer of tokens to wallet address\n%s...." % wallet_address , False, False)
             yield 2
-            STATUS = self.TransferCoins(payment_status['id'], wallet_address,self.DVPNOptions[self.idvpn])
+            STATUS = self.TransferCoins(payment_status['id'], wallet_address,token)
             try: 
                 CHARGEFILE.write(STATUS['message'] + ',' + STATUS['tx'] + '\n\n')
                 CHARGEFILE.close()
@@ -315,13 +352,24 @@ class FiatInterface(Screen):
             return float(1.50)
         
         else:
-            self.ids.surcharge.text = "Surcharge: $1.75"
-            return float(1.75)
+            self.ids.surcharge.text = "Surcharge: $2.00"
+            return float(2.00)
         
-    def TransferCoins(self, stripe_id, wallet_address, dvpn_qty):
+    def TransferCoins(self, stripe_id, wallet_address, token):
+        
+        if token == self.TokenOptions[0]:
+            coin_qty = self.DVPNOptions[self.idvpn]
+            
+        elif token == self.TokenOptions[1]:
+            coin_qty = self.DECOptions[self.idvpn]
+            
+        else:
+            coin_qty = self.SCRTOptions[self.idvpn]
+        
+        
         SERVER_ADDRESS = scrtsxx.SERVER_ADDRESS
         API            = scrtsxx.API_ENDPOINT
-        JSON           = {'id' : '%s' % stripe_id, 'address' : '%s' % wallet_address, 'qty' : '%s' % dvpn_qty }
+        JSON           = {'id' : stripe_id, 'address' : wallet_address, 'qty' : coin_qty, 'token' : token }
         STATUS         = {'message' : None}
         USERNAME       = scrtsxx.USERNAME
         PASSWORD       = scrtsxx.PASSWORD
@@ -337,21 +385,103 @@ class FiatInterface(Screen):
             print(str(e))
             STATUS['message'] = str(e)
             return STATUS
-
-    def set_dvpn_qty(self, text_item):
+    
+    def set_token(self, text_item):
+        self.ids.token.set_item(text_item)
+        self.menu_token.dismiss()
+        self.menu_dvpn_qty.clear_widgets()
+        self.SelectedCoin = text_item
+        
+        if text_item == self.TokenOptions[0]:
+            menu_items = [
+            {
+                "viewclass": "OneLineListItem",
+                "text": f"{i}",
+                "height": dp(56),
+                "on_release": lambda x=f"{i}": self.set_token_qty(x),
+            } for i in self.DVPNOptions
+            ]
+            self.menu_dvpn_qty = MDDropdownMenu(
+                caller=self.ids.dvpn_qty_menu,
+                items=menu_items,
+                position="center",
+                width_mult=4,
+            )
+            self.menu_dvpn_qty.bind()
+            self.set_token_qty(str(self.DVPNOptions[0]))
+        
+        elif text_item == self.TokenOptions[1]:
+            menu_items = [
+            {
+                "viewclass": "OneLineListItem",
+                "text": f"{i}",
+                "height": dp(56),
+                "on_release": lambda x=f"{i}": self.set_token_qty(x),
+            } for i in self.DECOptions
+            ]
+            self.menu_dvpn_qty = MDDropdownMenu(
+                caller=self.ids.dvpn_qty_menu,
+                items=menu_items,
+                position="center",
+                width_mult=4,
+            )
+            self.menu_dvpn_qty.bind()
+            self.ids.dvpn_qty_menu.text = str(self.DECOptions[0])
+            self.set_token_qty(str(self.DECOptions[0]))
+        else:
+            menu_items = [
+            {
+                "viewclass": "OneLineListItem",
+                "text": f"{i}",
+                "height": dp(56),
+                "on_release": lambda x=f"{i}": self.set_token_qty(x),
+            } for i in self.SCRTOptions
+            ]
+            self.menu_dvpn_qty = MDDropdownMenu(
+                caller=self.ids.dvpn_qty_menu,
+                items=menu_items,
+                position="center",
+                width_mult=4,
+            )
+            self.menu_dvpn_qty.bind()
+            self.ids.dvpn_qty_menu.text = str(self.SCRTOptions[0])
+            self.set_token_qty(str(self.SCRTOptions[0]))
+        self.set_token_price(self.SelectedCoin, None)
+            
+    def set_token_qty(self, text_item):
         self.ids.dvpn_qty_menu.set_item(text_item)
         self.menu_dvpn_qty.dismiss()
         
-        print("DVPN QTY: %s" % text_item)
-        self.idvpn = self.DVPNOptions.index(int(text_item))
+        token = self.SelectedCoin
+        
+        print("%s QTY: %s" % (token.upper(), text_item))
+        
+        if token == self.TokenOptions[0]:
+            self.idvpn = self.DVPNOptions.index(int(text_item))
+        elif token == self.TokenOptions[1]:
+            self.idvpn = self.DECOptions.index(int(text_item))
+        else:
+            self.idvpn = self.SCRTOptions.index(int(text_item))
+        
         print("Index: %s" % self.idvpn)
-        self.ids.charge_amount.text = "Total Charge: $" + str(round((self.get_dvpn_price()*self.get_dvpn_qty())+self.GetSurchargeAmount(),2))
-        self.ids.dvpn_qty.text = "QTY: " + str(self.DVPNOptions[self.idvpn]) + " dvpn"
         
+        self.ids.charge_amount.text = "Total Charge: $" + str(round((self.get_token_price(token)*self.get_token_qty(token))+self.GetSurchargeAmount(),2))
         
-    def get_dvpn_qty(self):
-        return self.DVPNOptions[self.idvpn]
-        
+        if token == self.TokenOptions[0]:
+            self.ids.coin_qty.text = "QTY: " + str(self.DVPNOptions[self.idvpn]) + " " + self.TokenOptions[0]
+        elif token == self.TokenOptions[1]:
+            self.ids.coin_qty.text = "QTY: " + str(self.DECOptions[self.idvpn]) + " " + self.TokenOptions[1]
+        else:
+            self.ids.coin_qty.text = "QTY: " + str(self.SCRTOptions[self.idvpn]) + " " + self.TokenOptions[2]
+    
+    def get_token_qty(self, token):
+        if token == self.TokenOptions[0]:
+            return self.DVPNOptions[self.idvpn]
+        elif token == self.TokenOptions[1]:
+            return self.DECOptions[self.idvpn]
+        else:
+            return self.SCRTOptions[self.idvpn]
+             
     def set_month(self, text_item):
         self.ids.month_list.set_item(text_item)
         self.menu_month.dismiss()
@@ -373,11 +503,11 @@ class FiatInterface(Screen):
             print(str(e))
             
     def terms_agreement(self, active):
-        print("Active is: %s" % active)
         if active:
             self.policy = True
         else:
             self.policy = False
+            
     def closeDialog(self, inst):
         if self.dialog:
             self.dialog.dismiss()
