@@ -20,8 +20,6 @@ from datetime import datetime
 from os import path
 import requests
 from requests.auth import HTTPBasicAuth
-from pycoingecko import CoinGeckoAPI 
-
 
 import stripe 
 from stripe.error import CardError
@@ -29,15 +27,15 @@ from fiat.stripe_pay.charge import HotwalletFuncs as HandleWalletFunctions
 import fiat.stripe_pay.charge as Charge
 from fiat.stripe_pay import scrtsxx
 
-
 from typedef.win import WindowNames
 from ui.interfaces import TXContent
 from conf.meile_config import MeileGuiConfig
 import main.main as Meile
 from adapters import HTTPRequests
-
+from coin_api.get_price import GetPriceAPI
 
 HotWalletAddress = scrtsxx.WALLET_ADDRESS
+
 class IconListItem(OneLineIconListItem):
     icon = StringProperty()
 
@@ -54,14 +52,22 @@ class FiatInterface(Screen):
     DECOptions  = [1000,2000,3000,5000]
     SCRTOptions = [5,10,15,30]
     TokenOptions = ['dvpn', 'dec', 'scrt']
+    SelectedCoin = TokenOptions[0]
     CoinOptions = {'dvpn' : DVPNOptions, 'dec' : DECOptions, 'scrt' : SCRTOptions}
-    CoinGeckoAPI = {'scrt' : 'secret', 'dvpn' : 'sentinel', 'dec' : 'decentr'}
+    #CoinGeckoAPI = {'scrt' : 'secret', 'dvpn' : 'sentinel', 'dec' : 'decentr'}
     idvpn = 0
     CONFIG = None
     clock = None
-    SelectedCoin = 'dvpn'
+    
     def __init__(self, **kwargs):
         super(FiatInterface, self).__init__()
+        
+        CoinOptions = self.DynamicCoinOptions()
+        self.DVPNOptions = CoinOptions['dvpn']
+        self.DECOptions  = CoinOptions['dec']
+        self.SCRTOptions = CoinOptions['scrt']
+        self.set_token_qty(str(self.DVPNOptions[0]))
+        
         
         menu_items = [
             {
@@ -149,7 +155,8 @@ class FiatInterface(Screen):
                         print(str(e))
                         return
                     if CoinDict:
-                        if CoinDict[self.SelectedCoin] > self.CoinOptions[self.SelectedCoinn][self.idvpn]:
+                        print(CoinDict[self.SelectedCoin])
+                        if CoinDict[self.SelectedCoin] > self.CoinOptions[self.SelectedCoin][self.idvpn]:
                             self.ProcessingDialog("Coins are available. Continue with Charge?",True, True)
                         else:
                             self.ProcessingDialog("There are not enough coins in our wallet pool. Please try your purchase again later. Your credit card has not be charged for this transaction.",True, False)
@@ -163,12 +170,61 @@ class FiatInterface(Screen):
             else:
                 self.ProcessingDialog("We could not get an accurate DVPN price at the moment. Please try your order again later.", True, False)
                 return 
+            
+    def DynamicCoinOptions(self):
+        MAX_SPEND = 25
+        coins = self.TokenOptions
+        CoinOptions = {coins[0] : None, coins[1] : None, coins[2] : None}
+        api = GetPriceAPI()
+        
+        Request = HTTPRequests.MakeRequest()
+        http = Request.hadapter()
+        
+        try:
+            r = http.get(scrtsxx.SERVER_ADDRESS + scrtsxx.MAX_SPEND_ENDPOINT)
+            MAX_SPEND = r.json()['max_spend']
+        except:
+            pass
+        
+        for c in coins:
+            response = api.get_usd(c)
+            
+            qty = int(MAX_SPEND/float(response['price']))
 
+            x = 1 / float(response['price'])
+            if x < 10:
+                factor = 1
+            elif 10 < x < 100:
+                factor = 10
+            elif 100 < x < 1000:
+                factor = 100
+            elif 1000 < x < 10000:
+                factor = 1000
+            else:
+                factor = 10000
+            
+            mod_qty = qty % factor
+            
+            qty = qty - mod_qty
+
+            Options = [int(qty/8), int(qty/4), int(qty/2), int(qty)]
+            
+            if c == coins[0]:
+                CoinOptions[coins[0]] = Options
+            elif c == coins[1]:
+                CoinOptions[coins[1]] = Options
+            else:
+                CoinOptions[coins[2]] = Options
+                
+        return CoinOptions
+        
+        
     def set_token_price(self, token, dt):
         self.ids.dvpn_price.text = "%s: $" % token.upper() + str(self.get_token_price(token))
          
     def get_token_price(self, token):
         
+        '''
         cg_api_keyword = self.CoinGeckoAPI[self.TokenOptions[0]]
         
         for key,value in self.CoinGeckoAPI.items():
@@ -179,6 +235,16 @@ class FiatInterface(Screen):
             cg = CoinGeckoAPI()
             cg_price = cg.get_price(ids=[cg_api_keyword], vs_currencies='usd')
             token_price = cg_price[cg_api_keyword]['usd']
+        '''
+        
+        api = GetPriceAPI()
+        
+        try:
+            response = api.get_usd(token)
+            if response['success']:
+                token_price = response['price']
+            else:
+                raise Exception("Error getting price from CoinStats or AscenDEX") 
         except Exception as e:
             print(str(e)) 
             print("Getting price from CryptoCompare...")
@@ -254,7 +320,7 @@ class FiatInterface(Screen):
                                                        self.year,
                                                        self.ids.cvvnum.ids.cvvnum.text,
                                                        self.my_wallet_address,
-                                                       self.menu_token.current_item)
+                                                       self.SelectedCoin)
                                 )]
                                 ,)
         self.dialog.open()
@@ -271,11 +337,18 @@ class FiatInterface(Screen):
         #print("Expiration: %s/%s" %(ccmonth, ccyear))
         #print("CVV: %s" % cvv)
         print("Wallet Address: %s" % wallet_address)
+        
+        if not ccmonth:
+            ccmonth = "01"
+            
+        if not ccyear:
+            ccyear = "23"
+        
         try:
             stripe_token = StripeInstance.generate_card_token(ccnum, ccmonth, ccyear, cvv)
         except CardError as e:
             print(str(e))
-            self.ProcessingDialog("Error Processing Payment. Your card has not been charged.", True, False)
+            self.ProcessingDialog("Error Processing Payment. Your card has not been charged: %s" % str(e), True, False)
             return
         try:
             if token == self.TokenOptions[0]:
@@ -286,7 +359,7 @@ class FiatInterface(Screen):
                 payment_status = StripeInstance.create_payment_charge(stripe_token, str(round((self.get_token_price(token)*self.SCRTOptions[self.idvpn])+self.GetSurchargeAmount(),2)))
         except Exception as e:
             print(str(e))
-            self.ProcessingDialog("Error Processing Payment. Your card has not been charged.", True, False)
+            self.ProcessingDialog("Error Processing Payment. Your card has not been charged: %s" % str(e), True, False)
             return 
         print("Getting payment for id: %s" % payment_status['id'])
         try:
@@ -320,7 +393,10 @@ class FiatInterface(Screen):
         tx_dialog = TXContent()
         try:
             tx_dialog.ids.message.text = STATUS['message']
-            tx_dialog.ids.txhash.text  = STATUS['tx']
+            if STATUS['tx']:
+                tx_dialog.ids.txhash.text  = STATUS['tx']
+            else:
+                tx_dialog.ids.txhash.text = 'None'
         except Exception as e:
             print(str(e))
             tx_dialog.ids.message.text = 'We apologize. Something went wrong. Please contact support@mathnodes.com for more information.'
@@ -450,7 +526,10 @@ class FiatInterface(Screen):
             
     def set_token_qty(self, text_item):
         self.ids.dvpn_qty_menu.set_item(text_item)
-        self.menu_dvpn_qty.dismiss()
+        try:
+            self.menu_dvpn_qty.dismiss()
+        except:
+            pass
         
         token = self.SelectedCoin
         
