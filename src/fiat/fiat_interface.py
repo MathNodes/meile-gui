@@ -192,13 +192,16 @@ class FiatInterface(Screen):
             qty = int(MAX_SPEND/float(response['price']))
 
             x = 1 / float(response['price'])
-            if x < 10:
+            
+            if x < 1:
+                factor = 0.1
+            elif 1 <= x < 10:
                 factor = 1
-            elif 10 < x < 100:
+            elif 10 <= x < 100:
                 factor = 10
-            elif 100 < x < 1000:
+            elif 100 <= x < 1000:
                 factor = 100
-            elif 1000 < x < 10000:
+            elif 1000 <= x < 10000:
                 factor = 1000
             else:
                 factor = 10000
