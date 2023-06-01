@@ -1,6 +1,108 @@
 CHANGELOG
 ========================
 
+# v1.7.0
+* NEW: Added DEC, SCRT token options to FIAT gateway
+* NEW: Dynamic Token QTYs based on market
+* NEW: GetCoinPriceAPI() Class for resolving coin prices
+* CHANGE: Remove CoinGecko API from FIAT gateway
+* CHANGE: (Windows) resized resolution to 1280x720
+* CHANGE: (Windows) modified DNS resolution timem to 4s
+
+# v1.6.3 (27/04/2023)
+* ADD: DNSRequests Adapter
+* NEW: 70% map, 30% country nodes cards
+* NEW: Map pin marker to yellow pin
+* NEW: Subscription nav bar icon
+* NEW: Subscription screen
+* NEW: Merge Windows commit e11f398 for faster DNS resolver checks on errors
+* NEW: Meile Cache API backed for Node Types (residential, datacenter, etc.)
+* NEW: MDIcon Tooltip for node type on node screen
+* NEW: Optimized App bundle for OS X (Apple Silicon). Larger download size, faster loading (less unpacking at launch)
+* CHANGE: Rounded circle flag in front of country label
+* FIX: setup.py to include pin marker
+* FIX: Not loading new subs. Redraw subs screen
+* FIX: Crash on New subscription trying to switch to (null) subs tab.
+* UPDATE: Use MainWindow.SubResult
+* UPDATE: Set DNS timeout to 2s. 
+* UPDATE: Load existing subs for faster processing
+
+# v1.5.1 (22/03/2023)
+* NEW: sentinelcli 0.3.0 
+* NEW: v2ray support added
+* NEW: v2ray 5.1.0 binary added
+* NEW: tun2socks binary for TCP routing to Sentinel v2ray nodes
+* NEW: Node type listing in node window and subscription (v2ray/wireguard)
+* NEW: routes.sh for handling v2ray node connection
+* CHANGE: Cosolidated colors to konstants.py
+* CHANGE: Consolidate fonts to konstants.py
+* CHANGE: Logic in real-time bandwidth to handle random tunXXX interface
+* CHANGE: mc-plus2 font for unicode characters
+* UPDATED: Connection logic to handle v2ray nodes
+* UPDATED: Disconnect logic to handle v2ray nodes 
+* FIX: Real-time bandwidth report when switching between nodes
+* FIX: Unicode font problem 
+* FIX: IBC Coin listing crash
+* FIX: Node version reporting
+
+
+# v1.4.1 (29/01/2023)
+* NEW: Toast Message for Rating sent or errored out
+* NEW: Version control in Help Screen
+* NEW: Mac OS X App Bundle Release
+* FIX: Logic in Rating and Location retrieval
+* FIX: MapView Cache folder now located in ~/.meile.gui instead of CWD (fixes App Bundle)
+* FIX: Wallet logic
+* UPDATE: Sentinel-CLI for CosmWasm Sentinel Network Upgrade
+* UPDATE: Packager Installer installs App Bundle to Desktop
+* UPDATE: Improved HTTPs requests using requests adapter
+# v1.4.0 (17/01/2023)
+* NEW: First Windows Binary Release (Pre-release)
+* NEW: gsudo Packaged with Windows binary
+* NEW: Wireguard binary packaged with Meile binary
+* NEW: HTTPSRequests Adapater for max retries and timeout on API Calls
+* NEW: Packaging wexpect binary and collection bundle with app
+* CHANGE: Swtiched from pexpect wrapper library to wexpect wrapper library for windows compatability
+* CHANGE: Re-worked Ratings/Node Locations Logic
+* CHANGE: Removed WARP support for Windows Users
+* CHANGE: Updated Help version number routine to a constant
+* CHANGE: Pyinstaller .spec file for Windows build. Changes from Linux/ OS X Version to include release for Windows.
+* CHANGE: MapView cache now loads in .meile-gui home folder location instead of CWD
+* CHANGE: Icon logo for Kivy and for Task Bar and Desktop Icon
+
+# v1.3.0 (06/12/2022)
+* NEW: Unicode Support for Moniker names
+* NEW: Rating scores in subscription tab
+* NEW: City names in subscription tabs
+* NEW: Cities for Nodes now available in node selection window
+* NEW: Backend server API for node locations
+* NEW: Allows user to rate node after disconnecting
+* NEW: Node ratings and vote count are visible in node selection window
+* NEW: Backend server API for node ratings
+* UPDATE: Enhanced Subscription dialog with Moniker and better fonts
+* UPDATE: Enhanced subscription processing dialog with nicer look
+* UPDATE: Fixed freeze on TIMEOUT in API requests (ratings,wallet,etc.)
+* UPDATE: Set requests TIMEOUT to 5 seconds
+* CHANGE: Housekeeping by adding src/typedef/konstants.py 
+* CHANGE: Housekeeping in wallet.py and sentinel.py
+
+
+# v1.2.3 (13/11/2022)
+* NEW: Persisent real-time bandwidth when switching between nodes
+* CHANGE: Handling of CONNECTED boolean
+* FIX: Issue #28
+* FIX: Issue #29
+
+# v1.2.2 (12/11/2022)
+* NEW: Real-time bandwidth usage for current session, snapshot taken every two minutes. 
+* NEW: Dependency *psutil* added - needed for bandwidth usage
+* NEW: Unicode Handling in wallet passphrase and other textfields
+* NEW: Arial unicdoe font for upload/download badwidth arrows
+* CHANGE: IP Address/Node now rectangle TextField instaed of Fill Box
+* CHANGE: Bandwidth meter for current session at top
+* UPDATE: Aligned Sort label with menu option
+* FIX: Multiple spelling and grammatical errors. Thanks to *cryptomole*
+
 # v1.2.1 (23/10/2022)
 * NEW: Clickable Pin map with total node listings
 * NEW: Refresh button in wallet screen
