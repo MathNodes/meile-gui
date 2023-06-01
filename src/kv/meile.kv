@@ -1453,18 +1453,26 @@ WindowManager:
                 text_color: get_color_from_hex("f42121")
                 pos_hint: {"x": .47, "center_y": .62}
                 font_size: "12dp"
+                
             MDLabel:
-                id: dvpn_qty_text
                 opacity: 1
-                text: "DVPN"
+                text: "Coin"
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex("#fcb711")
+                pos_hint: {"x": .355, "center_y": .63}
+                font_size: "12dp"
+                
+            MDDropDownItem:
+                id: token
                 pos_hint: {"x": .355, "center_y": .60}
-                font_size: "14dp"
+                text_color: get_color_from_hex("#fcb711")
+                text: 'dvpn'
+                on_release: root.menu_token.open()
+                
                 
             MDDropDownItem:
                 id: dvpn_qty_menu
-                pos_hint: {'center_x': .43, 'center_y': .60}
+                pos_hint: {'center_x': .48, 'center_y': .60}
                 text: '1000'
                 on_release: root.menu_dvpn_qty.open()
                 
@@ -1492,7 +1500,7 @@ WindowManager:
                     
             MDLabel:
                 id: dvpn_price
-                text: "DVPN: $" + str(root.get_dvpn_price())
+                text: "DVPN: $" + str(root.get_token_price('dvpn'))
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex("#fcb711")
                 pos_hint: {"x": .40, "center_y": .48}
@@ -1506,7 +1514,7 @@ WindowManager:
                 pos_hint: {"x": .40, "center_y": .43}
                 font_size: "16dp"
             MDLabel:
-                id: dvpn_qty
+                id: coin_qty
                 text:"QTY: " + str(root.DVPNOptions[root.idvpn]) + " dvpn"
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex("#fcb711")
@@ -1515,7 +1523,7 @@ WindowManager:
             
             MDLabel:
                 id: charge_amount
-                text:"Total Charge: $" + str(round((root.get_dvpn_price()*root.get_dvpn_qty())+1.25,2))
+                text:"Total Charge: $" + str(round((root.get_token_price('dvpn')*root.get_token_qty('dvpn'))+1.25,2))
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex("#fcb711")
                 pos_hint: {"x": .40, "center_y": .33}
