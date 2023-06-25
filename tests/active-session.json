@@ -1,0 +1,21 @@
+{
+  "sessions": [
+    {
+      "id": "609681",
+      "subscription": "161630",
+      "node": "sentnode1yrd6dzj7qunlfexzz5pwsuuuxz6jn6l9utnzgd",
+      "address": "sent14q4f245fj25xy57yhjah98jcvy6e3zndx76fh4",
+      "duration": "15191.020751376s",
+      "bandwidth": {
+        "upload": "154894772",
+        "download": "332407496"
+      },
+      "status": "STATUS_INACTIVE_PENDING",
+      "status_at": "2023-06-21T03:12:38.028407362Z"
+    }
+  ],
+  "pagination": {
+    "next_key": null,
+    "total": "1"
+  }
+}
