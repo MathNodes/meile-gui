@@ -7,19 +7,23 @@ class ConfParams():
     BASEDIR          = path.join(path.expanduser('~' + USER), '.sentinelcli')
     WALLETINFO       = path.join(KEYRINGDIR, "infos.txt")
     SUBSCRIBEINFO    = path.join(KEYRINGDIR, "subscribe.infos")
+    USUBSCRIBEINFO   = path.join(KEYRINGDIR, "unsubscribe.infos")
     CONNECTIONINFO   = path.join(KEYRINGDIR, "connection.infos")
     WIREGUARD_STATUS = path.join(BASEDIR, "status.json")
+    CHAINID          = 'sentinelhub-2'
     
 
 class HTTParams():
     TIMEOUT                = 5
     APIURL                 = "https://api.sentinel.mathnodes.com"
     SERVER_URL             = "https://aimokoivunen.mathnodes.com:5000"
+    GRPC                   = "grpc+http://aimokoivunen.mathnodes.com:9090/"
     NODE_SCORE_ENDPOINT    = "/api/nodescores"
     NODE_LOCATION_ENDPOINT = "/api/nodelocations"
     NODE_TYPE_ENDPOINT     = "/api/nodetypes"
     API_PING_ENDPOINT      = "/api/ping"
     API_RATING_ENDPOINT    = "/api/rating"
+    SESSIONS_API_URL       = '/sentinel/accounts/%s/sessions'
     RPC                    = "https://rpc.mathnodes.com:443"
     BALANCES_ENDPOINT      = "/bank/balances/"
     
@@ -44,7 +48,7 @@ class IBCTokens():
     
 class TextStrings():
     dash = "-"
-    VERSION = "v1.7.1"
+    VERSION = "v1.7.2"
     
 class MeileColors():
     DIALOG_BG_COLOR = "#121212"

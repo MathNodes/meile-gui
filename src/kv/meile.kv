@@ -711,6 +711,7 @@ WindowManager:
     city: " "
     score: " "
     votes: " "
+    on_press: root.unsubscribe_to_node(root.sub_id_text)
     MDFloatLayout:
         MDLabel:
             text: root.moniker_text
@@ -1144,6 +1145,7 @@ WindowManager:
             font_size: "14sp"
             font_name: root.get_font()
             text_color: get_color_from_hex("#fcb711")
+            
 <ProcessingSubDialog>
     orientation: "vertical"
     spacing: "1dp"
