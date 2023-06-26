@@ -1146,13 +1146,13 @@ class NodeScreen(Screen):
         
         for data in NodeData:
             try: 
-                udvpn = re.findall(r'[0-9]+' +"dvpn", data['Price'])[0]
+                udvpn = re.findall(r'[0-9]+\.[0-9]+' +"dvpn", data['Price'])[0]
                 NodeData[i]['Price'] = udvpn
             except IndexError:
                 NodeData[i]['Price'] = "1dvpn"
             i += 1
             
-        NodeDataSorted = sorted(NodeData, key=lambda d: int(d['Price'].split('dvpn')[0]))
+        NodeDataSorted = sorted(NodeData, key=lambda d: float(d['Price'].split('dvpn')[0]))
         NewNodeData = []
     
         for ndata in NodeDataSorted:
