@@ -554,7 +554,7 @@ class MainWindow(Screen):
             
         self.old_ip = self.ip
         try:
-            resolver = DNSRequests.MakeDNSRequest(domain=ICANHAZDNS, timeout=0.3, lifetime=0.5)
+            resolver = DNSRequests.MakeDNSRequest(domain=ICANHAZDNS, timeout=1.5, lifetime=2)
             icanhazip = resolver.DNSRequest()
             if icanhazip:
                 print("%s:%s" % (ICANHAZDNS, icanhazip))
@@ -1146,14 +1146,13 @@ class NodeScreen(Screen):
         
         for data in NodeData:
             try: 
-                udvpn = re.findall(r'[0-9]+' +"udvpn", data['Price'])[0]
+                udvpn = re.findall(r'[0-9]+\.[0-9]+' +"dvpn", data['Price'])[0]
                 NodeData[i]['Price'] = udvpn
             except IndexError:
-                NodeData[i]['Price'] = "1000000000udvpn"
+                NodeData[i]['Price'] = "1dvpn"
             i += 1
-        NodeDataSorted = sorted(NodeData, key=lambda d: int(d['Price'].split('udvpn')[0]))
-        
-        
+            
+        NodeDataSorted = sorted(NodeData, key=lambda d: float(d['Price'].split('dvpn')[0]))
         NewNodeData = []
     
         for ndata in NodeDataSorted:

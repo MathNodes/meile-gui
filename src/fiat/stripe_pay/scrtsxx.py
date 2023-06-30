@@ -1,8 +1,8 @@
-SECRET_KEY         = "sk_live_"
+SECRET_KEY         = "sk_test"
 WALLET_ADDRESS     = 'sent...'
-SERVER_ADDRESS     = "https://your-server.de:1111"
+SERVER_ADDRESS     = "https://your-server.de:1000"
 API_ENDPOINT       = "/api/endpoint"
-MAX_SPEND_ENDPOINT = "/api/maxspend"
+MAX_SPEND_ENDPOINT = "/api/endpoint2"
 USERNAME           = 'username'
 PASSWORD           = 'password'
 CCOMPAREAPI        = 'ccapi'

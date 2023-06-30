@@ -5,7 +5,6 @@ import shutil
 
 import sys
 import os
-from whichcraft import which
 
 class MeileGuiConfig():
     USER = environ['SUDO_USER'] if 'SUDO_USER' in environ else environ['USER']
