@@ -9,11 +9,11 @@ Meile-GUI (may•lah)
 [![Downloads](https://static.pepy.tech/personalized-badge/meile-gui?period=total&units=international_system&left_color=black&right_color=orange&left_text=pip)](https://pepy.tech/project/meile-gui)
 [![Downloads](https://static.pepy.tech/personalized-badge/meile-gui?period=month&units=international_system&left_color=black&right_color=orange&left_text=pip%20(month))](https://pepy.tech/project/meile-gui)
 
-Meile dVPN GUI for Linux &amp; OS X Powered by the Sentinel Network - a blockchain decentralized VPN. 
+Meile dVPN GUI for Linux, OS X, and Windows - Powered by the Sentinel Network - a blockchain decentralized VPN. 
 
 # Full Version
 
-The full version 1.5.1 has been released to GitHub. Branches include **main**, **osx**, **windows**, **fiat**, **osx-fiat**, **pip**. The exception is that we did not include the scrtsxx.py which contains credentials for the FIAT gateway. Please navigate the various branches to understand the different interworkings. 
+The full version 1.7.2 has been released to GitHub. Branches include **main**, **osx**, **windows**, **fiat**, **osx-fiat**, **pip**. The exception is that we did not include the scrtsxx.py which contains credentials for the FIAT gateway. Please navigate the various branches to understand the different interworkings. 
 
 
 ## Windows

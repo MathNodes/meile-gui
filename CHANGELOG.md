@@ -1,5 +1,17 @@
 CHANGELOG
 ========================
+# v1.7.2 (06/07/2023)
+* NEW: Unsubscribe functions in HandleWalletFunctions()
+* NEW: Check for active or pending sessions before unsub
+* NEW: Click subscription card to prompt user to unsubscribe
+* NEW: Present status dialog once unsub routines run, detailing height, hash of blockchain msg.
+* NEW: Added dependencies cospmy and MathNodes/sentinel-protobuf for blockchain msgs. 
+* NEW: Added Mathnodes GRPC endpoint
+* UPDATE: New collection of cosmpy and sentinel-protobuf in pyinstaller script
+* FIX: Sort by Price. Bug was created when prices switched from udvpn to dvpn. 
+* FIX: Get Details by re-adding InsecureWarning import
+* FIX: Set SubResult = None on refresh to enable subscription refresh
+
 # v1.6.3 (27/04/2023)
 * ADD: DNSRequests Adapter
 * NEW: 70% map, 30% country nodes cards

@@ -1,9 +1,10 @@
-from os import path, remove
 import pexpect
 import json
 import requests
 import psutil
+import binascii
 from time import sleep 
+from os import path, remove
 
 from json.decoder import JSONDecodeError 
 
@@ -13,6 +14,15 @@ from typedef.konstants import ConfParams
 from typedef.konstants import HTTParams
 from adapters import HTTPRequests
 from cli.v2ray import V2RayHandler
+
+from cosmpy.aerial.client import LedgerClient, NetworkConfig
+from bip_utils import Bip39SeedGenerator, Bip44, Bip44Coins
+from cosmpy.aerial.wallet import LocalWallet
+from cosmpy.crypto.keypairs import PrivateKey
+from sentinel_protobuf.sentinel.subscription.v1.msg_pb2 import MsgCancelRequest, MsgCancelResponse
+from cosmpy.aerial.tx import Transaction
+from cosmpy.aerial.tx_helpers import TxResponse
+from cosmpy.aerial.client.utils import prepare_and_broadcast_basic_transaction
 
 MeileConfig = MeileGuiConfig()
 sentinelcli = MeileConfig.resource_path("../bin/sentinelcli")
@@ -149,6 +159,122 @@ class HandleWalletFunctions():
                         return (False, tx_json['raw_log'])
                 else:
                     return(False, "Error loading JSON")
+                
+    def unsubscribe(self, subId):
+        CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
+        PASSWORD = CONFIG['wallet'].get('password', '')
+        KEYNAME = CONFIG['wallet'].get('keyname', '')
+
+        if not KEYNAME:
+            return {'hash' : "0x0", 'success' : False, 'message' : "ERROR Retrieving Keyname"}
+
+        ofile = open(ConfParams.USUBSCRIBEINFO, "wb")
+
+        unsubCMD = "%s keys export --unarmored-hex --unsafe --keyring-backend file --keyring-dir %s %s" % (sentinelcli,  ConfParams.KEYRINGDIR, KEYNAME)
+
+        try:
+            child = pexpect.spawn(unsubCMD)
+            child.logfile = ofile
+
+            child.expect(".*")
+            child.sendline("y")
+            child.expect("Enter*")
+            child.sendline(PASSWORD)
+            child.expect(pexpect.EOF)
+
+            ofile.flush()
+            ofile.close()
+        except pexpect.exceptions.TIMEOUT:
+            return {'hash' : "0x0", 'success' : False, 'message' : "ERROR: pexpect timeout"}
+
+        privkey_hex = self.ParseUnSubscribe()
+        return self.grpc_unsubscribe(privkey_hex, subId)
+
+    def grpc_unsubscribe(self, privkey, subId):
+        tx_success = False
+        tx_hash    = "0x0"
+
+        cfg = NetworkConfig(
+            chain_id=ConfParams.CHAINID,
+            url=HTTParams.GRPC,
+            fee_minimum_gas_price=0.4,
+            fee_denomination="udvpn",
+            staking_denomination="udvpn",
+            )
+
+        client = LedgerClient(cfg)    
+
+        priv_key_bytes = binascii.unhexlify(bytes(privkey.rstrip().lstrip(), encoding="utf8"))
+
+        wallet = LocalWallet(PrivateKey(priv_key_bytes), prefix="sent")
+        address = wallet.address()
+
+        print(f"Address: {address},\nSubscription ID: {subId}")
+        print("Checking for active sessions...")
+
+        try: 
+            session_data = self.check_active_subscriptions(address)
+        except Exception as e:
+            print("Error getting sessions")
+            return {'hash' : tx_hash, 'success' : tx_success, 'message' : "ERROR retrieving sessions. Please try again later."}
+        try: 
+            if not session_data['session']:  
+                tx = Transaction()
+                tx.add_message(MsgCancelRequest(frm=str(address), id=int(subId)))
+
+                tx = prepare_and_broadcast_basic_transaction(client, tx, wallet)
+                tx.wait_to_complete()
+
+                tx_hash     = tx._tx_hash
+                tx_response = tx._response.is_successful()
+                tx_height   = int(tx._response.height)
+
+                print("Hash: %s" % str(tx_hash))
+                print("Response: %s" % tx_response)
+                print("Height: %d" % int(tx._response.height))
+
+                if tx_response:
+                    tx_success = tx_response
+                    message    = "Unsubscribe from Subscription ID: %s, was successful at Height: %d" % (subId, tx_height )
+
+            else:
+                message = 'Found active session. Due to blockchain limitations we cannot cancel a subscription while there is a pending session.\n' + 'STATUS: ' + session_data['data']['status'] + ',' + session_data['data']['status_at']
+        except:
+            message = "Error parsing or retrieving sessions. Please try again later." 
+
+        return {'hash' : tx_hash, 'success' : tx_success, 'message' : message}
+
+    def check_active_subscriptions(self, address):
+        Request = HTTPRequests.MakeRequest()
+        http = Request.hadapter()
+        endpoint = HTTParams.APIURL + HTTParams.SESSIONS_API_URL % address
+
+        try:
+            r = http.get(endpoint)
+            json_data = r.json()
+
+            if len(json_data['sessions']) == 0:
+                return {'session' : False, 'data' : None}
+            else:
+                return {'session' : True, 'data' : { 'status' : json_data['sessions'][0]['status'], 'status_at' : json_data['sessions'][0]['status_at'] } }
+
+        except Exception as e:
+            print(str(e))
+            return None
+
+
+    def ParseUnSubscribe(self):
+        with open(ConfParams.USUBSCRIBEINFO, 'r') as usubfile:
+            lines = usubfile.readlines()
+            lines = [l for l in lines if l != '\n']
+            for l in lines:
+                l.replace('\n','')
+
+        usubfile.close()
+        remove(ConfParams.USUBSCRIBEINFO)
+        return l
+            
+    
     def connect(self, ID, address, type):
 
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)

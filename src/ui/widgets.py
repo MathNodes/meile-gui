@@ -23,7 +23,9 @@ from kivyoav.delayed import delayable
 
 from functools import partial
 from subprocess import Popen, TimeoutExpired
+from urllib3.exceptions import InsecureRequestWarning
 from os import path
+from time import sleep 
 import requests
 import re
 import psutil
@@ -35,6 +37,7 @@ from cli.wallet import HandleWalletFunctions
 from cli.sentinel import NodeTreeData
 import main.main as Meile
 from adapters import HTTPRequests
+from ui.interfaces import TXContent
 
 class WalletInfoContent(BoxLayout):
     def __init__(self, seed_phrase, name, address, password, **kwargs):
@@ -491,7 +494,76 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
             self.dialog = None
         except Exception as e:
             print(str(e))
-            return
+            self.dialog = None
+
+    def closeDialog(self, dt):
+        try:
+            self.dialog.dismiss()
+            self.dialog = None
+        except Exception as e:
+            print(str(e))
+            self.dialog = None
+            
+    def unsubscribe_to_node(self, subId):
+
+        if not self.dialog:
+            self.dialog = MDDialog(
+                    title="Unsubscribe from ID: %s?" % subId,
+                    md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
+                    buttons=[
+                        MDFlatButton(
+                            text="CANCEL",
+                            theme_text_color="Custom",
+                            text_color=self.theme_cls.primary_color,
+                            on_release=self.closeDialog
+                        ),
+                        MDRaisedButton(
+                            text="UNSUBSCRIBE",
+                            theme_text_color="Custom",
+                            text_color=get_color_from_hex("#000000"),
+                            on_release=partial(self.unsubscribe, subId)
+                        ),
+                    ],
+                )
+            self.dialog.open()
+
+    @delayable        
+    def unsubscribe(self, subId, *kwargs):
+
+        yield 0.3
+        self.remove_loading_widget()
+        yield 0.6
+        self.add_loading_popup("Unsubscribing to subscription id: %s" % subId)
+        yield 0.6
+        sleep(1)
+
+        Wallet = HandleWalletFunctions()
+        unsub_value = Wallet.unsubscribe(int(subId))
+
+        self.remove_loading_widget()
+
+        TXDialog = TXContent()
+
+        TXDialog.ids.message.text = unsub_value['message']
+        TXDialog.ids.txhash.text  = unsub_value['hash']
+
+        yield 0.3
+        if not self.dialog:
+            self.dialog = MDDialog(
+                    title="Unsub Details",
+                    type="custom",
+                    content_cls=TXDialog,
+                    md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
+                    buttons=[
+                        MDFlatButton(
+                            text="OKAY",
+                            theme_text_color="Custom",
+                            text_color=self.theme_cls.primary_color,
+                            on_release=self.closeDialog
+                        ),
+                    ],
+                )
+            self.dialog.open()
         
     @delayable
     def connect_to_node(self, ID, naddress, moniker, type, switchValue, **kwargs):
