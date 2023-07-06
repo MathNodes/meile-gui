@@ -68,3 +68,6 @@ class FullImage2(Image):
     pass
 class DisplayPic(CircularElevationBehavior, ButtonBehavior, FitImage):
     pass
+
+class TXContent(BoxLayout):
+    pass
