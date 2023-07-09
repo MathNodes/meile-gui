@@ -62,10 +62,10 @@ class FiatInterface(Screen):
     def __init__(self, **kwargs):
         super(FiatInterface, self).__init__()
         
-        CoinOptions = self.DynamicCoinOptions()
-        self.DVPNOptions = CoinOptions['dvpn']
-        self.DECOptions  = CoinOptions['dec']
-        self.SCRTOptions = CoinOptions['scrt']
+        self.CoinOptions = self.DynamicCoinOptions()
+        self.DVPNOptions = self.CoinOptions['dvpn']
+        self.DECOptions  = self.CoinOptions['dec']
+        self.SCRTOptions = self.CoinOptions['scrt']
         self.set_token_qty(str(self.DVPNOptions[0]))
         
         
@@ -150,13 +150,15 @@ class FiatInterface(Screen):
                     Wallet = HandleWalletFunctions()
                     try:
                         CoinDict = Wallet.get_balance(HotWalletAddress)
+                        print(CoinDict)
                     except Exception as e:
                         self.ProcessingDialog("Error retrieving Wallet Pool Balance. Please try again later.", True, False)
                         print(str(e))
                         return
                     if CoinDict:
-                        print(CoinDict[self.SelectedCoin])
-                        if CoinDict[self.SelectedCoin] > self.CoinOptions[self.SelectedCoin][self.idvpn]:
+                        print("AMT: %s%s" % (CoinDict[self.SelectedCoin], self.SelectedCoin))
+                        print("CoinOPtions: %s " % float(self.CoinOptions[self.SelectedCoin][self.idvpn]))
+                        if float(CoinDict[self.SelectedCoin]) > float(self.CoinOptions[self.SelectedCoin][self.idvpn]):
                             self.ProcessingDialog("Coins are available. Continue with Charge?",True, True)
                         else:
                             self.ProcessingDialog("There are not enough coins in our wallet pool. Please try your purchase again later. Your credit card has not be charged for this transaction.",True, False)
