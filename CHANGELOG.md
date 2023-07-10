@@ -1,5 +1,54 @@
 CHANGELOG
 ========================
+# v1.7.3 (09/07/2023)
+* NEW: Unsubscribe functions in HandleWalletFunctions()
+* NEW: Check for active or pending sessions before unsub
+* NEW: Click subscription card to prompt user to unsubscribe
+* NEW: Present status dialog once unsub routines run, detailing height, hash of blockchain msg.
+* NEW: Added dependencies cospmy and MathNodes/sentinel-protobuf for blockchain msgs. 
+* NEW: Added Mathnodes GRPC endpoint
+* UPDATE: New collection of cosmpy and sentinel-protobuf in pyinstaller script
+* FIX: Sort by Price. Bug was created when prices switched from udvpn to dvpn. 
+* FIX: Get Details by re-adding InsecureWarning import
+* FIX: Set SubResult = None on refresh to enable subscription refresh
+* FIX: Fiat coin qty reporting
+
+# v1.6.3 (27/04/2023)
+* ADD: DNSRequests Adapter
+* NEW: 70% map, 30% country nodes cards
+* NEW: Map pin marker to yellow pin
+* NEW: Subscription nav bar icon
+* NEW: Subscription screen
+* NEW: Merge Windows commit e11f398 for faster DNS resolver checks on errors
+* NEW: Meile Cache API backed for Node Types (residential, datacenter, etc.)
+* NEW: MDIcon Tooltip for node type on node screen
+* NEW: Optimized App bundle for OS X (Apple Silicon). Larger download size, faster loading (less unpacking at launch)
+* CHANGE: Rounded circle flag in front of country label
+* FIX: setup.py to include pin marker
+* FIX: Not loading new subs. Redraw subs screen
+* FIX: Crash on New subscription trying to switch to (null) subs tab.
+* UPDATE: Use MainWindow.SubResult
+* UPDATE: Set DNS timeout to 2s. 
+* UPDATE: Load existing subs for faster processing
+
+# v1.5.1 (22/03/2023)
+* NEW: sentinelcli 0.3.0 
+* NEW: v2ray support added
+* NEW: v2ray 5.1.0 binary added
+* NEW: tun2socks binary for TCP routing to Sentinel v2ray nodes
+* NEW: Node type listing in node window and subscription (v2ray/wireguard)
+* NEW: routes.sh for handling v2ray node connection
+* CHANGE: Cosolidated colors to konstants.py
+* CHANGE: Consolidate fonts to konstants.py
+* CHANGE: Logic in real-time bandwidth to handle random tunXXX interface
+* CHANGE: mc-plus2 font for unicode characters
+* UPDATED: Connection logic to handle v2ray nodes
+* UPDATED: Disconnect logic to handle v2ray nodes 
+* FIX: Real-time bandwidth report when switching between nodes
+* FIX: Unicode font problem 
+* FIX: IBC Coin listing crash
+* FIX: Node version reporting
+
 # v1.4.1 (29/01/2023)
 * NEW: Toast Message for Rating sent or errored out
 * NEW: Version control in Help Screen

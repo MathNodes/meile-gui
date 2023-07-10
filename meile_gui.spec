@@ -1,8 +1,9 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-from PyInstaller.utils.hooks import collect_all
+from PyInstaller.utils.hooks import collect_all, collect_submodules, copy_metadata
 from kivy_deps import sdl2, glew
 
+#('C:\\Users\\freqn\\AppData\\Local\\Programs\\Python\\Python39\\Lib\\site-packages\\coincurve\\*', 'coincurve'),
 datas = [('src\\wexpect\\dist','.'),('src\\kv', 'kv'), ('src\\imgs','imgs'), ('src\\awoc\\datum', 'datum'), ('src\\bin', 'bin'), ('src\\conf\\config', 'config'), ('src\\utils\\coinimg', 'utils\coinimg'), ('src\\utils\\fonts' , 'utils\\fonts'), ('src\\fonts', 'fonts')]
 binaries = []
 hiddenimports = []
@@ -10,7 +11,24 @@ tmp_ret = collect_all('stripe')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 tmp_ret = collect_all('kivy_garden')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
-
+tmp_ret = collect_all('cosmpy')
+datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
+tmp_ret = collect_all('sentinel-protobuf')
+datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
+tmp_ret = collect_all('google')
+datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
+tmp_ret = collect_all('coincurve')
+datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
+#tmp_ret = collect_all('cosmpy.protos.google')
+#datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
+tmp_ret = collect_submodules('cosmpy')
+hiddenimports += tmp_ret
+tmp_ret = collect_submodules('google')
+hiddenimports += tmp_ret
+tmp_ret = copy_metadata('google')
+datas += tmp_ret
+tmp_ret = copy_metadata('protobuf')
+datas += tmp_ret
 
 block_cipher = None
 
@@ -51,5 +69,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='C:\\Users\\freqn\\OneDrive\\Desktop\\Meile\\meile.ico',
+    icon='C:\\Users\\freqn\\Projects\\Meile\\meile.ico',
 )

@@ -62,10 +62,10 @@ class FiatInterface(Screen):
     def __init__(self, **kwargs):
         super(FiatInterface, self).__init__()
         
-        CoinOptions = self.DynamicCoinOptions()
-        self.DVPNOptions = CoinOptions['dvpn']
-        self.DECOptions  = CoinOptions['dec']
-        self.SCRTOptions = CoinOptions['scrt']
+        self.CoinOptions = self.DynamicCoinOptions()
+        self.DVPNOptions = self.CoinOptions['dvpn']
+        self.DECOptions  = self.CoinOptions['dec']
+        self.SCRTOptions = self.CoinOptions['scrt']
         self.set_token_qty(str(self.DVPNOptions[0]))
         
         
