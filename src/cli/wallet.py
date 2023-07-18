@@ -31,6 +31,14 @@ v2ray_tun2routes_connect_bash = MeileConfig.resource_path("../bin/routes.sh")
 
 class HandleWalletFunctions():
     
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        
+        CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
+        self.RPC = CONFIG['network'].get('rpc', 'https://rpc.mathnodes.com:443')
+        
+        
+    
     def create(self, wallet_name, keyring_passphrase, seed_phrase):
         SCMD = '%s keys add "%s" -i --keyring-backend file --keyring-dir %s' % (sentinelcli, wallet_name, ConfParams.KEYRINGDIR)
         DUPWALLET = False 
@@ -109,7 +117,7 @@ class HandleWalletFunctions():
         if not KEYNAME:
             return (False, 1337)
         
-        SCMD = "%s tx subscription subscribe-to-node --yes --keyring-backend file --keyring-dir %s --gas-prices 0.1udvpn --chain-id sentinelhub-2 --node %s --from '%s' '%s' %s"  % (sentinelcli, ConfParams.KEYRINGDIR, HTTParams.RPC, KEYNAME, NODE, DEPOSIT)    
+        SCMD = "%s tx subscription subscribe-to-node --yes --keyring-backend file --keyring-dir %s --gas-prices 0.1udvpn --chain-id sentinelhub-2 --node %s --from '%s' '%s' %s"  % (sentinelcli, ConfParams.KEYRINGDIR, self.RPC, KEYNAME, NODE, DEPOSIT)    
         try:
             child = pexpect.spawn(SCMD)
             child.logfile = ofile
@@ -280,7 +288,7 @@ class HandleWalletFunctions():
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
         KEYNAME = CONFIG['wallet'].get('keyname', '')
-        connCMD = "pkexec env PATH=%s %s connect --home %s --keyring-backend file --keyring-dir %s --chain-id sentinelhub-2 --node %s --gas-prices 0.1udvpn --yes --from '%s' %s %s" % (ConfParams.PATH, sentinelcli, ConfParams.BASEDIR, ConfParams.KEYRINGDIR, HTTParams.RPC, KEYNAME, ID, address)
+        connCMD = "pkexec env PATH=%s %s connect --home %s --keyring-backend file --keyring-dir %s --chain-id sentinelhub-2 --node %s --gas-prices 0.1udvpn --yes --from '%s' %s %s" % (ConfParams.PATH, sentinelcli, ConfParams.BASEDIR, ConfParams.KEYRINGDIR, self.RPC, KEYNAME, ID, address)
             
         ofile =  open(ConfParams.CONNECTIONINFO, "wb")    
     

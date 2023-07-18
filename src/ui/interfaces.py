@@ -1,20 +1,21 @@
-from kivymd.uix.boxlayout import MDBoxLayout
-from kivymd.uix.tab import MDTabsBase
-from kivy.uix.screenmanager import ScreenManager
-from kivymd.uix.relativelayout import MDRelativeLayout
 from kivy.properties import  StringProperty
+from kivy.uix.screenmanager import ScreenManager
 from kivy.uix.behaviors import FocusBehavior
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.recyclegridlayout import RecycleGridLayout
 from kivy.uix.image import Image
 from kivy.uix.boxlayout import BoxLayout
-from kivymd.uix.button import MDFlatButton, MDRaisedButton, MDIconButton
-from kivymd.uix.tooltip import MDTooltip
 from kivy.uix.switch import Switch
+from kivy.uix.behaviors import ButtonBehavior
 from kivy_garden.mapview.view import MapView
 from kivymd.uix.behaviors import RoundedRectangularElevationBehavior, CircularElevationBehavior, RectangularRippleBehavior, CircularRippleBehavior
 from kivymd.uix.fitimage.fitimage import FitImage
-from kivy.uix.behaviors import ButtonBehavior
+from kivymd.uix.list import OneLineIconListItem
+from kivymd.uix.button import MDFlatButton, MDRaisedButton, MDIconButton
+from kivymd.uix.tooltip import MDTooltip
+from kivymd.uix.relativelayout import MDRelativeLayout
+from kivymd.uix.boxlayout import MDBoxLayout
+from kivymd.uix.tab import MDTabsBase
 
 class Tab(MDBoxLayout, MDTabsBase):
     pass
@@ -82,3 +83,8 @@ class ClickableTextFieldRoundCVV(MDRelativeLayout):
 
 class TXContent(BoxLayout):
     pass
+
+
+class ServerIconListItem(OneLineIconListItem):
+    icon = StringProperty()
+
