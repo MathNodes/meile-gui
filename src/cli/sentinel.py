@@ -31,11 +31,14 @@ class NodeTreeData():
         else:
             self.NodeTree = node_tree
             
+        CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
+        self.RPC = CONFIG['network'].get('rpc', 'https://rpc.mathnodes.com:443')
+            
    
     def get_nodes(self, latency, *kwargs):
         AllNodesInfo = []
         print("Running sentinel-cli with latency: %s" % latency)
-        nodeCMD = [sentinelcli, "query", "nodes", "--node", HTTParams.RPC, "--limit", "20000", "--timeout", "%s" % latency]
+        nodeCMD = [sentinelcli, "query", "nodes", "--node", self.RPC, "--limit", "20000", "--timeout", "%s" % latency]
     
         proc = Popen(nodeCMD, stdout=PIPE)
         
@@ -187,7 +190,7 @@ class NodeTreeData():
         SubsNodesInfo = []
         SubsFinalResult    = []
         print("Geting Subscriptions... %s" % ADDRESS)
-        subsCMD = [sentinelcli, "query", "subscriptions", "--node", HTTParams.RPC, "--status", "Active", "--limit", "100", "--address" ,ADDRESS]
+        subsCMD = [sentinelcli, "query", "subscriptions", "--node", self.RPC, "--status", "Active", "--limit", "100", "--address" ,ADDRESS]
         proc = Popen(subsCMD, stdout=PIPE)
     
         k=1
@@ -248,7 +251,7 @@ class NodeTreeData():
 
 
     def GetQuota(self, id):
-        quotaCMD = [sentinelcli, 'query', 'quotas', '--node', HTTParams.RPC, '--page', '1', id]
+        quotaCMD = [sentinelcli, 'query', 'quotas', '--node', self.RPC, '--page', '1', id]
         proc = Popen(quotaCMD, stdout=PIPE)
         h=1
         for line in proc.stdout.readlines():

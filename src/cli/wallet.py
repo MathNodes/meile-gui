@@ -34,6 +34,12 @@ v2ray_tun2routes_connect_bash = MeileConfig.resource_path("../bin/routes.sh")
 
 class HandleWalletFunctions():
     
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
+        self.RPC = CONFIG['network'].get('rpc', 'https://rpc.mathnodes.com:443')
+        
     def create(self, wallet_name, keyring_passphrase, seed_phrase):
         #sentinelcli = sentinelcli.replace('\\','\\\\')
         #rsentinelcli = sentinelcli.encode('unicode_escape')
@@ -133,7 +139,7 @@ class HandleWalletFunctions():
         if not KEYNAME:
             return (False, 1337)
         
-        SCMD = "%s tx subscription subscribe-to-node --yes --gas-prices 0.3udvpn --keyring-backend file --keyring-dir %s --chain-id sentinelhub-2 --node %s --from '%s' '%s' %s"  % (sentinelcli, ConfParams.KEYRINGDIR, HTTParams.RPC, KEYNAME, NODE, DEPOSIT)    
+        SCMD = "%s tx subscription subscribe-to-node --yes --gas-prices 0.3udvpn --keyring-backend file --keyring-dir %s --chain-id sentinelhub-2 --node %s --from '%s' '%s' %s"  % (sentinelcli, ConfParams.KEYRINGDIR, self.RPC, KEYNAME, NODE, DEPOSIT)    
         try:
             
             ''' 
@@ -258,6 +264,8 @@ class HandleWalletFunctions():
                 child.expect(wexpect.EOF)
                 ofile.write(str(child.before))
             except Exception as e:
+                ofile.flush()
+                ofile.close()
                 print("Error sending password and getting privkey...")
                 print(str(e))
                 return {'hash' : "0x0", 'success' : False, 'message' : "ERROR: Getting privkey"}
@@ -394,7 +402,7 @@ class HandleWalletFunctions():
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
         KEYNAME = CONFIG['wallet'].get('keyname', '')
-        connCMD = "%s %s connect --keyring-backend file --keyring-dir %s --chain-id sentinelhub-2 --node %s  --yes --gas-prices 0.3udvpn --from '%s' %s %s" % (gsudo, sentinelcli, ConfParams.KEYRINGDIR, HTTParams.RPC, KEYNAME, ID, address)
+        connCMD = "%s %s connect --keyring-backend file --keyring-dir %s --chain-id sentinelhub-2 --node %s  --yes --gas-prices 0.3udvpn --from '%s' %s %s" % (gsudo, sentinelcli, ConfParams.KEYRINGDIR, self.RPC, KEYNAME, ID, address)
         print(connCMD)
         ofile =  open(ConfParams.CONNECTIONINFO, "w")    
         chdir(MeileConfig.BASEBINDIR)

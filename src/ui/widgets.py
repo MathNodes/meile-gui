@@ -358,7 +358,8 @@ Node Version: %s
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)        
         KEYNAME = CONFIG['wallet'].get('keyname', '')
         
-        returncode = HandleWalletFunctions.subscribe(HandleWalletFunctions, KEYNAME, sub_node[1], deposit)
+        hwf = HandleWalletFunctions()
+        returncode = hwf.subscribe(KEYNAME, sub_node[1], deposit)
         
         if returncode[0]:
             self.dialog.dismiss()
@@ -616,7 +617,8 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
                 pass
             
             from copy import deepcopy
-            connected = HandleWalletFunctions.connect(HandleWalletFunctions, ID, naddress, type)
+            hwf = HandleWalletFunctions()
+            connected = hwf.connect(ID, naddress, type)
             mw.ConnectedDict = deepcopy(connected)
             
             if connected['result']:

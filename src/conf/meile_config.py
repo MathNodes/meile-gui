@@ -74,4 +74,11 @@ class MeileGuiConfig():
         if not path.isdir(self.IMGDIR):
             mkdir(self.IMGDIR)
         self.CONFIG.read(confpath)
+        
+        if not self.CONFIG.has_section('network'):
+            self.CONFIG.add_section('network')
+            self.CONFIG.set('network', 'rpc', 'https://rpc.mathnodes.com:443')
+            FILE = open(self.CONFFILE, 'w')    
+            self.CONFIG.write(FILE)
+            
         return self.CONFIG

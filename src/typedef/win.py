@@ -10,6 +10,7 @@ class WindowNames():
     HELP           = "helpscreen"
     FIAT           = "fiatgateway"
     SUBSCRIPTIONS  = "subscriptions"
+    SETTINGS       = "settings"
     
     
 class CoinsList():
