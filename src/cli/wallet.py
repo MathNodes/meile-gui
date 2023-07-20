@@ -216,7 +216,7 @@ class HandleWalletFunctions():
             print(str(e))
             return (False, 1415)
         
-        return self.ParseSubscribe(self)
+        return self.ParseSubscribe()
         
     def unsubscribe(self, subId):
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
