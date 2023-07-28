@@ -29,6 +29,7 @@ from time import sleep
 import requests
 import re
 import psutil
+import asyncio
 
 from typedef.konstants import IBCTokens, HTTParams, MeileColors
 from typedef.win import CoinsList, WindowNames
@@ -38,6 +39,7 @@ from cli.sentinel import NodeTreeData
 import main.main as Meile
 from adapters import HTTPRequests
 from ui.interfaces import TXContent
+from coin_api.get_price import GetPriceAPI
 
 class WalletInfoContent(BoxLayout):
     def __init__(self, seed_phrase, name, address, password, **kwargs):
@@ -144,6 +146,7 @@ class SubscribeContent(BoxLayout):
     def set_item(self, text_item):
         self.ids.drop_item.set_item(text_item)
         self.ids.deposit.text = self.parse_coin_deposit(text_item)
+        self.get_usd()
         self.menu.dismiss()
         
     def parse_coin_deposit(self, mu_coin):
@@ -176,36 +179,21 @@ class SubscribeContent(BoxLayout):
     def return_deposit_text(self):
         return (self.ids.deposit.text, self.naddress, self.moniker)
     
+        
     # Should be async
     def get_usd(self):
         depost_ret = self.return_deposit_text()
         amt = re.findall(r"[0-9]+.[0-9]+",depost_ret[0])[0]
         coin = self.ids.drop_item.current_item
 
-        Request = HTTPRequests.MakeRequest()
-        http = Request.hadapter()
-        if coin == "dec":
-            URL = "https://ascendex.com/api/pro/v1/spot/ticker?symbol=DEC/USDT"
-            try: 
-                r = http.get(URL)
-                print(r.json())
-                self.coin_price = r.json()['data']['high']
-            except:
-                self.coin_price = 0.0
-        else:
-            URL = "https://api.coinstats.app/public/v1/tickers?exchange=KuCoin&pair=%s-USDT" % coin.upper()
-            try: 
-                r = http.get(URL)
-                print(r.json())
-                self.coin_price = r.json()['tickers'][0]['price']
-            except:
-                self.coin_price = 0.0
-
-
+        CoinPriceAPI = GetPriceAPI()        
+        PriceDict = asyncio.run(CoinPriceAPI.get_usd(coin))
+        self.coin_price = PriceDict['price']
+        
         self.ids.usd_price.text = '$' + str(round(float(self.coin_price) * float(amt),3))
 
-        return True
-
+        return PriceDict['success']
+                
 
 class ProcessingSubDialog(BoxLayout):
     moniker = StringProperty()
