@@ -1,11 +1,17 @@
 CHANGELOG
 ========================
+# v1.7.6 (28/07/2023)
+* UPDATE: Show current RPC in settings rpc context instead of default
+
+# v1.7.5 (19/07/2023)
+* FIX: Crash/Bug in backend of HandleWalletFunctions()
+
 # v1.7.4 (18/07/2023)
 * NEW: Settings Navbar Icon
 * NEW: Settings screen
 * NEW: Section for network and key-value RPC pair in config.ini
 * NEW: Change RPC from Chain Registry list
-* CHANGE: HandWalletFunctions() call in widgets.py and screen.py
+* CHANGE: HandleWalletFunctions() call in widgets.py and screen.py
 * CHANGE: __init__ in sentinel.py and wallet.py to use self.RPC defined by Settings option
 * UPDATE: stores rpc.mathnodes.com:443 as default RPC in config.ini
 
