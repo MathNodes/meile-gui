@@ -1338,12 +1338,14 @@ class HelpScreen(Screen):
         Meile.app.root.current = WindowNames.MAIN_WINDOW
 
 class SettingsScreen(Screen):
-
+    MeileConfig = MeileGuiConfig()
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
         params = HTTParams()
         self.RPC = params.RPC
+        
+        self.MeileConfig = MeileGuiConfig()
 
         menu_items = [
             {
@@ -1361,7 +1363,12 @@ class SettingsScreen(Screen):
             width_mult=50,
         )
         self.menu.bind()
-
+    def get_rpc_config(self):
+        CONFIG = self.MeileConfig.read_configuration(self.MeileConfig.CONFFILE)
+        
+        self.ids.drop_item.set_item(CONFIG['network']['rpc'])
+        return CONFIG['network']['rpc']
+    
     def set_item(self, text_item):
         self.ids.drop_item.set_item(text_item)
         self.RPC = text_item
@@ -1371,11 +1378,11 @@ class SettingsScreen(Screen):
         return self.screen
 
     def SaveOptions(self):
-        MeileConfig = MeileGuiConfig()
-        CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
+        
+        CONFIG = self.MeileConfig.read_configuration(self.MeileConfig.CONFFILE)
         CONFIG.set('network', 'rpc', self.RPC)
 
-        FILE = open(MeileConfig.CONFFILE, 'w')
+        FILE = open(self.MeileConfig.CONFFILE, 'w')
         CONFIG.write(FILE)
 
         self.set_previous_screen()

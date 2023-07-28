@@ -388,7 +388,7 @@ WindowManager:
                 id: drop_item
                 size_hint_x: .5
                 pos_hint: {'x': .5, 'top': 1}
-                text: 'https://rpc.mathnodes.com:443'
+                text: root.get_rpc_config()
                 on_release: root.menu.open()
 
             MDRaisedButton:
