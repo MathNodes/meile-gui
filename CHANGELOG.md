@@ -1,5 +1,11 @@
 CHANGELOG
 ========================
+# v0.13.3.1 (28/072023)
+* NEW: Add dependency asyncio
+* UPDATE: Added coin_api GetPriceAPI class
+* UPDATE: Make get_usd async
+* CHANGE: get_usd in SubscribeContent to use GetPriceAPI class
+
 # v0.13.3.0 (05/07/2023)
 * NEW: Unsubscribe functions in HandleWalletFunctions()
 * NEW: Check for active or pending sessions before unsub
