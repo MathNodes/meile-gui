@@ -83,8 +83,8 @@ class NodeTreeData():
             if version not in NodeKeys.NodeVersions:
                 continue
             
-            d[NodeKeys.NodesInfoKeys[3]] = self.return_denom(d[NodeKeys.NodesInfoKeys[3]])
-            d[NodeKeys.NodesInfoKeys[3]] = self.parse_coin_deposit(d[NodeKeys.NodesInfoKeys[3]])
+            d[NodeKeys.NodesInfoKeys[2]] = self.return_denom(d[NodeKeys.NodesInfoKeys[2]])
+            d[NodeKeys.NodesInfoKeys[2]] = self.parse_coin_deposit(d[NodeKeys.NodesInfoKeys[2]])
             
             if  OurWorld.CZ in d[NodeKeys.NodesInfoKeys[4]]:
                 d[NodeKeys.NodesInfoKeys[4]] = OurWorld.CZ_FULL
@@ -190,7 +190,7 @@ class NodeTreeData():
         SubsNodesInfo = []
         SubsFinalResult    = []
         print("Geting Subscriptions... %s" % ADDRESS)
-        subsCMD = [sentinelcli, "query", "subscriptions", "--node", self.RPC, "--status", "Active", "--limit", "1000", "--address" ,ADDRESS]
+        subsCMD = [sentinelcli, "query", "subscriptions", "--node", self.RPC, "--limit", "1000", "--address" ,ADDRESS]
         proc = Popen(subsCMD, stdout=PIPE)
     
         k=1
@@ -213,7 +213,7 @@ class NodeTreeData():
                 SubsResult[k].append(v.lstrip().rstrip())
                 
         k=0
-        for snaddress in SubsResult[NodeKeys.SubsInfoKeys[5]]:
+        for snaddress in SubsResult[NodeKeys.SubsInfoKeys[4]]:
             try:
                 NodeData = self.NodeTree.get_node(snaddress).data
             except AttributeError:
@@ -251,7 +251,7 @@ class NodeTreeData():
 
 
     def GetQuota(self, id):
-        quotaCMD = [sentinelcli, 'query', 'quotas', '--node', self.RPC, '--page', '1', id]
+        quotaCMD = [sentinelcli, 'query', 'allocations', '--node', self.RPC, '--page', '1', id]
         proc = Popen(quotaCMD, stdout=PIPE)
         h=1
         for line in proc.stdout.readlines():
