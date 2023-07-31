@@ -2,7 +2,7 @@ from geography.continents import OurWorld
 from ui.interfaces import Tab, LatencyContent, TooltipMDIconButton
 from typedef.win import WindowNames, ICANHAZURL, ICANHAZDNS
 from cli.sentinel import  NodeTreeData
-from typedef.konstants import NodeKeys, TextStrings, MeileColors
+from typedef.konstants import NodeKeys, TextStrings, MeileColors, IBCTokens
 from cli.sentinel import disconnect as Disconnect
 import main.main as Meile
 from ui.widgets import WalletInfoContent, MDMapCountryButton, RatingContent, NodeRV, NodeRV2
@@ -984,6 +984,16 @@ class SubscriptionScreen(Screen):
         else:
             city = " "
             
+        price = node[NodeKeys.FinalSubsKeys[4]].lstrip().rstrip()
+        match = re.match(r"([0-9]+)([a-z]+)", price, re.I)
+        if match:
+            amount, coin = match.groups()
+            amount = round(float(float(amount) / IBCTokens.SATOSHI),4)
+            coin = coin.lstrip("u") # Remove u
+            price_text = f"{amount}{coin}"
+        else:
+            price_text = node[NodeKeys.FinalSubsKeys[4]].lstrip().rstrip()
+                
         if node[NodeKeys.FinalSubsKeys[1]] == "Offline":
             self.ids.rv.data.append(
                  {
@@ -991,7 +1001,8 @@ class SubscriptionScreen(Screen):
                      "moniker_text"   : node[NodeKeys.FinalSubsKeys[1]].lstrip().rstrip(),
                      "type_text"      : node[NodeKeys.FinalSubsKeys[8]].lstrip().rstrip(),
                      "sub_id_text"    : node[NodeKeys.FinalSubsKeys[0]].lstrip().rstrip(),
-                     "price_text"     : node[NodeKeys.FinalSubsKeys[4]].lstrip().rstrip(),
+                     #"price_text"     : node[NodeKeys.FinalSubsKeys[4]].lstrip().rstrip(),
+                     "price_text"     : price_text,
                      "country_text"   : "Offline",
                      "address_text"   : node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip(),
                      "allocated_text" : node[NodeKeys.FinalSubsKeys[6]].lstrip().rstrip(),
@@ -1013,7 +1024,7 @@ class SubscriptionScreen(Screen):
                     "moniker_text"   : node[NodeKeys.FinalSubsKeys[1]].lstrip().rstrip(),
                     "type_text"      : node[NodeKeys.FinalSubsKeys[8]].lstrip().rstrip(),
                     "sub_id_text"    : node[NodeKeys.FinalSubsKeys[0]].lstrip().rstrip(),
-                    "price_text"     : node[NodeKeys.FinalSubsKeys[4]].lstrip().rstrip(),
+                    "price_text"     : price_text,
                     "country_text"   : node[NodeKeys.FinalSubsKeys[5]].lstrip().rstrip(),
                     "address_text"   : node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip(),
                     "allocated_text" : node[NodeKeys.FinalSubsKeys[6]].lstrip().rstrip(),
