@@ -118,7 +118,7 @@ class HandleWalletFunctions():
         except pexpect.exceptions.TIMEOUT:
             return (False, 1415)
         
-        return self.ParseSubscribe(self)
+        return self.ParseSubscribe()
               
     def ParseSubscribe(self):
         SUBJSON = False

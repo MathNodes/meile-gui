@@ -2,7 +2,7 @@ from geography.continents import OurWorld
 from ui.interfaces import Tab, LatencyContent, TooltipMDIconButton
 from typedef.win import WindowNames, ICANHAZURL, ICANHAZDNS
 from cli.sentinel import  NodeTreeData
-from typedef.konstants import NodeKeys, TextStrings, MeileColors, IBCTokens
+from typedef.konstants import NodeKeys, TextStrings, MeileColors, HTTParams, IBCTokens
 from cli.sentinel import disconnect as Disconnect
 import main.main as Meile
 from ui.widgets import WalletInfoContent, MDMapCountryButton, RatingContent, NodeRV, NodeRV2
@@ -134,6 +134,8 @@ class WalletRestore(Screen):
     def wallet_restore(self, inst):
         MeileConfig = MeileGuiConfig()
         CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
+        
+        hwf = HandleWalletFunctions()
         try:
             self.dialog.dismiss()
         except Exception as e:
@@ -143,15 +145,13 @@ class WalletRestore(Screen):
         wallet_name        = unidecode(self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.name.ids.wallet_name.text)
         keyring_passphrase = unidecode(self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.password.ids.wallet_password.text)
         if seed_phrase:
-            Wallet = HandleWalletFunctions.create(HandleWalletFunctions,
-                                                  wallet_name.lstrip().rstrip(),
-                                                  keyring_passphrase.lstrip().rstrip(),
-                                                  seed_phrase.lstrip().rstrip())
+            Wallet = hwf.create(wallet_name.lstrip().rstrip(),
+                                keyring_passphrase.lstrip().rstrip(),
+                                seed_phrase.lstrip().rstrip())
         else:
-            Wallet = HandleWalletFunctions.create(HandleWalletFunctions, 
-                                                  wallet_name.lstrip().rstrip(), 
-                                                  keyring_passphrase.lstrip().rstrip(), 
-                                                  None)
+            Wallet = hwf.create(wallet_name.lstrip().rstrip(), 
+                                keyring_passphrase.lstrip().rstrip(), 
+                                None)
             
         FILE = open(MeileGuiConfig.CONFFILE,'w')
 
@@ -803,6 +803,11 @@ class MainWindow(Screen):
         Meile.app.root.transition = SlideTransition(direction = "up")
         Meile.app.root.current = WindowNames.WALLET
         
+    def build_settings_screen_interface(self):
+        Meile.app.root.add_widget(SettingsScreen(name=WindowNames.SETTINGS))
+        Meile.app.root.transition = SlideTransition(direction = "down")
+        Meile.app.root.current = WindowNames.SETTINGS
+        
     def build_help_screen_interface(self):
         Meile.app.root.add_widget(HelpScreen(name=WindowNames.HELP))
         Meile.app.root.transition = SlideTransition(direction = "left")
@@ -1328,4 +1333,62 @@ class HelpScreen(Screen):
         
         Meile.app.root.remove_widget(self)
         Meile.app.root.transistion = SlideTransition(direction="right")
+        Meile.app.root.current = WindowNames.MAIN_WINDOW
+
+class SettingsScreen(Screen):
+    MeileConfig = MeileGuiConfig()
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        params = HTTParams()
+        self.RPC = params.RPC
+        
+        self.MeileConfig = MeileGuiConfig()
+
+        menu_items = [
+            {
+                "viewclass": "IconListItem",
+                "icon": "server-security",
+                "text": f"{i}",
+                "height": dp(56),
+                "on_release": lambda x=f"{i}": self.set_item(x),
+            } for i in params.RPCS
+        ]
+        self.menu = MDDropdownMenu(
+            caller=self.ids.drop_item,
+            items=menu_items,
+            position="center",
+            width_mult=50,
+        )
+        self.menu.bind()
+        
+    def get_rpc_config(self):
+        CONFIG = self.MeileConfig.read_configuration(self.MeileConfig.CONFFILE)
+
+        self.ids.drop_item.set_item(CONFIG['network']['rpc'])
+        return CONFIG['network']['rpc']
+
+    def set_item(self, text_item):
+        self.ids.drop_item.set_item(text_item)
+        self.RPC = text_item
+        self.menu.dismiss()
+
+    def build(self):
+        return self.screen
+
+    def SaveOptions(self):
+        
+        CONFIG = self.MeileConfig.read_configuration(self.MeileConfig.CONFFILE)
+        CONFIG.set('network', 'rpc', self.RPC)
+
+        FILE = open(self.MeileConfig.CONFFILE, 'w')
+        CONFIG.write(FILE)
+
+        self.set_previous_screen()
+
+    def set_previous_screen(self):
+
+        Meile.app.root.remove_widget(self)
+        Meile.app.root.transistion = SlideTransition(direction="up")
         Meile.app.root.current = WindowNames.MAIN_WINDOW

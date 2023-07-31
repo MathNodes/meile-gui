@@ -18,6 +18,9 @@ class HTTParams():
     APIURL                 = "https://api.sentinel.mathnodes.com"
     SERVER_URL             = "https://aimokoivunen.mathnodes.com:5000"
     RPC                    = "https://rpc.mathnodes.com:443"
+    RPCS                   = ['https://rpc.mathnodes.com:443', 'https://rpc.sentinel.co:443', 'https://sentinel-rpc.badgerbite.io:443',
+                              'https://sentinel-rpc2.badgerbite.io:443', 'https://rpc.sentinel.quokkastake.io:443', 'https://rpc-sentinel.whispernode.com:443',
+                              'https://rpc-sentinel-ia.cosmosia.notional.ventures:443']
     GRPC                   = "grpc+http://aimokoivunen.mathnodes.com:9090/"
     NODE_SCORE_ENDPOINT    = "/api/nodescores"
     NODE_LOCATION_ENDPOINT = "/api/nodelocations"
@@ -48,7 +51,7 @@ class IBCTokens():
     
 class TextStrings():
     dash = "-"
-    VERSION = "v0.13.3.0"
+    VERSION = "v0.13.3.1"
     
 class MeileColors():
     DIALOG_BG_COLOR = "#121212"
