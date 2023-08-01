@@ -1263,6 +1263,9 @@ class NodeScreen(Screen):
             elif self.NodeTree.NodeTypes[node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip()] == NodeKeys.Nodetypes[1]:
                 IconButton  = "alpha-b-circle"
                 ToolTipText = "Business"
+            elif self.NodeTree.NodeTypes[node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip()] == NodeKeys.Nodetypes[3]:
+                IconButton  = "alpha-u-circle"
+                ToolTipText = "University"
             else:
                 IconButton  = "alpha-d-circle"
                 ToolTipText = "Datacenter"
@@ -1274,7 +1277,7 @@ class NodeScreen(Screen):
             {
                 "viewclass"    : "RecycleViewRow",
                 "moniker_text" : node[NodeKeys.NodesInfoKeys[0]].lstrip().rstrip(),
-                "price_text"   : node[NodeKeys.NodesInfoKeys[3]].lstrip().rstrip(),
+                "price_text"   : node[NodeKeys.NodesInfoKeys[2]].lstrip().rstrip(),
                 "country_text" : node[NodeKeys.NodesInfoKeys[4]].lstrip().rstrip(),
                 "address_text" : node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip(),
                 "type_text"    : node[NodeKeys.NodesInfoKeys[9]].lstrip().rstrip(),
@@ -1342,12 +1345,15 @@ class HelpScreen(Screen):
 
 
 class SettingsScreen(Screen):
-    
+    MeileConfig = MeileGuiConfig()
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         
         params = HTTParams()
         self.RPC = params.RPC
+        
+        self.MeileConfig = MeileGuiConfig()
         
         menu_items = [
             {
@@ -1365,6 +1371,12 @@ class SettingsScreen(Screen):
             width_mult=50,
         )
         self.menu.bind()
+        
+    def get_rpc_config(self):
+        CONFIG = self.MeileConfig.read_configuration(self.MeileConfig.CONFFILE)
+
+        self.ids.drop_item.set_item(CONFIG['network']['rpc'])
+        return CONFIG['network']['rpc']
 
     def set_item(self, text_item):
         self.ids.drop_item.set_item(text_item)
@@ -1375,15 +1387,15 @@ class SettingsScreen(Screen):
         return self.screen
     
     def SaveOptions(self):
-        MeileConfig = MeileGuiConfig()
-        CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
-        CONFIG.set('network', 'rpc', self.RPC)
         
-        FILE = open(MeileConfig.CONFFILE, 'w')
+        CONFIG = self.MeileConfig.read_configuration(self.MeileConfig.CONFFILE)
+        CONFIG.set('network', 'rpc', self.RPC)
+
+        FILE = open(self.MeileConfig.CONFFILE, 'w')
         CONFIG.write(FILE)
-    
+
         self.set_previous_screen()
-    
+        
     def set_previous_screen(self):
         
         Meile.app.root.remove_widget(self)

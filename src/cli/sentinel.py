@@ -78,7 +78,7 @@ class NodeTreeData():
         for d in AllNodesInfoSorted:
             for key in NodeKeys.NodesInfoKeys:
                 d[key] = d[key].lstrip().rstrip()
-            
+            d[NodeKeys.NodesInfoKeys[10]] = d[NodeKeys.NodesInfoKeys[10]].split('-')[0]
             version = d[NodeKeys.NodesInfoKeys[10]].replace('.','')
             if version not in NodeKeys.NodeVersions:
                 continue

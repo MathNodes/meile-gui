@@ -11,6 +11,9 @@ class ConfParams():
     CONNECTIONINFO   = path.join(KEYRINGDIR, "connection.infos")
     WIREGUARD_STATUS = path.join(BASEDIR, "status.json")
     CHAINID          = 'sentinelhub-2'
+    GASPRICE         = "0.2udvpn"
+    GASADJUSTMENT    = 1.15
+    GAS              = 500000
     
 
 class HTTParams():
@@ -18,9 +21,10 @@ class HTTParams():
     APIURL                 = "https://api.sentinel.mathnodes.com"
     SERVER_URL             = "https://aimokoivunen.mathnodes.com:5000"
     RPC                    = "https://rpc.mathnodes.com:443"
+    # Note http://128.199.90.172:26657 is testnet ONLY!
     RPCS                   = ['https://rpc.mathnodes.com:443', 'https://rpc.sentinel.co:443', 'https://sentinel-rpc.badgerbite.io:443',
                               'https://sentinel-rpc2.badgerbite.io:443', 'https://rpc.sentinel.quokkastake.io:443', 'https://rpc-sentinel.whispernode.com:443',
-                              'https://rpc-sentinel-ia.cosmosia.notional.ventures:443']
+                              'https://rpc-sentinel-ia.cosmosia.notional.ventures:443', 'http://128.199.90.172:26657']
     GRPC                   = "grpc+http://aimokoivunen.mathnodes.com:9090/"
     NODE_SCORE_ENDPOINT    = "/api/nodescores"
     NODE_LOCATION_ENDPOINT = "/api/nodelocations"
@@ -44,7 +48,7 @@ class IBCTokens():
     
     IBCCOINS = [{'uscrt' : IBCSCRT}, {'uatom' : IBCATOM}, {'udec' : IBCDEC}, {'uosmo' : IBCOSMO}, {'uknwn' :IBCUNKWN}]
     
-    UNITTOKEN = {'uscrt' : 'scrt', 'uatom' : 'atom' , 'uosmo' : 'osmo', 'udec' : 'dec', 'udvpn' : 'dvpn'}
+    UNITTOKEN = {'uscrt' : 'scrt', 'uatom' : 'atom' , 'uosmo' : 'osmo', 'udec' : 'dec', 'udvpn' : 'dvpn', 'tsent' : 'tsent'}
 
     CoinGeckoIDS = {'scrt' : 'secret', 'atom' : 'cosmos', 'dvpn' : 'sentinel', 'osmo' : 'osmosis', 'dec' : 'decentr'}
     
@@ -64,6 +68,6 @@ class NodeKeys():
     # [ "ID", "Moniker", "Node", "Gigabytes", "Deposit", "Country", "Allocated", "Consumed", "Type"]
     FinalSubsKeys = [SubsInfoKeys[0], NodesInfoKeys[0],SubsInfoKeys[4],SubsInfoKeys[5], SubsInfoKeys[7], NodesInfoKeys[4], "Allocated", "Consumed", NodesInfoKeys[9]]
     NodeVersions  = [str(item).zfill(3) for item in range(30,1000)]
-    Nodetypes = ['residential', 'business', 'hosting']
+    Nodetypes = ['residential', 'business', 'hosting', 'edu']
 
 

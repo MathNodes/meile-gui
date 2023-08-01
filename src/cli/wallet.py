@@ -119,14 +119,17 @@ class HandleWalletFunctions():
         
         DENOM = self.DetermineDenom(DEPOSIT)
         
-        SCMD = "%s tx node subscribe --yes --keyring-backend file --keyring-dir %s --gas-prices 0.2udvpn --chain-id %s --node %s --from '%s' '%s' '%s' 0 %s"  % (sentinelcli,
-                                                                                                                                                          ConfParams.KEYRINGDIR, 
-                                                                                                                                                          ConfParams.CHAINID, 
-                                                                                                                                                          self.RPC,
-                                                                                                                                                          KEYNAME,
-                                                                                                                                                          NODE,
-                                                                                                                                                          GB,
-                                                                                                                                                          DENOM)    
+        SCMD = "%s tx node subscribe --yes --keyring-backend file --keyring-dir %s --chain-id %s --node %s --gas-prices %s --gas %d --gas-adjustment %f --from '%s' '%s' '%s' 0 %s"  % (sentinelcli,
+                                                                                                                                                                                        ConfParams.KEYRINGDIR, 
+                                                                                                                                                                                        ConfParams.CHAINID, 
+                                                                                                                                                                                        self.RPC,
+                                                                                                                                                                                        ConfParams.GASPRICE,
+                                                                                                                                                                                        ConfParams.GAS,
+                                                                                                                                                                                        ConfParams.GASADJUSTMENT,
+                                                                                                                                                                                        KEYNAME,
+                                                                                                                                                                                        NODE,
+                                                                                                                                                                                        GB,
+                                                                                                                                                                                        DENOM)    
         try:
             child = pexpect.spawn(SCMD)
             child.logfile = ofile
@@ -153,14 +156,17 @@ class HandleWalletFunctions():
         
         DENOM = self.DetermineDenom(DEPOSIT)
         
-        SCMD = "%s tx node subscribe --yes --keyring-backend file --keyring-dir %s --gas-prices 0.2udvpn --chain-id %s --node %s --from '%s' '%s' 0 '%s' %s"  % (sentinelcli,
-                                                                                                                                                          ConfParams.KEYRINGDIR, 
-                                                                                                                                                          ConfParams.CHAINID, 
-                                                                                                                                                          self.RPC,
-                                                                                                                                                          KEYNAME,
-                                                                                                                                                          NODE,
-                                                                                                                                                          HOURS,
-                                                                                                                                                          DENOM)    
+        SCMD = "%s tx node subscribe --yes --keyring-backend file --keyring-dir %s --chain-id %s --node %s --gas-prices %s --gas %d --gas-adjustment %f --from '%s' '%s' 0 '%s' %s"  % (sentinelcli,
+                                                                                                                                                                                        ConfParams.KEYRINGDIR, 
+                                                                                                                                                                                        ConfParams.CHAINID, 
+                                                                                                                                                                                        self.RPC,
+                                                                                                                                                                                        ConfParams.GASPRICE,
+                                                                                                                                                                                        ConfParams.GAS,
+                                                                                                                                                                                        ConfParams.GASADJUSTMENT,
+                                                                                                                                                                                        KEYNAME,
+                                                                                                                                                                                        NODE,
+                                                                                                                                                                                        HOURS,
+                                                                                                                                                                                        DENOM)    
         try:
             child = pexpect.spawn(SCMD)
             child.logfile = ofile
@@ -239,8 +245,8 @@ class HandleWalletFunctions():
 
             ofile.flush()
             ofile.close()
-        except pexpect.exceptions.TIMEOUT:
-            return {'hash' : "0x0", 'success' : False, 'message' : "ERROR: pexpect timeout"}
+        except Exception as e:
+            return {'hash' : "0x0", 'success' : False, 'message' : f"ERROR: {str(e)}"}
 
         privkey_hex = self.ParseUnSubscribe()
         return self.grpc_unsubscribe(privkey_hex, subId)
@@ -265,6 +271,7 @@ class HandleWalletFunctions():
         address = wallet.address()
 
         print(f"Address: {address},\nSubscription ID: {subId}")
+        '''
         print("Checking for active sessions...")
 
         try: 
@@ -273,29 +280,31 @@ class HandleWalletFunctions():
             print("Error getting sessions")
             return {'hash' : tx_hash, 'success' : tx_success, 'message' : "ERROR retrieving sessions. Please try again later."}
         try: 
-            if not session_data['session']:  
-                tx = Transaction()
-                tx.add_message(MsgCancelRequest(frm=str(address), id=int(subId)))
-
-                tx = prepare_and_broadcast_basic_transaction(client, tx, wallet)
-                tx.wait_to_complete()
-
-                tx_hash     = tx._tx_hash
-                tx_response = tx._response.is_successful()
-                tx_height   = int(tx._response.height)
-
-                print("Hash: %s" % str(tx_hash))
-                print("Response: %s" % tx_response)
-                print("Height: %d" % int(tx._response.height))
-
-                if tx_response:
-                    tx_success = tx_response
-                    message    = "Unsubscribe from Subscription ID: %s, was successful at Height: %d" % (subId, tx_height )
-
+            if not session_data['session']:
+        '''  
+        try: 
+            tx = Transaction()
+            tx.add_message(MsgCancelRequest(frm=str(address), id=int(subId)))
+    
+            tx = prepare_and_broadcast_basic_transaction(client, tx, wallet)
+            tx.wait_to_complete()
+    
+            tx_hash     = tx._tx_hash
+            tx_response = tx._response.is_successful()
+            tx_height   = int(tx._response.height)
+    
+            print("Hash: %s" % str(tx_hash))
+            print("Response: %s" % tx_response)
+            print("Height: %d" % int(tx._response.height))
+    
+            if tx_response:
+                tx_success = tx_response
+                message    = "Unsubscribe from Subscription ID: %s, was successful at Height: %d" % (subId, tx_height )
+    
             else:
-                message = 'Found active session. Due to blockchain limitations we cannot cancel a subscription while there is a pending session.\n' + 'STATUS: ' + session_data['data']['status'] + ',' + session_data['data']['status_at']
+                message = "Unsubscribe failed"
         except:
-            message = "Error parsing or retrieving sessions. Please try again later." 
+            message = "Error creating or broadcasting unsubscribe tx message" 
 
         return {'hash' : tx_hash, 'success' : tx_success, 'message' : message}
 
@@ -335,7 +344,18 @@ class HandleWalletFunctions():
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
         KEYNAME = CONFIG['wallet'].get('keyname', '')
-        connCMD = "pkexec env PATH=%s %s connect --home %s --keyring-backend file --keyring-dir %s --chain-id sentinelhub-2 --node %s --gas-prices 0.1udvpn --yes --from '%s' %s %s" % (ConfParams.PATH, sentinelcli, ConfParams.BASEDIR, ConfParams.KEYRINGDIR, self.RPC, KEYNAME, ID, address)
+        connCMD = "pkexec env PATH=%s %s connect --home %s --keyring-backend file --keyring-dir %s --chain-id %s --node %s --gas-prices %s --gas %d --gas-adjustment %f --yes --from '%s' %s %s" % (ConfParams.PATH, 
+                                                                                                                                                                                                    sentinelcli, 
+                                                                                                                                                                                                    ConfParams.BASEDIR, 
+                                                                                                                                                                                                    ConfParams.KEYRINGDIR,
+                                                                                                                                                                                                    ConfParams.CHAINID, 
+                                                                                                                                                                                                    self.RPC,
+                                                                                                                                                                                                    ConfParams.GASPRICE,
+                                                                                                                                                                                                    ConfParams.GAS,
+                                                                                                                                                                                                    ConfParams.GASADJUSTMENT, 
+                                                                                                                                                                                                    KEYNAME, 
+                                                                                                                                                                                                    ID, 
+                                                                                                                                                                                                    address)
             
         ofile =  open(ConfParams.CONNECTIONINFO, "wb")    
     
