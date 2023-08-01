@@ -24,6 +24,7 @@ from kivymd.theming import ThemableBehavior
 import requests
 import re
 import psutil
+import asyncio
 from functools import partial
 from urllib3.exceptions import InsecureRequestWarning
 from os import path

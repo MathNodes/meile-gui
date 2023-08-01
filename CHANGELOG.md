@@ -1,5 +1,9 @@
 CHANGELOG
 ========================
+# v0.13.4.1 (01/08/2023)
+* FIX: asyncio dependency in widgets.py causing crash
+* ADD: awoc/datum file
+
 # v0.13.4.0 (30/07/2023)
 * NEW: Settings Navbar Icon
 * NEW: Settings screen
