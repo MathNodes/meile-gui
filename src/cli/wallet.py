@@ -129,7 +129,9 @@ class HandleWalletFunctions():
                                                                                                                                                                                         KEYNAME,
                                                                                                                                                                                         NODE,
                                                                                                                                                                                         GB,
-                                                                                                                                                                                        DENOM)    
+                                                                                                                                                                                    DENOM)    
+        
+        print(SCMD)
         try:
             child = pexpect.spawn(SCMD)
             child.logfile = ofile
@@ -143,7 +145,7 @@ class HandleWalletFunctions():
         except pexpect.exceptions.TIMEOUT:
             return (False, 1415)
         
-        return self.ParseSubscribe(self)
+        return self.ParseSubscribe()
     
     def subscribe_hourly(self, KEYNAME, NODE, HOURS, DEPOSIT):
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
@@ -231,7 +233,7 @@ class HandleWalletFunctions():
 
         ofile = open(ConfParams.USUBSCRIBEINFO, "wb")
 
-        unsubCMD = "%s keys export --unarmored-hex --unsafe --keyring-backend file --keyring-dir %s %s" % (sentinelcli,  ConfParams.KEYRINGDIR, KEYNAME)
+        unsubCMD = "%s keys export --unarmored-hex --unsafe --keyring-backend file --keyring-dir %s '%s'" % (sentinelcli,  ConfParams.KEYRINGDIR, KEYNAME)
 
         try:
             child = pexpect.spawn(unsubCMD)
@@ -259,8 +261,8 @@ class HandleWalletFunctions():
             chain_id=ConfParams.CHAINID,
             url=HTTParams.GRPC,
             fee_minimum_gas_price=0.4,
-            fee_denomination="udvpn",
-            staking_denomination="udvpn",
+            fee_denomination=IBCTokens.mu_coins[0],
+            staking_denomination=IBCTokens.mu_coins[0],
             )
 
         client = LedgerClient(cfg)    
@@ -303,8 +305,8 @@ class HandleWalletFunctions():
     
             else:
                 message = "Unsubscribe failed"
-        except:
-            message = "Error creating or broadcasting unsubscribe tx message" 
+        except Exception as e:
+            message = f"Error creating or broadcasting unsubscribe tx message: {str(e)}" 
 
         return {'hash' : tx_hash, 'success' : tx_success, 'message' : message}
 
@@ -357,6 +359,7 @@ class HandleWalletFunctions():
                                                                                                                                                                                                     ID, 
                                                                                                                                                                                                     address)
             
+        print(connCMD)
         ofile =  open(ConfParams.CONNECTIONINFO, "wb")    
     
         try:
@@ -409,7 +412,8 @@ class HandleWalletFunctions():
         Request = HTTPRequests.MakeRequest()
         http = Request.hadapter()
         endpoint = HTTParams.BALANCES_ENDPOINT + address
-        CoinDict = {'dvpn' : 0, 'scrt' : 0, 'dec'  : 0, 'atom' : 0, 'osmo' : 0}
+        #CoinDict = {'dvpn' : 0, 'scrt' : 0, 'dec'  : 0, 'atom' : 0, 'osmo' : 0}
+        CoinDict = {'tsent' : 0, 'scrt' : 0, 'dec'  : 0, 'atom' : 0, 'osmo' : 0}
         
         try:
             r = http.get(HTTParams.APIURL + endpoint)
@@ -420,8 +424,10 @@ class HandleWalletFunctions():
         print(coinJSON)
         try:
             for coin in coinJSON['result']:
-                if "udvpn" in coin['denom']:
-                    CoinDict['dvpn'] = round(float(float(coin['amount']) /IBCTokens.SATOSHI),4)
+                #if "udvpn" in coin['denom']:
+                if "tsent" in coin['denom']:
+                    #CoinDict['dvpn'] = round(float(float(coin['amount']) /IBCTokens.SATOSHI),4)
+                    CoinDict['tsent'] = round(float(float(coin['amount']) /IBCTokens.SATOSHI),4)
                 elif IBCTokens.IBCSCRT in coin['denom']:
                     CoinDict['scrt'] = round(float(float(coin['amount']) /IBCTokens.SATOSHI),4)
                 elif IBCTokens.IBCDEC in coin['denom']:
