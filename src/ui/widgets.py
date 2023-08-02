@@ -777,6 +777,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
         self.add_loading_popup("DNS Resolver error... Switching to Cloudflare")
         yield 2.6
 
+        # Linux
         dnsCMD = "pkexec bash -c 'cat %s | resolvconf -a wg99 && resolvconf -u'" % RESOLVFILE
 
         try: 

@@ -554,6 +554,7 @@ class MainWindow(Screen):
         except Exception as e:
             print(str(e))
             return False
+        
     @mainthread    
     def disconnect_from_node(self):
         try:
@@ -734,7 +735,12 @@ class MainWindow(Screen):
         except Exception as e:
             print(str(e))
             pass
+        
+        # Clear out Subscriptions
         self.SubResult = None
+        # Redraw Map Pins
+        self.MeileMap.getOverlays().clear()
+        self.AddCountryNodePins()
         self.remove_loading_widget(None)
         
     @mainthread
