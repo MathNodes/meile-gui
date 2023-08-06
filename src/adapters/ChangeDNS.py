@@ -49,7 +49,7 @@ class ChangeDNS():
                         interface = re.sub(osx_interface, '', p).strip()
                         if p.startswith("(*)") is False:
                             # print(f"{interface} is enabled")
-                            cmd = f"/usr/sbin/networksetup -setdnsservers {interface} {self.dn}"
+                            cmd = f"/usr/sbin/networksetup -setdnsservers {interface} {self.dns}"
                             try:
                                 proc = Popen(cmd, shell=True)
                                 proc.wait(timeout=60)
@@ -70,12 +70,14 @@ class ChangeDNS():
             """
 
             for interface in psutil.net_if_addrs().keys():
-                cmd = [gsudo, f'netsh interface ipv4 set dns name="{interface}" static {self.dns}']
-                chdir(MeileConfig.BASEBINDIR)
-                try:
-                    proc = Popen(cmd, shell=True)
-                    proc.wait(timeout=60)
-                except TimeoutExpired as e:
-                    print(str(e))
-                proc_out, proc_err = proc.communicate()
-                chdir(MeileConfig.BASEDIR)
+                # Filter interface, tun(nnel) or w(ire)g(uard)99
+                if "tun" in interface.lower() or "wg99" in interface.lower():
+                    cmd = [gsudo, f'netsh interface ipv4 set dns name="{interface}" static {self.dns}']
+                    chdir(MeileConfig.BASEBINDIR)
+                    try:
+                        proc = Popen(cmd, shell=True)
+                        proc.wait(timeout=60)
+                    except TimeoutExpired as e:
+                        print(str(e))
+                    proc_out, proc_err = proc.communicate()
+                    chdir(MeileConfig.BASEDIR)
