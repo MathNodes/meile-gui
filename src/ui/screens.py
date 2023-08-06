@@ -10,7 +10,7 @@ from ui.widgets import WalletInfoContent, MDMapCountryButton, RatingContent, Nod
 from utils.qr import QRCode
 from conf.meile_config import MeileGuiConfig
 from typedef.win import WindowNames, ICANHAZURL, ICANHAZDNS, CoinsList
-from typedef.konstants import NodeKeys, TextStrings, MeileColors, HTTParams
+from typedef.konstants import NodeKeys, TextStrings, MeileColors, HTTParams, IBCTokens
 from fiat import fiat_interface
 from adapters import HTTPRequests, DNSRequests
 
@@ -745,6 +745,8 @@ class MainWindow(Screen):
             pass
         self.remove_loading_widget(None)
         self.SubResult = None
+        self.MeileMap.getOverlays().clear()
+        self.AddCountryNodePins()
     
     @mainthread
     def on_tab_switch(self, instance_tabs, instance_tab, instance_tabs_label, tab_text):
@@ -1003,7 +1005,17 @@ class SubscriptionScreen(Screen):
             city = self.NodeTree.NodeLocations[node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip()]
         else:
             city = " "
-
+        
+        price = node[NodeKeys.FinalSubsKeys[4]].lstrip().rstrip()
+        match = re.match(r"([0-9]+)([a-z]+)", price, re.I)
+        if match:
+            amount, coin = match.groups()
+            amount = round(float(float(amount) / IBCTokens.SATOSHI),4)
+            coin = coin.lstrip("u") # Remove u
+            price_text = f"{amount}{coin}"
+        else:
+            price_text = node[NodeKeys.FinalSubsKeys[4]].lstrip().rstrip()
+            
         if node[NodeKeys.FinalSubsKeys[1]] == "Offline":
             self.ids.rv.data.append(
                  {
@@ -1011,7 +1023,7 @@ class SubscriptionScreen(Screen):
                      "moniker_text"   : node[NodeKeys.FinalSubsKeys[1]].lstrip().rstrip(),
                      "type_text"      : node[NodeKeys.FinalSubsKeys[8]].lstrip().rstrip(),
                      "sub_id_text"    : node[NodeKeys.FinalSubsKeys[0]].lstrip().rstrip(),
-                     "price_text"     : node[NodeKeys.FinalSubsKeys[4]].lstrip().rstrip(),
+                     "price_text"     : price_text,
                      "country_text"   : "Offline",
                      "address_text"   : node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip(),
                      "allocated_text" : node[NodeKeys.FinalSubsKeys[6]].lstrip().rstrip(),
@@ -1033,7 +1045,7 @@ class SubscriptionScreen(Screen):
                     "moniker_text"   : node[NodeKeys.FinalSubsKeys[1]].lstrip().rstrip(),
                     "type_text"      : node[NodeKeys.FinalSubsKeys[8]].lstrip().rstrip(),
                     "sub_id_text"    : node[NodeKeys.FinalSubsKeys[0]].lstrip().rstrip(),
-                    "price_text"     : node[NodeKeys.FinalSubsKeys[4]].lstrip().rstrip(),
+                    "price_text"     : price_text,
                     "country_text"   : node[NodeKeys.FinalSubsKeys[5]].lstrip().rstrip(),
                     "address_text"   : node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip(),
                     "allocated_text" : node[NodeKeys.FinalSubsKeys[6]].lstrip().rstrip(),
@@ -1261,6 +1273,9 @@ class NodeScreen(Screen):
             elif self.NodeTree.NodeTypes[node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip()] == NodeKeys.Nodetypes[1]:
                 IconButton  = "alpha-b-circle"
                 ToolTipText = "Business"
+            elif self.NodeTree.NodeTypes[node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip()] == NodeKeys.Nodetypes[3]:
+                IconButton  = "alpha-u-circle"
+                ToolTipText = "University"
             else:
                 IconButton  = "alpha-d-circle"
                 ToolTipText = "Datacenter"
@@ -1272,7 +1287,7 @@ class NodeScreen(Screen):
             {
                 "viewclass"    : "RecycleViewRow",
                 "moniker_text" : node[NodeKeys.NodesInfoKeys[0]].lstrip().rstrip(),
-                "price_text"   : node[NodeKeys.NodesInfoKeys[3]].lstrip().rstrip(),
+                "price_text"   : node[NodeKeys.NodesInfoKeys[2]].lstrip().rstrip(),
                 "country_text" : node[NodeKeys.NodesInfoKeys[4]].lstrip().rstrip(),
                 "address_text" : node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip(),
                 "type_text"    : node[NodeKeys.NodesInfoKeys[9]].lstrip().rstrip(),
