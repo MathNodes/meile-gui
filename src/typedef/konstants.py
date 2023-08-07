@@ -10,18 +10,26 @@ class ConfParams():
     USUBSCRIBEINFO   = path.join(KEYRINGDIR, "unsubscribe.infos")
     CONNECTIONINFO   = path.join(KEYRINGDIR, "connection.infos")
     WIREGUARD_STATUS = path.join(BASEDIR, "status.json")
-    CHAINID          = 'sentinelhub-2'
+    #CHAINID          = 'sentinelhub-2'
+    CHAINID          = 'testnet'
+    #GASPRICE         = "0.2udvpn"
+    GASPRICE         = "0.2tsent"
+    GASADJUSTMENT    = 1.15
+    GAS              = 500000
     
 
 class HTTParams():
     TIMEOUT                = 5
-    APIURL                 = "https://api.sentinel.mathnodes.com"
+    #APIURL                 = "https://api.sentinel.mathnodes.com"
+    APIURL                 = "http://128.199.90.172:1317"
     SERVER_URL             = "https://aimokoivunen.mathnodes.com:5000"
     RPC                    = "https://rpc.mathnodes.com:443"
+    # Note http://128.199.90.172:26657 is testnet ONLY!
     RPCS                   = ['https://rpc.mathnodes.com:443', 'https://rpc.sentinel.co:443', 'https://sentinel-rpc.badgerbite.io:443',
                               'https://sentinel-rpc2.badgerbite.io:443', 'https://rpc.sentinel.quokkastake.io:443', 'https://rpc-sentinel.whispernode.com:443',
-                              'https://rpc-sentinel-ia.cosmosia.notional.ventures:443']
-    GRPC                   = "grpc+http://aimokoivunen.mathnodes.com:9090/"
+                              'https://rpc-sentinel-ia.cosmosia.notional.ventures:443', 'http://128.199.90.172:26657']
+    #GRPC                   = "grpc+http://aimokoivunen.mathnodes.com:9090/"
+    GRPC                   = "grpc+http://128.199.90.172:9090/"
     NODE_SCORE_ENDPOINT    = "/api/nodescores"
     NODE_LOCATION_ENDPOINT = "/api/nodelocations"
     NODE_TYPE_ENDPOINT     = "/api/nodetypes"
@@ -42,12 +50,9 @@ class IBCTokens():
     IBCOSMO  = 'ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518'
     IBCUNKWN = 'ibc/9BCB27203424535B6230D594553F1659C77EC173E36D9CF4759E7186EE747E84'
     
-    IBCCOINS = [{'uscrt' : IBCSCRT}, {'uatom' : IBCATOM}, {'udec' : IBCDEC}, {'uosmo' : IBCOSMO}, {'uknwn' :IBCUNKWN}]
-    
-    UNITTOKEN = {'uscrt' : 'scrt', 'uatom' : 'atom' , 'uosmo' : 'osmo', 'udec' : 'dec', 'udvpn' : 'dvpn'}
-
-    CoinGeckoIDS = {'scrt' : 'secret', 'atom' : 'cosmos', 'dvpn' : 'sentinel', 'osmo' : 'osmosis', 'dec' : 'decentr'}
-    
+    IBCCOINS     = [{'uscrt' : IBCSCRT}, {'uatom' : IBCATOM}, {'udec' : IBCDEC}, {'uosmo' : IBCOSMO}, {'uknwn' :IBCUNKWN}]
+    UNITTOKEN    = {'uscrt' : 'scrt', 'uatom' : 'atom' , 'uosmo' : 'osmo', 'udec' : 'dec', 'udvpn' : 'dvpn', 'tsent' : 'tsent'}
+    mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
     
 class TextStrings():
     dash = "-"
@@ -59,10 +64,11 @@ class MeileColors():
     MAP_MARKER = "../imgs/location_pin.png"
     
 class NodeKeys():
-    NodesInfoKeys = ["Moniker","Address","Provider","Price","Country","Speed","Latency","Peers","Handshake","Type","Version","Status"]
-    SubsInfoKeys  = ["ID", "Owner", "Plan", "Expiry", "Denom", "Node", "Price", "Deposit", "Free", "Status"]
-    FinalSubsKeys = [SubsInfoKeys[0], NodesInfoKeys[0],SubsInfoKeys[5], SubsInfoKeys[6], SubsInfoKeys[7], NodesInfoKeys[4], "Allocated", "Consumed", NodesInfoKeys[9]]
+    NodesInfoKeys = ["Moniker","Address","Price","Hourly Price", "Country","Speed","Latency","Peers","Handshake","Type","Version","Status"]
+    SubsInfoKeys  = ["ID", "Owner", "Inactive Date", "Status", "Node", "Gigabytes", "Hours", "Deposit", "Plan", "Denom"]
+    # [ "ID", "Moniker", "Node", "Gigabytes", "Deposit", "Country", "Allocated", "Consumed", "Type"]
+    FinalSubsKeys = [SubsInfoKeys[0], NodesInfoKeys[0],SubsInfoKeys[4],SubsInfoKeys[5], SubsInfoKeys[7], NodesInfoKeys[4], "Allocated", "Consumed", NodesInfoKeys[9]]
     NodeVersions  = [str(item).zfill(3) for item in range(30,1000)]
-    Nodetypes = ['residential', 'business', 'hosting']
+    Nodetypes = ['residential', 'business', 'hosting', 'edu']
 
 

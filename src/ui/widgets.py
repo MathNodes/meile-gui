@@ -117,7 +117,7 @@ class SubscribeContent(BoxLayout):
         self.price_text = price
         self.moniker = moniker
         self.naddress = naddress
-        self.parse_coin_deposit("dvpn")
+        self.parse_coin_deposit(CoinsList.ibc_mu_coins[0])
         
         menu_items = [
             {
@@ -146,7 +146,7 @@ class SubscribeContent(BoxLayout):
     def set_item(self, text_item):
         self.ids.drop_item.set_item(text_item)
         self.ids.deposit.text = self.parse_coin_deposit(text_item)
-        self.get_usd()
+        #self.get_usd()
         self.menu.dismiss()
         
     def parse_coin_deposit(self, mu_coin):
@@ -157,27 +157,27 @@ class SubscribeContent(BoxLayout):
                     self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(mu_coin_amt.split(mu_coin)[0])),4)) + self.ids.drop_item.current_item 
                     return self.ids.deposit.text
                 else:
-                    self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(self.ids.price.text.split("dvpn")[0])),4)) + self.ids.drop_item.current_item
+                    self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(self.ids.price.text.split(CoinsList.ibc_mu_coins[0])[0])),4)) + self.ids.drop_item.current_item
                     return self.ids.deposit.text
             else:
-                self.ids.deposit.text = "0.0dvpn"
+                self.ids.deposit.text = "0.0" + CoinsList.ibc_mu_coins[0]
                 return self.ids.deposit.text
         except IndexError as e:
             print(str(e))
             try: 
                 if self.ids.price.text:
-                    self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(self.ids.price.text.split("dvpn")[0])),4)) + CoinsList.ibc_mu_coins[0]
+                    self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(self.ids.price.text.split(CoinsList.ibc_mu_coins[0])[0])),4)) + CoinsList.ibc_mu_coins[0]
                     return self.ids.deposit.text
                 else:
-                    self.ids.deposit.text = "0.0dvpn"
+                    self.ids.deposit.text = "0.0" + CoinsList.ibc_mu_coins[0]
                     return self.ids.deposit.text
             except ValueError as e:
                 print(str(e))
-                self.ids.deposit.text = "0.0dvpn"
+                self.ids.deposit.text = "0.0" + CoinsList.ibc_mu_coins[0]
                 return self.ids.deposit.text
         
     def return_deposit_text(self):
-        return (self.ids.deposit.text, self.naddress, self.moniker)
+        return (self.ids.deposit.text, self.naddress, self.moniker, int(self.ids.slider1.value))
     
         
     # Should be async
@@ -341,7 +341,7 @@ Node Version: %s
         KEYNAME = CONFIG['wallet'].get('keyname', '')
         
         hwf = HandleWalletFunctions()
-        returncode = hwf.subscribe(KEYNAME, sub_node[1], deposit)
+        returncode = hwf.subscribe(KEYNAME, sub_node[1], deposit, sub_node[3])
         
         if returncode[0]:
             self.dialog.dismiss()
@@ -377,15 +377,15 @@ Node Version: %s
         for k,v in CoinsList.ibc_coins.items():
             try: 
                 coin = re.findall(k,deposit)[0]
-                print(coin)
+                #print(coin)
                 deposit = deposit.replace(coin, v)
-                print(deposit)
+                #print(deposit)
                 mu_deposit_amt = int(float(re.findall(r'[0-9]+\.[0-9]+', deposit)[0])*CoinsList.SATOSHI)
-                print(mu_deposit_amt)
+                #print(mu_deposit_amt)
                 tru_mu_deposit = str(mu_deposit_amt) + v
-                print(tru_mu_deposit)
+                #print(tru_mu_deposit)
                 tru_mu_ibc_deposit = self.check_ibc_denom(tru_mu_deposit)
-                print(tru_mu_ibc_deposit)
+                #print(tru_mu_ibc_deposit)
                 return tru_mu_ibc_deposit
             except:
                 pass
@@ -777,6 +777,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
         self.add_loading_popup("DNS Resolver error... Switching to Cloudflare")
         yield 2.6
 
+        # Linux
         dnsCMD = "pkexec bash -c 'cat %s | resolvconf -a wg99 && resolvconf -u'" % RESOLVFILE
 
         try: 
