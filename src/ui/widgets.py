@@ -40,6 +40,7 @@ import main.main as Meile
 from adapters import HTTPRequests
 from ui.interfaces import TXContent
 from coin_api.get_price import GetPriceAPI
+from adapters.ChangeDNS import ChangeDNS
 
 class WalletInfoContent(BoxLayout):
     def __init__(self, seed_phrase, name, address, password, **kwargs):
@@ -762,33 +763,15 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
             
     @delayable        
     def change_dns(self):
-        MeileConfig = MeileGuiConfig()
-        RESOLVFILE = path.join(MeileConfig.BASEDIR, "dns")
-        DNSFILE = open(RESOLVFILE, 'w')
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
-        
-        DNSFILE.write('nameserver 1.1.1.1')
-        DNSFILE.flush()
-        DNSFILE.close()
         
         yield 0.6
         if self.dialog:
             self.dialog.dismiss()
         self.add_loading_popup("DNS Resolver error... Switching to Cloudflare")
         yield 2.6
-
-        # Linux
-        dnsCMD = "pkexec bash -c 'cat %s | resolvconf -a wg99 && resolvconf -u'" % RESOLVFILE
-
-        try: 
-            dnsPROC = Popen(dnsCMD, shell=True)
-            dnsPROC.wait(timeout=60)
-        except TimeoutExpired as e:
-            print(str(e))
-            pass
         
-        proc_out,proc_err = dnsPROC.communicate()
-            
+        ChangeDNS(dns="1.1.1.1").change_dns()
 
         yield 1.2
         mw.get_ip_address(None)
