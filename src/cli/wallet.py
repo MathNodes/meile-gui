@@ -151,8 +151,8 @@ class HandleWalletFunctions():
                                                                                                                                                                                         KEYNAME,
                                                                                                                                                                                         NODE,
                                                                                                                                                                                         GB,
-                                                                                                                                                                                        DENOM)        try:
-            
+                                                                                                                                                                                        DENOM)
+        try:    
             ''' 
             This is the needed work-a-round to get wexpect (sentinel-cli wrapper)
             to work with inside Pyinstaller executable on Windows. 
@@ -250,7 +250,7 @@ class HandleWalletFunctions():
                                                                                                                                                                                         KEYNAME,
                                                                                                                                                                                         NODE,
                                                                                                                                                                                         HOURS,
-                                                                                                                                                                                        DENOM)                                                                                                                                            DENOM)    
+                                                                                                                                                                                        DENOM)    
         try:
             child = pexpect.spawn(SCMD)
             child.logfile = ofile
@@ -352,14 +352,7 @@ class HandleWalletFunctions():
         address = wallet.address()
 
         print(f"Address: {address},\nSubscription ID: {subId}")
-        print("Checking for active sessions...")
-        '''
-        try: 
-            session_data = self.check_active_subscriptions(address)
-        except Exception as e:
-            print("Error getting sessions")
-            return {'hash' : tx_hash, 'success' : tx_success, 'message' : "ERROR retrieving sessions. Please try again later."}
-        ''' 
+
         try: 
             tx = Transaction()
             tx.add_message(MsgCancelRequest(frm=str(address), id=int(subId)))
@@ -455,19 +448,18 @@ class HandleWalletFunctions():
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
         KEYNAME = CONFIG['wallet'].get('keyname', '')
-        connCMD = "pkexec env PATH=%s %s connect --home %s --keyring-backend file --keyring-dir %s --chain-id %s --node %s --gas-prices %s --gas %d --gas-adjustment %f --yes --from '%s' %s %s" % (ConfParams.PATH, 
-                                                                                                                                                                                                    sentinelcli, 
-                                                                                                                                                                                                    ConfParams.BASEDIR, 
-                                                                                                                                                                                                    ConfParams.KEYRINGDIR,
-                                                                                                                                                                                                    ConfParams.CHAINID, 
-                                                                                                                                                                                                    self.RPC,
-                                                                                                                                                                                                    ConfParams.GASPRICE,
-                                                                                                                                                                                                    ConfParams.GAS,
-                                                                                                                                                                                                    ConfParams.GASADJUSTMENT, 
-                                                                                                                                                                                                    KEYNAME, 
-                                                                                                                                                                                                    ID, 
-                                                                                                                                                                                                    address)
-        print(connCMD)
+        connCMD = "%s %s connect --keyring-backend file --keyring-dir %s --chain-id %s --node %s --gas-prices %s --gas %d --gas-adjustment %f --yes --from '%s' %s %s" % (gsudo, 
+                                                                                                                                                                          sentinelcli, 
+                                                                                                                                                                          ConfParams.KEYRINGDIR,
+                                                                                                                                                                          ConfParams.CHAINID, 
+                                                                                                                                                                          self.RPC,
+                                                                                                                                                                          ConfParams.GASPRICE,
+                                                                                                                                                                          ConfParams.GAS,
+                                                                                                                                                                          ConfParams.GASADJUSTMENT, 
+                                                                                                                                                                          KEYNAME, 
+                                                                                                                                                                          ID, 
+                                                                                                                                                                          address)
+        
         ofile =  open(ConfParams.CONNECTIONINFO, "w")    
         chdir(MeileConfig.BASEBINDIR)
         try:
@@ -516,15 +508,17 @@ class HandleWalletFunctions():
         
         if type == "WireGuard":
             if psutil.net_if_addrs().get("wg99"):
+                chdir(MeileConfig.BASEDIR)
                 return {"v2ray_pid" : None,  "result": True, "status" : "wg99"}
             
             else:
+                chdir(MeileConfig.BASEDIR)
                 return {"v2ray_pid" : None,  "result": False, "status" : "Error bringing up wireguard interface"}
         else: 
             TUNIFACE = False
             V2Ray = V2RayHandler(v2ray_tun2routes_connect_bash + " up")
             V2Ray.start_daemon() 
-            sleep(15)
+            sleep(10)
 
             for iface in psutil.net_if_addrs().keys():
                 if "tun" in iface:
@@ -533,19 +527,19 @@ class HandleWalletFunctions():
                 
             if TUNIFACE:
                 v2raydict = {"v2ray_pid" : V2Ray.v2ray_pid, "result": True, "status" : TUNIFACE}
-                print(v2raydict) 
+                print(v2raydict)
+                chdir(MeileConfig.BASEDIR) 
                 return v2raydict
             else:
                 try: 
                     V2Ray.v2ray_script = v2ray_tun2routes_connect_bash + " down"
                     V2Ray.kill_daemon()
-                    #V2Ray.kill_daemon()
-                    #Tun2Socks.kill_daemon()
                 except Exception as e: 
                     print(str(e))
                     
                 v2raydict = {"v2ray_pid" : V2Ray.v2ray_pid,  "result": False, "status": "Error connecting to v2ray node: %s" % TUNIFACE}
                 print(v2raydict)
+                chdir(MeileConfig.BASEDIR)
                 return v2raydict
         
     def get_balance(self, address):

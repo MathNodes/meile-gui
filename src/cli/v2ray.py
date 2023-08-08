@@ -36,7 +36,12 @@ class V2RayHandler():
         routes_bat = path.join(MeileConfig.BASEBINDIR, 'routes.bat')
         
         gateways = netifaces.gateways()
-        default_gateway = gateways['default'][netifaces.AF_INET][0]
+        
+        # This is a little tricky on windows, we may be able to use instead:
+        # One person complained not working on Ethernet, this may solve it:
+        default_gateway = gateways[netifaces.AF_INET][0][0]
+        
+        #default_gateway = gateways['default'][netifaces.AF_INET][0]
         
         SERVER = self.read_v2ray_config(MeileConfig)
         #wifidx = self.get_primary_if_idx(netifaces.gateways()['default'][netifaces.AF_INET][1])
@@ -66,8 +71,12 @@ class V2RayHandler():
         
         SERVER = self.read_v2ray_config(MeileConfig)
         gateways = netifaces.gateways()
-        print(gateways['default'][netifaces.AF_INET])
-        default_gateway = gateways['default'][netifaces.AF_INET][0]
+        #print(gateways['default'][netifaces.AF_INET])
+        # This is a little tricky on windows, we may be able to use instead:
+        # One person complained not working on Ethernet, this may solve it:
+        default_gateway = gateways[netifaces.AF_INET][0][0]
+        
+        #default_gateway = gateways['default'][netifaces.AF_INET][0]
         #wifidx = self.get_primary_if_idx(netifaces.gateways()['default'][netifaces.AF_INET][1])
         
         routes_bat = path.join(MeileConfig.BASEBINDIR, 'delroutes.bat')
@@ -99,12 +108,4 @@ class V2RayHandler():
         JSON = json.loads(v2ray)
         
         return JSON['outbounds'][0]['settings']['vnext'][0]['address']
-    '''
-    def get_primary_if_idx(self, guid):
-        from scapy.arch.windows import get_windows_if_list
-        for iface in get_windows_if_list():
-            print("%s: %s" % (iface['guid'], guid))
-            if iface['guid'] == guid:
-                return iface['index']
-                
-    '''
+    
