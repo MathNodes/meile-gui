@@ -554,6 +554,7 @@ class MainWindow(Screen):
         except Exception as e:
             print(str(e))
             return False
+          
     @mainthread
     def disconnect_from_node(self):
         try:
@@ -734,7 +735,12 @@ class MainWindow(Screen):
         except Exception as e:
             print(str(e))
             pass
+        
+        # Clear out Subscriptions
         self.SubResult = None
+        # Redraw Map Pins
+        self.MeileMap.getOverlays().clear()
+        self.AddCountryNodePins()
         self.remove_loading_widget(None)
 
     @mainthread
@@ -896,13 +902,15 @@ class WalletScreen(Screen):
             self.scrt_text = str(CoinDict['scrt']) + " scrt"
             self.atom_text = str(CoinDict['atom']) + " atom"
             self.osmo_text = str(CoinDict['osmo']) + " osmo"
-            self.dvpn_text = str(CoinDict['dvpn']) + " dvpn"
+            #self.dvpn_text = str(CoinDict['dvpn']) + " dvpn"
+            self.dvpn_text = str(CoinDict['tsent']) + " tsent"
         else:
             self.dec_text = str("0.0") + " dec"
             self.scrt_text = str("0.0") + " scrt"
             self.atom_text = str("0.0") + " atom"
             self.osmo_text = str("0.0") + " osmo"
-            self.dvpn_text = str("0.0") + " dvpn"
+            #self.dvpn_text = str("0.0") + " dvpn"
+            self.dvpn_text = str("0.0") + " tsent"
             self.dialog = MDDialog(
                 text="Error Loading Wallet Balance. Please try again later.",
                 md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
@@ -1025,7 +1033,7 @@ class SubscriptionScreen(Screen):
              )
             print("%s" % node[NodeKeys.FinalSubsKeys[0]].lstrip().rstrip(),end=',')
             sys.stdout.flush()
-
+            
         else:
             self.ids.rv.data.append(
                 {
@@ -1043,7 +1051,7 @@ class SubscriptionScreen(Screen):
                     "votes"          : votes,
                     "city"           : city,
                     "md_bg_color"    : MeileColors.DIALOG_BG_COLOR
-
+                    
                 },
             )
             print("%s" % node[NodeKeys.FinalSubsKeys[0]].lstrip().rstrip(),end=',')
@@ -1262,6 +1270,9 @@ class NodeScreen(Screen):
             elif self.NodeTree.NodeTypes[node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip()] == NodeKeys.Nodetypes[1]:
                 IconButton  = "alpha-b-circle"
                 ToolTipText = "Business"
+            elif self.NodeTree.NodeTypes[node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip()] == NodeKeys.Nodetypes[3]:
+                IconButton  = "alpha-u-circle"
+                ToolTipText = "University"
             else:
                 IconButton  = "alpha-d-circle"
                 ToolTipText = "Datacenter"
@@ -1273,7 +1284,7 @@ class NodeScreen(Screen):
             {
                 "viewclass"    : "RecycleViewRow",
                 "moniker_text" : node[NodeKeys.NodesInfoKeys[0]].lstrip().rstrip(),
-                "price_text"   : node[NodeKeys.NodesInfoKeys[3]].lstrip().rstrip(),
+                "price_text"   : node[NodeKeys.NodesInfoKeys[2]].lstrip().rstrip(),
                 "country_text" : node[NodeKeys.NodesInfoKeys[4]].lstrip().rstrip(),
                 "address_text" : node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip(),
                 "type_text"    : node[NodeKeys.NodesInfoKeys[9]].lstrip().rstrip(),
@@ -1341,13 +1352,16 @@ class HelpScreen(Screen):
 
 
 class SettingsScreen(Screen):
+    MeileConfig = MeileGuiConfig()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
         params = HTTParams()
         self.RPC = params.RPC
-
+        
+        self.MeileConfig = MeileGuiConfig()
+        
         menu_items = [
             {
                 "viewclass": "IconListItem",
@@ -1364,6 +1378,12 @@ class SettingsScreen(Screen):
             width_mult=50,
         )
         self.menu.bind()
+        
+    def get_rpc_config(self):
+        CONFIG = self.MeileConfig.read_configuration(self.MeileConfig.CONFFILE)
+
+        self.ids.drop_item.set_item(CONFIG['network']['rpc'])
+        return CONFIG['network']['rpc']
 
     def set_item(self, text_item):
         self.ids.drop_item.set_item(text_item)
@@ -1374,15 +1394,15 @@ class SettingsScreen(Screen):
         return self.screen
 
     def SaveOptions(self):
-        MeileConfig = MeileGuiConfig()
-        CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
+        
+        CONFIG = self.MeileConfig.read_configuration(self.MeileConfig.CONFFILE)
         CONFIG.set('network', 'rpc', self.RPC)
 
-        FILE = open(MeileConfig.CONFFILE, 'w')
+        FILE = open(self.MeileConfig.CONFFILE, 'w')
         CONFIG.write(FILE)
 
         self.set_previous_screen()
-
+        
     def set_previous_screen(self):
 
         Meile.app.root.remove_widget(self)

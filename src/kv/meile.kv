@@ -386,7 +386,7 @@ WindowManager:
                 id: drop_item
                 size_hint_x: .5
                 pos_hint: {'x': .5, 'top': 1}
-                text: 'https://rpc.mathnodes.com:443'
+                text: root.get_rpc_config()
                 on_release: root.menu.open()
                 
             MDRaisedButton:
@@ -1135,7 +1135,7 @@ WindowManager:
             max: 314
             value: 34
             on_value: root.parse_coin_deposit(root.ids.drop_item.current_item)
-            on_touch_up: root.get_usd()
+            #on_touch_up: root.get_usd()
             
         MDLabel:
             text: str(int(slider1.value)) + " GB" 
