@@ -32,7 +32,7 @@ class NodeTreeData():
             self.NodeTree = node_tree
             
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
-        self.RPC = CONFIG['network'].get('rpc', 'https://rpc.mathnodes.com:443')
+        self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
             
    
     def get_nodes(self, latency, *kwargs):

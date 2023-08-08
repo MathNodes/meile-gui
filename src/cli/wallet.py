@@ -129,7 +129,7 @@ class HandleWalletFunctions():
                                                                                                                                                                                         KEYNAME,
                                                                                                                                                                                         NODE,
                                                                                                                                                                                         GB,
-                                                                                                                                                                                    DENOM)    
+                                                                                                                                                                                        DENOM)    
         
         print(SCMD)
         try:
@@ -273,17 +273,7 @@ class HandleWalletFunctions():
         address = wallet.address()
 
         print(f"Address: {address},\nSubscription ID: {subId}")
-        '''
-        print("Checking for active sessions...")
-
-        try: 
-            session_data = self.check_active_subscriptions(address)
-        except Exception as e:
-            print("Error getting sessions")
-            return {'hash' : tx_hash, 'success' : tx_success, 'message' : "ERROR retrieving sessions. Please try again later."}
-        try: 
-            if not session_data['session']:
-        '''  
+ 
         try: 
             tx = Transaction()
             tx.add_message(MsgCancelRequest(frm=str(address), id=int(subId)))
@@ -412,8 +402,8 @@ class HandleWalletFunctions():
         Request = HTTPRequests.MakeRequest()
         http = Request.hadapter()
         endpoint = HTTParams.BALANCES_ENDPOINT + address
-        #CoinDict = {'dvpn' : 0, 'scrt' : 0, 'dec'  : 0, 'atom' : 0, 'osmo' : 0}
-        CoinDict = {'tsent' : 0, 'scrt' : 0, 'dec'  : 0, 'atom' : 0, 'osmo' : 0}
+        CoinDict = {'dvpn' : 0, 'scrt' : 0, 'dec'  : 0, 'atom' : 0, 'osmo' : 0}
+        #CoinDict = {'tsent' : 0, 'scrt' : 0, 'dec'  : 0, 'atom' : 0, 'osmo' : 0}
         
         try:
             r = http.get(HTTParams.APIURL + endpoint)
@@ -424,10 +414,10 @@ class HandleWalletFunctions():
         print(coinJSON)
         try:
             for coin in coinJSON['result']:
-                #if "udvpn" in coin['denom']:
-                if "tsent" in coin['denom']:
-                    #CoinDict['dvpn'] = round(float(float(coin['amount']) /IBCTokens.SATOSHI),4)
-                    CoinDict['tsent'] = round(float(float(coin['amount']) /IBCTokens.SATOSHI),4)
+                if "udvpn" in coin['denom']:
+                #if "tsent" in coin['denom']:
+                    CoinDict['dvpn'] = round(float(float(coin['amount']) /IBCTokens.SATOSHI),4)
+                    #CoinDict['tsent'] = round(float(float(coin['amount']) /IBCTokens.SATOSHI),4)
                 elif IBCTokens.IBCSCRT in coin['denom']:
                     CoinDict['scrt'] = round(float(float(coin['amount']) /IBCTokens.SATOSHI),4)
                 elif IBCTokens.IBCDEC in coin['denom']:
