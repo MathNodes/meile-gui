@@ -30,11 +30,13 @@ class NodeTreeData():
         else:
             self.NodeTree = node_tree
             
+        CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
+        self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
    
     def get_nodes(self, latency, *kwargs):
         AllNodesInfo = []
         print("Running sentinel-cli with latency: %s" % latency)
-        nodeCMD = [sentinelcli, "query", "nodes", "--node", HTTParams.RPC, "--limit", "20000", "--timeout", "%s" % latency]
+        nodeCMD = [sentinelcli, "query", "nodes", "--node", self.RPC, "--limit", "20000", "--timeout", "%s" % latency]
     
         proc = Popen(nodeCMD, stdout=PIPE)
         
@@ -74,11 +76,14 @@ class NodeTreeData():
         for d in AllNodesInfoSorted:
             for key in NodeKeys.NodesInfoKeys:
                 d[key] = d[key].lstrip().rstrip()
+                
+            d[NodeKeys.NodesInfoKeys[10]] = d[NodeKeys.NodesInfoKeys[10]].split('-')[0]
             version = d[NodeKeys.NodesInfoKeys[10]].replace('.','')
             if version not in NodeKeys.NodeVersions:
                 continue
-            d[NodeKeys.NodesInfoKeys[3]] = self.return_denom(d[NodeKeys.NodesInfoKeys[3]])
-            d[NodeKeys.NodesInfoKeys[3]] = self.parse_coin_deposit(d[NodeKeys.NodesInfoKeys[3]])
+            
+            d[NodeKeys.NodesInfoKeys[2]] = self.return_denom(d[NodeKeys.NodesInfoKeys[2]])
+            d[NodeKeys.NodesInfoKeys[2]] = self.parse_coin_deposit(d[NodeKeys.NodesInfoKeys[2]])
             
             if  OurWorld.CZ in d[NodeKeys.NodesInfoKeys[4]]:
                 d[NodeKeys.NodesInfoKeys[4]] = OurWorld.CZ_FULL
@@ -184,7 +189,7 @@ class NodeTreeData():
         SubsNodesInfo = []
         SubsFinalResult    = []
         print("Geting Subscriptions... %s" % ADDRESS)
-        subsCMD = [sentinelcli, "query", "subscriptions", "--node", HTTParams.RPC, "--status", "Active", "--limit", "100", "--address" ,ADDRESS]
+        subsCMD = [sentinelcli, "query", "subscriptions", "--node", self.RPC, "--limit", "1000", "--address" ,ADDRESS]
         proc = Popen(subsCMD, stdout=PIPE)
     
         k=1
@@ -192,11 +197,13 @@ class NodeTreeData():
             if k < 4:
                 k += 1 
                 continue
-            else: 
+            elif k % 2 == 0: 
                 ninfos = str(line.decode('utf-8')).lstrip().rstrip().split('|')[1:-1]
                 # List of Dictionaries
                 SubsNodesInfo.append(dict(zip(NodeKeys.SubsInfoKeys, ninfos)))
-        
+                k += 1
+            else:
+                k += 1
         # A Dictionary of Lists
         SubsResult = collections.defaultdict(list)
         
@@ -207,15 +214,15 @@ class NodeTreeData():
                 SubsResult[k].append(v.lstrip().rstrip())
                 
         k=0
-        for snaddress in SubsResult[NodeKeys.SubsInfoKeys[5]]:
+        for snaddress in SubsResult[NodeKeys.SubsInfoKeys[4]]:
             try:
                 NodeData = self.NodeTree.get_node(snaddress).data
             except AttributeError:
                 SubsFinalResult.append({
                                             NodeKeys.FinalSubsKeys[0] : SubsResult[NodeKeys.SubsInfoKeys[0]][k],
                                             NodeKeys.FinalSubsKeys[1] : "Offline",
-                                            NodeKeys.FinalSubsKeys[2] : SubsResult[NodeKeys.SubsInfoKeys[5]][k],
-                                            NodeKeys.FinalSubsKeys[3] : SubsResult[NodeKeys.SubsInfoKeys[6]][k],
+                                            NodeKeys.FinalSubsKeys[2] : SubsResult[NodeKeys.SubsInfoKeys[4]][k],
+                                            NodeKeys.FinalSubsKeys[3] : SubsResult[NodeKeys.SubsInfoKeys[5]][k],
                                             NodeKeys.FinalSubsKeys[4] : SubsResult[NodeKeys.SubsInfoKeys[7]][k],
                                             NodeKeys.FinalSubsKeys[5] : None,
                                             NodeKeys.FinalSubsKeys[6] : "0.00GB",
@@ -231,8 +238,8 @@ class NodeTreeData():
                 SubsFinalResult.append({
                                             NodeKeys.FinalSubsKeys[0] : SubsResult[NodeKeys.SubsInfoKeys[0]][k],
                                             NodeKeys.FinalSubsKeys[1] : NodeData[NodeKeys.NodesInfoKeys[0]],
-                                            NodeKeys.FinalSubsKeys[2] : SubsResult[NodeKeys.SubsInfoKeys[5]][k],
-                                            NodeKeys.FinalSubsKeys[3] : SubsResult[NodeKeys.SubsInfoKeys[6]][k],
+                                            NodeKeys.FinalSubsKeys[2] : SubsResult[NodeKeys.SubsInfoKeys[4]][k],
+                                            NodeKeys.FinalSubsKeys[3] : SubsResult[NodeKeys.SubsInfoKeys[5]][k],
                                             NodeKeys.FinalSubsKeys[4] : SubsResult[NodeKeys.SubsInfoKeys[7]][k],
                                             NodeKeys.FinalSubsKeys[5] : NodeData[NodeKeys.NodesInfoKeys[4]],
                                             NodeKeys.FinalSubsKeys[6] : nodeQuota[0],
@@ -245,7 +252,7 @@ class NodeTreeData():
 
 
     def GetQuota(self, id):
-        quotaCMD = [sentinelcli, 'query', 'quotas', '--node', HTTParams.RPC, '--page', '1', id]
+        quotaCMD = [sentinelcli, 'query', 'allocations', '--node', self.RPC, '--page', '1', id]
         proc = Popen(quotaCMD, stdout=PIPE)
         h=1
         for line in proc.stdout.readlines():
@@ -283,6 +290,8 @@ def disconnect(v2ray):
         
         proc_out,proc_err = proc1.communicate()
         return proc1.returncode, False
+    
+
 
 
     

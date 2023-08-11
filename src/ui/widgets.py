@@ -27,6 +27,7 @@ from os import path
 from subprocess import Popen, TimeoutExpired
 from functools import partial
 from time import sleep
+import asyncio
 
 import main.main as Meile
 from typedef.konstants import IBCTokens, HTTParams, MeileColors
@@ -35,6 +36,8 @@ from conf.meile_config import MeileGuiConfig
 from cli.wallet import HandleWalletFunctions
 from adapters import HTTPRequests
 from ui.interfaces import TXContent
+from coin_api.get_price import GetPriceAPI
+from adapters.ChangeDNS import ChangeDNS
 
 class WalletInfoContent(BoxLayout):
     def __init__(self, seed_phrase, name, address, password, **kwargs):
@@ -110,7 +113,7 @@ class SubscribeContent(BoxLayout):
         self.price_text = price
         self.moniker = moniker
         self.naddress = naddress
-        self.parse_coin_deposit("dvpn")
+        self.parse_coin_deposit(CoinsList.ibc_mu_coins[0])
         
         menu_items = [
             {
@@ -139,6 +142,7 @@ class SubscribeContent(BoxLayout):
     def set_item(self, text_item):
         self.ids.drop_item.set_item(text_item)
         self.ids.deposit.text = self.parse_coin_deposit(text_item)
+        self.get_usd()
         self.menu.dismiss()
         
     def parse_coin_deposit(self, mu_coin):
@@ -149,28 +153,28 @@ class SubscribeContent(BoxLayout):
                     self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(mu_coin_amt.split(mu_coin)[0])),4)) + self.ids.drop_item.current_item  
                     return self.ids.deposit.text
                 else:
-                    self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(self.ids.price.text.split("dvpn")[0])),4)) + self.ids.drop_item.current_item
+                    self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(self.ids.price.text.split(CoinsList.ibc_mu_coins[0])[0])),4)) + self.ids.drop_item.current_item
                     return self.ids.deposit.text
             else:
-                self.ids.deposit.text = "0.0dvpn"
+                self.ids.deposit.text = "0.0" + CoinsList.ibc_mu_coins[0]
                 return self.ids.deposit.text
         except IndexError as e:
             print(str(e))
             try: 
                 if self.ids.price.text:
-                    self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(self.ids.price.text.split("dvpn")[0])),4)) + CoinsList.ibc_mu_coins[0]
+                    self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(self.ids.price.text.split(CoinsList.ibc_mu_coins[0])[0])),4)) + CoinsList.ibc_mu_coins[0]
                     return self.ids.deposit.text
                 else:
-                    self.ids.deposit.text = "0.0dvpn"
+                    self.ids.deposit.text = "0.0" + CoinsList.ibc_mu_coins[0]
                     return self.ids.deposit.text
             except ValueError as e:
                 print(str(e))
-                self.ids.deposit.text = "0.0dvpn"
+                self.ids.deposit.text = "0.0" + CoinsList.ibc_mu_coins[0]
                 return self.ids.deposit.text
     
        
     def return_deposit_text(self):
-        return (self.ids.deposit.text, self.naddress, self.moniker)
+        return (self.ids.deposit.text, self.naddress, self.moniker, int(self.ids.slider1.value))
     
     # Should be async
     def get_usd(self):
@@ -178,29 +182,14 @@ class SubscribeContent(BoxLayout):
         amt = re.findall(r"[0-9]+.[0-9]+",depost_ret[0])[0]
         coin = self.ids.drop_item.current_item
 
-        Request = HTTPRequests.MakeRequest()
-        http = Request.hadapter()
-        if coin == "dec":
-            URL = "https://ascendex.com/api/pro/v1/spot/ticker?symbol=DEC/USDT"
-            try: 
-                r = http.get(URL)
-                print(r.json())
-                self.coin_price = r.json()['data']['high']
-            except:
-                self.coin_price = 0.0
-        else:
-            URL = "https://api.coinstats.app/public/v1/tickers?exchange=KuCoin&pair=%s-USDT" % coin.upper()
-            try: 
-                r = http.get(URL)
-                print(r.json())
-                self.coin_price = r.json()['tickers'][0]['price']
-            except:
-                self.coin_price = 0.0
-
-        floatprice = float(round(float(self.coin_price) * float(amt),3))
+        CoinPriceAPI = GetPriceAPI()        
+        PriceDict = asyncio.run(CoinPriceAPI.get_usd(coin))
+        self.coin_price = PriceDict['price']
+        
+        
         self.ids.usd_price.text = '$' + str(format(floatprice, '.3f'))
 
-        return True
+        return PriceDict['success']
     
     
 class ProcessingSubDialog(BoxLayout):
@@ -348,7 +337,8 @@ Node Version: %s
         CONFIG = MeileGuiConfig.read_configuration(MeileGuiConfig, MeileGuiConfig.CONFFILE)        
         KEYNAME = CONFIG['wallet'].get('keyname', '')
         
-        returncode = HandleWalletFunctions.subscribe(HandleWalletFunctions, KEYNAME, sub_node[1], deposit)
+        hwf = HandleWalletFunctions()
+        returncode = hwf.subscribe(KEYNAME, sub_node[1], deposit, sub_node[3])
         
         if returncode[0]:
             self.dialog.dismiss()
@@ -384,15 +374,10 @@ Node Version: %s
         for k,v in CoinsList.ibc_coins.items():
             try: 
                 coin = re.findall(k,deposit)[0]
-                print(coin)
                 deposit = deposit.replace(coin, v)
-                print(deposit)
                 mu_deposit_amt = int(float(re.findall(r'[0-9]+\.[0-9]+', deposit)[0])*CoinsList.SATOSHI)
-                print(mu_deposit_amt)
                 tru_mu_deposit = str(mu_deposit_amt) + v
-                print(tru_mu_deposit)
                 tru_mu_ibc_deposit = self.check_ibc_denom(tru_mu_deposit)
-                print(tru_mu_ibc_deposit)
                 return tru_mu_ibc_deposit
             except:
                 pass
@@ -609,7 +594,8 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
                 print(str(e))
                 pass
             
-            connected = HandleWalletFunctions.connect(HandleWalletFunctions, ID, naddress, type)
+            hwf = HandleWalletFunctions()
+            connected = hwf.connect(ID, naddress, type)
             mw.ConnectedDict = deepcopy(connected)
             
             if connected['result']:
@@ -761,6 +747,7 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
             
     @delayable        
     def change_dns(self):
+        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         
         yield 0.6
         if self.dialog:
@@ -768,19 +755,10 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
         self.add_loading_popup("DNS Resolver error... Switching to Cloudflare")
         yield 2.6
 
-        dnsCMD = "networksetup -setdnsservers Wi-Fi 1.1.1.1"
-        
-        try: 
-            dnsPROC = Popen(dnsCMD, shell=True)
-            dnsPROC.wait(timeout=60)
-        except subprocess.TimeoutExpired as e:
-            print(str(e))
-            pass
-        
-        proc_out,proc_err = dnsPROC.communicate()
+        ChangeDNS(dns="1.1.1.1").change_dns()
        
         yield 1.2
-        Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).get_ip_address(None)
+        mw.get_ip_address(None)
         self.remove_loading_widget()
 
         
