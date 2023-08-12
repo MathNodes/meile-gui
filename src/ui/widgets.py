@@ -185,9 +185,8 @@ class SubscribeContent(BoxLayout):
         CoinPriceAPI = GetPriceAPI()        
         PriceDict = asyncio.run(CoinPriceAPI.get_usd(coin))
         self.coin_price = PriceDict['price']
-        
-        
-        self.ids.usd_price.text = '$' + str(format(floatprice, '.3f'))
+                
+        self.ids.usd_price.text = '$' + str(round(float(self.coin_price) * float(amt),3))
 
         return PriceDict['success']
     

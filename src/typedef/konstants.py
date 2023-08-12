@@ -11,7 +11,9 @@ class ConfParams():
     CONNECTIONINFO   = path.join(KEYRINGDIR, "connection.infos")
     WIREGUARD_STATUS = path.join(BASEDIR, "status.json")
     CHAINID          = 'sentinelhub-2'
+    #CHAINID          = 'testnet'
     GASPRICE         = "0.2udvpn"
+    #GASPRICE         = "0.2tsent"
     GASADJUSTMENT    = 1.15
     GAS              = 500000
     
@@ -19,13 +21,16 @@ class ConfParams():
 class HTTParams():
     # Note http://128.199.90.172:26657 is testnet ONLY!
     TIMEOUT                = 5
-    APIURL                 = "https://api.sentinel.mathnodes.com"
+    #APIURL                 = "https://api.sentinel.mathnodes.com"
+    APIURL                 = "http://128.199.90.172:1317"
     SERVER_URL             = "https://aimokoivunen.mathnodes.com:5000"
-    RPC                    = "https://rpc.mathnodes.com:443"
+    #RPC                    = "https://rpc.mathnodes.com:443"
+    RPC                    = 'http://128.199.90.172:26657'
     RPCS                   = ['https://rpc.mathnodes.com:443', 'https://rpc.sentinel.co:443', 'https://sentinel-rpc.badgerbite.io:443',
                               'https://sentinel-rpc2.badgerbite.io:443', 'https://rpc.sentinel.quokkastake.io:443', 'https://rpc-sentinel.whispernode.com:443',
-                              'https://rpc-sentinel-ia.cosmosia.notional.ventures:443']
-    GRPC                   = "grpc+http://aimokoivunen.mathnodes.com:9090/"
+                              'https://rpc-sentinel-ia.cosmosia.notional.ventures:443','http://128.199.90.172:26657']
+    #GRPC                   = "grpc+http://aimokoivunen.mathnodes.com:9090/"
+    GRPC                   = "grpc+http://128.199.90.172:9090/"
     NODE_SCORE_ENDPOINT    = "/api/nodescores"
     NODE_LOCATION_ENDPOINT = "/api/nodelocations"
     NODE_TYPE_ENDPOINT     = "/api/nodetypes"
@@ -48,8 +53,8 @@ class IBCTokens():
     
     IBCCOINS  = [{'uscrt' : IBCSCRT}, {'uatom' : IBCATOM}, {'udec' : IBCDEC}, {'uosmo' : IBCOSMO}, {'uknwn' :IBCUNKWN}]
     UNITTOKEN = {'uscrt' : 'scrt', 'uatom' : 'atom' , 'uosmo' : 'osmo', 'udec' : 'dec', 'udvpn' : 'dvpn', 'tsent' : 'tsent'}
-    mu_coins  = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
-    #mu_coins = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
+    #mu_coins  = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
+    mu_coins = ["udvpn", "uscrt", "uosmo", "uatom", "udec"]
     
     
     

@@ -396,7 +396,8 @@ class HandleWalletFunctions():
         http = Request.hadapter()
         endpoint = HTTParams.BALANCES_ENDPOINT + address
         CoinDict = {'dvpn' : 0, 'scrt' : 0, 'dec'  : 0, 'atom' : 0, 'osmo' : 0}
-        
+        #CoinDict = {'tsent' : 0, 'scrt' : 0, 'dec'  : 0, 'atom' : 0, 'osmo' : 0}
+
         try:
             r = http.get(HTTParams.APIURL + endpoint)
             coinJSON = r.json()
@@ -407,7 +408,9 @@ class HandleWalletFunctions():
         try:
             for coin in coinJSON['result']:
                 if "udvpn" in coin['denom']:
+                #if "tsent" in coin['denom']:
                     CoinDict['dvpn'] = round(float(float(coin['amount']) /IBCTokens.SATOSHI),4)
+                    #CoinDict['tsent'] = round(float(float(coin['amount']) /IBCTokens.SATOSHI),4)
                 elif IBCTokens.IBCSCRT in coin['denom']:
                     CoinDict['scrt'] = round(float(float(coin['amount']) /IBCTokens.SATOSHI),4)
                 elif IBCTokens.IBCDEC in coin['denom']:

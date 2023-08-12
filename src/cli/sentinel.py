@@ -214,6 +214,7 @@ class NodeTreeData():
                 SubsResult[k].append(v.lstrip().rstrip())
                 
         k=0
+        print(SubsResult)
         for snaddress in SubsResult[NodeKeys.SubsInfoKeys[4]]:
             try:
                 NodeData = self.NodeTree.get_node(snaddress).data

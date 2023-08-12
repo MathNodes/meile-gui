@@ -927,19 +927,22 @@ class WalletScreen(Screen):
             
         return path.join(CONFIG.IMGDIR, "dvpn.png")
     
+    # testnet params
     def SetBalances(self, CoinDict):
         if CoinDict:
-            self.dec_text = str(CoinDict['dec']) + " dec"
+            self.dec_text  = str(CoinDict['dec']) + " dec"
             self.scrt_text = str(CoinDict['scrt']) + " scrt"
             self.atom_text = str(CoinDict['atom']) + " atom" 
             self.osmo_text = str(CoinDict['osmo']) + " osmo"
             self.dvpn_text = str(CoinDict['dvpn']) + " dvpn"
+            #self.dvpn_text = str(CoinDict['tsent']) + " tsent"
         else:
-            self.dec_text = str("0.0") + " dec"
+            self.dec_text  = str("0.0") + " dec"
             self.scrt_text = str("0.0") + " scrt"
             self.atom_text = str("0.0") + " atom" 
             self.osmo_text = str("0.0") + " osmo"
             self.dvpn_text = str("0.0") + " dvpn"
+            #self.dvpn_text = str("0.0") + " tsent"
             self.dialog = MDDialog(
                 text="Error Loading Wallet Balance. Please try again later.",
                 md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
