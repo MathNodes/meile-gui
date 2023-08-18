@@ -20,6 +20,7 @@ from datetime import datetime
 from os import path
 import requests
 from requests.auth import HTTPBasicAuth
+import asyncio
 
 import stripe 
 from stripe.error import CardError
@@ -189,7 +190,7 @@ class FiatInterface(Screen):
             pass
         
         for c in coins:
-            response = api.get_usd(c)
+            response = asyncio.run(api.get_usd(c))
             
             qty = int(MAX_SPEND/float(response['price']))
 
@@ -245,7 +246,7 @@ class FiatInterface(Screen):
         api = GetPriceAPI()
         
         try:
-            response = api.get_usd(token)
+            response = asyncio.run(api.get_usd(token))
             if response['success']:
                 token_price = response['price']
             else:
