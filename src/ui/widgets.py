@@ -147,7 +147,7 @@ class SubscribeContent(BoxLayout):
     def set_item(self, text_item):
         self.ids.drop_item.set_item(text_item)
         self.ids.deposit.text = self.parse_coin_deposit(text_item)
-        #self.get_usd()
+        self.get_usd()
         self.menu.dismiss()
         
     def parse_coin_deposit(self, mu_coin):
@@ -255,11 +255,11 @@ class RecycleViewRow(MDCard,RectangularElevationBehavior,ThemableBehavior, Hover
         
         Request = HTTPRequests.MakeRequest()
         http = Request.hadapter()
-        endpoint = "/nodes/" + naddress.lstrip().rstrip()
+        endpoint = "/sentinel/nodes/" + naddress.lstrip().rstrip()
         try:
             requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
             r = http.get(HTTParams.APIURL + endpoint)
-            remote_url = r.json()['result']['node']['remote_url']
+            remote_url = r.json()['node']['remote_url']
             r = http.get(remote_url + "/status", verify=False)
             print(remote_url)
     
