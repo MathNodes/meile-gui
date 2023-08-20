@@ -14,9 +14,9 @@ WindowManager:
     
         Image:
             source: root.get_logo()
-            size_hint: 1, None
-            size: 500, 500
-            pos_hint: {"x": 0, "y": .275}
+            size_hint: 1, 1
+            size: 1000, 1000
+            pos_hint: {"x": 0, "y": .075}
             # size: self.texture_size[0] / 2, self.texture_size[1] / 2
             # opacity: 0.1
         
@@ -55,7 +55,7 @@ WindowManager:
                 id: new_ip
                 size_hint_x: .15
                 size_hint_y: .47
-                font_size: 21
+                font_size: 23
                 pos_hint: {"x" : 0.01, "center_y": .67}
                 readonly: True
                 opacity: 1
@@ -65,6 +65,7 @@ WindowManager:
                 hint_text: 'IP Address:'
                 hint_text_color_normal: '#fcb711'
                 hint_text_color_focus: '#fcb711'
+                hint_font_size: 13
                 fill_color_normal: get_color_from_hex("#121212")
                 fill_color_focus: get_color_from_hex("#000000")
                 
@@ -80,7 +81,7 @@ WindowManager:
                 mode: "fill"
                 size_hint_x: .4
                 size_hint_y: .47
-                font_size: 21
+                font_size: 23
                 font_name: root.get_font()
                 pos_hint: {"x" : .18, "center_y": .67}
                 readonly: True
@@ -89,11 +90,12 @@ WindowManager:
                 text_color_normal: '#fcb711'                
                 hint_text_color_normal: '#fcb711'
                 hint_text_color_focus: '#fcb711'
+                hint_font_size: 13
                 fill_color_normal: get_color_from_hex("#121212")
                 fill_color_focus: get_color_from_hex("#000000")
             MDLabel:
                 text: "Bandwidth"
-                font_size: 19
+                font_size: 24
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex("#fcb711")
                 normal_color: app.theme_cls.accent_color
@@ -109,7 +111,7 @@ WindowManager:
             MDLabel:
                 id: quota_pct
                 text: "0.00%"
-                font_size: 19
+                font_size: 24
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex("#fcb711")
                 normal_color: app.theme_cls.accent_color
@@ -471,8 +473,10 @@ WindowManager:
     
 <NodeRV>:
 	key_viewclass: "viewclass"
-    bar_width: dp(8)
+    bar_width: dp(12)
     scroll_type: ["bars", "content"]
+    scroll_wheel_distance: 50
+    scroll_smooth_end: 20
     canvas.before:
         Color:
             rgba: get_color_from_hex("#212021")
@@ -498,6 +502,7 @@ WindowManager:
     key_viewclass: "viewclass"
     bar_width: dp(12)
     scroll_type: ["bars", "content"]
+    scroll_wheel_distance: 40
     canvas.before:
         Color:
             rgba: get_color_from_hex("#212021")
@@ -765,7 +770,7 @@ WindowManager:
         Image:
             id: country_image
             source: root.source_image
-            size: self.texture_size
+            size: 420,420
             pos_hint: {"x" : .3, "top" : 1.25}
             
         MDLabel:    
@@ -893,7 +898,7 @@ WindowManager:
             md_bg_color: get_color_from_hex("#fcb711")
             text_color: 0,0,0,1
             on_active: root.connect_to_node(root.sub_id_text,root.address_text, root.moniker_text, root.type_text, self.active)
-            pos_hint: {"x" : 0.015, "top" : .35 }
+            pos_hint: {"x" : 0.0175, "top" : .333 }
             size_hint: None,None
         MDLabel:
             text: root.type_text
@@ -903,7 +908,7 @@ WindowManager:
             width: "100dp"
             font_name: root.get_font()
             text_color: get_color_from_hex("#ffffff")
-            pos_hint: {"x" : .085, "top" : .665}
+            pos_hint: {"x" : .095, "top" : .665}
             size_hint_x: None
          
 <YellowSwitch>:

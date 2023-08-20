@@ -21,11 +21,11 @@ class ConfParams():
 class HTTParams():
     # Note http://128.199.90.172:26657 is testnet ONLY!
     TIMEOUT                = 5
-    #APIURL                 = "https://api.sentinel.mathnodes.com"
-    APIURL                 = "http://128.199.90.172:1317"
+    APIURL                 = "https://api.sentinel.mathnodes.com"
+    #APIURL                 = "http://128.199.90.172:1317"
     SERVER_URL             = "https://aimokoivunen.mathnodes.com:5000"
-    #RPC                    = "https://rpc.mathnodes.com:443"
-    RPC                    = 'http://128.199.90.172:26657'
+    RPC                    = "https://rpc.mathnodes.com:443"
+    #RPC                    = 'http://128.199.90.172:26657'
     RPCS                   = ['https://rpc.mathnodes.com:443', 'https://rpc.sentinel.co:443', 'https://sentinel-rpc.badgerbite.io:443',
                               'https://sentinel-rpc2.badgerbite.io:443', 'https://rpc.sentinel.quokkastake.io:443', 'https://rpc-sentinel.whispernode.com:443',
                               'https://rpc-sentinel-ia.cosmosia.notional.ventures:443','http://128.199.90.172:26657']
@@ -60,7 +60,7 @@ class IBCTokens():
     
 class TextStrings():
     dash = "-"
-    VERSION = "v1.7.7"
+    VERSION = "v1.7.8"
     
 class MeileColors():
     DIALOG_BG_COLOR = "#121212"
