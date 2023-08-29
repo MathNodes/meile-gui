@@ -38,7 +38,7 @@ class HandleWalletFunctions():
         super().__init__(**kwargs)
 
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
-        self.RPC = CONFIG['network'].get('rpc', 'https://rpc.mathnodes.com:443')
+        self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
         
     def create(self, wallet_name, keyring_passphrase, seed_phrase):
         #sentinelcli = sentinelcli.replace('\\','\\\\')
@@ -261,8 +261,8 @@ class HandleWalletFunctions():
 
             ofile.flush()
             ofile.close()
-        except pexpect.exceptions.TIMEOUT:
-            return (False, 1415)
+        except Exception as e:
+            return {'hash' : "0x0", 'success' : False, 'message' : f"ERROR: {str(e)}"}
 
         return self.ParseSubscribe()
 
@@ -547,6 +547,7 @@ class HandleWalletFunctions():
         http = Request.hadapter()
         endpoint = HTTParams.BALANCES_ENDPOINT + address
         CoinDict = {'dvpn' : 0, 'scrt' : 0, 'dec'  : 0, 'atom' : 0, 'osmo' : 0}
+        #CoinDict = {'tsent' : 0, 'scrt' : 0, 'dec'  : 0, 'atom' : 0, 'osmo' : 0}
         
         try:
             r = http.get(HTTParams.APIURL + endpoint)
@@ -558,15 +559,29 @@ class HandleWalletFunctions():
         try:
             for coin in coinJSON['result']:
                 if "udvpn" in coin['denom']:
+                #if "tsent" in coin['denom']:
+                    #CoinDict['tsent'] = round(float(float(coin['amount']) /IBCTokens.SATOSHI),4)
                     CoinDict['dvpn'] = round(float(float(coin['amount']) /IBCTokens.SATOSHI),4)
-                elif IBCTokens.IBCSCRT in coin['denom']:
+                    
+                else:
+                    CoinDict['dvpn'] = 0.0
+                    #CoinDict['tsent'] = 0.0
+                if IBCTokens.IBCSCRT in coin['denom']:
                     CoinDict['scrt'] = round(float(float(coin['amount']) /IBCTokens.SATOSHI),4)
-                elif IBCTokens.IBCDEC in coin['denom']:
+                else:
+                    CoinDict['scrt'] = 0.0
+                if IBCTokens.IBCDEC in coin['denom']:
                     CoinDict['dec'] = round(float(float(coin['amount']) /IBCTokens.SATOSHI),4)
-                elif IBCTokens.IBCATOM in coin['denom']:
+                else:
+                    CoinDict['dec'] = 0.0
+                if IBCTokens.IBCATOM in coin['denom']:
                     CoinDict['atom'] = round(float(float(coin['amount']) /IBCTokens.SATOSHI),4)
-                elif IBCTokens.IBCOSMO in coin['denom']:
+                else:
+                    CoinDict['atom'] = 0.0
+                if IBCTokens.IBCOSMO in coin['denom']:
                     CoinDict['osmo'] = round(float(float(coin['amount']) /IBCTokens.SATOSHI),4)
+                else:
+                    CoinDict['osmo'] = 0.0
         except Exception as e:
             print(str(e))
             return None
