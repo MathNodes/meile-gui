@@ -379,14 +379,14 @@ class MainWindow(Screen):
             self.MeileMap.map_source = source
 
             self.ids.country_map.add_widget(self.MeileMap)
-            self.AddCountryNodePins()
+            self.AddCountryNodePins(False)
             self.MeileMapBuilt = True
 
     def get_font(self):
         Config = MeileGuiConfig()
         return Config.resource_path(MeileColors.FONT_FACE)
 
-    def AddCountryNodePins(self):
+    def AddCountryNodePins(self, clear):
         Config = MeileGuiConfig()
         try:
             for continent in self.MeileLand.CONTINENTS:
@@ -399,7 +399,10 @@ class MainWindow(Screen):
                                                    text_color=(1,1,1,1),
                                                    on_release=partial(self.load_country_nodes, ncountry.tag)
                                                    ))
-                    self.MeileMap.add_marker(marker)
+                    if not clear:
+                        self.MeileMap.add_marker(marker)
+                    else:
+                        self.MeileMap.remove_marker(marker)
         except Exception as e:
             print(str(e))
             pass
@@ -724,7 +727,7 @@ class MainWindow(Screen):
     @delayable
     def Refresh(self, latency, *kwargs):
         self.remove_loading_widget(None)
-
+        self.AddCountryNodePins(True)
         self.add_loading_popup("Reloading Nodes...")
         yield 0.5
         try:
@@ -739,8 +742,7 @@ class MainWindow(Screen):
         # Clear out Subscriptions
         self.SubResult = None
         # Redraw Map Pins
-        self.MeileMap.getOverlays().clear()
-        self.AddCountryNodePins()
+        self.AddCountryNodePins(False)
         self.remove_loading_widget(None)
 
     @mainthread
@@ -1283,20 +1285,21 @@ class NodeScreen(Screen):
 
         self.ids.rv.data.append(
             {
-                "viewclass"    : "RecycleViewRow",
-                "moniker_text" : node[NodeKeys.NodesInfoKeys[0]].lstrip().rstrip(),
-                "price_text"   : node[NodeKeys.NodesInfoKeys[2]].lstrip().rstrip(),
-                "country_text" : node[NodeKeys.NodesInfoKeys[4]].lstrip().rstrip(),
-                "address_text" : node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip(),
-                "type_text"    : node[NodeKeys.NodesInfoKeys[9]].lstrip().rstrip(),
-                "speed_text"   : speedText,
-                "node_score"   : nscore,
-                "votes"        : votes,
-                "city"         : city,
-                "icon"         : IconButton,
-                "tooltip"      : ToolTipText,
-                "speed_image"  : self.MeileConfig.resource_path(speedimage),
-                "source_image" : self.MeileConfig.resource_path(flagloc)
+                "viewclass"          : "RecycleViewRow",
+                "moniker_text"       : node[NodeKeys.NodesInfoKeys[0]].lstrip().rstrip(),
+                "price_text"         : node[NodeKeys.NodesInfoKeys[2]].lstrip().rstrip(),
+                "hourly_price_text"  : node[NodeKeys.NodesInfoKeys[3]].lstrip().rstrip(),
+                "country_text"       : node[NodeKeys.NodesInfoKeys[4]].lstrip().rstrip(),
+                "address_text"       : node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip(),
+                "type_text"          : node[NodeKeys.NodesInfoKeys[9]].lstrip().rstrip(),
+                "speed_text"         : speedText,
+                "node_score"         : nscore,
+                "votes"              : votes,
+                "city"               : city,
+                "icon"               : IconButton,
+                "tooltip"            : ToolTipText,
+                "speed_image"        : self.MeileConfig.resource_path(speedimage),
+                "source_image"       : self.MeileConfig.resource_path(flagloc)
 
             },
         )
