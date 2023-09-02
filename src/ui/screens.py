@@ -367,14 +367,14 @@ class MainWindow(Screen):
             self.MeileMap.map_source = source 
             
             self.ids.country_map.add_widget(self.MeileMap)
-            self.AddCountryNodePins()
+            self.AddCountryNodePins(False)
             self.MeileMapBuilt = True
         
     def get_font(self):
         Config = MeileGuiConfig()
         return Config.resource_path(MeileColors.FONT_FACE)
         
-    def AddCountryNodePins(self):
+    def AddCountryNodePins(self, clear):
         Config = MeileGuiConfig()
         try:
             for continent in self.MeileLand.CONTINENTS:
@@ -390,7 +390,10 @@ class MainWindow(Screen):
                                                    text_color=(1,1,1,1),
                                                    on_release=partial(self.load_country_nodes, ncountry.tag)
                                                    ))
-                    self.MeileMap.add_marker(marker)
+                    if not clear:
+                        self.MeileMap.add_marker(marker)
+                    else:
+                        self.MeileMap.remove_marker(marker)
         except Exception as e:
             print(str(e))
             pass        
@@ -563,6 +566,7 @@ class MainWindow(Screen):
         except Exception as e:
             print(str(e))
             return False
+        
     @mainthread    
     def disconnect_from_node(self):
         try:
@@ -570,6 +574,8 @@ class MainWindow(Screen):
                 try:
                     returncode, self.CONNECTED = Disconnect(True)
                     print("Disconnect RTNCODE: %s" % returncode)
+                    if returncode == 999:
+                        return False
                     self.get_ip_address(None)
                     self.set_protected_icon(False, "")
                 except Exception as e:
@@ -586,6 +592,8 @@ class MainWindow(Screen):
             else:
                 returncode, self.CONNECTED = Disconnect(False)
                 print("Disconnect RTNCODE: %s" % returncode)
+                if returncode == 999:
+                    return False
                 self.get_ip_address(None)
                 self.set_protected_icon(False, "")
             
@@ -732,7 +740,7 @@ class MainWindow(Screen):
     @delayable
     def Refresh(self, latency, *kwargs):
         self.remove_loading_widget(None)
-        
+        self.AddCountryNodePins(True)
         self.add_loading_popup("Reloading Nodes...")
         yield 0.5
         try: 
@@ -745,8 +753,8 @@ class MainWindow(Screen):
             pass
         self.remove_loading_widget(None)
         self.SubResult = None
-        self.MeileMap.getOverlays().clear()
-        self.AddCountryNodePins()
+        #self.MeileMap.getOverlays().clear()
+        self.AddCountryNodePins(False)
     
     @mainthread
     def on_tab_switch(self, instance_tabs, instance_tab, instance_tabs_label, tab_text):
@@ -901,18 +909,20 @@ class WalletScreen(Screen):
         return path.join(CONFIG.IMGDIR, "dvpn.png")
     
     def SetBalances(self, CoinDict):
-        if CoinDict:
-            self.dec_text = str(CoinDict['dec']) + " dec"
+        if CoinDict: 
+            self.dec_text  = str(CoinDict['dec']) + " dec"
             self.scrt_text = str(CoinDict['scrt']) + " scrt"
             self.atom_text = str(CoinDict['atom']) + " atom" 
             self.osmo_text = str(CoinDict['osmo']) + " osmo"
             self.dvpn_text = str(CoinDict['dvpn']) + " dvpn"
+            #self.dvpn_text = str(CoinDict['tsent']) + " tsent"
         else:
-            self.dec_text = str("0.0") + " dec"
+            self.dec_text  = str("0.0") + " dec"
             self.scrt_text = str("0.0") + " scrt"
             self.atom_text = str("0.0") + " atom" 
             self.osmo_text = str("0.0") + " osmo"
             self.dvpn_text = str("0.0") + " dvpn"
+            #self.dvpn_text = str("0.0") + " tsent"
             self.dialog = MDDialog(
                 text="Error Loading Wallet Balance. Please try again later.",
                 md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
@@ -1285,20 +1295,21 @@ class NodeScreen(Screen):
             
         self.ids.rv.data.append(
             {
-                "viewclass"    : "RecycleViewRow",
-                "moniker_text" : node[NodeKeys.NodesInfoKeys[0]].lstrip().rstrip(),
-                "price_text"   : node[NodeKeys.NodesInfoKeys[2]].lstrip().rstrip(),
-                "country_text" : node[NodeKeys.NodesInfoKeys[4]].lstrip().rstrip(),
-                "address_text" : node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip(),
-                "type_text"    : node[NodeKeys.NodesInfoKeys[9]].lstrip().rstrip(),
-                "speed_text"   : speedText,
-                "node_score"   : nscore,
-                "votes"        : votes,
-                "city"         : city,
-                "icon"         : IconButton,
-                "tooltip"      : ToolTipText,
-                "speed_image"  : self.MeileConfig.resource_path(speedimage),
-                "source_image" : self.MeileConfig.resource_path(flagloc)
+                "viewclass"          : "RecycleViewRow",
+                "moniker_text"       : node[NodeKeys.NodesInfoKeys[0]].lstrip().rstrip(),
+                "price_text"         : node[NodeKeys.NodesInfoKeys[2]].lstrip().rstrip(),
+                "hourly_price_text"  : node[NodeKeys.NodesInfoKeys[3]].lstrip().rstrip(),
+                "country_text"       : node[NodeKeys.NodesInfoKeys[4]].lstrip().rstrip(),
+                "address_text"       : node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip(),
+                "type_text"          : node[NodeKeys.NodesInfoKeys[9]].lstrip().rstrip(),
+                "speed_text"         : speedText,
+                "node_score"         : nscore,
+                "votes"              : votes,
+                "city"               : city,
+                "icon"               : IconButton,
+                "tooltip"            : ToolTipText,
+                "speed_image"        : self.MeileConfig.resource_path(speedimage),
+                "source_image"       : self.MeileConfig.resource_path(flagloc)
                 
             },
         )   

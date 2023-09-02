@@ -40,8 +40,10 @@ from conf.meile_config import MeileGuiConfig
 from cli.wallet import HandleWalletFunctions
 from cli.sentinel import NodeTreeData
 from adapters import HTTPRequests
+from adapters.ChangeDNS import ChangeDNS
 from ui.interfaces import TXContent
 from coin_api.get_price import GetPriceAPI
+from builtins import False
 
 
 class WalletInfoContent(BoxLayout):
@@ -104,7 +106,58 @@ class RatingContent(MDBoxLayout):
     def return_rating_value(self):
         return self.ids.rating_slider.value
     
-    
+class SubTypeDialog(BoxLayout):
+
+    def __init__(self, rvclass, price, hourly_price, moniker, naddress):
+        super(SubTypeDialog, self).__init__()
+        self.rvclass      = rvclass
+        self.price        = price
+        self.hourly_price = hourly_price
+        self.moniker      = moniker
+        self.naddress     = naddress
+        print(self.price)
+        print(self.hourly_price)
+        print(self.moniker)
+        print(self.naddress)
+
+
+
+    def select_sub_type(self,instance, value, type):
+        self.rvclass.closeDialog(None)
+
+        if type == "gb":
+            print("You have selected bandwidth (GB)")
+            print(f"{self.price}\n{self.moniker}\n{self.naddress}")
+            subscribe_dialog = SubscribeContent(self.price, self.moniker, self.naddress, False)
+
+        else:
+            print("You have selected hourly (days)")
+            print(f"{self.hourly_price}\n{self.moniker}\n{self.naddress}")
+            subscribe_dialog = SubscribeContent(self.hourly_price, self.moniker, self.naddress, True)
+
+
+        if not self.rvclass.dialog:
+            self.rvclass.dialog = MDDialog(
+                title="Node:",
+                type="custom",
+                content_cls=subscribe_dialog,
+                md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
+                buttons=[
+                    MDFlatButton(
+                        text="CANCEL",
+                        theme_text_color="Custom",
+                        text_color=self.rvclass.theme_cls.primary_color,
+                        on_release=self.rvclass.closeDialog
+                    ),
+                    MDRaisedButton(
+                        text="SUBSCRIBE",
+                        theme_text_color="Custom",
+                        text_color=get_color_from_hex("#000000"),
+                        on_release=partial(self.rvclass.subscribe, subscribe_dialog)
+                    ),
+                ],
+            )
+            self.rvclass.dialog.open()    
     
 class SubscribeContent(BoxLayout):
     
@@ -115,12 +168,14 @@ class SubscribeContent(BoxLayout):
     coin_price = "0.00"
     
     menu = None
-    def __init__ (self, price, moniker, naddress):
+    def __init__ (self, price, moniker, naddress, hourly):
         super(SubscribeContent, self).__init__()
         
         self.price_text = price
-        self.moniker = moniker
-        self.naddress = naddress
+        self.moniker    = moniker
+        self.naddress   = naddress
+        self.hourly     = hourly
+        print(f"DATA:\n{self.price_text}\n{self.moniker}\n{self.naddress}")
         self.parse_coin_deposit(CoinsList.ibc_mu_coins[0])
         
         menu_items = [
@@ -142,7 +197,16 @@ class SubscribeContent(BoxLayout):
         self.menu.bind()
         self.ids.drop_item.current_item = CoinsList.ibc_mu_coins[0]
         self.parse_coin_deposit(self.ids.drop_item.current_item)
+        self.build()
 
+    def build(self):
+        if self.hourly:
+            self.ids.slider1_value.text = str(int(self.ids.slider1.value)) + " days"
+            self.ids.slider1.max = 30
+            self.ids.slider1.value = 7
+
+        self.get_usd() 
+        
     def get_font(self):
         Config = MeileGuiConfig()
         return Config.resource_path(MeileColors.FONT_FACE)
@@ -158,19 +222,28 @@ class SubscribeContent(BoxLayout):
             if self.price_text:
                 mu_coin_amt = re.findall(r'[0-9]+.[0-9]+' + mu_coin, self.price_text)[0]
                 if mu_coin_amt:
-                    self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(mu_coin_amt.split(mu_coin)[0])),4)) + self.ids.drop_item.current_item.replace('u','') 
+                    if not self.hourly:
+                        self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(mu_coin_amt.split(mu_coin)[0])),4)) + self.ids.drop_item.current_item
+                    else: 
+                        self.ids.deposit.text = str(round(int(self.ids.slider1.value)*24*(float(mu_coin_amt.split(mu_coin)[0])),4)) + self.ids.drop_item.current_item 
                     return self.ids.deposit.text
                 else:
-                    self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(self.ids.price.text.split(CoinsList.ibc_mu_coins[0])[0])),4)) + self.ids.drop_item.current_item.replace('u','')
+                    if not self.hourly:
+                        self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(self.ids.price.text.split(CoinsList.ibc_mu_coins[0])[0])),4)) + self.ids.drop_item.current_item
+                    else:
+                        self.ids.deposit.text = str(round(int(self.ids.slider1.value)*24*(float(self.ids.price.text.split(CoinsList.ibc_mu_coins[0])[0])),4)) + self.ids.drop_item.current_item
                     return self.ids.deposit.text
             else:
                 self.ids.deposit.text = "0.0" + CoinsList.ibc_mu_coins[0]
                 return self.ids.deposit.text
         except IndexError as e:
-            print(str(e))
+            #print(str(e))
             try: 
                 if self.ids.price.text:
-                    self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(self.ids.price.text.split(CoinsList.ibc_mu_coins[0])[0])),4)) + CoinsList.ibc_mu_coins[0].replace('u','')
+                    if not self.hourly:
+                        self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(self.ids.price.text.split(CoinsList.ibc_mu_coins[0])[0])),4)) + CoinsList.ibc_mu_coins[0]
+                    else:
+                        self.ids.deposit.text = str(round(int(self.ids.slider1.value)*24*(float(self.ids.price.text.split(CoinsList.ibc_mu_coins[0])[0])),4)) + CoinsList.ibc_mu_coins[0]
                     return self.ids.deposit.text
                 else:
                     self.ids.deposit.text = "0.0" + CoinsList.ibc_mu_coins[0]
@@ -183,14 +256,30 @@ class SubscribeContent(BoxLayout):
         
 
     def return_deposit_text(self):
-        return (self.ids.deposit.text, self.naddress, self.moniker, int(self.ids.slider1.value))
-
+        if not self.hourly:
+            return (self.ids.deposit.text, self.naddress, self.moniker, int(self.ids.slider1.value), self.hourly)
+        else:
+            return (self.ids.deposit.text, self.naddress, self.moniker, int(self.ids.slider1.value)*24, self.hourly)
+        
+    def return_sub_type(self):
+        try: 
+            if self.hourly:
+                return " days"
+            else:
+                return " GB" 
+        except AttributeError:
+            return " GB" 
+    
     # Should be async
     def get_usd(self):
-        depost_ret = self.return_deposit_text()
-        amt = re.findall(r"[0-9]+.[0-9]+",depost_ret[0])[0]
-        coin = self.ids.drop_item.current_item
-
+        deposit_ret = self.return_deposit_text()
+        match = re.match(r"([0-9]+.[0-9]+)([a-z]+)", deposit_ret[0], re.I)
+        if match:
+            amt, coin = match.groups()
+        else:
+            amt    = 0.0
+            coin   = "dvpn"
+        
         CoinPriceAPI = GetPriceAPI()        
         PriceDict = asyncio.run(CoinPriceAPI.get_usd(coin))
         self.coin_price = PriceDict['price']
@@ -260,10 +349,10 @@ class RecycleViewRow(MDCard,RectangularElevationBehavior,ThemableBehavior, Hover
         
         Request = HTTPRequests.MakeRequest()
         http = Request.hadapter()
-        endpoint = "/nodes/" + naddress.lstrip().rstrip()
+        endpoint = "/sentinel/nodes/" + naddress.lstrip().rstrip()
         try:
             r = http.get(HTTParams.APIURL + endpoint)
-            remote_url = r.json()['result']['node']['remote_url']
+            remote_url = r.json()['node']['remote_url']
             r = http.get(remote_url + "/status", verify=False)
             print(remote_url)
     
@@ -301,29 +390,16 @@ Node Version: %s
             )
         self.dialog.open()
 
-    def subscribe_to_node(self, price, naddress, moniker):
-        subscribe_dialog = SubscribeContent(price, moniker , naddress )
+    def subscribe_to_node(self, price, hourly_price, naddress, moniker):
+        subtype_dialog = SubTypeDialog(self,price,hourly_price,moniker, naddress)
+
+        #subscribe_dialog = SubscribeContent(price, moniker , naddress )
         if not self.dialog:
             self.dialog = MDDialog(
-                    title="Node:",
                     type="custom",
-                    content_cls=subscribe_dialog,
+                    content_cls=subtype_dialog,
                     md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
-                    buttons=[
-                        MDFlatButton(
-                            text="CANCEL",
-                            theme_text_color="Custom",
-                            text_color=self.theme_cls.primary_color,
-                            on_release=self.closeDialog
-                        ),
-                        MDRaisedButton(
-                            text="SUBSCRIBE",
-                            theme_text_color="Custom",
-                            text_color=get_color_from_hex("#000000"),
-                            on_release=partial(self.subscribe, subscribe_dialog)
-                        ),
-                    ],
-                )
+                    )
             self.dialog.open()
     
     @delayable
@@ -347,7 +423,7 @@ Node Version: %s
         KEYNAME = CONFIG['wallet'].get('keyname', '')
         
         hwf = HandleWalletFunctions()
-        returncode = hwf.subscribe(KEYNAME, sub_node[1], deposit, sub_node[3])
+        returncode = hwf.subscribe(KEYNAME, sub_node[1], deposit, sub_node[3], sub_node[4])
         
         if returncode[0]:
             self.dialog.dismiss()
@@ -567,17 +643,25 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
            it is on, when connected, and does not try to disconnect
            or reconnect. 
         '''
-        if mw.NodeSwitch['switch'] and naddress == mw.NodeSwitch['node'] and not switchValue:
-            print("DISCONNECTING!!!")
-            try:
-                mw.clock.cancel()
-                mw.clock = None
-            except Exception as e:
-                print(str(e))
-            if mw.disconnect_from_node():
-                self.connected_quota(None, None)
-            return True
-        
+        try:
+            if mw.NodeSwitch['switch'] and naddress == mw.NodeSwitch['node'] and not switchValue:
+                print("DISCONNECTING!!!")
+                
+                if mw.disconnect_from_node():
+                    try:
+                        mw.clock.cancel()
+                        mw.clock = None
+                    except Exception as e:
+                        print(str(e))
+                        
+                    self.connected_quota(None, None)
+                    return True
+                else:
+                    self.ids.node_switch.active = True
+                    return False
+        except:
+            return False
+            
         if mw.CONNECTED:
             return 
         
@@ -761,6 +845,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
         #print("Total Data: %s" % total_data, end=' ')
         return total_data     
         '''        
+    
     def call_ip_get(self,result, moniker,  *kwargs):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         
@@ -778,41 +863,22 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
             self.remove_loading_widget()
     
     
-    '''
-    Automatic DNS resolving will be added into later versions
-    of the Meile Windows Releases.
-    This code currently does nothing but error out
-    '''
     @delayable        
     def change_dns(self):
-        MeileConfig = MeileGuiConfig()
-        RESOLVFILE = path.join(MeileConfig.BASEDIR, "dns")
-        DNSFILE = open(RESOLVFILE, 'w')
-        
-        DNSFILE.write('nameserver 1.1.1.1')
-        DNSFILE.flush()
-        DNSFILE.close()
+        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         
         yield 0.6
         if self.dialog:
             self.dialog.dismiss()
         self.add_loading_popup("DNS Resolver error... Switching to Cloudflare")
         yield 2.6
-
-        dnsCMD = "pkexec bash -c 'cat %s | resolvconf -a wg99 && resolvconf -u'" % RESOLVFILE
-
-        try: 
-            dnsPROC = Popen(dnsCMD, shell=True)
-            dnsPROC.wait(timeout=60)
-        except TimeoutExpired as e:
+        try:
+            dns = ChangeDNS(dns="1.1.1.1")
+            dns.change_dns()
+        except Exception as e:
             print(str(e))
-            pass
-        
-        proc_out,proc_err = dnsPROC.communicate()
-            
-
         yield 1.2
-        Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).get_ip_address(None)
+        mw.get_ip_address(None)
         self.remove_loading_widget()
         
 class MDMapCountryButton(MDFillRoundFlatButton,ThemableBehavior, HoverBehavior):
