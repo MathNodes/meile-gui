@@ -603,6 +603,7 @@ WindowManager:
     moniker_text: "."
     country_text: "."
     price_text: "."
+    hourly_price_text: "."
     address_text: "."
     type_text: "WireGuard"
     city_text: " "
@@ -615,7 +616,7 @@ WindowManager:
     icon: ""
     tooltip: ""
     ripple_behavior: True
-    on_press: root.subscribe_to_node(root.price_text, root.address_text, root.moniker_text)
+    on_press: root.subscribe_to_node(root.price_text, root.hourly_price_text, root.address_text, root.moniker_text)
     MDGridLayout:
         cols: 1
         
@@ -628,7 +629,7 @@ WindowManager:
                 font_size: "22sp"
                 font_name: root.get_font()
                 text_color: get_color_from_hex("#fcb711")
-                pos_hint: {"x" : 0, "top" : 1.3}
+                pos_hint: {"x" : 0, "top" : 1.325}
                 size_hint_x: None
                 width: "500dp"
             MDLabel:
@@ -637,7 +638,7 @@ WindowManager:
                 font_style: "Subtitle2"
                 font_size: "10sp"
                 text_color: (0/255.0,141/255.0,155/255.0,255/255.0)
-                pos_hint: {"x" : 0, "top" : 1.1}
+                pos_hint: {"x" : 0, "top" : 1.125}
             TooltipMDIconButton:
                 icon: root.icon
                 tooltip_text: root.tooltip
@@ -648,42 +649,63 @@ WindowManager:
                 font_style: "Subtitle2"
                 font_size: "10sp"
                 text_color: get_color_from_hex("#ffffff")
-                pos_hint: {"x" : 0, "top" : .985}
+                pos_hint: {"x" : 0, "top" : 1.01}
+            MDLabel:
+                text: "GB:"
+                theme_text_color: "Custom"
+                font_style: "Subtitle2"
+                font_size: "13sp"
+                text_color: get_color_from_hex("#ffffff")
+                pos_hint: {"x" : 0, "top" : .875}
             MDLabel:
                 text: root.price_text
                 theme_text_color: "Custom"
                 font_style: "Subtitle2"
                 font_size: "13sp"
                 text_color: get_color_from_hex("#fcb711")
-                pos_hint: {"x" : 0, "top" : .85}
+                pos_hint: {"x" : 0.03, "top" : .875}
+            MDLabel:
+                text: "Hs:"
+                theme_text_color: "Custom"
+                font_style: "Subtitle2"
+                font_size: "13sp"
+                text_color: get_color_from_hex("#ffffff")
+                pos_hint: {"x" : 0, "top" : .725}
+            MDLabel:
+                text: root.hourly_price_text
+                theme_text_color: "Custom"
+                font_style: "Subtitle2"
+                font_size: "13sp"
+                text_color: get_color_from_hex("#fcb711")
+                pos_hint: {"x" : 0.03, "top" : .725}
             MDLabel:
                 text: "SCORE: "
                 theme_text_color: "Custom"
                 font_style: "Subtitle2"
                 font_size: "11sp"
                 text_color: get_color_from_hex("#ffffff")
-                pos_hint: {"x" : 0, "top" : .7}
+                pos_hint: {"x" : 0, "top" : .575}
             MDLabel:
                 text: root.node_score
                 theme_text_color: "Custom"
                 font_style: "Subtitle2"
                 font_size: "11sp"
                 text_color: get_color_from_hex("#ffffff")
-                pos_hint: {"x" : .055, "top" : .7}
+                pos_hint: {"x" : .055, "top" : .575}
             MDLabel:
                 text: "VOTES: "
                 theme_text_color: "Custom"
                 font_style: "Subtitle2"
                 font_size: "11sp"
                 text_color: get_color_from_hex("#ffffff")
-                pos_hint: {"x" : .125, "top" : .7}
+                pos_hint: {"x" : .125, "top" : .575}
             MDLabel:
                 text: root.votes
                 theme_text_color: "Custom"
                 font_style: "Subtitle2"
                 font_size: "11sp"
                 text_color: get_color_from_hex("#ffffff")
-                pos_hint: {"x" : .175, "top" : .7}
+                pos_hint: {"x" : .175, "top" : .575}
                    
             Image:
                 source: root.source_image
@@ -1109,7 +1131,51 @@ WindowManager:
             text: str(int(slider1.value)) + "s" 
             size_hint_x: None
             width: 75
-                       
+<SubTypeDialog>
+    orientation: "vertical"
+    spacing: "1dp"
+    size_hint_y: None
+    height: "130dp"
+    price_text: ""
+    naddress: " "
+    moniker: " "
+    deposit: " "
+    MDFloatLayout:
+        MDLabel:
+            id: sub_type
+            text: "Subscription Type"
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "20sp"
+            text_color: get_color_from_hex("#fcb711")
+            pos_hint: {"x" : 0, "top" : 1.35}
+        MDLabel:
+            id: bandwidth_text
+            text: "Bandwidth (GB)"
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "14sp"
+            text_color: get_color_from_hex("#ffffff")
+            pos_hint: {"x" : 0, "top" : 1}        
+        CheckBox:
+            group: "sub_type"
+            on_active: root.select_sub_type(self, self.active, "gb")
+            pos_hint: {"x": 0, "y" : .375}
+            size_hint_y: .3
+        MDLabel:
+            id: hourly_text
+            text: "Hourly"
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "14sp"
+            text_color: get_color_from_hex("#ffffff")
+            pos_hint: {"x" : 0, "top" : .8}    
+        CheckBox:
+            group: "sub_type"
+            on_active: root.select_sub_type(self, self.active, "hourly")
+            pos_hint: {"x": 0, "y" : .15}
+            size_hint_y: .3
+                               
 <SubscribeContent>
     orientation: "vertical"
     spacing: "1dp"
@@ -1149,7 +1215,8 @@ WindowManager:
             on_touch_up: root.get_usd()
             
         MDLabel:
-            text: str(int(slider1.value)) + " GB" 
+            id: slider1_value
+            text: str(int(slider1.value)) + root.return_sub_type()
             size_hint_x: None
             width: 75
     MDBoxLayout:
