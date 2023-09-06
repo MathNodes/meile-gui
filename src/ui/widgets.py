@@ -24,12 +24,15 @@ from kivyoav.delayed import delayable
 from functools import partial
 from subprocess import Popen, TimeoutExpired
 from urllib3.exceptions import InsecureRequestWarning
+from copy import deepcopy
+from datetime import datetime, timedelta
 from os import path
 from time import sleep 
 import requests
 import re
 import psutil
 import asyncio
+
 
 from typedef.konstants import IBCTokens, HTTParams, MeileColors
 from typedef.win import CoinsList, WindowNames
@@ -341,7 +344,7 @@ class RecycleViewRow(MDCard,RectangularElevationBehavior,ThemableBehavior, Hover
         
     def get_city_of_node(self, naddress):   
         
-        Request = HTTPRequests.MakeRequest()
+        Request = HTTPRequests.MakeRequest(TIMEOUT=2.3)
         http = Request.hadapter()
         endpoint = "/sentinel/nodes/" + naddress.lstrip().rstrip()
         try:
@@ -396,32 +399,7 @@ Node Version: %s
                     md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
                     )
             self.dialog.open()
-    '''
-    def subscribe_to_node(self, price, naddress, moniker):
-        subscribe_dialog = SubscribeContent(price, moniker , naddress )
-        if not self.dialog:
-            self.dialog = MDDialog(
-                    title="Node:",
-                    type="custom",
-                    content_cls=subscribe_dialog,
-                    md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
-                    buttons=[
-                        MDFlatButton(
-                            text="CANCEL",
-                            theme_text_color="Custom",
-                            text_color=self.theme_cls.primary_color,
-                            on_release=self.closeDialog
-                        ),
-                        MDRaisedButton(
-                            text="SUBSCRIBE",
-                            theme_text_color="Custom",
-                            text_color=get_color_from_hex("#000000"),
-                            on_release=partial(self.subscribe, subscribe_dialog)
-                        ),
-                    ],
-                )
-            self.dialog.open()
-    '''
+
     @delayable
     def subscribe(self, subscribe_dialog, *kwargs):
         sub_node = subscribe_dialog.return_deposit_text()
@@ -527,7 +505,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
         Config = MeileGuiConfig()
         return Config.resource_path(MeileColors.FONT_FACE)
         
-    def get_data_used(self, allocated, consumed, node_address):
+    def get_data_used(self, allocated, consumed, node_address, expirary_date):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         try:
             ''' Since this function is called when opening the Subscription tab,
@@ -546,8 +524,13 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
             
             #End house keeping
             
-            allocated = self.compute_consumed_data(allocated)
-            consumed = self.compute_consumed_data(consumed)
+            if "hrs" in allocated:
+                allocated = int(allocated.split('hrs')[0].rstrip().lstrip())
+                consumed  = float(consumed.split('hrs')[0].rstrip().lstrip())
+                #consumed  = self.compute_consumed_hours(allocated, expirary_date)
+            else:
+                allocated = self.compute_consumed_data(allocated)
+                consumed  = self.compute_consumed_data(consumed)
             
             if allocated == 0:
                 self.ids.consumed_data.text = "0%"
@@ -558,6 +541,21 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
         except Exception as e:
             print(str(e))
             return float(50)
+       
+    def compute_consumed_hours(self, allocated, expirary_date):
+        
+        allocated = allocated.split('hrs')[0].rstrip().lstrip()
+        now             = datetime.now()
+        expirary_date   = datetime.strptime(expirary_date,'%b %d %Y, %I:%M %p')
+        sub_date        = expirary_date - timedelta(hours=float(allocated))
+        subdelta        = now - sub_date
+        remaining_hours = round(float(subdelta.total_seconds())/3600,3)
+        consumed        = float(float(allocated) - remaining_hours)
+        if consumed < 0:
+            consumed = 0
+        return round(float(subdelta.total_seconds())/3600,3)
+    
+        
         
     def compute_consumed_data(self, consumed):
         if "GB" in consumed:
@@ -696,7 +694,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
                 print(str(e))
                 pass
             
-            from copy import deepcopy
+            
             hwf = HandleWalletFunctions()
             connected = hwf.connect(ID, naddress, type)
             mw.ConnectedDict = deepcopy(connected)
@@ -704,23 +702,28 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
             if connected['result']:
                 
                 mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
-                mw.CONNECTED               = True
-                mw.NodeSwitch['moniker']   = moniker
-                mw.NodeSwitch['node']      = naddress
-                mw.NodeSwitch['switch']    = True
-                mw.NodeSwitch['id']        = ID
-                mw.NodeSwitch['allocated'] = self.allocated_text
-                mw.NodeSwitch['consumed']  = self.consumed_text
-                #mw.NodeSwitch['og_consumed']  = deepcopy(mw.NodeSwitch['consumed']) 
+                mw.CONNECTED                  = True
+                mw.NodeSwitch['moniker']      = moniker
+                mw.NodeSwitch['node']         = naddress
+                mw.NodeSwitch['switch']       = True
+                mw.NodeSwitch['id']           = ID
+                mw.NodeSwitch['allocated']    = self.allocated_text
+                mw.NodeSwitch['consumed']     = self.consumed_text
                 mw.NodeSwitch['og_consumed']  = deepcopy(self.consumed_text) 
+                mw.NodeSwitch['expirary']     = self.expirary_date
                 
+                # Determine if node has been connected to and if so report last data usage stats
+                # otherwise start a fresh count
                 if not ID in mw.PersistentBandwidth:
                     mw.PersistentBandwidth[ID] = mw.NodeSwitch
                 else:
                     mw.PersistentBandwidth[ID]['og_consumed'] = deepcopy(mw.PersistentBandwidth[ID]['consumed'])
                 
-                
-                self.setQuotaClock(ID, naddress)
+                # Check if subscription is hourly
+                if "hrs" in self.allocated_text:
+                    self.setQuotaClock(ID, naddress, True)
+                else:
+                    self.setQuotaClock(ID, naddress, False)
 
                 self.remove_loading_widget()
                 self.dialog = MDDialog(
@@ -738,7 +741,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
             else:
                 self.remove_loading_widget()
                 self.dialog = MDDialog(
-                    title="Something went wrong. Not connected",
+                    title="Something went wrong. Not connected: %s" % connected['status'],
                     md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
                     buttons=[
                             MDFlatButton(
@@ -749,22 +752,45 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
                             ),])
                 self.dialog.open()
                 
-    def connected_quota(self, allocated, consumed):
+    def connected_quota(self, allocated, consumed, dt):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)        
         if mw.CONNECTED:
             #allocated = float(allocated.replace('GB',''))
-            allocated = self.compute_consumed_data(allocated)
-            consumed  = self.compute_consumed_data(consumed)
-            mw.ids.quota_pct.text = str(round(float(float(consumed/allocated)*100),2)) + "%"
-            return round(float(float(consumed/allocated)*100),3)
+            if "hrs" in allocated:
+                allocated_str         = deepcopy(allocated)
+                allocated             = float(allocated.split('hrs')[0].rstrip().lstrip())
+                consumed              = self.compute_consumed_hours(allocated_str,mw.NodeSwitch['expirary'])
+                mw.ids.quota_pct.text = str(round(float(float(consumed/allocated)*100),2)) + "%"
+                mw.ids.quota.value    = round(float(float(consumed/allocated)*100),2)
+                try: 
+                    mw.clock()
+                except Exception as e:
+                    print("Error running clock()")
+                    return False 
+            else:
+                allocated = self.compute_consumed_data(allocated)
+                consumed  = self.compute_consumed_data(consumed)
+                mw.ids.quota_pct.text = str(round(float(float(consumed/allocated)*100),2)) + "%"
+                return round(float(float(consumed/allocated)*100),3)
         else:
             mw.ids.quota_pct.text = "0.00%"
             mw.ids.quota.value    = 0
             return float(0)
         
             
-    def setQuotaClock(self,ID, naddress):
+    def setQuotaClock(self,ID, naddress, hourly):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
+        
+        if hourly:
+            self.connected_quota(mw.PersistentBandwidth[ID]['allocated'],
+                                 mw.PersistentBandwidth[ID]['consumed'],
+                                 None)
+            
+            mw.clock = Clock.create_trigger(partial(self.connected_quota,
+                                                    mw.PersistentBandwidth[ID]['allocated'],
+                                                    mw.PersistentBandwidth[ID]['consumed']),120)
+            mw.clock()
+            return True
         
         BytesDict = self.init_GetConsumedWhileConnected(mw.PersistentBandwidth[ID]['og_consumed'])
         print(BytesDict)
@@ -788,7 +814,8 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
             mw.PersistentBandwidth[ID]['consumed'] = self.GetConsumedWhileConnected(self.compute_consumed_data(startConsumption),BytesDict)
             
             mw.ids.quota.value = self.connected_quota(mw.PersistentBandwidth[ID]['allocated'],
-                                                      mw.PersistentBandwidth[ID]['consumed'])
+                                                      mw.PersistentBandwidth[ID]['consumed'],
+                                                      None)
             print("%s,%s - %s%%" % (mw.PersistentBandwidth[ID]['consumed'],
                                   startConsumption,
                                   mw.ids.quota.value))
@@ -800,6 +827,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
         except Exception as e:
             print("Error running clock()")
             pass 
+        
     def init_GetConsumedWhileConnected(self, sConsumed):
         try: 
             bytes_sent = round(float(float(psutil.net_io_counters(pernic=True)['wg99'].bytes_sent) / 1073741824),3)

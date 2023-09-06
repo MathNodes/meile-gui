@@ -42,6 +42,7 @@ from functools import partial
 from os import path,geteuid, chdir
 from save_thread_result import ThreadWithResult
 from unidecode import unidecode
+from datetime import datetime
 
 TIMEOUT = 5
 
@@ -313,7 +314,7 @@ class MainWindow(Screen):
     Sort = SortOptions[0]
     MeileMap = None
     MeileMapBuilt = False
-    NodeSwitch = {"moniker" : None, "node" : None, "switch" : False, 'id' : None, 'consumed' : None, 'og_consumed' : None, 'allocated' : None}
+    NodeSwitch = {"moniker" : None, "node" : None, "switch" : False, 'id' : None, 'consumed' : None, 'og_consumed' : None, 'allocated' : None, 'expirary' : None}
     NewWallet = False
     box_color = ColorProperty('#fcb711')
     clock = None
@@ -614,7 +615,8 @@ class MainWindow(Screen):
                                'id' : None,
                                'consumed' : None,
                                'og_consumed' : None,
-                               'allocated' : None
+                               'allocated' : None,
+                               'expirary' : None
                                }
             return True
         except Exception as e:
@@ -1015,6 +1017,12 @@ class SubscriptionScreen(Screen):
         else:
             price_text = node[NodeKeys.FinalSubsKeys[4]].lstrip().rstrip()
 
+        if node[NodeKeys.FinalSubsKeys[9]].lstrip().rstrip():
+            expirary_date = node[NodeKeys.FinalSubsKeys[9]].lstrip().rstrip().split('.')[0]
+            expirary_date = datetime.strptime(expirary_date, '%Y-%m-%d %H:%M:%S').strftime('%b %d %Y, %I:%M %p')
+        else:
+            expirary_date = "Null"
+            
         if node[NodeKeys.FinalSubsKeys[1]] == "Offline":
             self.ids.rv.data.append(
                  {
@@ -1031,7 +1039,8 @@ class SubscriptionScreen(Screen):
                      "score"          : nscore,
                      "votes"          : votes,
                      "city"           : city,
-                     "md_bg_color"    : "#50507c"
+                     "expirary_date"  : expirary_date,
+                     "md_bg_color"    : MeileColors.INACTIVE_DIALOG_BG_COLOR
                  },
              )
             print("%s" % node[NodeKeys.FinalSubsKeys[0]].lstrip().rstrip(),end=',')
@@ -1053,6 +1062,7 @@ class SubscriptionScreen(Screen):
                     "score"          : nscore,
                     "votes"          : votes,
                     "city"           : city,
+                    "expirary_date"  : expirary_date,
                     "md_bg_color"    : MeileColors.DIALOG_BG_COLOR
                     
                 },

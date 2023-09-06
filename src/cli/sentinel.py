@@ -5,6 +5,7 @@ import re
 import requests
 from urllib3.exceptions import InsecureRequestWarning
 from subprocess import Popen, PIPE, STDOUT
+from datetime import datetime
 
 from treelib import  Tree
 
@@ -13,6 +14,7 @@ from conf.meile_config import MeileGuiConfig
 from typedef.konstants import ConfParams, HTTParams, IBCTokens, TextStrings, NodeKeys
 from adapters import HTTPRequests
 from cli.v2ray import V2RayHandler
+from dns.rdataclass import NONE
 
 
 MeileConfig = MeileGuiConfig()
@@ -83,8 +85,14 @@ class NodeTreeData():
             if version not in NodeKeys.NodeVersions:
                 continue
             
+            # Gigabyte Prices
             d[NodeKeys.NodesInfoKeys[2]] = self.return_denom(d[NodeKeys.NodesInfoKeys[2]])
             d[NodeKeys.NodesInfoKeys[2]] = self.parse_coin_deposit(d[NodeKeys.NodesInfoKeys[2]])
+            
+            # Hourly Prices
+            d[NodeKeys.NodesInfoKeys[3]] = self.return_denom(d[NodeKeys.NodesInfoKeys[3]])
+            d[NodeKeys.NodesInfoKeys[3]] = self.parse_coin_deposit(d[NodeKeys.NodesInfoKeys[3]])
+            
             
             if  OurWorld.CZ in d[NodeKeys.NodesInfoKeys[4]]:
                 d[NodeKeys.NodesInfoKeys[4]] = OurWorld.CZ_FULL
@@ -215,7 +223,7 @@ class NodeTreeData():
                 SubsResult[k].append(v.lstrip().rstrip())
                 
         k=0
-        print(SubsResult)
+        #print(SubsResult)
         for snaddress in SubsResult[NodeKeys.SubsInfoKeys[4]]:
             try:
                 NodeData = self.NodeTree.get_node(snaddress).data
@@ -229,13 +237,20 @@ class NodeTreeData():
                                             NodeKeys.FinalSubsKeys[5] : None,
                                             NodeKeys.FinalSubsKeys[6] : "0.00GB",
                                             NodeKeys.FinalSubsKeys[7] : "0.00B",
-                                            NodeKeys.FinalSubsKeys[8] : "None"
+                                            NodeKeys.FinalSubsKeys[8] : "None",
+                                            NodeKeys.FinalSubsKeys[9] : SubsResult[NodeKeys.SubsInfoKeys[2]][k],
+                                            NodeKeys.FinalSubsKeys[10]: SubsResult[NodeKeys.SubsInfoKeys[6]][k]
                                             })
                 print("Sub not found in list")
                 k += 1
                 continue
             
-            nodeQuota = self.GetQuota(SubsResult[NodeKeys.SubsInfoKeys[0]][k])
+            if int(SubsResult[NodeKeys.SubsInfoKeys[6]][k]) > 0:
+                nodeQuota = self.GetHourAllocation(SubsResult[NodeKeys.SubsInfoKeys[6]][k], SubsResult[NodeKeys.SubsInfoKeys[2]][k])
+                
+            else:    
+                nodeQuota = self.GetQuota(SubsResult[NodeKeys.SubsInfoKeys[0]][k])
+                
             if nodeQuota:
                 SubsFinalResult.append({
                                             NodeKeys.FinalSubsKeys[0] : SubsResult[NodeKeys.SubsInfoKeys[0]][k],
@@ -246,7 +261,9 @@ class NodeTreeData():
                                             NodeKeys.FinalSubsKeys[5] : NodeData[NodeKeys.NodesInfoKeys[4]],
                                             NodeKeys.FinalSubsKeys[6] : nodeQuota[0],
                                             NodeKeys.FinalSubsKeys[7] : nodeQuota[1],
-                                            NodeKeys.FinalSubsKeys[8] : NodeData[NodeKeys.NodesInfoKeys[9]]
+                                            NodeKeys.FinalSubsKeys[8] : NodeData[NodeKeys.NodesInfoKeys[9]],
+                                            NodeKeys.FinalSubsKeys[9] : SubsResult[NodeKeys.SubsInfoKeys[2]][k],
+                                            NodeKeys.FinalSubsKeys[10]: SubsResult[NodeKeys.SubsInfoKeys[6]][k]
                                             })
             k += 1 
 
@@ -273,6 +290,24 @@ class NodeTreeData():
                 else:
                     return nodeQuota
                 
+    def GetHourAllocation(self, hours, idate):
+        nodeQuota       = []
+        nodeQuota.append(str(hours) + "hrs")
+        inactive_date   = idate.lstrip().rstrip().split('.')[0]
+        inactive_date   = datetime.strptime(inactive_date, '%Y-%m-%d %H:%M:%S')
+        now             = datetime.now()
+        subdelta        = inactive_date - now
+        remaining_hours = round(float(subdelta.total_seconds())/3600,3)
+        consumed        = float(int(hours) - remaining_hours)
+        if consumed < 0:
+            consumed = 0
+        if remaining_hours <= 0:
+            return None
+        else:
+            print(f"inactive_date: {idate}, time_remaining: {remaining_hours}, time_consumed: {consumed}")
+            nodeQuota.append(str(consumed) + "hrs")
+            return nodeQuota   
+                 
 def disconnect(v2ray):
     if v2ray:
         try:
