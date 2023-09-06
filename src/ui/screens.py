@@ -45,6 +45,7 @@ import subprocess
 import copy 
 import re
 from unidecode import unidecode
+from datetime import datetime
 
 class WalletRestore(Screen):
     screemanager = ObjectProperty()
@@ -329,7 +330,7 @@ class MainWindow(Screen):
     Sort = SortOptions[0]
     MeileMap = None
     MeileMapBuilt = False
-    NodeSwitch = {"moniker" : None, "node" : None, "switch" : False, 'id' : None, 'consumed' : None, 'og_consumed' : None, 'allocated' : None}
+    NodeSwitch = {"moniker" : None, "node" : None, "switch" : False, 'id' : None, 'consumed' : None, 'og_consumed' : None, 'allocated' : None, 'expirary' : None}}
     NewWallet = False
     box_color = ColorProperty('#fcb711')
     clock = None
@@ -637,7 +638,8 @@ class MainWindow(Screen):
                                'id' : None,
                                'consumed' : None,
                                'og_consumed' : None,
-                               'allocated' : None
+                               'allocated' : None,
+                               'expirary' : None
                                }
             return True
         except Exception as e:
@@ -1051,7 +1053,12 @@ class SubscriptionScreen(Screen):
         else:
             price_text = node[NodeKeys.FinalSubsKeys[4]].lstrip().rstrip()
             
-            
+        if node[NodeKeys.FinalSubsKeys[9]].lstrip().rstrip():
+            expirary_date = node[NodeKeys.FinalSubsKeys[9]].lstrip().rstrip().split('.')[0]
+            expirary_date = datetime.strptime(expirary_date, '%Y-%m-%d %H:%M:%S').strftime('%b %d %Y, %I:%M %p')
+        else:
+            expirary_date = "Null"
+    
         if node[NodeKeys.FinalSubsKeys[1]] == "Offline":
             self.ids.rv.data.append(
                  {
@@ -1068,6 +1075,7 @@ class SubscriptionScreen(Screen):
                      "score"          : nscore,
                      "votes"          : votes,
                      "city"           : city,
+                     "expirary_date"  : expirary_date,
                      "md_bg_color"    : "#50507c"
                  },
              )
@@ -1090,6 +1098,7 @@ class SubscriptionScreen(Screen):
                     "score"          : nscore,
                     "votes"          : votes,
                     "city"           : city,
+                    "expirary_date"  : expirary_date,
                     "md_bg_color"    : MeileColors.DIALOG_BG_COLOR
 
                 },
@@ -1199,7 +1208,7 @@ class NodeScreen(Screen):
         for node in CountryNodes:
             NodeData.append(node.data)
             
-        NodeDataSorted = sorted(NodeData, key=lambda d: d[NodeKeys.NodesInfoKeys[0]])
+        NodeDataSorted = sorted(NodeData, key=lambda d: d[NodeKeys.NodesInfoKeys[0]].lower())
 
         self.meta_add_rv_data(NodeDataSorted) 
         

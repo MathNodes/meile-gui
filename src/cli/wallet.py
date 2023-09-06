@@ -110,7 +110,7 @@ class HandleWalletFunctions():
 
     
     
-    def subscribe(self, KEYNAME, NODE, DEPOSIT, GB):
+    def subscribe(self, KEYNAME, NODE, DEPOSIT, GB, hourly):
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
     
@@ -120,7 +120,8 @@ class HandleWalletFunctions():
         
         DENOM = self.DetermineDenom(DEPOSIT)
         
-        SCMD = "%s tx node subscribe --yes --keyring-backend file --keyring-dir %s --chain-id %s --node %s --gas-prices %s --gas %d --gas-adjustment %f --from '%s' '%s' '%s' 0 %s"  % (sentinelcli,
+        if hourly:
+            SCMD = "%s tx node subscribe --yes --keyring-backend file --keyring-dir %s --chain-id %s --node %s --gas-prices %s --gas %d --gas-adjustment %f --from '%s' '%s' 0 '%s' %s"  % (sentinelcli,
                                                                                                                                                                                         ConfParams.KEYRINGDIR, 
                                                                                                                                                                                         ConfParams.CHAINID, 
                                                                                                                                                                                         self.RPC,
@@ -130,7 +131,20 @@ class HandleWalletFunctions():
                                                                                                                                                                                         KEYNAME,
                                                                                                                                                                                         NODE,
                                                                                                                                                                                         GB,
-                                                                                                                                                                                        DENOM)
+                                                                                                                                                                                        DENOM)    
+        else:
+            SCMD = "%s tx node subscribe --yes --keyring-backend file --keyring-dir %s --chain-id %s --node %s --gas-prices %s --gas %d --gas-adjustment %f --from '%s' '%s' '%s' 0 %s"  % (sentinelcli,
+                                                                                                                                                                                            ConfParams.KEYRINGDIR, 
+                                                                                                                                                                                            ConfParams.CHAINID, 
+                                                                                                                                                                                            self.RPC,
+                                                                                                                                                                                            ConfParams.GASPRICE,
+                                                                                                                                                                                            ConfParams.GAS,
+                                                                                                                                                                                            ConfParams.GASADJUSTMENT,
+                                                                                                                                                                                            KEYNAME,
+                                                                                                                                                                                            NODE,
+                                                                                                                                                                                            GB,
+                                                                                                                                                                                            DENOM)
+                                                                                                                                                                            DENOM)
         try:
             child = pexpect.spawn(SCMD)
             child.logfile = ofile
@@ -146,45 +160,6 @@ class HandleWalletFunctions():
             
         return self.ParseSubscribe()
         
-        
-    def subscribe_hourly(self, KEYNAME, NODE, HOURS, DEPOSIT):
-        CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
-        PASSWORD = CONFIG['wallet'].get('password', '')
-
-        ofile =  open(ConfParams.SUBSCRIBEINFO, "wb")
-
-        if not KEYNAME:
-            return (False, 1337)
-
-        DENOM = self.DetermineDenom(DEPOSIT)
-
-        SCMD = "%s tx node subscribe --yes --keyring-backend file --keyring-dir %s --chain-id %s --node %s --gas-prices %s --gas %d --gas-adjustment %f --from '%s' '%s' 0 '%s' %s"  % (sentinelcli,
-                                                                                                                                                                                        ConfParams.KEYRINGDIR, 
-                                                                                                                                                                                        ConfParams.CHAINID, 
-                                                                                                                                                                                        self.RPC,
-                                                                                                                                                                                        ConfParams.GASPRICE,
-                                                                                                                                                                                        ConfParams.GAS,
-                                                                                                                                                                                        ConfParams.GASADJUSTMENT,
-                                                                                                                                                                                        KEYNAME,
-                                                                                                                                                                                        NODE,
-                                                                                                                                                                                        HOURS,
-                                                                                                                                                                                        DENOM)
-        
-        try:
-            child = pexpect.spawn(SCMD)
-            child.logfile = ofile
-
-            child.expect(".*")
-            child.sendline(PASSWORD)
-            child.expect(pexpect.EOF)
-
-            ofile.flush()
-            ofile.close()
-        except pexpect.exceptions.TIMEOUT:
-            return (False, 1415)
-
-        return self.ParseSubscribe()
-
     def DetermineDenom(self, deposit):
         for key in IBCTokens.UNITTOKEN.keys():
             if key in deposit:
