@@ -169,10 +169,9 @@ WindowManager:
                 md_bg_color: get_color_from_hex("#121212")    
                 id: rv
                 size_hint: (.3,1)
-                
          
         MDBottomNavigation:
-            size_hint_y: .1
+            size_hint_y: 0.125
             panel_color: get_color_from_hex("#121212")
             text_color_normal: get_color_from_hex("#fcb711")
             text_color_active: get_color_from_hex("#fad783")
@@ -182,14 +181,14 @@ WindowManager:
                 text: "Wallet"
                 icon: "wallet"
                 on_tab_release: root.wallet_dialog()
-                on_tab_press: 
+                on_tab_press:
                 
             MDBottomNavigationItem:
                 name: "subscriptions"
                 text: "Subscriptions"
                 icon: "book-open-variant"
                 on_tab_release: root.switch_to_sub_window()
-                
+                 
             MDBottomNavigationItem:
                 name: "Refresh"
                 text: "Refresh"
@@ -227,8 +226,6 @@ WindowManager:
                     title: 'Go Back'
                     with_previous: True
                     on_release: root.set_previous_screen() 
-                    
-                    
 <SubscriptionScreen>
     name: "subscriptions"
     MDBoxLayout:
@@ -245,7 +242,7 @@ WindowManager:
                     title: 'Go Back'
                     with_previous: True
                     on_release: root.set_previous_screen()
-    
+                    
 <WalletScreen>:
     name: "wallet"
     wallet_name: ""
@@ -361,6 +358,7 @@ WindowManager:
                 with_previous: True
                 on_release: root.set_previous_screen() 
 
+
 <SettingsScreen>
     name: "settings"
     MDBoxLayout:
@@ -395,7 +393,7 @@ WindowManager:
                 text: "SAVE"
                 on_release: root.SaveOptions()
 
-       
+    
 
 <WalletRestore>:
     name: "walletrestore"
@@ -492,12 +490,10 @@ WindowManager:
         orientation: "vertical"
         spacing: 2
         #padding: 1,1,1,1
-        
-        
 
-<NodeRV2>:
+<NodeRV2>: 
     md_bg_color: get_color_from_hex("#121212")    
-    size_hint: (1,1)
+    size_hint: (1,1)       
     key_viewclass: "viewclass"
     bar_width: dp(12)
     scroll_type: ["bars", "content"]
@@ -517,27 +513,7 @@ WindowManager:
         height: self.minimum_height
         orientation: 'lr-tb' 
         spacing: 5
-        padding: 1,1,1,1
-        
-<-FullImage>:
-    keep_ratio: True
-    allow_stretch: False
-    canvas:
-        Rectangle:
-            texture: self.texture
-            size: self.width - 150 , self.height 
-            pos: self.x - 150, self.y           
-            
-<-FulImage2>:
-    keep_ratio: True
-    allow_stretch: False
-    
-    canvas:
-        Rectangle:
-            texture: self.texture
-            size: self.width - 120, self.height - 60
-            pos: self.x , self.y + 10
-            
+        padding: 1,1,1,1    
                        
 <RecycleViewCountryRow>:
     size_hint_y: 1
@@ -555,7 +531,6 @@ WindowManager:
     on_press: root.show_country_nodes(root.country_text)
     md_bg_color: get_color_from_hex("#121212")
     MDBoxLayout:
-        orientation: "horizontal"
         DisplayPic:
             source: root.source_image
             elevation: dp(3)
@@ -596,6 +571,7 @@ WindowManager:
     moniker_text: "."
     country_text: "."
     price_text: "."
+    hourly_price_text: "."
     address_text: "."
     type_text: "."
     city_text: " "
@@ -608,7 +584,7 @@ WindowManager:
     icon: ""
     tooltip: ""
     ripple_behavior: True
-    on_press: root.subscribe_to_node(root.price_text, root.address_text, root.moniker_text)
+    on_press: root.subscribe_to_node(root.price_text, root.hourly_price_text, root.address_text, root.moniker_text)
     MDGridLayout:
         cols: 1
         
@@ -621,7 +597,7 @@ WindowManager:
                 font_size: "22sp"
                 font_name: root.get_font()
                 text_color: get_color_from_hex("#fcb711")
-                pos_hint: {"x" : 0, "top" : 1.3}
+                pos_hint: {"x" : 0, "top" : 1.325}
                 size_hint_x: None
                 width: "500dp"
             MDLabel:
@@ -630,7 +606,7 @@ WindowManager:
                 font_style: "Subtitle2"
                 font_size: "10sp"
                 text_color: (0/255.0,141/255.0,155/255.0,255/255.0)
-                pos_hint: {"x" : 0, "top" : 1.1}
+                pos_hint: {"x" : 0, "top" : 1.125}
             TooltipMDIconButton:
                 icon: root.icon
                 tooltip_text: root.tooltip
@@ -641,42 +617,63 @@ WindowManager:
                 font_style: "Subtitle2"
                 font_size: "10sp"
                 text_color: get_color_from_hex("#ffffff")
-                pos_hint: {"x" : 0, "top" : .985}
+                pos_hint: {"x" : 0, "top" : 1.01}
+            MDLabel:
+                text: "GB:"
+                theme_text_color: "Custom"
+                font_style: "Subtitle2"
+                font_size: "13sp"
+                text_color: get_color_from_hex("#ffffff")
+                pos_hint: {"x" : 0, "top" : .875}
             MDLabel:
                 text: root.price_text
                 theme_text_color: "Custom"
                 font_style: "Subtitle2"
                 font_size: "13sp"
                 text_color: get_color_from_hex("#fcb711")
-                pos_hint: {"x" : 0, "top" : .85}
+                pos_hint: {"x" : 0.03, "top" : .875}
+            MDLabel:
+                text: "Hs:"
+                theme_text_color: "Custom"
+                font_style: "Subtitle2"
+                font_size: "13sp"
+                text_color: get_color_from_hex("#ffffff")
+                pos_hint: {"x" : 0, "top" : .725}
+            MDLabel:
+                text: root.hourly_price_text
+                theme_text_color: "Custom"
+                font_style: "Subtitle2"
+                font_size: "13sp"
+                text_color: get_color_from_hex("#fcb711")
+                pos_hint: {"x" : 0.03, "top" : .725}
             MDLabel:
                 text: "SCORE: "
                 theme_text_color: "Custom"
                 font_style: "Subtitle2"
                 font_size: "11sp"
                 text_color: get_color_from_hex("#ffffff")
-                pos_hint: {"x" : 0, "top" : .7}
+                pos_hint: {"x" : 0, "top" : .575}
             MDLabel:
                 text: root.node_score
                 theme_text_color: "Custom"
                 font_style: "Subtitle2"
                 font_size: "11sp"
                 text_color: get_color_from_hex("#ffffff")
-                pos_hint: {"x" : .055, "top" : .7}
+                pos_hint: {"x" : .055, "top" : .575}
             MDLabel:
                 text: "VOTES: "
                 theme_text_color: "Custom"
                 font_style: "Subtitle2"
                 font_size: "11sp"
                 text_color: get_color_from_hex("#ffffff")
-                pos_hint: {"x" : .125, "top" : .7}
+                pos_hint: {"x" : .125, "top" : .575}
             MDLabel:
                 text: root.votes
                 theme_text_color: "Custom"
                 font_style: "Subtitle2"
                 font_size: "11sp"
                 text_color: get_color_from_hex("#ffffff")
-                pos_hint: {"x" : .175, "top" : .7}
+                pos_hint: {"x" : .175, "top" : .575}
                 
             Image:
                 source: root.source_image
@@ -744,6 +741,7 @@ WindowManager:
     city: " "
     score: " "
     votes: " "
+    expirary_date: " "
     on_press: root.unsubscribe_to_node(root.sub_id_text)
     MDFloatLayout:
         MDLabel:
@@ -859,10 +857,24 @@ WindowManager:
             font_size: "11sp"
             text_color: 1,1,1,1
             pos_hint: {"x" : .2, "top" : .875}
+        MDLabel:
+            text: "Expires: "
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "11sp"
+            text_color: 1,1,1,1
+            pos_hint: {"x" : 0.35, "top" : .875}
+        MDLabel:
+            text: root.expirary_date
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "11sp"
+            text_color: 1,1,1,1
+            pos_hint: {"x" : .4, "top" : .875}
         
         MDProgressBar:
             id: quota
-            value: root.get_data_used(root.allocated_text, root.consumed_text, root.address_text)
+            value: root.get_data_used(root.allocated_text, root.consumed_text, root.address_text, root.expirary_date)
             color: app.theme_cls.accent_color
             #back_color: get_color_from_hex("#ffffff")
             pos_hint: {"x" : 0, "top" : .475 }
@@ -931,6 +943,8 @@ WindowManager:
             bold: True
             font_size: 13
             pos: self.parent.center_x - sp(30), self.parent.center_y - sp(50)
+            
+            
 <ClickableTextFieldRoundSeed>:
     size_hint_y: None
     height: seed_phrase.height
@@ -999,28 +1013,6 @@ WindowManager:
 
 
 <Tab>
-
-<SelectableLabel>:
-    # Draw a background to indicate selection
-    text1: "GLARGLY"
-    text2: "BLARGLY"
-    text3: "SHIMARGLY"
-    canvas.before:
-
-        Color:
-            rgba: (.0, 0.9, .1, .3) if self.selected else (0, 0, 0, 1)
-        Rectangle:
-            pos: self.pos
-            size: self.size
-
-<RV>:
-    viewclass: 'SelectableLabel'
-    RecycleBoxLayout:
-        default_size: None, dp(48)
-        default_size_hint: 1, None
-        size_hint_y: None
-        height: self.minimum_height
-        orientation: "vertical"
 
 <WalletInfoContent>
     orientation: "vertical"
@@ -1099,7 +1091,52 @@ WindowManager:
             text: str(int(slider1.value)) + "s" 
             size_hint_x: None
             width: 75
-                       
+            
+<SubTypeDialog>
+    orientation: "vertical"
+    spacing: "1dp"
+    size_hint_y: None
+    height: "130dp"
+    price_text: ""
+    naddress: " "
+    moniker: " "
+    deposit: " "
+    MDFloatLayout:
+        MDLabel:
+            id: sub_type
+            text: "Subscription Type"
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "20sp"
+            text_color: get_color_from_hex("#fcb711")
+            pos_hint: {"x" : 0, "top" : 1.35}
+        MDLabel:
+            id: bandwidth_text
+            text: "Bandwidth (GB)"
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "14sp"
+            text_color: get_color_from_hex("#ffffff")
+            pos_hint: {"x" : 0, "top" : 1}        
+        CheckBox:
+            group: "sub_type"
+            on_active: root.select_sub_type(self, self.active, "gb")
+            pos_hint: {"x": 0, "y" : .375}
+            size_hint_y: .3
+        MDLabel:
+            id: hourly_text
+            text: "Hourly"
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "14sp"
+            text_color: get_color_from_hex("#ffffff")
+            pos_hint: {"x" : 0, "top" : .8}    
+        CheckBox:
+            group: "sub_type"
+            on_active: root.select_sub_type(self, self.active, "hourly")
+            pos_hint: {"x": 0, "y" : .15}
+            size_hint_y: .3
+                               
 <SubscribeContent>
     orientation: "vertical"
     spacing: "1dp"
@@ -1139,7 +1176,8 @@ WindowManager:
             on_touch_up: root.get_usd()
             
         MDLabel:
-            text: str(int(slider1.value)) + " GB" 
+            id: slider1_value
+            text: str(int(slider1.value)) + root.return_sub_type()
             size_hint_x: None
             width: 75
     MDBoxLayout:
@@ -1161,9 +1199,9 @@ WindowManager:
             mode: "fill"
             text: root.price_text
             size_hint_y: .65
+            readonly: True
             size_hint_x: .1
             opacity: 0
-            readonly: True
             
         MDDropDownItem:
             id: drop_item
@@ -1179,8 +1217,7 @@ WindowManager:
             font_size: "14sp"
             font_name: root.get_font()
             text_color: get_color_from_hex("#fcb711")
-            
-            
+                   
 <ProcessingSubDialog>
     orientation: "vertical"
     spacing: "1dp"
@@ -1246,7 +1283,7 @@ WindowManager:
             value: 9
             pos_hint: {"x" : 0.00, "center_y": .5}
             
-          
+      
 <HelpScreen>:
     name: "helpscreen"
     title: "Help Screen"
@@ -1470,7 +1507,7 @@ WindowManager:
             MDDropDownItem:
                 id: year_list
                 pos_hint: {'center_x': .48, 'center_y': .67}
-                text: '2022'
+                text: '2023'
                 on_release: root.menu_year.open()
                 
             ClickableTextFieldRoundCVV:
@@ -1489,18 +1526,34 @@ WindowManager:
                 text_color: get_color_from_hex("f42121")
                 pos_hint: {"x": .47, "center_y": .62}
                 font_size: "12dp"
+            
             MDLabel:
-                id: dvpn_qty_text
                 opacity: 1
-                text: "DVPN"
+                text: "Coin"
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex("#fcb711")
+                pos_hint: {"x": .355, "center_y": .63}
+                font_size: "12dp"
+                    
+            MDDropDownItem:
+                id: token
                 pos_hint: {"x": .355, "center_y": .60}
-                font_size: "14dp"
+                text_color: get_color_from_hex("#fcb711")
+                text: 'dvpn'
+                on_release: root.menu_token.open()
+                
+            #MDLabel:
+            #    id: dvpn_qty_text
+            #    opacity: 1
+            #    text: "DVPN"
+            #    theme_text_color: "Custom"
+            #    text_color: get_color_from_hex("#fcb711")
+            #    pos_hint: {"x": .355, "center_y": .60}
+            #    font_size: "14dp"
                 
             MDDropDownItem:
                 id: dvpn_qty_menu
-                pos_hint: {'center_x': .43, 'center_y': .60}
+                pos_hint: {'center_x': .48, 'center_y': .60}
                 text: '1000'
                 on_release: root.menu_dvpn_qty.open()
                 
@@ -1521,7 +1574,7 @@ WindowManager:
                     
             MDLabel:
                 id: dvpn_price
-                text: "DVPN: $" + str(root.get_dvpn_price())
+                text: "DVPN: $" + str(root.get_token_price('dvpn'))
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex("#fcb711")
                 pos_hint: {"x": .40, "center_y": .48}
@@ -1535,7 +1588,7 @@ WindowManager:
                 pos_hint: {"x": .40, "center_y": .43}
                 font_size: "16dp"
             MDLabel:
-                id: dvpn_qty
+                id: coin_qty
                 text:"QTY: " + str(root.DVPNOptions[root.idvpn]) + " dvpn"
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex("#fcb711")
@@ -1544,7 +1597,7 @@ WindowManager:
             
             MDLabel:
                 id: charge_amount
-                text:"Total Charge: $" + str(round((root.get_dvpn_price()*root.get_dvpn_qty())+1.25,2))
+                text:"Total Charge: $" + str(round((root.get_token_price('dvpn')*root.get_token_qty('dvpn'))+1.25,2))
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex("#fcb711")
                 pos_hint: {"x": .40, "center_y": .33}
@@ -1643,3 +1696,4 @@ WindowManager:
     zoom: 3
 
 <TooltipMDIconButton@MDIconButton+MDTooltip>
+

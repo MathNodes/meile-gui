@@ -14,8 +14,7 @@ from kivy.uix.switch import Switch
 from kivy_garden.mapview.view import MapView
 from kivymd.uix.behaviors import RoundedRectangularElevationBehavior, CircularElevationBehavior, RectangularRippleBehavior, CircularRippleBehavior
 from kivymd.uix.fitimage.fitimage import FitImage
-from kivy.uix.behaviors import ButtonBehavior
-
+from kivy.uix.behaviors import ButtonBehavior 
 
 class Tab(MDBoxLayout, MDTabsBase):
     pass
@@ -35,7 +34,6 @@ class YellowSwitch(Switch):
     pass
 class TooltipMDRaisedButton(MDRaisedButton, MDTooltip):
     pass
-
 
 class TooltipMDIconButton(MDIconButton, MDTooltip):
     pass
@@ -62,12 +60,24 @@ class SelectableRecycleGridLayout(FocusBehavior, LayoutSelectionBehavior,
 class ContinentMap(MapView):
     pass
 
-class FullImage(Image):
-    pass
-class FullImage2(Image):
-    pass
 class DisplayPic(CircularElevationBehavior, ButtonBehavior, FitImage):
     pass
 
+class ClickableTextFieldRoundCC(MDRelativeLayout):
+    text = StringProperty()
+    hint_text = StringProperty()
+    
+'''
+class ClickableTextFieldRoundName(MDRelativeLayout):
+    text = StringProperty()
+    hint_text = StringProperty()
+
+'''
+class ClickableTextFieldRoundCVV(MDRelativeLayout):
+    text = StringProperty()
+    hint_text = StringProperty()
+
 class TXContent(BoxLayout):
     pass
+
+

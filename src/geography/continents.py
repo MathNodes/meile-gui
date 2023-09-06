@@ -11,6 +11,7 @@ class OurWorld():
     NorthAmerica = our_world.get_countries_list_of(CONTINENTS[4])
     Oceania      = our_world.get_countries_list_of(CONTINENTS[5])
     SouthAmerica = our_world.get_countries_list_of(CONTINENTS[6])
+
     ContinentLatLong = {'Africa': [11.5024338, 17.7578122],
                          'Antarctica': [-79.4063075, 0.3149312], 
                          'Asia': [51.2086975, 89.2343748], 
