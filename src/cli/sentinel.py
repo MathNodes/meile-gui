@@ -305,7 +305,7 @@ class NodeTreeData():
             return None
         else:
             print(f"inactive_date: {idate}, time_remaining: {remaining_hours}, time_consumed: {consumed}")
-            nodeQuota.append(str(consumed) + "hrs")
+            nodeQuota.append(str(round(consumed,2)) + "hrs")
             return nodeQuota   
                  
 def disconnect(v2ray):
