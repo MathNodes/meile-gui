@@ -1173,7 +1173,7 @@ class NodeScreen(Screen):
         for node in CountryNodes:
             NodeData.append(node.data)
 
-        NodeDataSorted = sorted(NodeData, key=lambda d: d[NodeKeys.NodesInfoKeys[0]])
+        NodeDataSorted = sorted(NodeData, key=lambda d: d[NodeKeys.NodesInfoKeys[0]].lower())
 
         self.meta_add_rv_data(NodeDataSorted)
 
