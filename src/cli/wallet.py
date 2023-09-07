@@ -144,7 +144,7 @@ class HandleWalletFunctions():
                                                                                                                                                                                             NODE,
                                                                                                                                                                                             GB,
                                                                                                                                                                                             DENOM)
-                                                                                                                                                                            DENOM)
+        print(SCMD)
         try:
             child = pexpect.spawn(SCMD)
             child.logfile = ofile
@@ -159,7 +159,7 @@ class HandleWalletFunctions():
             return (False,1415)
             
         return self.ParseSubscribe()
-        
+
     def DetermineDenom(self, deposit):
         for key in IBCTokens.UNITTOKEN.keys():
             if key in deposit:
