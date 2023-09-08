@@ -111,7 +111,7 @@ class HandleWalletFunctions():
     def subscribe(self, KEYNAME, NODE, DEPOSIT, GB, hourly):
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
-    
+        self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
         ofile =  open(ConfParams.SUBSCRIBEINFO, "wb")
             
         if not KEYNAME:
@@ -277,25 +277,6 @@ class HandleWalletFunctions():
 
         return {'hash' : tx_hash, 'success' : tx_success, 'message' : message}
 
-    def check_active_subscriptions(self, address):
-        Request = HTTPRequests.MakeRequest()
-        http = Request.hadapter()
-        endpoint = HTTParams.APIURL + HTTParams.SESSIONS_API_URL % address
-
-        try:
-            r = http.get(endpoint)
-            json_data = r.json()
-
-            if len(json_data['sessions']) == 0:
-                return {'session' : False, 'data' : None}
-            else:
-                return {'session' : True, 'data' : { 'status' : json_data['sessions'][0]['status'], 'status_at' : json_data['sessions'][0]['status_at'] } }
-
-        except Exception as e:
-            print(str(e))
-            return None
-
-
     def ParseUnSubscribe(self):
         with open(ConfParams.USUBSCRIBEINFO, 'r') as usubfile:
             lines = usubfile.readlines()
@@ -311,6 +292,7 @@ class HandleWalletFunctions():
     def connect(self, ID, address, type):
 
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
+        self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
         PASSWORD = CONFIG['wallet'].get('password', '')
         KEYNAME = CONFIG['wallet'].get('keyname', '')
         connCMD = "pkexec env PATH=%s %s connect --home %s --keyring-backend file --keyring-dir %s --chain-id %s --node %s --gas-prices %s --gas %d --gas-adjustment %f --yes --from '%s' %s %s" % (ConfParams.PATH, 
