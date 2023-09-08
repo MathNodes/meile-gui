@@ -6,6 +6,7 @@ CHANGELOG
 * NEW: Label for subscription expirary on subscription card (meile.kv)
 * NEW: compute_consumed_hours() routine in widgets.py
 * NEW: GetHourAllocation() routine in sentinel.py
+* NEW: Persistent RPC check when setting different RPC so restart not required
 * ADD: INACTIVE_DIALOG_BG_COLOR in konstants.py MeileColors class
 * ADD: user defined TIMEOUT for HTTPRequests adapter
 * UPDATE: SubsFinalResult data to include hour subscription data and expirary data
@@ -17,6 +18,7 @@ CHANGELOG
 * UPDATE: subscribe() in wallet.py to handle hourly subscriptions
 * CHANGE: Size of location pin 
 * FIX: Last country card in left pane being cut off by bottom navbar
+* FIX: Hourly bandwidth bar and hourly expiration date in subs cards by applying UTC offest
 * REMOVE: FullImage/2 from meile.kv and interfaces.py
 * REMOVE: \<SelectableLabel\>, \<RV\> from meile.kv
 
