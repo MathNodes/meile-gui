@@ -675,7 +675,10 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
                 print(str(e))
             if mw.disconnect_from_node():
                 self.connected_quota(None, None)
-            return True
+                self.mw.NodeSwitch['switch'] = True
+                return True
+            else:   
+                return False
         
         if mw.CONNECTED:
             return 

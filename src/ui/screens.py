@@ -568,6 +568,11 @@ class MainWindow(Screen):
                     print("Disconnect RTNCODE: %s" % returncode)
                     self.get_ip_address(None)
                     self.set_protected_icon(False, "")
+                    
+                    # returning False if returncode is not 0
+                    if returncode != 0 or returncode:
+                        return False
+                    
                 except Exception as e:
                     print(str(e))
                     print("Something went wrong")
@@ -577,6 +582,11 @@ class MainWindow(Screen):
                 print("Disconnect RTNCODE: %s" % returncode)
                 self.get_ip_address(None)
                 self.set_protected_icon(False, "")
+                
+                # returning False if returncode is not 0
+                if returncode != 0 or returncode != None:
+                        return False
+                    
             elif self.CONNECTED == False:
                 print("Disconnected!")
             else:
@@ -584,6 +594,10 @@ class MainWindow(Screen):
                 print("Disconnect RTNCODE: %s" % returncode)
                 self.get_ip_address(None)
                 self.set_protected_icon(False, "")
+                
+                # returning False if returncode is not 0
+                if returncode != 0 or returncode != None:
+                        return False
 
             #self.warp_disconnect(None)
             self.dialog = None
