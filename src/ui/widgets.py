@@ -30,6 +30,7 @@ from time import sleep
 import asyncio
 from copy import deepcopy
 from datetime import datetime, timedelta
+import time
 
 import main.main as Meile
 from typedef.konstants import IBCTokens, HTTParams, MeileColors
@@ -538,9 +539,12 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
         
     def compute_consumed_hours(self, allocated, expirary_date):
 
-        allocated = allocated.split('hrs')[0].rstrip().lstrip()
+        allocated       = allocated.split('hrs')[0].rstrip().lstrip()
         now             = datetime.now()
         expirary_date   = datetime.strptime(expirary_date,'%b %d %Y, %I:%M %p')
+        ts              = time.time()
+        utc_offset      = float((datetime.fromtimestamp(ts) - datetime.utcfromtimestamp(ts)).total_seconds()/3600)
+        expirary_date   = expirary_date + timedelta(hours=utc_offset)
         sub_date        = expirary_date - timedelta(hours=float(allocated))
         subdelta        = now - sub_date
         remaining_hours = round(float(subdelta.total_seconds())/3600,3)

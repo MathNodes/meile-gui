@@ -1,7 +1,7 @@
 CHANGELOG
 ========================
 
-# v1.7.10 (06/09/2023)
+# v1.7.10 (08/09/2023)
 
 * NEW: Subscription type chooser interface (hourly/bandwidth)
 * NEW: Slider for hourly subscription on range of 1-30 days
@@ -10,6 +10,7 @@ CHANGELOG
 * NEW: GetHourAllocation() routine in sentinel.py
 * ADD: INACTIVE_DIALOG_BG_COLOR in konstants.py MeileColors class
 * ADD: user defined TIMEOUT for HTTPRequests adapter
+* ADD: Persistent RPC when changed within settings so restart not needed
 * UPDATE: SubsFinalResult data to include hour subscription data and expirary data
 * UPDATE: add variable to root.get_data_used(..., root.expirary_date) (meile.kv)
 * UPDATE: Check in get_subscriptions() if sub is hourly, if so compute nodeQuota list
@@ -19,6 +20,7 @@ CHANGELOG
 * UPDATE: subscribe() in wallet.py to handle hourly subscriptions
 * CHANGE: Size of location pin 
 * FIX: Last country card in left pane being cut off by bottom navbar
+* FIX: Bandwdith bar hour hourly subs using UTC offeset from localtime
 * REMOVE: FullImage/2 from meile.kv and interfaces.py
 * REMOVE: \<SelectableLabel\>, \<RV\> from meile.kv
 
@@ -91,27 +93,47 @@ CHANGELOG
 # v1.4.1 (29/01/2023)
 
 * NEW: Toast Message for Rating sent or errored out
+
 * NEW: Version control in Help Screen
+
 * NEW: Mac OS X App Bundle Release
+
 * FIX: Logic in Rating and Location retrieval
+
 * FIX: MapView Cache folder now located in ~/.meile.gui instead of CWD (fixes App Bundle)
+
 * FIX: Wallet logic
+
 * UPDATE: Sentinel-CLI for CosmWasm Sentinel Network Upgrade
+
 * UPDATE: Packager Installer installs App Bundle to Desktop
+
 * UPDATE: Improved HTTPs requests using requests adapter
   
   # v1.4.0 (17/01/2023)
+
 * NEW: First Windows Binary Release (Pre-release)
+
 * NEW: gsudo Packaged with Windows binary
+
 * NEW: Wireguard binary packaged with Meile binary
+
 * NEW: HTTPSRequests Adapater for max retries and timeout on API Calls
+
 * NEW: Packaging wexpect binary and collection bundle with app
+
 * CHANGE: Swtiched from pexpect wrapper library to wexpect wrapper library for windows compatability
+
 * CHANGE: Re-worked Ratings/Node Locations Logic
+
 * CHANGE: Removed WARP support for Windows Users
+
 * CHANGE: Updated Help version number routine to a constant
+
 * CHANGE: Pyinstaller .spec file for Windows build. Changes from Linux/ OS X Version to include release for Windows.
+
 * CHANGE: MapView cache now loads in .meile-gui home folder location instead of CWD
+
 * CHANGE: Icon logo for Kivy and for Task Bar and Desktop Icon
 
 # v1.3.0 (06/12/2022)

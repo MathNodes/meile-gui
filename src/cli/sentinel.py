@@ -4,7 +4,9 @@ from os import path
 import re
 import requests
 from urllib3.exceptions import InsecureRequestWarning
-from datetime import datetime
+from datetime import datetime,timedelta
+import time
+
 
 from treelib import  Tree
 
@@ -37,6 +39,8 @@ class NodeTreeData():
     def get_nodes(self, latency, *kwargs):
         AllNodesInfo = []
         print("Running sentinel-cli with latency: %s" % latency)
+        CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
+        self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
         nodeCMD = [sentinelcli, "query", "nodes", "--node", self.RPC, "--limit", "20000", "--timeout", "%s" % latency]
     
         proc = Popen(nodeCMD, stdout=PIPE)
@@ -195,6 +199,8 @@ class NodeTreeData():
         SubsNodesInfo = []
         SubsFinalResult    = []
         print("Geting Subscriptions... %s" % ADDRESS)
+        CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
+        self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
         subsCMD = [sentinelcli, "query", "subscriptions", "--node", self.RPC, "--limit", "1000", "--address" ,ADDRESS]
         proc = Popen(subsCMD, stdout=PIPE)
     
@@ -243,7 +249,7 @@ class NodeTreeData():
                 continue
             
             if int(SubsResult[NodeKeys.SubsInfoKeys[6]][k]) > 0:
-                nodeQuota = self.GetHourAllocation(SubsResult[NodeKeys.SubsInfoKeys[6]][k], SubsResult[NodeKeys.SubsInfoKeys[2]][k])
+                SubsResult[NodeKeys.SubsInfoKeys[2]][k],nodeQuota = self.GetHourAllocation(SubsResult[NodeKeys.SubsInfoKeys[6]][k], SubsResult[NodeKeys.SubsInfoKeys[2]][k])
 
             else:    
                 nodeQuota = self.GetQuota(SubsResult[NodeKeys.SubsInfoKeys[0]][k])
@@ -268,6 +274,8 @@ class NodeTreeData():
 
 
     def GetQuota(self, id):
+        CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
+        self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
         quotaCMD = [sentinelcli, 'query', 'allocations', '--node', self.RPC, '--page', '1', id]
         proc = Popen(quotaCMD, stdout=PIPE)
         h=1
@@ -294,6 +302,9 @@ class NodeTreeData():
         nodeQuota.append(str(hours) + "hrs")
         inactive_date   = idate.lstrip().rstrip().split('.')[0]
         inactive_date   = datetime.strptime(inactive_date, '%Y-%m-%d %H:%M:%S')
+        ts              = time.time()
+        utc_offset      = float((datetime.fromtimestamp(ts) - datetime.utcfromtimestamp(ts)).total_seconds()/3600)
+        inactive_date   = inactive_date + timedelta(hours=utc_offset)
         now             = datetime.now()
         subdelta        = inactive_date - now
         remaining_hours = round(float(subdelta.total_seconds())/3600,3)
@@ -303,9 +314,9 @@ class NodeTreeData():
         if remaining_hours <= 0:
             return None
         else:
-            print(f"inactive_date: {idate}, time_remaining: {remaining_hours}, time_consumed: {consumed}")
+            print(f"inactive_date: {str(inactive_date)}, time_remaining: {remaining_hours}, time_consumed: {consumed}")
             nodeQuota.append(str(round(consumed,2)) + "hrs")
-            return nodeQuota
+            return str(inactive_date),nodeQuota
     
 def disconnect(v2ray):
     if v2ray:
