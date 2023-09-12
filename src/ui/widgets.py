@@ -675,9 +675,14 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
                 print(str(e))
             if mw.disconnect_from_node():
                 self.connected_quota(None, None)
+                # Set NODE_SWITCH True [avaiable to connect after disconnection]
+                self.ids.node_switch.active = True
+            else:
+                # Set NODE_SWITCH False [avaiable for disconnection again - error occured in disconnection of node]
+                self.ids.node_switch.active = False  
             return True
         
-        if mw.CONNECTED:
+        if mw.CONNECTED != None or mw.CONNECTED:
             return 
         
         if switchValue:
@@ -738,6 +743,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
                                 text="OK",
                                 theme_text_color="Custom",
                                 text_color=self.theme_cls.primary_color,
+                                # Setting self.ids.node_switch status [False, Avaiable to Discount]
                                 on_release=partial(self.call_ip_get, True, moniker)
                             ),])
                 self.dialog.open()
@@ -752,6 +758,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
                                 text="OK",
                                 theme_text_color="Custom",
                                 text_color=self.theme_cls.primary_color,
+                                # Setting self.ids.node_switch status [False, Avaiable to Connect Again]
                                 on_release=partial(self.call_ip_get, False, "")
                             ),])
                 self.dialog.open()
@@ -883,9 +890,12 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
         if result:
             mw.CONNECTED = True
             mw.set_protected_icon(True, moniker)
-        else:
-            mw.CONNECTED = False
+            # When node is connected set Button to False, [Node is avaiable to Dicount]
             self.ids.node_switch.active = False
+        if not result:
+            mw.CONNECTED = False
+            # When node is failed to connected set Button to True, [Node is avaiable for Connection Again]
+            self.ids.node_switch.active = True
             
         if not mw.get_ip_address(None):
             self.remove_loading_widget()

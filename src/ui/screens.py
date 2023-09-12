@@ -569,7 +569,7 @@ class MainWindow(Screen):
                     self.get_ip_address(None)
                     self.set_protected_icon(False, "")
                     
-                    # returning False if returncode is not 0
+                    # returning False if returncode is not 0 or Node is not Terminated
                     if returncode != 0 or returncode:
                         return False
                     
@@ -583,7 +583,7 @@ class MainWindow(Screen):
                 self.get_ip_address(None)
                 self.set_protected_icon(False, "")
                 
-                # returning False if returncode is not 0
+                # returning False if returncode is not function properly
                 if returncode != 0 or returncode != None:
                         return False
                     
