@@ -744,7 +744,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
                                 theme_text_color="Custom",
                                 text_color=self.theme_cls.primary_color,
                                 # Setting self.ids.node_switch status [False, Avaiable to Discount]
-                                on_release=partial(self.call_ip_get, True, moniker)
+                                on_release=partial(self.call_ip_get, False, moniker)
                             ),])
                 self.dialog.open()
                 
@@ -889,17 +889,13 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         if result:
             mw.CONNECTED = True
-            mw.set_protected_icon(True, moniker)
-            # When node is connected set Button to False, [Node is avaiable to Dicount]
-            self.ids.node_switch.active = False
         if not result:
             mw.CONNECTED = False
             # When node is failed to connected set Button to True, [Node is avaiable for Connection Again]
             self.ids.node_switch.active = True
             
         if not mw.get_ip_address(None):
-            self.remove_loading_widget()
-            self.change_dns()
+            return
         else:
             self.remove_loading_widget()
             
