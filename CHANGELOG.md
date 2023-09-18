@@ -1,6 +1,13 @@
 CHANGELOG
 ========================
-# v0.14.0.0 (06/08/2023)
+# v0.14.0.1 (18/09/2023)
+* CHANGE: Timeout for NodeRatings, Cities, Types reuqest
+* CHANGE: DetermineDenom() in wallet.py
+* FIX: IBC payment crash
+* FIX: -4 hour offset in bandwidth meter
+* ADD: IBCUNITTOKEN in konstants
+
+# v0.14.0.0 (06/09/2023)
 * NEW: Sentinel Upgrade commits
 * NEW: Subscription type chooser interface (hourly/bandwidth)
 * NEW: Slider for hourly subscription on range of 1-30 days

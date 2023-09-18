@@ -112,14 +112,14 @@ class HandleWalletFunctions():
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
         self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
-    
         ofile =  open(ConfParams.SUBSCRIBEINFO, "wb")
             
         if not KEYNAME:
             return (False, 1337)
-        
+        print("Deposit/denom")
+        print(DEPOSIT)
         DENOM = self.DetermineDenom(DEPOSIT)
-        
+        print(DENOM)
         
         if hourly:
             SCMD = "%s tx node subscribe --yes --keyring-backend file --keyring-dir %s --chain-id %s --node %s --gas-prices %s --gas %d --gas-adjustment %f --from '%s' '%s' 0 '%s' %s"  % (sentinelcli,
@@ -163,9 +163,9 @@ class HandleWalletFunctions():
         return self.ParseSubscribe()
     
     def DetermineDenom(self, deposit):
-        for key in IBCTokens.UNITTOKEN.keys():
-            if key in deposit:
-                return key
+        for key,value in IBCTokens.IBCUNITTOKEN.items():
+            if value in deposit:
+                return value
             
             
     def ParseSubscribe(self):
@@ -278,7 +278,6 @@ class HandleWalletFunctions():
 
         return {'hash' : tx_hash, 'success' : tx_success, 'message' : message}
 
-
     def ParseUnSubscribe(self):
         with open(ConfParams.USUBSCRIBEINFO, 'r') as usubfile:
             lines = usubfile.readlines()
@@ -294,10 +293,9 @@ class HandleWalletFunctions():
     def connect(self, ID, address, type):
 
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
+        self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
         PASSWORD = CONFIG['wallet'].get('password', '')
         KEYNAME = CONFIG['wallet'].get('keyname', '')
-        self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
-
         connCMD = "pkexec env PATH=%s %s connect --home %s --keyring-backend file --keyring-dir %s --chain-id %s --node %s --gas-prices %s --gas %d --gas-adjustment %f --yes --from '%s' %s %s" % (ConfParams.PATH, 
                                                                                                                                                                                                     sentinelcli, 
                                                                                                                                                                                                     ConfParams.BASEDIR, 

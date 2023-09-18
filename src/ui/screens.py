@@ -12,6 +12,7 @@ from conf.meile_config import MeileGuiConfig
 from typedef.win import CoinsList
 from cli.warp import WarpHandler
 from adapters import HTTPRequests, DNSRequests
+from fiat import fiat_interface
 from cli.v2ray import V2RayHandler
 
 from kivy.properties import BooleanProperty, StringProperty, ColorProperty
