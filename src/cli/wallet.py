@@ -116,9 +116,10 @@ class HandleWalletFunctions():
             
         if not KEYNAME:
             return (False, 1337)
-        
+        print("Deposit/denom")
+        print(DEPOSIT)
         DENOM = self.DetermineDenom(DEPOSIT)
-        
+        print(DENOM)
         
         if hourly:
             SCMD = "%s tx node subscribe --yes --keyring-backend file --keyring-dir %s --chain-id %s --node %s --gas-prices %s --gas %d --gas-adjustment %f --from '%s' '%s' 0 '%s' %s"  % (sentinelcli,
@@ -162,9 +163,9 @@ class HandleWalletFunctions():
         return self.ParseSubscribe()
     
     def DetermineDenom(self, deposit):
-        for key in IBCTokens.UNITTOKEN.keys():
-            if key in deposit:
-                return key
+        for key,value in IBCTokens.IBCUNITTOKEN.items():
+            if value in deposit:
+                return value
             
             
     def ParseSubscribe(self):

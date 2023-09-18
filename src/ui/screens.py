@@ -44,8 +44,6 @@ from save_thread_result import ThreadWithResult
 from unidecode import unidecode
 from datetime import datetime
 
-TIMEOUT = 5
-
 class WalletRestore(Screen):
     screemanager = ObjectProperty()
 

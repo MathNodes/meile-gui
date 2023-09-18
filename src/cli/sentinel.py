@@ -5,7 +5,7 @@ import re
 import requests
 from urllib3.exceptions import InsecureRequestWarning
 from subprocess import Popen, PIPE, STDOUT
-from datetime import datetime
+from datetime import datetime,timedelta
 import time
 
 from treelib import  Tree
@@ -116,7 +116,7 @@ class NodeTreeData():
         self.GetNodeTypes()
         
     def GetNodeScores(self):
-        Request = HTTPRequests.MakeRequest()
+        Request = HTTPRequests.MakeRequest(TIMEOUT=2)
         http = Request.hadapter()
         try:
             r = http.get(HTTParams.SERVER_URL + HTTParams.NODE_SCORE_ENDPOINT)
@@ -129,7 +129,7 @@ class NodeTreeData():
             print(str(e)) 
             
     def GetNodeLocations(self):
-        Request = HTTPRequests.MakeRequest()
+        Request = HTTPRequests.MakeRequest(TIMEOUT=2)
         http = Request.hadapter()
         try:
             r = http.get(HTTParams.SERVER_URL + HTTParams.NODE_LOCATION_ENDPOINT)
@@ -143,7 +143,7 @@ class NodeTreeData():
             print(str(e)) 
             
     def GetNodeTypes(self):
-        Request = HTTPRequests.MakeRequest()
+        Request = HTTPRequests.MakeRequest(TIMEOUT=2)
         http = Request.hadapter()
         try:
             r = http.get(HTTParams.SERVER_URL + HTTParams.NODE_TYPE_ENDPOINT)
