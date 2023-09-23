@@ -13,8 +13,18 @@ from win import CoinsList
 from kivymd.uix.list import OneLineIconListItem
 from functools import partial
 
+import asyncio
 import random
+import time
 import re
+
+# Warning, the sys.path.append should be use only for test :)
+# If you run from main folder python tests/slidery_months.py, leave as is
+# If you are in /tests folder and run python slidery_months.py the path should be ../src/
+import sys, os
+sys.path.append(os.path.join(os.getcwd(), "src/"))
+
+from coin_api.get_price import GetPriceAPI
 
 KV = '''
 MDScreen
@@ -58,7 +68,6 @@ MDScreen
     MDBoxLayout:
         orientation: "horizontal"
         MDSlider:
-
             id: slider1
             min: 1
             max: 12
@@ -118,6 +127,10 @@ class SubscribeContent(BoxLayout):
     def __init__ (self, price, white_label, nnodes, logo_image):
         super(SubscribeContent, self).__init__()
 
+        # Init the class
+        self.price_api = GetPriceAPI()
+        self.price_cache = {}
+
         self.price_text = price
         self.parse_coin_deposit("dvpn")
 
@@ -144,6 +157,17 @@ class SubscribeContent(BoxLayout):
         self.ids.drop_item.current_item = CoinsList.ibc_mu_coins[0]
         self.parse_coin_deposit(self.ids.drop_item.current_item)
 
+    def refresh_price(self, mu_coin: str = "dvpn", cache: int = 30):
+        # Need check on cache or trought GetPrice api
+        # We don't need to call the price api if the cache is younger that 30s
+
+        if mu_coin not in self.price_cache or time.time() - self.price_cache[mu_coin]["time"] > cache:
+            response = asyncio.run(self.price_api.get_usd(mu_coin))
+            self.price_cache[mu_coin] = {
+                "price": float(response['price']),
+                "time": time.time()
+            }
+
 
     def set_item(self, text_item):
         self.ids.drop_item.set_item(text_item)
@@ -159,16 +183,18 @@ class SubscribeContent(BoxLayout):
                 price_text = price_text.replace(mu_coin, mu_coin.lstrip('u'))
             mu_coin = mu_coin.lstrip('u')
 
-        mu_coin_amt = re.findall(r'[0-9]+' + mu_coin, price_text)[0]
-        if mu_coin_amt:  # This value should be always true, else, we get a exception on [0] if regex fail
-            month = int(self.ids.slider1.value) # Months
-            value = int(mu_coin_amt.rstrip(mu_coin).strip())
-            self.ids.deposit.text = str(month * value)
-            return self.ids.deposit.text
+        self.refresh_price("dvpn", cache=30)
+
+        if mu_coin != "dvpn":
+            self.refresh_price(mu_coin, cache=30)
+
+        month = int(self.ids.slider1.value) # Months
+        if mu_coin == "dvpn":
+            value = int(price_text.rstrip(mu_coin).strip())
         else:
-            print("Start with udvpn: %s" % self.ids.drop_item.current_item)
-            self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(int(self.ids.price.text.split("udvpn")[0])/1000000)),3)) + self.ids.drop_item.current_item.replace('u','')
-            return self.ids.deposit.text
+            value = round(int(price_text.rstrip("dvpn").strip()) * self.price_cache["dvpn"]["price"] / self.price_cache[mu_coin]["price"], 4)
+        self.ids.deposit.text = str(month * value)
+        return self.ids.deposit.text
 
 
     def return_deposit_text(self):
