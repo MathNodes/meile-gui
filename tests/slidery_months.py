@@ -13,7 +13,7 @@ from win import CoinsList
 from kivymd.uix.list import OneLineIconListItem
 from functools import partial
 
-
+import random
 import re
 
 KV = '''
@@ -39,10 +39,10 @@ MDScreen
         spacing: 10
         rows: 1
 
-        Image:
+        AsyncImage:
             size_hint_x: None
             width: 100
-            source: 'logo.png'
+            source: root.logo_image
 
         MDBoxLayout:
             orientation: "vertical"
@@ -112,9 +112,10 @@ class SubscribeContent(BoxLayout):
     price_text = StringProperty()
     white_label = StringProperty()
     nnodes = StringProperty()
+    logo_image = StringProperty()
 
     menu = None
-    def __init__ (self, price, white_label, nnodes):
+    def __init__ (self, price, white_label, nnodes, logo_image):
         super(SubscribeContent, self).__init__()
 
         self.price_text = price
@@ -122,6 +123,7 @@ class SubscribeContent(BoxLayout):
 
         self.white_label = white_label
         self.nnodes = str(nnodes)
+        self.logo_image = logo_image
 
         menu_items = [
             {
@@ -177,11 +179,12 @@ class Test(MDApp):
     def build(self):
         Builder.load_string(KV)
 
-        price = "10500dvpn"
-        white_label = "Math nodes"
-        nnodes = 34
+        item = random.choice([
+            { "price": "10500dvpn", "white_label": "Math nodes", "nnodes": 34, "logo_image": "logo.png" },
+            { "price": "19500dvpn", "white_label": "Tkd-Alex", "nnodes": 23, "logo_image": "https://avatars.githubusercontent.com/u/14061593?v=4" }
+        ])
 
-        subscribe_dialog = SubscribeContent(price, white_label, nnodes )
+        subscribe_dialog = SubscribeContent(**item)
         if not self.dialog:
             self.dialog = MDDialog(
                     title="Subscription Plan",
