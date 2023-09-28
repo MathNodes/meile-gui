@@ -542,9 +542,6 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
         allocated       = allocated.split('hrs')[0].rstrip().lstrip()
         now             = datetime.now()
         expirary_date   = datetime.strptime(expirary_date,'%b %d %Y, %I:%M %p')
-        ts              = time.time()
-        utc_offset      = float((datetime.fromtimestamp(ts) - datetime.utcfromtimestamp(ts)).total_seconds()/3600)
-        expirary_date   = expirary_date + timedelta(hours=utc_offset)
         sub_date        = expirary_date - timedelta(hours=float(allocated))
         subdelta        = now - sub_date
         remaining_hours = round(float(subdelta.total_seconds())/3600,3)
@@ -667,7 +664,7 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
             except Exception as e:
                 print(str(e))
             if mw.disconnect_from_node():
-                self.connected_quota(None, None)
+                self.connected_quota(None, None, None)
             return True
         
         if mw.CONNECTED:

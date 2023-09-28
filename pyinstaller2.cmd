@@ -1,2 +1,0 @@
-# Linux 
-pyinstaller --windowed --icon icon.icns --onedir --osx-bundle-identifier 'com.mathnodes.meile' --codesign-identity "Developer ID Application: Pool Stats LLC (VQYLU43P5V)" --collect-all cosmpy --collect-all sentinel-protobuf --collect-all stripe --collect-all kivy_garden --add-data src/fonts:fonts --add-data src/awoc/data/:data --add-data src/utils/fonts/:utils/fonts --add-data src/utils/coinimg/:utils/coinimg --add-data src/imgs/:imgs --add-data src/kv/:kv --add-data src/conf/config/:config --add-data src/bin/:bin src/main/meile-gui.py

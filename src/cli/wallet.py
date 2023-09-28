@@ -162,9 +162,9 @@ class HandleWalletFunctions():
         return self.ParseSubscribe()
 
     def DetermineDenom(self, deposit):
-        for key in IBCTokens.UNITTOKEN.keys():
-            if key in deposit:
-                return key
+        for key,value in IBCTokens.IBCUNITTOKEN.items():
+            if value in deposit:
+                return value
                    
     def ParseSubscribe(self):
         SUBJSON = False
