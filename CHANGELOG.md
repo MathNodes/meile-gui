@@ -1,6 +1,14 @@
 CHANGELOG
 ========================
 
+# v1.7.11 (29/09/2023)
+
+* CHANGE: Timeout for HTTPRequests adapter
+
+* FIX: IBC denom subscriptions
+
+* FIX: connected_quota() bug
+
 # v1.7.10 (08/09/2023)
 
 * NEW: Subscription type chooser interface (hourly/bandwidth)
