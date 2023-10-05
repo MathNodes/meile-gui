@@ -94,7 +94,7 @@ class V2RayHandler():
         
         self.v2ray_script = routes_bat
         
-        v2ray_daemon_cmd = 'gsudo %s' %(self.v2ray_script)
+        v2ray_daemon_cmd = 'gsudo.exe %s' %(self.v2ray_script)
         proc2 = Popen(v2ray_daemon_cmd, shell=True)
         proc2.wait(timeout=30)
         proc_out,proc_err = proc2.communicate()

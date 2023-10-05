@@ -5,6 +5,8 @@ import requests
 from urllib3.exceptions import InsecureRequestWarning
 from os import path, chdir, system
 from subprocess import Popen, PIPE, STDOUT
+from datetime import datetime,timedelta
+import time
 
 from treelib import  Tree
 from geography.continents import OurWorld
@@ -32,14 +34,17 @@ class NodeTreeData():
             self.NodeTree = node_tree
             
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
-        self.RPC = CONFIG['network'].get('rpc', 'https://rpc.mathnodes.com:443')
+        self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
             
    
     def get_nodes(self, latency, *kwargs):
         AllNodesInfo = []
         print("Running sentinel-cli with latency: %s" % latency)
+        CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
+        self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
+        #nodeCMD = [sentinelcli, "query", "nodes", "--node", self.RPC, "--limit", "20000", "--timeout", "%s" % latency]
         nodeCMD = [sentinelcli, "query", "nodes", "--node", self.RPC, "--limit", "20000", "--timeout", "%s" % latency]
-    
+        
         proc = Popen(nodeCMD, stdout=PIPE)
         
         k=1
@@ -80,8 +85,13 @@ class NodeTreeData():
             if version not in NodeKeys.NodeVersions:
                 continue
             
+            # Gigabyte Prices
             d[NodeKeys.NodesInfoKeys[2]] = self.return_denom(d[NodeKeys.NodesInfoKeys[2]])
             d[NodeKeys.NodesInfoKeys[2]] = self.parse_coin_deposit(d[NodeKeys.NodesInfoKeys[2]])
+
+            # Hourly Prices
+            d[NodeKeys.NodesInfoKeys[3]] = self.return_denom(d[NodeKeys.NodesInfoKeys[3]])
+            d[NodeKeys.NodesInfoKeys[3]] = self.parse_coin_deposit(d[NodeKeys.NodesInfoKeys[3]])
             
             if  OurWorld.CZ in d[NodeKeys.NodesInfoKeys[4]]:
                 d[NodeKeys.NodesInfoKeys[4]] = OurWorld.CZ_FULL
@@ -102,7 +112,7 @@ class NodeTreeData():
         self.GetNodeTypes()
         
     def GetNodeScores(self):
-        Request = HTTPRequests.MakeRequest()
+        Request = HTTPRequests.MakeRequest(TIMEOUT=2)
         http = Request.hadapter()
         try:
             r = http.get(HTTParams.SERVER_URL + HTTParams.NODE_SCORE_ENDPOINT)
@@ -116,7 +126,7 @@ class NodeTreeData():
             print(str(e)) 
             
     def GetNodeLocations(self):
-        Request = HTTPRequests.MakeRequest()
+        Request = HTTPRequests.MakeRequest(TIMEOUT=2)
         http = Request.hadapter()
         try:
             r = http.get(HTTParams.SERVER_URL + HTTParams.NODE_LOCATION_ENDPOINT)
@@ -131,7 +141,7 @@ class NodeTreeData():
             
              
     def GetNodeTypes(self):
-        Request = HTTPRequests.MakeRequest()
+        Request = HTTPRequests.MakeRequest(TIMEOUT=2)
         http = Request.hadapter()
         try:
             r = http.get(HTTParams.SERVER_URL + HTTParams.NODE_TYPE_ENDPOINT)
@@ -190,6 +200,8 @@ class NodeTreeData():
         SubsNodesInfo = []
         SubsFinalResult    = []
         print("Geting Subscriptions... %s" % ADDRESS)
+        CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
+        self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
         subsCMD = [sentinelcli, "query", "subscriptions", "--node", self.RPC, "--limit", "1000", "--address" ,ADDRESS]
         proc = Popen(subsCMD, stdout=PIPE)
     
@@ -229,13 +241,20 @@ class NodeTreeData():
                                             NodeKeys.FinalSubsKeys[5] : None,
                                             NodeKeys.FinalSubsKeys[6] : "0.00GB",
                                             NodeKeys.FinalSubsKeys[7] : "0.00B",
-                                            NodeKeys.FinalSubsKeys[8] : "None"
+                                            NodeKeys.FinalSubsKeys[8] : "None",
+                                            NodeKeys.FinalSubsKeys[9] : SubsResult[NodeKeys.SubsInfoKeys[2]][k],
+                                            NodeKeys.FinalSubsKeys[10]: SubsResult[NodeKeys.SubsInfoKeys[6]][k]
                                             })
                 print("Sub not found in list")
                 k += 1
                 continue
             
-            nodeQuota = self.GetQuota(SubsResult[NodeKeys.SubsInfoKeys[0]][k])
+            if int(SubsResult[NodeKeys.SubsInfoKeys[6]][k]) > 0:
+                SubsResult[NodeKeys.SubsInfoKeys[2]][k],nodeQuota = self.GetHourAllocation(SubsResult[NodeKeys.SubsInfoKeys[6]][k], SubsResult[NodeKeys.SubsInfoKeys[2]][k])
+
+            else:    
+                nodeQuota = self.GetQuota(SubsResult[NodeKeys.SubsInfoKeys[0]][k])
+                
             if nodeQuota:
                 SubsFinalResult.append({
                                             NodeKeys.FinalSubsKeys[0] : SubsResult[NodeKeys.SubsInfoKeys[0]][k],
@@ -246,7 +265,9 @@ class NodeTreeData():
                                             NodeKeys.FinalSubsKeys[5] : NodeData[NodeKeys.NodesInfoKeys[4]],
                                             NodeKeys.FinalSubsKeys[6] : nodeQuota[0],
                                             NodeKeys.FinalSubsKeys[7] : nodeQuota[1],
-                                            NodeKeys.FinalSubsKeys[8] : NodeData[NodeKeys.NodesInfoKeys[9]]
+                                            NodeKeys.FinalSubsKeys[8] : NodeData[NodeKeys.NodesInfoKeys[9]],
+                                            NodeKeys.FinalSubsKeys[9] : SubsResult[NodeKeys.SubsInfoKeys[2]][k],
+                                            NodeKeys.FinalSubsKeys[10]: SubsResult[NodeKeys.SubsInfoKeys[6]][k]
                                             })
             k += 1 
 
@@ -274,11 +295,35 @@ class NodeTreeData():
                 else:
                     return nodeQuota
                 
+    def GetHourAllocation(self, hours, idate):
+        nodeQuota       = []
+        nodeQuota.append(str(hours) + "hrs")
+        inactive_date   = idate.lstrip().rstrip().split('.')[0]
+        inactive_date   = datetime.strptime(inactive_date, '%Y-%m-%d %H:%M:%S')
+        ts              = time.time()
+        utc_offset      = float((datetime.fromtimestamp(ts) - datetime.utcfromtimestamp(ts)).total_seconds()/3600)
+        inactive_date   = inactive_date + timedelta(hours=utc_offset)
+        now             = datetime.now()
+        subdelta        = inactive_date - now
+        remaining_hours = round(float(subdelta.total_seconds())/3600,3)
+        consumed        = float(int(hours) - remaining_hours)
+        if consumed < 0:
+            consumed = 0
+        if remaining_hours <= 0:
+            return None
+        else:
+            print(f"inactive_date: {str(inactive_date)}, time_remaining: {remaining_hours}, time_consumed: {consumed}")
+            nodeQuota.append(str(round(consumed,2)) + "hrs")
+            return str(inactive_date),nodeQuota  
+                
 def disconnect(v2ray):
+    MeileConfig = MeileGuiConfig()
     if v2ray:
         try:
             V2Ray = V2RayHandler(v2ray_tun2routes_connect_bash + " down")
+            chdir(MeileConfig.BASEBINDIR)
             rc = V2Ray.kill_daemon()
+            chdir(MeileConfig.BASEDIR)  
             return rc, False
         except Exception as e:
             print(str(e))
@@ -286,7 +331,7 @@ def disconnect(v2ray):
         
     else:
         
-        MeileConfig = MeileGuiConfig()
+        
         
         with open(path.join(MeileConfig.BASEBINDIR, 'disconnect.bat'), 'w') as DISBATFILE:
             DISBATFILE.write("%s --home %s disconnect\n" % (sentinelcli, ConfParams.BASEDIR))

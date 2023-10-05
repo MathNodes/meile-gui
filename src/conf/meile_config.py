@@ -6,6 +6,7 @@ import subprocess
 import sys
 from time import sleep
 
+from typedef.konstants import HTTParams
 
 class MeileGuiConfig():
     BASEDIR     = path.join(path.expanduser('~'), '.meile-gui')
@@ -77,7 +78,7 @@ class MeileGuiConfig():
         
         if not self.CONFIG.has_section('network'):
             self.CONFIG.add_section('network')
-            self.CONFIG.set('network', 'rpc', 'https://rpc.mathnodes.com:443')
+            self.CONFIG.set('network', 'rpc', HTTParams.RPC)
             FILE = open(self.CONFFILE, 'w')    
             self.CONFIG.write(FILE)
             

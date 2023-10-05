@@ -22,6 +22,8 @@ class TimeoutHTTPAdapter(HTTPAdapter):
     
 
 class MakeRequest():
+    def __init__(self, TIMEOUT=DEFAULT_TIMEOUT):
+        self.timeout = TIMEOUT
     def hadapter(self):
         retries = Retry(
             total=2,
@@ -31,6 +33,6 @@ class MakeRequest():
         #adapter = HTTPAdapter(max_retries=retries)
         requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
         http = requests.Session()
-        http.mount("http://", TimeoutHTTPAdapter(max_retries=retries))
-        http.mount("https://", TimeoutHTTPAdapter(max_retries=retries))
+        http.mount("http://", TimeoutHTTPAdapter(max_retries=retries, timeout=self.timeout))
+        http.mount("https://", TimeoutHTTPAdapter(max_retries=retries, timeout=self.timeout))
         return http

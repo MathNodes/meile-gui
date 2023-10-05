@@ -41,6 +41,7 @@ from functools import partial
 from os import path, chdir
 from save_thread_result import ThreadWithResult
 from unidecode import unidecode
+from datetime import datetime
 
 class WalletRestore(Screen):
     screemanager = ObjectProperty()
@@ -187,6 +188,8 @@ class PreLoadWindow(Screen):
     NodeTree = None
     dialog = None
     UUID = None
+    
+    
     def __init__(self, **kwargs):
         super(PreLoadWindow, self).__init__()
         
@@ -196,6 +199,11 @@ class PreLoadWindow(Screen):
         self.CreateWarpConfig()
         chdir(MeileGuiConfig.BASEDIR)
         
+        self.build()
+        
+    @delayable    
+    def build(self):
+        yield 0.5
         # Schedule the functions to be called every n seconds
         Clock.schedule_once(partial(self.NodeTree.get_nodes, "13s"), 3)
         Clock.schedule_interval(self.update_status_text, 0.6)
@@ -303,7 +311,7 @@ class MainWindow(Screen):
     Sort = SortOptions[0]
     MeileMap = None
     MeileMapBuilt = False
-    NodeSwitch = {"moniker" : None, "node" : None, "switch" : False, 'id' : None, 'consumed' : None, 'og_consumed' : None, 'allocated' : None}
+    NodeSwitch = {"moniker" : None, "node" : None, "switch" : False, 'id' : None, 'consumed' : None, 'og_consumed' : None, 'allocated' : None, 'expirary' : None}
     NewWallet = False
     box_color = ColorProperty('#fcb711')
     clock = None
@@ -552,7 +560,7 @@ class MainWindow(Screen):
             icanhazip = resolver.DNSRequest()
             if icanhazip:
                 print("%s:%s" % (ICANHAZDNS, icanhazip))
-                Request = HTTPRequests.MakeRequest()
+                Request = HTTPRequests.MakeRequest(TIMEOUT=3)
                 http = Request.hadapter()
                 req = http.get(ICANHAZURL)
                 self.ip = req.text
@@ -574,8 +582,10 @@ class MainWindow(Screen):
                 try:
                     returncode, self.CONNECTED = Disconnect(True)
                     print("Disconnect RTNCODE: %s" % returncode)
+                    '''
                     if returncode == 999:
                         return False
+                    '''
                     self.get_ip_address(None)
                     self.set_protected_icon(False, "")
                 except Exception as e:
@@ -592,8 +602,10 @@ class MainWindow(Screen):
             else:
                 returncode, self.CONNECTED = Disconnect(False)
                 print("Disconnect RTNCODE: %s" % returncode)
-                if returncode == 999:
+                '''
+                if int(returncode) == 999:
                     return False
+                '''
                 self.get_ip_address(None)
                 self.set_protected_icon(False, "")
             
@@ -627,8 +639,10 @@ class MainWindow(Screen):
                                'id' : None,
                                'consumed' : None,
                                'og_consumed' : None,
-                               'allocated' : None
+                               'allocated' : None,
+                               'expirary' : None
                                }
+            print("disconnect(): Returning True...")
             return True
         except Exception as e:
             print(str(e))
@@ -1026,6 +1040,12 @@ class SubscriptionScreen(Screen):
         else:
             price_text = node[NodeKeys.FinalSubsKeys[4]].lstrip().rstrip()
             
+        if node[NodeKeys.FinalSubsKeys[9]].lstrip().rstrip():
+            expirary_date = node[NodeKeys.FinalSubsKeys[9]].lstrip().rstrip().split('.')[0]
+            expirary_date = datetime.strptime(expirary_date, '%Y-%m-%d %H:%M:%S').strftime('%b %d %Y, %I:%M %p')
+        else:
+            expirary_date = "Null"
+            
         if node[NodeKeys.FinalSubsKeys[1]] == "Offline":
             self.ids.rv.data.append(
                  {
@@ -1042,7 +1062,8 @@ class SubscriptionScreen(Screen):
                      "score"          : nscore,
                      "votes"          : votes,
                      "city"           : city,
-                     "md_bg_color"    : "#50507c"
+                     "expirary_date"  : expirary_date,
+                     "md_bg_color"    : MeileColors.INACTIVE_DIALOG_BG_COLOR
                  },
              )
             print("%s" % node[NodeKeys.FinalSubsKeys[0]].lstrip().rstrip(),end=',')
@@ -1064,6 +1085,7 @@ class SubscriptionScreen(Screen):
                     "score"          : nscore,
                     "votes"          : votes,
                     "city"           : city,
+                    "expirary_date"  : expirary_date,
                     "md_bg_color"    : MeileColors.DIALOG_BG_COLOR
 
                 },
@@ -1173,7 +1195,7 @@ class NodeScreen(Screen):
         for node in CountryNodes:
             NodeData.append(node.data)
             
-        NodeDataSorted = sorted(NodeData, key=lambda d: d[NodeKeys.NodesInfoKeys[0]])
+        NodeDataSorted = sorted(NodeData, key=lambda d: d[NodeKeys.NodesInfoKeys[0]].lower())
 
         self.meta_add_rv_data(NodeDataSorted)
         

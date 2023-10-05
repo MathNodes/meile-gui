@@ -1,5 +1,33 @@
 CHANGELOG
 ========================
+# v1.7.11 (04/10/2023)
+* FIX: Disconnect on V2Ray nodes
+* CHANGE: Timeout in Node DB requests
+* CHANGE: Timeout in get_ip_address()
+* UPDATE: add @delayable and build() to PreLoadWindow for rendering window
+
+# v1.7.10 (08/09/2023)
+* NEW: Subscription type chooser interface (hourly/bandwidth)
+* NEW: Slider for hourly subscription on range of 1-30 days
+* NEW: Label for subscription expirary on subscription card (meile.kv)
+* NEW: compute_consumed_hours() routine in widgets.py
+* NEW: GetHourAllocation() routine in sentinel.py
+* NEW: Persistent RPC check when setting different RPC so restart not required
+* ADD: INACTIVE_DIALOG_BG_COLOR in konstants.py MeileColors class
+* ADD: user defined TIMEOUT for HTTPRequests adapter
+* UPDATE: SubsFinalResult data to include hour subscription data and expirary data
+* UPDATE: add variable to root.get_data_used(..., root.expirary_date) (meile.kv)
+* UPDATE: Check in get_subscriptions() if sub is hourly, if so compute nodeQuota list
+* UPDATE: Error reporting on connection issues to user on Linux (from Windows branch)
+* UPDATE: Allocated/Consumed labels to handle hours allocated, hours consumed, based on timestamp of subscription and now()
+* UPDATE: Bandwidth meter reports percent of hours consumed on updated on regular inteval for time based subscriptions
+* UPDATE: subscribe() in wallet.py to handle hourly subscriptions
+* CHANGE: Size of location pin 
+* FIX: Last country card in left pane being cut off by bottom navbar
+* FIX: Hourly bandwidth bar and hourly expiration date in subs cards by applying UTC offest
+* REMOVE: FullImage/2 from meile.kv and interfaces.py
+* REMOVE: \<SelectableLabel\>, \<RV\> from meile.kv
+
 # v1.7.6 (28/07/2023)
 * UPDATE: Show current RPC in settings rpc context instead of default
 
