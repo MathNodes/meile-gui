@@ -28,7 +28,7 @@ class MakeRequest():
         retries = Retry(
             total=2,
             status_forcelist=[429, 500, 502, 503, 504],
-            method_whitelist=["HEAD", "GET", "OPTIONS"]
+            allowed_methods=["HEAD", "GET", "OPTIONS"]
         )
         #adapter = HTTPAdapter(max_retries=retries)
         requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
