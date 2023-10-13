@@ -2,7 +2,7 @@ from geography.continents import OurWorld
 from ui.interfaces import Tab, LatencyContent, TooltipMDIconButton
 from typedef.win import WindowNames, ICANHAZURL, ICANHAZDNS
 from cli.sentinel import  NodeTreeData
-from typedef.konstants import NodeKeys, TextStrings, MeileColors
+from typedef.konstants import NodeKeys, TextStrings, MeileColors, HTTParams, IBCTokens
 from cli.sentinel import disconnect as Disconnect
 import main.main as Meile
 from ui.widgets import  WalletInfoContent, MDMapCountryButton, RatingContent, NodeRV, NodeRV2
@@ -45,6 +45,7 @@ import subprocess
 import copy 
 import re
 from unidecode import unidecode
+from datetime import datetime
 
 class WalletRestore(Screen):
     screemanager = ObjectProperty()
@@ -138,6 +139,8 @@ class WalletRestore(Screen):
     def wallet_restore(self, inst):
         MeileConfig = MeileGuiConfig()
         CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
+        hwf = HandleWalletFunctions()
+        
         try:
             self.dialog.dismiss()
         except Exception as e:
@@ -148,15 +151,13 @@ class WalletRestore(Screen):
         keyring_passphrase = unidecode(self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.password.ids.wallet_password.text)
         
         if seed_phrase:
-            Wallet = HandleWalletFunctions.create(HandleWalletFunctions,
-                                                  wallet_name.lstrip().rstrip(),
-                                                  keyring_passphrase.lstrip().rstrip(),
-                                                  seed_phrase.lstrip().rstrip())
+            Wallet = hwf.create(wallet_name.lstrip().rstrip(),
+                                keyring_passphrase.lstrip().rstrip(),
+                                seed_phrase.lstrip().rstrip())
         else:
-            Wallet = HandleWalletFunctions.create(HandleWalletFunctions, 
-                                                  wallet_name.lstrip().rstrip(), 
-                                                  keyring_passphrase.lstrip().rstrip(), 
-                                                  None)
+            Wallet = hwf.create(wallet_name.lstrip().rstrip(), 
+                                keyring_passphrase.lstrip().rstrip(), 
+                                None)
             
         FILE = open(MeileGuiConfig.CONFFILE,'w')
 
@@ -329,7 +330,7 @@ class MainWindow(Screen):
     Sort = SortOptions[0]
     MeileMap = None
     MeileMapBuilt = False
-    NodeSwitch = {"moniker" : None, "node" : None, "switch" : False, 'id' : None, 'consumed' : None, 'og_consumed' : None, 'allocated' : None}
+    NodeSwitch = {"moniker" : None, "node" : None, "switch" : False, 'id' : None, 'consumed' : None, 'og_consumed' : None, 'allocated' : None, 'expirary' : None}
     NewWallet = False
     box_color = ColorProperty('#fcb711')
     clock = None
@@ -366,8 +367,8 @@ class MainWindow(Screen):
         
     def build(self, dt):
         OurWorld.CONTINENTS.remove(OurWorld.CONTINENTS[1])
-        OurWorld.CONTINENTS.append("Subscriptions")
-        #OurWorld.CONTINENTS.append("Search")
+        OurWorld.CONTINENTS.append("Plans")
+        OurWorld.CONTINENTS.append("Search")
         
         for name_tab in OurWorld.CONTINENTS:
             tab = Tab(tab_label_text=name_tab)
@@ -396,7 +397,7 @@ class MainWindow(Screen):
 
             
             self.ids.country_map.add_widget(self.MeileMap)
-            self.AddCountryNodePins()
+            self.AddCountryNodePins(False)
             self.MeileMapBuilt = True
             
     def get_font(self):
@@ -404,7 +405,7 @@ class MainWindow(Screen):
         return Config.resource_path(MeileColors.FONT_FACE)
      
             
-    def AddCountryNodePins(self):
+    def AddCountryNodePins(self, clear):
         Config = MeileGuiConfig()
         try:
             for continent in self.MeileLand.CONTINENTS:
@@ -417,7 +418,10 @@ class MainWindow(Screen):
                                                    text_color=(1,1,1,1),
                                                    on_release=partial(self.load_country_nodes, ncountry.tag)
                                                    ))
-                    self.MeileMap.add_marker(marker)
+                    if clear: 
+                        self.MeileMap.remove_marker(marker)
+                    else:
+                        self.MeileMap.add_marker(marker)
         except Exception as e:
             print(str(e))
             pass        
@@ -634,7 +638,8 @@ class MainWindow(Screen):
                                'id' : None,
                                'consumed' : None,
                                'og_consumed' : None,
-                               'allocated' : None
+                               'allocated' : None,
+                               'expirary' : None
                                }
             return True
         except Exception as e:
@@ -748,7 +753,8 @@ class MainWindow(Screen):
     @delayable
     def Refresh(self, latency, *kwargs):
         self.remove_loading_widget(None)
-        
+        # Clear Markers on Map
+        self.AddCountryNodePins(True)
         self.add_loading_popup("Reloading Nodes...")
         yield 0.5
         try: 
@@ -759,6 +765,11 @@ class MainWindow(Screen):
         except Exception as e:
             print(str(e))
             pass
+        # Clear out Subscriptions
+        self.SubResult = None
+        # Redraw Map Pins
+        self.AddCountryNodePins(False)
+        
         self.remove_loading_widget(None)
 
 
@@ -845,6 +856,11 @@ class MainWindow(Screen):
         Meile.app.root.transition = SlideTransition(direction = "left")
         Meile.app.root.current = WindowNames.HELP
     
+    def build_settings_screen_interface(self):
+        Meile.app.root.add_widget(SettingsScreen(name=WindowNames.SETTINGS))
+        Meile.app.root.transition = SlideTransition(direction = "down")
+        Meile.app.root.current = WindowNames.SETTINGS
+    
     def switch_window(self, window):
         Meile.app.root.transition = SlideTransition(direction = "up")
         Meile.app.root.current = window
@@ -917,19 +933,22 @@ class WalletScreen(Screen):
             
         return path.join(CONFIG.IMGDIR, "dvpn.png")
     
+    # testnet params
     def SetBalances(self, CoinDict):
         if CoinDict:
-            self.dec_text = str(CoinDict['dec']) + " dec"
+            self.dec_text  = str(CoinDict['dec']) + " dec"
             self.scrt_text = str(CoinDict['scrt']) + " scrt"
             self.atom_text = str(CoinDict['atom']) + " atom" 
             self.osmo_text = str(CoinDict['osmo']) + " osmo"
             self.dvpn_text = str(CoinDict['dvpn']) + " dvpn"
+            #self.dvpn_text = str(CoinDict['tsent']) + " tsent"
         else:
-            self.dec_text = str("0.0") + " dec"
+            self.dec_text  = str("0.0") + " dec"
             self.scrt_text = str("0.0") + " scrt"
             self.atom_text = str("0.0") + " atom" 
             self.osmo_text = str("0.0") + " osmo"
             self.dvpn_text = str("0.0") + " dvpn"
+            #self.dvpn_text = str("0.0") + " tsent"
             self.dialog = MDDialog(
                 text="Error Loading Wallet Balance. Please try again later.",
                 md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
@@ -1024,6 +1043,22 @@ class SubscriptionScreen(Screen):
         else:
             city = " "
 
+        price = node[NodeKeys.FinalSubsKeys[4]].lstrip().rstrip()
+        match = re.match(r"([0-9]+)([a-z]+)", price, re.I)
+        if match:
+            amount, coin = match.groups()
+            amount = round(float(float(amount) / IBCTokens.SATOSHI),4)
+            coin = coin.lstrip("u") # Remove u
+            price_text = f"{amount}{coin}"
+        else:
+            price_text = node[NodeKeys.FinalSubsKeys[4]].lstrip().rstrip()
+            
+        if node[NodeKeys.FinalSubsKeys[9]].lstrip().rstrip():
+            expirary_date = node[NodeKeys.FinalSubsKeys[9]].lstrip().rstrip().split('.')[0]
+            expirary_date = datetime.strptime(expirary_date, '%Y-%m-%d %H:%M:%S').strftime('%b %d %Y, %I:%M %p')
+        else:
+            expirary_date = "Null"
+    
         if node[NodeKeys.FinalSubsKeys[1]] == "Offline":
             self.ids.rv.data.append(
                  {
@@ -1031,7 +1066,7 @@ class SubscriptionScreen(Screen):
                      "moniker_text"   : node[NodeKeys.FinalSubsKeys[1]].lstrip().rstrip(),
                      "type_text"      : node[NodeKeys.FinalSubsKeys[8]].lstrip().rstrip(),
                      "sub_id_text"    : node[NodeKeys.FinalSubsKeys[0]].lstrip().rstrip(),
-                     "price_text"     : node[NodeKeys.FinalSubsKeys[4]].lstrip().rstrip(),
+                     "price_text"     : price_text,
                      "country_text"   : "Offline",
                      "address_text"   : node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip(),
                      "allocated_text" : node[NodeKeys.FinalSubsKeys[6]].lstrip().rstrip(),
@@ -1040,6 +1075,7 @@ class SubscriptionScreen(Screen):
                      "score"          : nscore,
                      "votes"          : votes,
                      "city"           : city,
+                     "expirary_date"  : expirary_date,
                      "md_bg_color"    : "#50507c"
                  },
              )
@@ -1053,7 +1089,7 @@ class SubscriptionScreen(Screen):
                     "moniker_text"   : node[NodeKeys.FinalSubsKeys[1]].lstrip().rstrip(),
                     "type_text"      : node[NodeKeys.FinalSubsKeys[8]].lstrip().rstrip(),
                     "sub_id_text"    : node[NodeKeys.FinalSubsKeys[0]].lstrip().rstrip(),
-                    "price_text"     : node[NodeKeys.FinalSubsKeys[4]].lstrip().rstrip(),
+                    "price_text"     : price_text,
                     "country_text"   : node[NodeKeys.FinalSubsKeys[5]].lstrip().rstrip(),
                     "address_text"   : node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip(),
                     "allocated_text" : node[NodeKeys.FinalSubsKeys[6]].lstrip().rstrip(),
@@ -1062,6 +1098,7 @@ class SubscriptionScreen(Screen):
                     "score"          : nscore,
                     "votes"          : votes,
                     "city"           : city,
+                    "expirary_date"  : expirary_date,
                     "md_bg_color"    : MeileColors.DIALOG_BG_COLOR
 
                 },
@@ -1149,7 +1186,7 @@ class NodeScreen(Screen):
                 udvpn = re.findall(r'[0-9]+\.[0-9]+' +"dvpn", data['Price'])[0]
                 NodeData[i]['Price'] = udvpn
             except IndexError:
-                NodeData[i]['Price'] = "1dvpn"
+                NodeData[i]['Price'] = "10000dvpn"
             i += 1
             
         NodeDataSorted = sorted(NodeData, key=lambda d: float(d['Price'].split('dvpn')[0]))
@@ -1171,7 +1208,7 @@ class NodeScreen(Screen):
         for node in CountryNodes:
             NodeData.append(node.data)
             
-        NodeDataSorted = sorted(NodeData, key=lambda d: d[NodeKeys.NodesInfoKeys[0]])
+        NodeDataSorted = sorted(NodeData, key=lambda d: d[NodeKeys.NodesInfoKeys[0]].lower())
 
         self.meta_add_rv_data(NodeDataSorted) 
         
@@ -1281,6 +1318,9 @@ class NodeScreen(Screen):
             elif self.NodeTree.NodeTypes[node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip()] == NodeKeys.Nodetypes[1]:
                 IconButton  = "alpha-b-circle"
                 ToolTipText = "Business"
+            elif self.NodeTree.NodeTypes[node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip()] == NodeKeys.Nodetypes[3]:
+                IconButton  = "alpha-u-circle"
+                ToolTipText = "University"
             else:
                 IconButton  = "alpha-d-circle"
                 ToolTipText = "Datacenter"
@@ -1290,20 +1330,21 @@ class NodeScreen(Screen):
             
         self.ids.rv.data.append(
             {
-                "viewclass"    : "RecycleViewRow",
-                "moniker_text" : node[NodeKeys.NodesInfoKeys[0]].lstrip().rstrip(),
-                "price_text"   : node[NodeKeys.NodesInfoKeys[3]].lstrip().rstrip(),
-                "country_text" : node[NodeKeys.NodesInfoKeys[4]].lstrip().rstrip(),
-                "address_text" : node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip(),
-                "type_text"    : node[NodeKeys.NodesInfoKeys[9]].lstrip().rstrip(),
-                "speed_text"   : speedText,
-                "node_score"   : nscore,
-                "votes"        : votes,
-                "city"         : city,
-                "icon"         : IconButton,
-                "tooltip"      : ToolTipText,
-                "speed_image"  : self.MeileConfig.resource_path(speedimage),
-                "source_image" : self.MeileConfig.resource_path(flagloc)
+                "viewclass"          : "RecycleViewRow",
+                "moniker_text"       : node[NodeKeys.NodesInfoKeys[0]].lstrip().rstrip(),
+                "price_text"         : node[NodeKeys.NodesInfoKeys[2]].lstrip().rstrip(),
+                "hourly_price_text"  : node[NodeKeys.NodesInfoKeys[3]].lstrip().rstrip(),
+                "country_text"       : node[NodeKeys.NodesInfoKeys[4]].lstrip().rstrip(),
+                "address_text"       : node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip(),
+                "type_text"          : node[NodeKeys.NodesInfoKeys[9]].lstrip().rstrip(),
+                "speed_text"         : speedText,
+                "node_score"         : nscore,
+                "votes"              : votes,
+                "city"               : city,
+                "icon"               : IconButton,
+                "tooltip"            : ToolTipText,
+                "speed_image"        : self.MeileConfig.resource_path(speedimage),
+                "source_image"       : self.MeileConfig.resource_path(flagloc)
                 
             },
         )         
@@ -1353,4 +1394,63 @@ class HelpScreen(Screen):
         
         Meile.app.root.remove_widget(self)
         Meile.app.root.transistion = SlideTransition(direction="right")
+        Meile.app.root.current = WindowNames.MAIN_WINDOW
+        
+        
+class SettingsScreen(Screen):
+    
+    MeileConfig = MeileGuiConfig()
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        params = HTTParams()
+        self.RPC = params.RPC
+
+        self.MeileConfig = MeileGuiConfig()
+
+        menu_items = [
+            {
+                "viewclass": "IconListItem",
+                "icon": "server-security",
+                "text": f"{i}",
+                "height": dp(56),
+                "on_release": lambda x=f"{i}": self.set_item(x),
+            } for i in params.RPCS
+        ]
+        self.menu = MDDropdownMenu(
+            caller=self.ids.drop_item,
+            items=menu_items,
+            position="center",
+            width_mult=50,
+        )
+        self.menu.bind()
+
+    def get_rpc_config(self):
+        CONFIG = self.MeileConfig.read_configuration(self.MeileConfig.CONFFILE)
+
+        self.ids.drop_item.set_item(CONFIG['network']['rpc'])
+        return CONFIG['network']['rpc']
+
+    def set_item(self, text_item):
+        self.ids.drop_item.set_item(text_item)
+        self.RPC = text_item
+        self.menu.dismiss()
+
+    def build(self):
+        return self.screen
+
+    def SaveOptions(self):
+        CONFIG = self.MeileConfig.read_configuration(self.MeileConfig.CONFFILE)
+        CONFIG.set('network', 'rpc', self.RPC)
+
+        FILE = open(self.MeileConfig.CONFFILE, 'w')
+        CONFIG.write(FILE)
+
+        self.set_previous_screen()
+
+    def set_previous_screen(self):
+
+        Meile.app.root.remove_widget(self)
+        Meile.app.root.transistion = SlideTransition(direction="up")
         Meile.app.root.current = WindowNames.MAIN_WINDOW

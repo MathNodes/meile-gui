@@ -15,6 +15,7 @@ from kivy_garden.mapview import MapView
 from kivymd.uix.behaviors import RoundedRectangularElevationBehavior, CircularElevationBehavior, RectangularRippleBehavior, CircularRippleBehavior
 from kivymd.uix.fitimage.fitimage import FitImage
 from kivy.uix.behaviors import ButtonBehavior
+from kivymd.uix.list import OneLineIconListItem
 
 class Tab(MDBoxLayout, MDTabsBase):
     pass
@@ -58,11 +59,6 @@ class SelectableRecycleGridLayout(FocusBehavior, LayoutSelectionBehavior,
                                 RecycleGridLayout):
     ''' Adds selection and focus behaviour to the view. '''
 class ContinentMap(MapView):
-    pass
-class FullImage(Image):
-    pass
-
-class FullImage2(Image):
     pass
 
 class DisplayPic(CircularElevationBehavior, ButtonBehavior, FitImage):

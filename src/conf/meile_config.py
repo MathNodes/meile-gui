@@ -6,6 +6,8 @@ import shutil
 import sys
 import os
 
+from typedef.konstants import HTTParams
+
 class MeileGuiConfig():
     USER = environ['SUDO_USER'] if 'SUDO_USER' in environ else environ['USER']
     BASEDIR    = path.join(path.expanduser('~'), '.meile-gui')
@@ -55,4 +57,11 @@ class MeileGuiConfig():
             mkdir(self.IMGDIR)
             
         self.CONFIG.read(confpath)
+        
+        if not self.CONFIG.has_section('network'):
+            self.CONFIG.add_section('network')
+            self.CONFIG.set('network', 'rpc', HTTParams.RPC)
+            FILE = open(self.CONFFILE, 'w')    
+            self.CONFIG.write(FILE)
+        
         return self.CONFIG

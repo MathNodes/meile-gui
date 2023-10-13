@@ -2,12 +2,16 @@ from ui.interfaces import WindowManager
 from ui.screens import MainWindow,  PreLoadWindow, WalletRestore
 from typedef.win import WindowNames
 from conf.meile_config import MeileGuiConfig
+from typedef.konstants import Arch
 
 from kivy.lang import Builder
 from kivymd.app import MDApp
 from kivymd.theming import ThemeManager
 from kivy.utils import get_color_from_hex
 from kivy.config import Config
+
+import platform
+
 MeileConfig = MeileGuiConfig()
 Config.set('kivy','window_icon',MeileConfig.resource_path("imgs/icon.png"))
         
@@ -39,8 +43,15 @@ class MyMainApp(MDApp):
         
           
     def build(self):
-
-        kv = Builder.load_file(MeileConfig.resource_path("kv/meile.kv"))
+        if platform.system() == Arch.OSX:
+            if platform.mac_ver()[2] == Arch.X86:
+                kv = Builder.load_file(MeileConfig.resource_path("kv/meile_x86.kv"))
+            else:
+                kv = Builder.load_file(MeileConfig.resource_path("kv/meile_arm.kv"))
+        elif platform.system() == Arch.WINDOWS:
+            kv = Builder.load_file(MeileConfig.resource_path("kv/meile_win.kv"))
+        else:
+            kv = Builder.load_file(MeileConfig.resource_path("kv/meile.kv"))    
         
         self.manager = WindowManager()
         theme = ThemeManager()

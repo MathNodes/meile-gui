@@ -1,5 +1,10 @@
 CHANGELOG
 ========================
+# 1.7.11 (13/10/2023)
+* UPDATE: Merged IBC payment fix
+* NEW: Kvlang platform specific code for OS X architecture
+* NEW: First OS X Intel dev signed release
+
 
 # v1.7.0
 * NEW: Added DEC, SCRT token options to FIAT gateway
