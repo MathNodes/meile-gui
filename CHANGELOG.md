@@ -1,5 +1,10 @@
 CHANGELOG
 ========================
+# v0.14.0.6 (13/10/2023)
+* FIX: Racially deprecated "whitelist" param in HTTPRequests adapter
+* FIX: Deprecated ImageDraw.Draw.textsize() to textbbox()
+* UPDATE: Include stripe depdencency
+
 # v0.14.0.1 (18/09/2023)
 * CHANGE: Timeout for NodeRatings, Cities, Types reuqest
 * CHANGE: DetermineDenom() in wallet.py
