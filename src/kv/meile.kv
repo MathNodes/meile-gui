@@ -288,6 +288,11 @@ WindowManager:
                 pos_hint: {'x' : .1 , 'top': .9 }
                 text: "REFRESH"
                 on_release: root.refresh_wallet()
+
+            MDRaisedButton:
+                pos_hint: {'x' : .1 , 'top': .83 }
+                text: "NEW WALLET"
+                on_release: root.open_dialog_new_wallet()
                 
             MDRaisedButton:
                 pos_hint: {'x' : .8 , 'top': .9 }
