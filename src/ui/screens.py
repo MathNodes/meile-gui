@@ -911,7 +911,8 @@ class WalletScreen(Screen):
             # CONFIG.remove_section('wallet')
             # We had to clear all the data as defaultconf file (can't remove)
             for k in CONFIG["wallet"]:
-                CONFIG.set("wallet", k, "")
+                if k != "uuid":
+                    CONFIG.set("wallet", k, "")
             FILE = open(MeileConfig.CONFFILE, 'w')
             CONFIG.write(FILE)
 
