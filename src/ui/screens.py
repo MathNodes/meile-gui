@@ -896,8 +896,11 @@ class WalletScreen(Screen):
 
     def destroy_wallet_open_wallet_dialog(self, _):
         keyring_fpath = path.join(MeileGuiConfig.BASEDIR, "keyring-file")
-        if path.exists(keyring_fpath):
-            rmtree(keyring_fpath)
+        img_fpath = path.join(MeileGuiConfig.BASEDIR, "img")
+
+        for folder_path in [keyring_fpath, img_fpath]:
+            if path.exists(folder_path):
+                rmtree(folder_path)
 
         # Remove also the [wallet] section in config.ini
         # So, if the keyring-file is deleted and the use close accidentaly the application
