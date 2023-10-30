@@ -1,6 +1,10 @@
 CHANGELOG
 ========================
 
+# v1.7.12-rc0 (30/10/2023)
+
+* NEW: Added New Wallet Button and Code to create new wallet and replace old one. PR #56 - Tkd-Alex
+
 # v1.7.11 (29/09/2023)
 
 * CHANGE: Timeout for HTTPRequests adapter
