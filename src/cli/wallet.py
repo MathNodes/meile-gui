@@ -330,7 +330,7 @@ class HandleWalletFunctions():
             lines = connection_file.readlines()
             
             for l in lines:
-                if "Error" in l:
+                if "Error" in l and "v2ray" not in l:
                     return {"v2ray_pid" : None,  "result": False, "status" : l}
             
         if type == "WireGuard":
