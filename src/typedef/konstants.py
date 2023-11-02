@@ -57,7 +57,7 @@ class IBCTokens():
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
-    VERSION = "v1.7.10"
+    VERSION = "v1.7.12-rc0"
     
 class MeileColors():
     DIALOG_BG_COLOR          = "#121212"
