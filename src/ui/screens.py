@@ -66,22 +66,31 @@ class WalletRestore(Screen):
             self.ids.restore_wallet_button.text = "Restore"
 
     def restore_wallet_from_seed_phrase(self):
+        '''
         wallet_password = unidecode(self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.password.ids.wallet_password.text)
         wallet_name     = unidecode(self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.name.ids.wallet_name.text)
         seed_phrase     = unidecode(self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.seed.ids.seed_phrase.text)
-
+        '''
+        
+        wallet_password = unidecode(self.ids.password.ids.wallet_password.text)
+        wallet_name     = unidecode(self.ids.name.ids.wallet_name.text)
+        seed_phrase     = unidecode(self.ids.seed.ids.seed_phrase.text)
         if not wallet_name and not wallet_password:
+            '''
             self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.wallet_name_warning.opacity = 1
             self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.wallet_password_warning.opacity = 1
+            '''
+            self.ids.wallet_name_warning.opacity = 1
+            self.ids.wallet_password_warning.opacity = 1
             return
         elif not wallet_password:
-            self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.wallet_password_warning.opacity = 1
+            self.ids.wallet_password_warning.opacity = 1
             return
         elif not wallet_name:
-            self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.wallet_name_warning.opacity = 1
+            self.ids.wallet_name_warning.opacity = 1
             return
         elif len(wallet_password) < 8:
-            self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.wallet_password_warning.opacity = 1
+            self.ids.wallet_password_warning.opacity = 1
             return
         else:
             if not self.dialog:
@@ -144,9 +153,9 @@ class WalletRestore(Screen):
         except Exception as e:
             print(str(e))
 
-        seed_phrase        = unidecode(self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.seed.ids.seed_phrase.text)
-        wallet_name        = unidecode(self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.name.ids.wallet_name.text)
-        keyring_passphrase = unidecode(self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.password.ids.wallet_password.text)
+        seed_phrase        = unidecode(self.ids.seed.ids.seed_phrase.text)
+        wallet_name        = unidecode(self.ids.name.ids.wallet_name.text)
+        keyring_passphrase = unidecode(self.ids.password.ids.wallet_password.text)
         if seed_phrase:
             Wallet = hwf.create(wallet_name.lstrip().rstrip(),
                                 keyring_passphrase.lstrip().rstrip(),
@@ -861,9 +870,6 @@ class WalletScreen(Screen):
         print("WalletScreen, ADDRESS: %s" % self.ADDRESS)
         self.wallet_address = self.ADDRESS
 
-        # This variable will be used by: open_wallet_restore_create
-        self.NewWallet = False
-
         Clock.schedule_once(self.build)
 
     def build(self, dt):
@@ -941,10 +947,11 @@ class WalletScreen(Screen):
 
     # duplicate of MainWindow.wallet_restore
     def wallet_restore(self, new_wallet = False, _ = None):
-        # self.NewWallet will be read by WalletRestore in order to determine ui login
-        self.NewWallet = new_wallet
+        # Use Main_WIndow NewWallet boolean
+        Meile.app.manager.get_screen(WindowNames.MAIN_WINDOW).NewWallet = copy.deepcopy(new_wallet)
         self.closeDialog(None)  # arg is required (?)
 
+        Meile.app.root.remove_widget(self)
         Meile.app.manager.add_widget(WalletRestore(name=WindowNames.WALLET_RESTORE))
         Meile.app.root.transition = SlideTransition(direction = "right")
         Meile.app.root.current = WindowNames.WALLET_RESTORE
