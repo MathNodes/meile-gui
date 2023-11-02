@@ -3,8 +3,9 @@ from kivy.lang import Builder
 from kivymd.app import MDApp
 from kivy.uix.boxlayout import BoxLayout
 from kivymd.uix.gridlayout import MDGridLayout
-from kivymd.uix.button import MDFlatButton
+from kivymd.uix.button import MDFlatButton, MDIconButton
 from kivymd.uix.dialog import MDDialog
+from kivymd.uix.tooltip import MDTooltip
 from kivy.properties import  StringProperty
 from kivy.metrics import dp
 
@@ -27,6 +28,13 @@ sys.path.append(os.path.join(os.getcwd(), "src/"))
 from coin_api.get_price import GetPriceAPI
 
 KV = '''
+<TooltipMDIconButton@MDIconButton+MDTooltip>
+
+<Check@MDCheckbox>:
+    group: 'group'
+    size_hint: None, None
+    size: dp(48), dp(48)
+
 MDScreen
 <IconListItem>
 
@@ -44,7 +52,7 @@ MDScreen
     nnodes: " "
 
     GridLayout:
-        cols: 2
+        cols: 3
         padding: 0
         spacing: 10
         rows: 1
@@ -63,6 +71,42 @@ MDScreen
             MDLabel:
                 id: nnodes_text
                 text: root.nnodes + " Nodes"
+
+        MDBoxLayout:
+            orientation: "vertical"
+
+            MDBoxLayout:
+                orientation: "horizontal"
+                Check:
+                    on_active: root.on_checkbox_active("wallet", *args)
+                MDLabel:
+                    text: "Wallet"
+                    size_hint: (None, 1.75)
+                TooltipMDIconButton:
+                    icon: "help-circle"
+                    tooltip_text: "Pay with Wallet in DVPN or IBC enabled coins"
+
+            MDBoxLayout:
+                orientation: "horizontal"
+                Check:
+                    on_active: root.on_checkbox_active("btcpay", *args)
+                MDLabel:
+                    text: "BTCPay"
+                    size_hint: (None, 1.75)
+                TooltipMDIconButton:
+                    icon: "help-circle"
+                    tooltip_text: "Pay an invoice in BTC, BTC (lightning), XMR, LTC, DASH, or DOGE"
+
+            MDBoxLayout:
+                orientation: "horizontal"
+                Check:
+                    on_active: root.on_checkbox_active("pirate", *args)
+                MDLabel:
+                    text: "Pirate Chain"
+                    size_hint: (None, 1.75)
+                TooltipMDIconButton:
+                    icon: "help-circle"
+                    tooltip_text: "Pay using Pirate chain. Note: processing for ARRR payments could take up to 72 hours"
 
 
     MDBoxLayout:
@@ -112,6 +156,10 @@ MDScreen
 
 '''
 
+class TooltipMDIconButton(MDIconButton, MDTooltip):
+    pass
+
+
 class IconListItem(OneLineIconListItem):
     icon = StringProperty()
 
@@ -137,6 +185,8 @@ class SubscribeContent(BoxLayout):
         self.white_label = white_label
         self.nnodes = str(nnodes)
         self.logo_image = logo_image
+
+        self.pay_with = None
 
         menu_items = [
             {
@@ -193,12 +243,17 @@ class SubscribeContent(BoxLayout):
             value = int(price_text.rstrip(mu_coin).strip())
         else:
             value = round(int(price_text.rstrip("dvpn").strip()) * self.price_cache["dvpn"]["price"] / self.price_cache[mu_coin]["price"], 4)
+        print(mu_coin, month, value, self.price_cache)
         self.ids.deposit.text = str(month * value)
         return self.ids.deposit.text
 
 
     def return_deposit_text(self):
-        return (self.ids.deposit.text, self.naddress)
+        return (self.ids.deposit.text, self.nnodes)
+
+    def on_checkbox_active(self, pay_with: str, checkbox, value):
+        if value is True:
+            self.pay_with = pay_with
 
 class Test(MDApp):
     dialog = None
@@ -224,7 +279,7 @@ class Test(MDApp):
                             on_release=self.closeDialog
                         ),
                         MDFlatButton(
-                            text="Subscribe",
+                            text="SUBCRIBE",
                             theme_text_color="Custom",
                             text_color=self.theme_cls.primary_color,
                             on_release=partial(self.subscribe, subscribe_dialog)
@@ -237,13 +292,32 @@ class Test(MDApp):
         sub_node = subscribe_dialog.return_deposit_text()
         deposit = self.reparse_coin_deposit(sub_node[0])
         print("DEPOSIT IS: %s, for: %s " % ( deposit, sub_node[1] ))
-        self.dialog.dismiss()
-        self.dialog = None
-        self.dialog = MDDialog(title="Subscribing...\n\n%s\n %s" %( deposit, sub_node[1]))
-        self.dialog.open()
+
+        if subscribe_dialog.pay_with == "wallet":
+            self.pay_meile_plan_with_wallet(0)
+        elif subscribe_dialog.pay_with == "btcpay":
+            self.pay_meile_plan_with_btcpay(0)
+        elif subscribe_dialog.pay_with == "pirate":
+            self.pay_meile_plan_with_pirate(0)
+        else:
+            MDDialog(text="[color=#FF0000]Please select a payment option[/color]").open()
+
+        # self.dialog.dismiss()
+        # self.dialog = None
+        # self.dialog = MDDialog(title="Subscribing...\n\n%s\n %s" %( deposit, sub_node[1]))
+        # self.dialog.open()
 
         # Run Subscription method
-        self.subscribe
+        # self.subscribe
+
+    def pay_meile_plan_with_wallet(self, usd):
+        print(f"Method: 'pay_meile_plan_with_wallet', usd: {usd}")
+
+    def pay_meile_plan_with_btcpay(self, usd):
+        print(f"Method: 'pay_meile_plan_with_btcpay', usd: {usd}")
+
+    def pay_meile_plan_with_pirate(self, usd):
+        print(f"Method: 'pay_meile_plan_with_pirate', usd: {usd}")
 
     def reparse_coin_deposit(self, deposit):
         for k,v in CoinsList.ibc_coins.items():

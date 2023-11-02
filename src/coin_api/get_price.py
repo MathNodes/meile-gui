@@ -3,15 +3,16 @@ import asyncio
 
 class GetPriceAPI():
     DEC_AscenDEX = "https://ascendex.com/api/pro/v1/spot/ticker?symbol=DEC/USDT"
+    # Warning, deprecated API here:
     CoinStats    = "https://api.coinstats.app/public/v1/tickers?exchange=KuCoin&pair=%s-USDT"
-    
+
     async def get_usd(self, coin):
-        
+
         Request = HTTPRequests.MakeRequest()
         http = Request.hadapter()
         if coin == "dec":
             URL = self.DEC_AscenDEX
-            try: 
+            try:
                 r = http.get(URL)
                 print(r.json())
                 coin_price = r.json()['data']['high']
@@ -19,7 +20,7 @@ class GetPriceAPI():
                 return {'success' : False, 'price' : 0.0}
         else:
             URL =  self.CoinStats % coin.upper()
-            try: 
+            try:
                 r = http.get(URL)
                 print(r.json())
                 coin_price = r.json()['tickers'][0]['price']
