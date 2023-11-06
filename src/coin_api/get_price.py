@@ -10,8 +10,8 @@ class GetPriceAPI():
 
     
     async def get_usd(self, coin):
-        N = random.randint(0,len(scrtxxs.COINSTATS_API_KEY)-1)
-        API_KEY = scrtxxs.COINSTATS_API_KEY[N]
+        N = random.randint(0,len(scrtxxs.COINSTATS_API_KEYS)-1)
+        API_KEY = scrtxxs.COINSTATS_API_KEYS[N]
         headers = {
             "accept": "application/json",
             "X-API-KEY": f"{API_KEY}"
