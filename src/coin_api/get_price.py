@@ -1,30 +1,32 @@
 from adapters import HTTPRequests
+from typedef.konstants import IBCTokens
+import coin_api.scrtxxs as scrtxxs
 import asyncio
+import random
 
 class GetPriceAPI():
-    DEC_AscenDEX = "https://ascendex.com/api/pro/v1/spot/ticker?symbol=DEC/USDT"
-    CoinStats    = "https://api.coinstats.app/public/v1/tickers?exchange=KuCoin&pair=%s-USDT"
+    #DEC_AscenDEX = "https://ascendex.com/api/pro/v1/spot/ticker?symbol=DEC/USDT"
+    CoinStats    = "https://openapiv1.coinstats.app/coins/%s"
+
     
     async def get_usd(self, coin):
-        
-        Request = HTTPRequests.MakeRequest()
+        N = random.randint(0,len(scrtxxs.COINSTATS_API_KEY))
+        API_KEY = scrtxxs.COINSTATS_API_KEY[N]
+        headers = {
+            "accept": "application/json",
+            "X-API-KEY": f"{API_KEY}"
+        }
+        Request = HTTPRequests.MakeRequest(headers=self.headers)
         http = Request.hadapter()
-        if coin == "dec":
-            URL = self.DEC_AscenDEX
-            try: 
-                r = http.get(URL)
-                print(r.json())
-                coin_price = r.json()['data']['high']
-            except:
-                return {'success' : False, 'price' : 0.0}
-        else:
-            URL =  self.CoinStats % coin.upper()
-            try: 
-                r = http.get(URL)
-                print(r.json())
-                coin_price = r.json()['tickers'][0]['price']
-            except:
-                return {'success' : False, 'price' : 0.0}
-
+        
+        for key,value in IBCTokens.CSAPPMAP.items():
+            if coin.lower() == key: 
+                try:
+                    r = http.get(self.CoinStats % value)
+                    print(r.json())
+                    coin_price = r.json()['price']
+                except Exception as e:
+                    print(str(e))
+                    return {'success' : False, 'price' : 0.0}
 
         return {'success' : True, 'price' : coin_price}
