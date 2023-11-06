@@ -16,7 +16,7 @@ class GetPriceAPI():
             "accept": "application/json",
             "X-API-KEY": f"{API_KEY}"
         }
-        Request = HTTPRequests.MakeRequest(headers=self.headers)
+        Request = HTTPRequests.MakeRequest(headers=headers)
         http = Request.hadapter()
         
         for key,value in IBCTokens.CSAPPMAP.items():
