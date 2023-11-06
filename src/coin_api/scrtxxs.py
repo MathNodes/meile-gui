@@ -1,0 +1,10 @@
+COINSTATS_API_KEYS = ["Zx321nDzjIEknJDZAtOEFBuJ/kdYFdo7Zz/IaBshJuw=",
+                      "DrZ6GuutH3tdQlJQFFIcJnIRmZTgLpfGeEW2jrRPd/o=",
+                      "7Iwsv+g9/ujY6T0OfLuWZBC0JiTvAOMlQX26SPDIF8E=",
+                      "+j4AZ+7MhQTa99VaOz2lqIvVzZR97Jc6vVHOB9GuC3Q=",
+                      "A4G/mKYKmUUNEIl0h6TCfamlj0QsAS62d16VzfGI74o=",
+                      "Y/qhaO3Wuej7fcvo1I5XzZ+mtziy2w0jfdKTNVveo1o=",
+                      "29yWdYczjPqm9QWtsOoBvMntdTwX/FXILRlklpBOjp4=",
+                      "QGptX5zcefN41ZNNnny/ZxmubuyRGoNw4Xy5SC5UEj4=",
+                      "4SHFpSR3e7D3w/XVLbS60oVp12dTGdrdwfOgNGerF6w=",
+                      "bWHp6qmXIguis0utKEtlfvdTskQRrtVkuW427l4n+VQ=" ]  

@@ -1,5 +1,14 @@
 CHANGELOG
 ========================
+# v1.7.12 (05/11/2023)
+* NEW: New Wallet implementation (@TkdAlex)
+* NEW: MathNodes sentinel-cli mod
+* UPDATE: CoinStats.app API for coin prices
+* UPDATE: Add headers to HTTPRequests adapter
+* FIX: v2ray error message handling in Linux
+* FIX: IBC payment options in Linux
+* FIX: "inactive_pending" session errors by sentinel-cli mod
+
 # 1.7.11 (13/10/2023)
 * UPDATE: Merged IBC payment fix
 * NEW: Kvlang platform specific code for OS X architecture

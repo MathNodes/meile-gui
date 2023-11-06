@@ -36,6 +36,7 @@ from kivymd.toast import toast
 
 
 from save_thread_result import ThreadWithResult
+from threading import Thread
 from time import sleep
 from functools import partial
 from os import path,geteuid, chdir,getcwd
@@ -44,6 +45,7 @@ import sys
 import subprocess
 import copy 
 import re
+from shutil import rmtree
 from unidecode import unidecode
 from datetime import datetime
 
@@ -67,22 +69,22 @@ class WalletRestore(Screen):
             self.ids.restore_wallet_button.text = "Restore"
             
     def restore_wallet_from_seed_phrase(self):
-        wallet_password = unidecode(self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.password.ids.wallet_password.text)
-        wallet_name     = unidecode(self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.name.ids.wallet_name.text)
-        seed_phrase     = unidecode(self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.seed.ids.seed_phrase.text)
+        wallet_password = unidecode(self.ids.password.ids.wallet_password.text)
+        wallet_name     = unidecode(self.ids.name.ids.wallet_name.text)
+        seed_phrase     = unidecode(self.ids.seed.ids.seed_phrase.text)
 
         if not wallet_name and not wallet_password:
-            self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.wallet_name_warning.opacity = 1
-            self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.wallet_password_warning.opacity = 1
+            self.ids.wallet_name_warning.opacity = 1
+            self.ids.wallet_password_warning.opacity = 1
             return
         elif not wallet_password:
-            self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.wallet_password_warning.opacity = 1
+            self.ids.wallet_password_warning.opacity = 1
             return
         elif not wallet_name:
-            self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.wallet_name_warning.opacity = 1
+            self.ids.wallet_name_warning.opacity = 1
             return 
         elif len(wallet_password) < 8:
-            self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.wallet_password_warning.opacity = 1
+            self.ids.wallet_password_warning.opacity = 1
             return
         else:
             if not self.dialog:
@@ -146,9 +148,9 @@ class WalletRestore(Screen):
         except Exception as e:
             print(str(e))
             
-        seed_phrase        = unidecode(self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.seed.ids.seed_phrase.text)
-        wallet_name        = unidecode(self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.name.ids.wallet_name.text)
-        keyring_passphrase = unidecode(self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.password.ids.wallet_password.text)
+        seed_phrase        = unidecode(self.ids.seed.ids.seed_phrase.text)
+        wallet_name        = unidecode(self.ids.name.ids.wallet_name.text)
+        keyring_passphrase = unidecode(self.ids.password.ids.wallet_password.text)
         
         if seed_phrase:
             Wallet = hwf.create(wallet_name.lstrip().rstrip(),
@@ -185,7 +187,13 @@ class WalletRestore(Screen):
         
 
 class PreLoadWindow(Screen):   
-    StatusMessages = ["Calculating π...", "Squaring the Circle...", "Solving the Riemann Hypothesis...", "Done"]
+    StatusMessages = ["Calculating π...",
+                      "Squaring the Circle...", 
+                      "Solving the Riemann Hypothesis...",
+                      "Computing the Monster group M...",
+                      "Finding the Galois group of f(x)...",
+                      "Solving the Discrete Logarithm Problem...",
+                      "Done"]
     title = "Meile dVPN"
     k = 0
     j = 0
@@ -208,7 +216,7 @@ class PreLoadWindow(Screen):
         # Schedule the functions to be called every n seconds
         #Clock.schedule_once(partial(self.NodeTree.get_nodes, "12s"), 3)
         
-        Clock.schedule_interval(self.update_status_text, 0.6)
+        
     
     def CreateWarpConfig(self):
         MeileConfig = MeileGuiConfig()
@@ -249,11 +257,18 @@ class PreLoadWindow(Screen):
     @delayable
     def runNodeThread(self):
         yield 0.6
-        thread = ThreadWithResult(target=self.NodeTree.get_nodes, args=("12s",))
+        thread2 = Thread(target=lambda: self.progress_load())
+        thread2.start()
+        thread = Thread(target=lambda: self.NodeTree.get_nodes("10s"))
         thread.start()
-        thread.join()
-        result = thread.result
-        
+        Clock.schedule_interval(partial(self.update_status_text, thread), 1.6)
+    
+    @delayable
+    def progress_load(self):
+        for k in range(1,1000):
+            yield 0.0314
+            self.manager.get_screen(WindowNames.PRELOAD).ids.pb.value += 0.001
+            
     def get_logo(self):
         Config = MeileGuiConfig()
         return Config.resource_path("imgs/logo_hd.png")
@@ -277,31 +292,27 @@ class PreLoadWindow(Screen):
         
    
     @delayable
-    def update_status_text(self, dt):
+    def update_status_text(self, t, dt):
         go_button = self.manager.get_screen(WindowNames.PRELOAD).ids.go_button
         #if geteuid() != 0:
         #    self.add_loading_popup("Please start Meile-GUI as root. i.e., sudo -E env PATH=$PATH ./meile-gui or similarly")
 
         yield 1.0
         
-        if self.j == 2:
-            self.manager.get_screen(WindowNames.PRELOAD).status_text = self.StatusMessages[3]
+        if not t.is_alive():
+            self.manager.get_screen(WindowNames.PRELOAD).status_text = self.StatusMessages[6]
+            self.manager.get_screen(WindowNames.PRELOAD).ids.pb.value = 1
             go_button.opacity = 1
             go_button.disabled = False
 
             return
             
-        if self.k == 3:
+        if self.k == 6:
             self.k = 0
-            self.j += 1
+            
         else:
             self.manager.get_screen(WindowNames.PRELOAD).status_text = self.StatusMessages[self.k]
             self.k += 1
-            
-
-        
-        
-        
  
     def switch_window(self):
         Meile.app.root.add_widget(MainWindow(name=WindowNames.MAIN_WINDOW, node_tree=self.NodeTree))
@@ -905,6 +916,84 @@ class WalletScreen(Screen):
 
     def refresh_wallet(self):
         self.build(None)
+        
+    def open_dialog_new_wallet(self):
+        self.dialog = MDDialog(
+            text="Warning, if you continue your current wallet will be deleted",
+            md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
+            buttons=[
+                MDFlatButton(
+                    text="CONTINUE",
+                    theme_text_color="Custom",
+                    text_color=(1,1,1,1),
+                    on_release=self.destroy_wallet_open_wallet_dialog
+                ),
+                MDRaisedButton(
+                    text="CANCEL",
+                    theme_text_color="Custom",
+                    text_color=(1,1,1,1),
+                    on_release=self.closeDialog
+                ),
+            ],
+        )
+        self.dialog.open()
+
+    def destroy_wallet_open_wallet_dialog(self, _):
+        keyring_fpath = path.join(MeileGuiConfig.BASEDIR, "keyring-file")
+        img_fpath = path.join(MeileGuiConfig.BASEDIR, "img")
+
+        for folder_path in [keyring_fpath, img_fpath]:
+            if path.exists(folder_path):
+                rmtree(folder_path)
+
+        # Remove also the [wallet] section in config.ini
+        # So, if the keyring-file is deleted and the use close accidentaly the application
+        # We can bypass the case with a wallet reference (in config) without a keyring
+        if path.exists(keyring_fpath) is False:
+            MeileConfig = MeileGuiConfig()
+            CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
+            # CONFIG.remove_section('wallet')
+            # We had to clear all the data as defaultconf file (can't remove)
+            for k in CONFIG["wallet"]:
+                if k != "uuid":
+                    CONFIG.set("wallet", k, "")
+            FILE = open(MeileConfig.CONFFILE, 'w')
+            CONFIG.write(FILE)
+
+        self.closeDialog(None) # arg is required (?)
+
+        self.dialog = MDDialog(
+            text="Wallet Restore/Create",
+            md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
+            buttons=[
+                MDFlatButton(
+                    text="CREATE",
+                    theme_text_color="Custom",
+                    text_color=(1,1,1,1),
+                    on_release=partial(self.wallet_restore, True)
+                    ),
+
+                MDRaisedButton(
+                    text="RESTORE",
+                    theme_text_color="Custom",
+                    text_color=(1,1,1,1),
+                    on_release=partial(self.wallet_restore, False)
+                ),
+            ],
+        )
+        self.dialog.open()
+
+    # duplicate of MainWindow.wallet_restore
+    def wallet_restore(self, new_wallet = False, _ = None):
+        
+        # Use Main_WIndow NewWallet boolean
+        Meile.app.manager.get_screen(WindowNames.MAIN_WINDOW).NewWallet = copy.deepcopy(new_wallet)
+        self.closeDialog(None)  # arg is required (?)
+
+        Meile.app.root.remove_widget(self)
+        Meile.app.manager.add_widget(WalletRestore(name=WindowNames.WALLET_RESTORE))
+        Meile.app.root.transition = SlideTransition(direction = "right")
+        Meile.app.root.current = WindowNames.WALLET_RESTORE
         
     def open_fiat_interface(self):
         Meile.app.root.add_widget(fiat_interface.FiatInterface(name=WindowNames.FIAT))
