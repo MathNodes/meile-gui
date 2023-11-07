@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ $# -lt 1 ]]; then
-	echo "CodeSign v1.1 by freQniK"
+	echo "CodeSign v1.2 by freQniK"
 	echo ""
 	echo "Usage: $0 <version>"
 	echo ""
@@ -56,26 +56,28 @@ create-dmg \
   --icon-size 100 \
   --icon "dist/Meile/Meile.app" 200 190 \
   --app-drop-link 600 185 \
-  "Meile-"$VERSION".dmg" \
+  "Meile-"$VERSION"_arm64.dmg" \
   "dist/Meile/"
 sleep 2
 
 echo "Signing disk image..."
-codesign -s "Developer ID Application: Pool Stats LLC (VQYLU43P5V)" --timestamp /Users/freqnik/eclipse-workspace/meile-gui/"Meile-"$VERSION".dmg"
+codesign -s "Developer ID Application: Pool Stats LLC (VQYLU43P5V)" --timestamp /Users/freqnik/eclipse-workspace/meile-gui/"Meile-"$VERSION"_arm64.dmg"
 sleep 2
 
 
 meile_date=`date +%m%d%y`
 echo "Submitting App for notarization..."
-xcrun altool --notarize-app --primary-bundle-id "M1-$meile_date" -u "freqnik@mathnodes.com" -p "@keychain:Meile-M1" -t osx -f /Users/freqnik/eclipse-workspace/meile-gui/"Meile-"$VERSION".dmg"
+#deprecated
+#xcrun altool --notarize-app --primary-bundle-id "M1-$meile_date" -u "freqnik@mathnodes.com" -p "@keychain:Meile-M1" -t osx -f /Users/freqnik/eclipse-workspace/meile-gui/"Meile-"$VERSION".dmg"
+xcrun notarytool submit --keychain-profile "MN-M1" /Users/freqnik/eclipse-workspace/meile-gui/"Meile-"$VERSION"_arm64.dmg" --wait
 
 echo "Press enter once notarization was approved...."
 read answer
 
 sleep 2
 echo "Stapling the notarization receipt..."
-xcrun stapler staple /Users/freqnik/eclipse-workspace/meile-gui/"Meile-"$VERSION".dmg"
+xcrun stapler staple /Users/freqnik/eclipse-workspace/meile-gui/"Meile-"$VERSION"_arm64.dmg"
 sleep 3
 
 echo "Verification...."
-spctl -a -vv -t install /Users/freqnik/eclipse-workspace/meile-gui/"Meile-"$VERSION".dmg"
+spctl -a -vv -t install /Users/freqnik/eclipse-workspace/meile-gui/"Meile-"$VERSION"_arm64.dmg"

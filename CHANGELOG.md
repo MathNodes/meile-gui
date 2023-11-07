@@ -1,7 +1,17 @@
 CHANGELOG
 ========================
 
-# v1.7.12-rc0 (30/10/2023)
+
+# v1.7.12 (05/11/2023)
+
+* NEW: New Wallet implementation (@TkdAlex)
+* NEW: MathNodes sentinel-cli mod
+* NEW: Non-blocking progress bar in PreloadScreen() (Windows & OS X)
+* UPDATE: CoinStats.app API for coin prices
+* UPDATE: Add headers to HTTPRequests adapter
+* FIX: v2ray error message handling in Linux
+* FIX: IBC payment options in Linux
+* FIX: "inactive_pending" session errors by sentinel-cli mod# v1.7.12-rc0 (30/10/2023)
 
 * NEW: Added New Wallet Button and Code to create new wallet and replace old one. PR #56 - Tkd-Alex
 
