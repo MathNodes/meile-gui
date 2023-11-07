@@ -1,7 +1,7 @@
 #!/usr/loca/bin/bash
 
 if [[ $# -lt 1 ]]; then
-	echo "CodeSign v1.1 by freQniK"
+	echo "CodeSign v1.2 by freQniK"
 	echo ""
 	echo "Usage: $0 <version>"
 	echo ""
@@ -118,7 +118,9 @@ echo "Press Enter to sumbit the app for notarization..."
 read ans
 meile_date=`date +%m%d%y`
 echo "Submitting App for notarization..."
-xcrun altool --notarize-app --primary-bundle-id "M1-$meile_date" -u "freqnik@mathnodes.com" -p "@keychain:Meile-Intel" -t osx -f /Users/freqnik/git/meile-gui/"Meile-"$VERSION"_x86_64.dmg"
+#xcrun altool --notarize-app --primary-bundle-id "M1-$meile_date" -u "freqnik@mathnodes.com" -p "@keychain:Meile-Intel" -t osx -f /Users/freqnik/git/meile-gui/"Meile-"$VERSION"_x86_64.dmg"
+# altool is deprectated in favor of notarytool
+xcrun notarytool submit -u "freqnik@mathnodes.com" -p "@keychain:Meile-Intel"  /Users/freqnik/git/meile-gui/"Meile-"$VERSION"_x86_64.dmg" --wait
 
 echo "Press enter once notarization was approved...."
 read answer
