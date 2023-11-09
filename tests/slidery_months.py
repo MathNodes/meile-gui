@@ -242,9 +242,11 @@ class SubscribeContent(BoxLayout):
         if mu_coin == "dvpn":
             value = int(price_text.rstrip(mu_coin).strip())
         else:
-            value = round(int(price_text.rstrip("dvpn").strip()) * self.price_cache["dvpn"]["price"] / self.price_cache[mu_coin]["price"], 4)
-        print(mu_coin, month, value, self.price_cache)
-        self.ids.deposit.text = str(month * value)
+            value = round(int(price_text.rstrip("dvpn").strip()) * self.price_cache["dvpn"]["price"] / self.price_cache[mu_coin]["price"], 5)
+
+        print(f"mu_coin={mu_coin}, month={month}, value={value}, price_cache={self.price_cache}")
+
+        self.ids.deposit.text = str(round(month * value, 5))
         return self.ids.deposit.text
 
 
@@ -289,16 +291,30 @@ class Test(MDApp):
             self.dialog.open()
 
     def subscribe(self, subscribe_dialog, *kwargs):
-        sub_node = subscribe_dialog.return_deposit_text()
-        deposit = self.reparse_coin_deposit(sub_node[0])
-        print("DEPOSIT IS: %s, for: %s " % ( deposit, sub_node[1] ))
+
+        deposit = subscribe_dialog.ids.deposit.text
+        nnodes = subscribe_dialog.nnodes
+        mu_coin = subscribe_dialog.ids.drop_item.current_item
+
+        # Parse all the coins without u-unit
+        if mu_coin.startswith("u"):
+            mu_coin = mu_coin.lstrip('u')
+
+        # use the price caching directly from subscribe_dialog
+        usd = round(float(deposit) * subscribe_dialog.price_cache[mu_coin]["price"], 5)
+
+        print(f"Deposit {deposit} {mu_coin} for {nnodes} nodes. usd value is: {usd}")
+        # usd value must be multiplu for nnodes (?)
+
+        # sub_node = subscribe_dialog.return_deposit_text()
+        # deposit = self.reparse_coin_deposit(sub_node[0])
 
         if subscribe_dialog.pay_with == "wallet":
-            self.pay_meile_plan_with_wallet(0)
+            self.pay_meile_plan_with_wallet(usd)
         elif subscribe_dialog.pay_with == "btcpay":
-            self.pay_meile_plan_with_btcpay(0)
+            self.pay_meile_plan_with_btcpay(usd)
         elif subscribe_dialog.pay_with == "pirate":
-            self.pay_meile_plan_with_pirate(0)
+            self.pay_meile_plan_with_pirate(usd)
         else:
             MDDialog(text="[color=#FF0000]Please select a payment option[/color]").open()
 
