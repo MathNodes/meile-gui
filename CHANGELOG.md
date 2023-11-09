@@ -1,5 +1,14 @@
 CHANGELOG
 ========================
+# v1.7.12 (05/11/2023)
+* NEW: New Wallet implementation (@TkdAlex)
+* NEW: MathNodes sentinel-cli mod
+* UPDATE: CoinStats.app API for coin prices
+* UPDATE: Add headers to HTTPRequests adapter
+* FIX: v2ray error message handling in Linux
+* FIX: IBC payment options in Linux
+* FIX: "inactive_pending" session errors by sentinel-cli mod
+
 # v1.7.10 (08/09/2023)
 * NEW: Subscription type chooser interface (hourly/bandwidth)
 * NEW: Slider for hourly subscription on range of 1-30 days

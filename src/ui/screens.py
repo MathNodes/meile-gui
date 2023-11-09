@@ -33,10 +33,12 @@ from kivymd.uix.behaviors.elevation import RectangularElevationBehavior
 from kivy_garden.mapview import MapMarkerPopup, MapView, MapSource
 from kivymd.toast import toast
 
+
 import requests
 import sys
 import copy
 import re
+from shutil import rmtree
 from time import sleep
 from functools import partial
 from os import path,geteuid, chdir
@@ -64,22 +66,31 @@ class WalletRestore(Screen):
             self.ids.restore_wallet_button.text = "Restore"
 
     def restore_wallet_from_seed_phrase(self):
+        '''
         wallet_password = unidecode(self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.password.ids.wallet_password.text)
         wallet_name     = unidecode(self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.name.ids.wallet_name.text)
         seed_phrase     = unidecode(self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.seed.ids.seed_phrase.text)
-
+        '''
+        
+        wallet_password = unidecode(self.ids.password.ids.wallet_password.text)
+        wallet_name     = unidecode(self.ids.name.ids.wallet_name.text)
+        seed_phrase     = unidecode(self.ids.seed.ids.seed_phrase.text)
         if not wallet_name and not wallet_password:
+            '''
             self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.wallet_name_warning.opacity = 1
             self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.wallet_password_warning.opacity = 1
+            '''
+            self.ids.wallet_name_warning.opacity = 1
+            self.ids.wallet_password_warning.opacity = 1
             return
         elif not wallet_password:
-            self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.wallet_password_warning.opacity = 1
+            self.ids.wallet_password_warning.opacity = 1
             return
         elif not wallet_name:
-            self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.wallet_name_warning.opacity = 1
+            self.ids.wallet_name_warning.opacity = 1
             return
         elif len(wallet_password) < 8:
-            self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.wallet_password_warning.opacity = 1
+            self.ids.wallet_password_warning.opacity = 1
             return
         else:
             if not self.dialog:
@@ -128,7 +139,6 @@ class WalletRestore(Screen):
         Meile.app.root.transition = SlideTransition(direction = "down")
         Meile.app.root.current = WindowNames.MAIN_WINDOW
 
-
     def cancel(self, inst):
         self.dialog.dismiss()
 
@@ -143,9 +153,9 @@ class WalletRestore(Screen):
         except Exception as e:
             print(str(e))
 
-        seed_phrase        = unidecode(self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.seed.ids.seed_phrase.text)
-        wallet_name        = unidecode(self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.name.ids.wallet_name.text)
-        keyring_passphrase = unidecode(self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.password.ids.wallet_password.text)
+        seed_phrase        = unidecode(self.ids.seed.ids.seed_phrase.text)
+        wallet_name        = unidecode(self.ids.name.ids.wallet_name.text)
+        keyring_passphrase = unidecode(self.ids.password.ids.wallet_password.text)
         if seed_phrase:
             Wallet = hwf.create(wallet_name.lstrip().rstrip(),
                                 keyring_passphrase.lstrip().rstrip(),
@@ -289,7 +299,6 @@ class PreLoadWindow(Screen):
         Meile.app.root.add_widget(MainWindow(name=WindowNames.MAIN_WINDOW, node_tree=self.NodeTree))
         Meile.app.root.transition = SlideTransition(direction = "up")
         Meile.app.root.current = WindowNames.MAIN_WINDOW
-
 
 
 class MainWindow(Screen):
@@ -498,8 +507,6 @@ class MainWindow(Screen):
                 self.display_warp_success()
                 self.warpd_disconnected = False
 
-
-
         else:
             #self.remove_loading_widget(None)
             self.dialog = MDDialog(
@@ -556,7 +563,7 @@ class MainWindow(Screen):
         except Exception as e:
             print(str(e))
             return False
-          
+
     @mainthread
     def disconnect_from_node(self):
         try:
@@ -661,7 +668,7 @@ class MainWindow(Screen):
                         theme_text_color="Custom",
                         text_color=(1,1,1,1),
                         on_release=partial(self.wallet_restore, True)
-                        ),
+                    ),
 
                     MDRaisedButton(
                         text="RESTORE",
@@ -738,7 +745,7 @@ class MainWindow(Screen):
         except Exception as e:
             print(str(e))
             pass
-        
+
         # Clear out Subscriptions
         self.SubResult = None
         # Redraw Map Pins
@@ -850,11 +857,13 @@ class MainWindow(Screen):
         Meile.app.root.transition = SlideTransition(direction = "up")
         Meile.app.root.current = WindowNames.NODES
 
+
 class WalletScreen(Screen):
     text = StringProperty()
     ADDRESS = None
     MeileConfig = None
     dialog = None
+
     def __init__(self, ADDRESS,  **kwargs):
         super(WalletScreen, self).__init__()
         self.ADDRESS = ADDRESS
@@ -863,7 +872,6 @@ class WalletScreen(Screen):
 
         Clock.schedule_once(self.build)
 
-
     def build(self, dt):
         Wallet = HandleWalletFunctions()
         self.SetBalances(Wallet.get_balance(self.ADDRESS))
@@ -871,11 +879,88 @@ class WalletScreen(Screen):
     def refresh_wallet(self):
         self.build(None)
 
+    def open_dialog_new_wallet(self):
+        self.dialog = MDDialog(
+            text="Warning, if you continue your current wallet will be deleted",
+            md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
+            buttons=[
+                MDFlatButton(
+                    text="CONTINUE",
+                    theme_text_color="Custom",
+                    text_color=(1,1,1,1),
+                    on_release=self.destroy_wallet_open_wallet_dialog
+                ),
+                MDRaisedButton(
+                    text="CANCEL",
+                    theme_text_color="Custom",
+                    text_color=(1,1,1,1),
+                    on_release=self.closeDialog
+                ),
+            ],
+        )
+        self.dialog.open()
+
+    def destroy_wallet_open_wallet_dialog(self, _):
+        keyring_fpath = path.join(MeileGuiConfig.BASEDIR, "keyring-file")
+        img_fpath = path.join(MeileGuiConfig.BASEDIR, "img")
+
+        for folder_path in [keyring_fpath, img_fpath]:
+            if path.exists(folder_path):
+                rmtree(folder_path)
+
+        # Remove also the [wallet] section in config.ini
+        # So, if the keyring-file is deleted and the use close accidentaly the application
+        # We can bypass the case with a wallet reference (in config) without a keyring
+        if path.exists(keyring_fpath) is False:
+            MeileConfig = MeileGuiConfig()
+            CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
+            # CONFIG.remove_section('wallet')
+            # We had to clear all the data as defaultconf file (can't remove)
+            for k in CONFIG["wallet"]:
+                if k != "uuid":
+                    CONFIG.set("wallet", k, "")
+            FILE = open(MeileConfig.CONFFILE, 'w')
+            CONFIG.write(FILE)
+
+        self.closeDialog(None) # arg is required (?)
+
+        self.dialog = MDDialog(
+            text="Wallet Restore/Create",
+            md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
+            buttons=[
+                MDFlatButton(
+                    text="CREATE",
+                    theme_text_color="Custom",
+                    text_color=(1,1,1,1),
+                    on_release=partial(self.wallet_restore, True)
+                    ),
+
+                MDRaisedButton(
+                    text="RESTORE",
+                    theme_text_color="Custom",
+                    text_color=(1,1,1,1),
+                    on_release=partial(self.wallet_restore, False)
+                ),
+            ],
+        )
+        self.dialog.open()
+
+    # duplicate of MainWindow.wallet_restore
+    def wallet_restore(self, new_wallet = False, _ = None):
+        # Use Main_WIndow NewWallet boolean
+        Meile.app.manager.get_screen(WindowNames.MAIN_WINDOW).NewWallet = copy.deepcopy(new_wallet)
+        self.closeDialog(None)  # arg is required (?)
+
+        Meile.app.root.remove_widget(self)
+        Meile.app.manager.add_widget(WalletRestore(name=WindowNames.WALLET_RESTORE))
+        Meile.app.root.transition = SlideTransition(direction = "right")
+        Meile.app.root.current = WindowNames.WALLET_RESTORE
+
     def open_fiat_interface(self):
         Meile.app.root.add_widget(fiat_interface.FiatInterface(name=WindowNames.FIAT))
         Meile.app.root.transistion = SlideTransition(direction="right")
         Meile.app.root.current = WindowNames.FIAT
-
+        
     def return_coin_logo(self, coin):
         self.MeileConfig = MeileGuiConfig()
 
@@ -913,7 +998,7 @@ class WalletScreen(Screen):
             self.osmo_text = str("0.0") + " osmo"
             self.dvpn_text = str("0.0") + " dvpn"
             #self.dvpn_text = str("0.0") + " tsent"
-            
+
             self.dialog = MDDialog(
                 text="Error Loading Wallet Balance. Please try again later.",
                 md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
@@ -941,6 +1026,7 @@ class WalletScreen(Screen):
         Meile.app.root.remove_widget(self)
         Meile.app.root.transistion = SlideTransition(direction="down")
         Meile.app.root.current = WindowNames.MAIN_WINDOW
+
 
 class SubscriptionScreen(Screen):
     SubResult = None
@@ -1020,7 +1106,7 @@ class SubscriptionScreen(Screen):
             expirary_date = datetime.strptime(expirary_date, '%Y-%m-%d %H:%M:%S').strftime('%b %d %Y, %I:%M %p')
         else:
             expirary_date = "Null"
-            
+
         if node[NodeKeys.FinalSubsKeys[1]] == "Offline":
             self.ids.rv.data.append(
                  {
@@ -1043,7 +1129,7 @@ class SubscriptionScreen(Screen):
              )
             print("%s" % node[NodeKeys.FinalSubsKeys[0]].lstrip().rstrip(),end=',')
             sys.stdout.flush()
-            
+
         else:
             self.ids.rv.data.append(
                 {
@@ -1062,7 +1148,7 @@ class SubscriptionScreen(Screen):
                     "city"           : city,
                     "expirary_date"  : expirary_date,
                     "md_bg_color"    : MeileColors.DIALOG_BG_COLOR
-                    
+
                 },
             )
             print("%s" % node[NodeKeys.FinalSubsKeys[0]].lstrip().rstrip(),end=',')
@@ -1350,7 +1436,6 @@ class RecycleViewCountryRow(MDCard,RectangularElevationBehavior,ThemableBehavior
         Meile.app.root.current = WindowNames.NODES
 
 
-
 class HelpScreen(Screen):
 
     def GetMeileVersion(self):
@@ -1371,9 +1456,9 @@ class SettingsScreen(Screen):
 
         params = HTTParams()
         self.RPC = params.RPC
-        
+
         self.MeileConfig = MeileGuiConfig()
-        
+
         menu_items = [
             {
                 "viewclass": "IconListItem",
@@ -1390,7 +1475,7 @@ class SettingsScreen(Screen):
             width_mult=50,
         )
         self.menu.bind()
-        
+
     def get_rpc_config(self):
         CONFIG = self.MeileConfig.read_configuration(self.MeileConfig.CONFFILE)
 
@@ -1406,7 +1491,7 @@ class SettingsScreen(Screen):
         return self.screen
 
     def SaveOptions(self):
-        
+
         CONFIG = self.MeileConfig.read_configuration(self.MeileConfig.CONFFILE)
         CONFIG.set('network', 'rpc', self.RPC)
 
@@ -1414,7 +1499,7 @@ class SettingsScreen(Screen):
         CONFIG.write(FILE)
 
         self.set_previous_screen()
-        
+
     def set_previous_screen(self):
 
         Meile.app.root.remove_widget(self)
