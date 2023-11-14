@@ -95,6 +95,9 @@ class NodeTreeData():
             
             if  OurWorld.CZ in d[NodeKeys.NodesInfoKeys[4]]:
                 d[NodeKeys.NodesInfoKeys[4]] = OurWorld.CZ_FULL
+                
+            if OurWorld.NL_FULL in d[NodeKeys.NodesInfoKeys[4]]:
+                d[NodeKeys.NodesInfoKeys[4]] = OurWorld.NL
            
             d_continent = OurWorld.our_world.get_country_continent_name(d[NodeKeys.NodesInfoKeys[4]])
             try:
