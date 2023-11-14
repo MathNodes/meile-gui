@@ -1,3 +1,5 @@
+from threading import Thread
+
 from kivy.properties import BooleanProperty, StringProperty
 from kivy.metrics import dp
 from kivy.utils import get_color_from_hex
@@ -22,6 +24,7 @@ from kivymd.uix.behaviors.elevation import RectangularElevationBehavior
 from kivyoav.delayed import delayable
 
 
+
 from functools import partial
 from urllib3.exceptions import InsecureRequestWarning
 from copy import deepcopy
@@ -29,13 +32,12 @@ from datetime import datetime, timedelta
 from os import path
 from subprocess import Popen, TimeoutExpired
 from time import sleep 
-from datetime import datetime,timedelta
 import time
 
 import requests
 import re
 import psutil
-import asyncio
+import sys
 
 import main.main as Meile
 from typedef.konstants import IBCTokens, HTTParams, MeileColors
@@ -45,7 +47,7 @@ from cli.wallet import HandleWalletFunctions
 from cli.sentinel import NodeTreeData
 from adapters import HTTPRequests
 from adapters.ChangeDNS import ChangeDNS
-from ui.interfaces import TXContent
+from ui.interfaces import TXContent,ConnectionDialog
 from coin_api.get_price import GetPriceAPI
 
 
@@ -284,7 +286,7 @@ class SubscribeContent(BoxLayout):
             coin   = "dvpn"
         
         CoinPriceAPI = GetPriceAPI()        
-        PriceDict = asyncio.run(CoinPriceAPI.get_usd(coin))
+        PriceDict = CoinPriceAPI.get_usd(coin)
         self.coin_price = PriceDict['price']
 
 
@@ -576,6 +578,16 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
         self.dialog = MDDialog(title=title_text,md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR))
         self.dialog.open()
         
+    def set_conn_dialog(self, cd, title):
+        self.dialog = None
+        self.dialog = MDDialog(
+                        title=title,
+                        type="custom",
+                        content_cls=cd,
+                        md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
+                    )
+        self.dialog.open() 
+           
     def remove_loading_widget(self):
         try:
             self.dialog.dismiss()
@@ -652,10 +664,25 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
                     ],
                 )
             self.dialog.open()
+       
         
-    
+    def ping(self):
+        UUID = Meile.app.root.get_screen(WindowNames.PRELOAD).UUID
+        try:
+            uuid_dict = {'uuid' : "%s" % UUID, 'os' : "W"}
+            Request = HTTPRequests.MakeRequest(TIMEOUT=3)
+            http = Request.hadapter()
+            ping = http.post(HTTParams.SERVER_URL + HTTParams.API_PING_ENDPOINT, json=uuid_dict)
+            if ping.status_code == 200:
+                print('ping')
+            else:
+                print("noping")
+        except Exception as e:
+            print(str(e))
+            pass
         
-    @delayable
+        
+    @delayable     
     def connect_to_node(self, ID, naddress, moniker, type, switchValue, **kwargs):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         '''
@@ -680,29 +707,28 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
         if mw.CONNECTED:
             return 
         
+        # Switch to connect is on
         if switchValue:
-            self.add_loading_popup("Connecting...")
-            
-            yield 0.6
-            UUID = Meile.app.root.get_screen(WindowNames.PRELOAD).UUID
-            try:
-                uuid_dict = {'uuid' : "%s" % UUID, 'os' : "W"}
-                Request = HTTPRequests.MakeRequest()
-                http = Request.hadapter()
-                ping = http.post(HTTParams.SERVER_URL + HTTParams.API_PING_ENDPOINT, json=uuid_dict)
-                if ping.status_code == 200:
-                    print('ping')
-                else:
-                    print("noping")
-            except Exception as e:
-                print(str(e))
-                pass
+            cd = ConnectionDialog()
+            self.set_conn_dialog(cd, "Connecting...")
+            yield 0.3
             
             hwf = HandleWalletFunctions()
-            connected = hwf.connect(ID, naddress, type)
-            mw.ConnectedDict = deepcopy(connected)
+            thread = Thread(target=lambda: self.ping())
+            thread.start()
+            t = Thread(target=lambda: hwf.connect(ID, naddress, type))
+            t.start()
+            
+            mw.ConnectedDict = deepcopy(hwf.connected)
+            
+            while t.is_alive():
+                yield 0.0365
+                cd.ids.pb.value += 0.00175
+            
+            cd.ids.pb.value = 1
+            yield 0.420
             try: 
-                if connected['result']:
+                if hwf.connected['result']:
                     
                     mw.CONNECTED                  = True
                     mw.NodeSwitch['moniker']      = moniker
@@ -768,7 +794,11 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
                             ),])
                 self.dialog.open()
                 
-                
+    @delayable
+    def progress_load(self, cd):
+        for k in range(1,200):
+            yield 0.0365
+            cd.ids.pb.value += 0.05            
     def connected_quota(self, allocated, consumed, dt): 
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)       
         if mw.CONNECTED:

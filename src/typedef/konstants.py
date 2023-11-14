@@ -1,5 +1,12 @@
 from os import path, environ
 
+class Arch():
+    LINUX   = "Linux"
+    WINDOWS = "Windows"
+    OSX     = "Darwin"
+    X86     = "x86_64"
+    ARM     = "arm64"
+
 class ConfParams():
     PATH             = environ['PATH']
     KEYRINGDIR       = path.join(path.expanduser('~'), '.meile-gui')
@@ -56,10 +63,11 @@ class IBCTokens():
     IBCUNITTOKEN = {'uscrt' : IBCSCRT, 'uatom' : IBCATOM , 'uosmo' : IBCOSMO, 'udec' : IBCDEC, 'udvpn' : 'udvpn', 'tsent' : 'tsent'}
     mu_coins     = ["udvpn", "uscrt", "uosmo", "uatom", "udec"]
     #mu_coins = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
+    CSAPPMAP     = {'dec' : 'decentr', 'atom' : 'cosmos', 'scrt' : 'secret', 'osmo' : 'osmosis', 'dvpn' : 'sentinel'}
     
 class TextStrings():
     dash = "-"
-    VERSION = "v1.7.12-rc0"
+    VERSION = "v1.7.13"
 
 class MeileColors():
     DIALOG_BG_COLOR          = "#121212"

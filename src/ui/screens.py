@@ -41,6 +41,7 @@ from time import sleep
 from functools import partial
 from os import path, chdir
 from save_thread_result import ThreadWithResult
+from threading import Thread
 from unidecode import unidecode
 from datetime import datetime
 
@@ -64,22 +65,22 @@ class WalletRestore(Screen):
             self.ids.restore_wallet_button.text = "Restore"
         
     def restore_wallet_from_seed_phrase(self):
-        wallet_password = unidecode(self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.password.ids.wallet_password.text)
-        wallet_name     = unidecode(self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.name.ids.wallet_name.text)
-        seed_phrase     = unidecode(self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.seed.ids.seed_phrase.text)
-
+        wallet_password = unidecode(self.ids.password.ids.wallet_password.text)
+        wallet_name     = unidecode(self.ids.name.ids.wallet_name.text)
+        seed_phrase     = unidecode(self.ids.seed.ids.seed_phrase.text)
+        
         if not wallet_name and not wallet_password:
-            self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.wallet_name_warning.opacity = 1
-            self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.wallet_password_warning.opacity = 1
+            self.ids.wallet_name_warning.opacity = 1
+            self.ids.wallet_password_warning.opacity = 1
             return
         elif not wallet_password:
-            self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.wallet_password_warning.opacity = 1
+            self.ids.wallet_password_warning.opacity = 1
             return
         elif not wallet_name:
-            self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.wallet_name_warning.opacity = 1
+            self.ids.wallet_name_warning.opacity = 1
             return 
         elif len(wallet_password) < 8:
-            self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.wallet_password_warning.opacity = 1
+            self.ids.wallet_password_warning.opacity = 1
             return
         else:
             if not self.dialog:
@@ -142,9 +143,9 @@ class WalletRestore(Screen):
         except Exception as e:
             print(str(e))
             
-        seed_phrase        = unidecode(self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.seed.ids.seed_phrase.text)
-        wallet_name        = unidecode(self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.name.ids.wallet_name.text)
-        keyring_passphrase = unidecode(self.manager.get_screen(WindowNames.WALLET_RESTORE).ids.password.ids.wallet_password.text)
+        seed_phrase        = unidecode(self.ids.seed.ids.seed_phrase.text)
+        wallet_name        = unidecode(self.ids.name.ids.wallet_name.text)
+        keyring_passphrase = unidecode(self.ids.password.ids.wallet_password.text)
         if seed_phrase:
             Wallet = hwf.create(wallet_name.lstrip().rstrip(),
                                 keyring_passphrase.lstrip().rstrip(),
@@ -181,7 +182,13 @@ class WalletRestore(Screen):
         
 
 class PreLoadWindow(Screen):   
-    StatusMessages = ["Calculating π...", "Squaring the Circle...", "Solving the Riemann Hypothesis...", "Done"]
+    StatusMessages = ["Calculating π...",
+                      "Squaring the Circle...", 
+                      "Solving the Riemann Hypothesis...",
+                      "Computing the Monster group M...",
+                      "Finding the Galois group of f(x)...",
+                      "Solving the Discrete Logarithm Problem...",
+                      "Done"]
     title = "Meile dVPN"
     k = 0
     j = 0
@@ -206,8 +213,25 @@ class PreLoadWindow(Screen):
     def build(self):
         yield 0.5
         # Schedule the functions to be called every n seconds
-        Clock.schedule_once(partial(self.NodeTree.get_nodes, "13s"), 3)
-        Clock.schedule_interval(self.update_status_text, 0.6)
+        #Clock.schedule_once(partial(self.NodeTree.get_nodes, "13s"), 3)
+        #Clock.schedule_interval(self.update_status_text, 0.6)
+        self.runNodeThread()
+        
+    @delayable
+    def runNodeThread(self):
+        yield 0.6
+        thread2 = Thread(target=lambda: self.progress_load())
+        thread2.start()
+        thread = Thread(target=lambda: self.NodeTree.get_nodes("13s"))
+        thread.start()
+        Clock.schedule_interval(partial(self.update_status_text, thread), 1.6)
+    
+    @delayable
+    def progress_load(self):
+        for k in range(1,1000):
+            yield 0.0365
+            self.manager.get_screen(WindowNames.PRELOAD).ids.pb.value += 0.001
+            
     def RewriteBIN(self):
         MeileConfig = MeileGuiConfig()
         MeileConfig.rewrite_bin()
@@ -261,21 +285,22 @@ class PreLoadWindow(Screen):
         
    
     @delayable
-    def update_status_text(self, dt):
+    def update_status_text(self, t, dt):
         go_button = self.manager.get_screen(WindowNames.PRELOAD).ids.go_button
 
         yield 1.0
         
-        if self.j == 2:
-            self.manager.get_screen(WindowNames.PRELOAD).status_text = self.StatusMessages[3]
+        if not t.is_alive():
+            self.manager.get_screen(WindowNames.PRELOAD).status_text = self.StatusMessages[6]
+            self.manager.get_screen(WindowNames.PRELOAD).ids.pb.value = 1
             go_button.opacity = 1
             go_button.disabled = False
 
             return
             
-        if self.k == 3:
+        if self.k == 6:
             self.k = 0
-            self.j += 1
+            
         else:
             self.manager.get_screen(WindowNames.PRELOAD).status_text = self.StatusMessages[self.k]
             self.k += 1
@@ -967,10 +992,11 @@ class WalletScreen(Screen):
 
     # duplicate of MainWindow.wallet_restore
     def wallet_restore(self, new_wallet = False, _ = None):
-        # self.NewWallet will be read by WalletRestore in order to determine ui login
-        self.NewWallet = new_wallet
+        # Use Main_WIndow NewWallet boolean
+        Meile.app.manager.get_screen(WindowNames.MAIN_WINDOW).NewWallet = copy.deepcopy(new_wallet)
         self.closeDialog(None)  # arg is required (?)
 
+        Meile.app.root.remove_widget(self)
         Meile.app.manager.add_widget(WalletRestore(name=WindowNames.WALLET_RESTORE))
         Meile.app.root.transition = SlideTransition(direction = "right")
         Meile.app.root.current = WindowNames.WALLET_RESTORE
