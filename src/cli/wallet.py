@@ -32,6 +32,7 @@ sentinel_connect_bash = MeileConfig.resource_path("bin/sentinel-connect.sh")
 v2ray_tun2routes_connect_bash = MeileConfig.resource_path("bin/tun2routes.sh")
 
 class HandleWalletFunctions():
+    connected =  {'v2ray_pid' : None, 'result' : False, 'status' : None}
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -287,7 +288,7 @@ class HandleWalletFunctions():
         return l
         
     def connect(self, ID, address, type):
-        
+        log = open(ConfParams.CONNECTIONINFO, 'w+')
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
         KEYNAME = CONFIG['wallet'].get('keyname', '')
@@ -306,15 +307,24 @@ class HandleWalletFunctions():
     
         connCMD = sentinelbash + ' "%s"' % cliCMD + ' "%s"' % PASSWORD
         print(connCMD)
-    
         try:
-            proc1 = subprocess.Popen(connCMD, shell=True)
+            proc1 = subprocess.Popen(connCMD, stdout=log, stderr=log,shell=True)
             proc1.wait(timeout=60)
             pid1 = proc1.pid
         except subprocess.TimeoutExpired as e:
             print(str(e))
             pass
         proc_out,proc_err = proc1.communicate()
+        log.flush()
+        log.close()
+        with open(ConfParams.CONNECTIONINFO, "r") as connection_file:
+            lines = connection_file.readlines()
+            
+            for l in lines:
+                if "Error" in l and not "v2ray" in l and not "127" in l:
+                    self.connected = {"v2ray_pid" : None,  "result": False, "status" : l}
+                    
+        connection_file.close()
         
         if type == "WireGuard":
             connectBASH = [sentinel_connect_bash]
@@ -325,30 +335,28 @@ class HandleWalletFunctions():
             
             
             if psutil.net_if_addrs().get("utun3"):
-                return {"v2ray_pid" : None, "tun2socks_pid" : None, "result": True}
+                self.connected = {"v2ray_pid" : None,  "result": True, "status" : "wg99"}
+                return
             else:
-                return {"v2ray_pid" : None, "tun2socks_pid" : None, "result": False}
+                self.connected = {"v2ray_pid" : None,  "result": False, "status" : "Error bringing up wireguard interface"}
+                return
         else: 
             V2Ray = V2RayHandler(v2ray_tun2routes_connect_bash + " up")
             V2Ray.start_daemon() 
-            sleep(25)
+            sleep(20)
             
             if psutil.net_if_addrs().get("utun123"):
-                v2raydict = {"v2ray_pid" : V2Ray.v2ray_pid, "result": True}
-                print(v2raydict) 
-                return v2raydict
+                self.connected = {"v2ray_pid" : V2Ray.v2ray_pid, "result": True, "status" : "utun123"}
+                return
             else:
                 try: 
                     V2Ray.v2ray_script = v2ray_tun2routes_connect_bash + " down"
                     V2Ray.kill_daemon()
-                    #V2Ray.kill_daemon()
-                    #Tun2Socks.kill_daemon()
                 except Exception as e: 
                     print(str(e))
-                    
-                v2raydict = {"v2ray_pid" : V2Ray.v2ray_pid,  "result": False}
-                print(v2raydict)
-                return v2raydict
+            
+                self.connected = {"v2ray_pid" : V2Ray.v2ray_pid,  "result": False, "status": "Error connecting to v2ray node: utun123" }
+                return
             
     def get_balance(self, address):
         Request = HTTPRequests.MakeRequest()

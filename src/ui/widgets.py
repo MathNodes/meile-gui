@@ -24,6 +24,7 @@ from kivyoav.delayed import delayable
 import re
 import psutil
 from os import path
+from threading import Thread
 from subprocess import Popen, TimeoutExpired
 from functools import partial
 from time import sleep
@@ -38,7 +39,7 @@ from typedef.win import CoinsList, WindowNames
 from conf.meile_config import MeileGuiConfig
 from cli.wallet import HandleWalletFunctions
 from adapters import HTTPRequests
-from ui.interfaces import TXContent
+from ui.interfaces import TXContent, ConnectionDialog
 from coin_api.get_price import GetPriceAPI
 from adapters.ChangeDNS import ChangeDNS
 
@@ -276,7 +277,7 @@ class SubscribeContent(BoxLayout):
             coin   = "dvpn"
         
         CoinPriceAPI = GetPriceAPI()        
-        PriceDict = asyncio.run(CoinPriceAPI.get_usd(coin))
+        PriceDict = CoinPriceAPI.get_usd(coin)
         self.coin_price = PriceDict['price']
                 
         self.ids.usd_price.text = '$' + str(round(float(self.coin_price) * float(amt),3))
@@ -569,6 +570,16 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
         self.dialog = MDDialog(title=title_text,md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR))
         self.dialog.open()
         
+    def set_conn_dialog(self, cd, title):
+        self.dialog = None
+        self.dialog = MDDialog(
+                        title=title,
+                        type="custom",
+                        content_cls=cd,
+                        md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
+                    )
+        self.dialog.open() 
+        
     def remove_loading_widget(self):
         try:
             self.dialog.dismiss()
@@ -646,6 +657,21 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
                     ],
                 )
             self.dialog.open()
+            
+    def ping(self):
+        UUID = Meile.app.root.get_screen(WindowNames.PRELOAD).UUID
+        try:
+            uuid_dict = {'uuid' : "%s" % UUID, 'os' : "W"}
+            Request = HTTPRequests.MakeRequest(TIMEOUT=3)
+            http = Request.hadapter()
+            ping = http.post(HTTParams.SERVER_URL + HTTParams.API_PING_ENDPOINT, json=uuid_dict)
+            if ping.status_code == 200:
+                print('ping')
+            else:
+                print("noping")
+        except Exception as e:
+            print(str(e))
+            pass
        
     @delayable
     def connect_to_node(self, ID, naddress, moniker, type, switchValue, **kwargs):
@@ -671,72 +697,85 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
             return
         
         if switchValue:
-            self.add_loading_popup("Connecting...")
-            
-            yield 0.6
-            UUID = Meile.app.root.get_screen(WindowNames.PRELOAD).UUID
-            try:
-                uuid_dict = {'uuid' : "%s" % UUID, 'os' : "M"}
-                Request = HTTPRequests.MakeRequest()
-                http = Request.hadapter()
-                #ping = requests.post(HTTParams.SERVER_URL + HTTParams.API_PING_ENDPOINT, json=uuid_dict, timeout=HTTParams.TIMEOUT)
-                ping = http.post(HTTParams.SERVER_URL + HTTParams.API_PING_ENDPOINT, json=uuid_dict)
-                if ping.status_code == 200:
-                    print('ping')
-                else:
-                    print("noping")
-            except Exception as e:
-                print(str(e))
-                pass
+            cd = ConnectionDialog()
+            self.set_conn_dialog(cd, "Connecting...")
+            yield 0.3
             
             hwf = HandleWalletFunctions()
-            connected = hwf.connect(ID, naddress, type)
-            mw.ConnectedDict = deepcopy(connected)
-            
-            if connected['result']:
-                
+            thread = Thread(target=lambda: self.ping())
+            thread.start()
+            t = Thread(target=lambda: hwf.connect(ID, naddress, type))
+            t.start()
 
-                mw.CONNECTED                  = True
-                mw.NodeSwitch['moniker']      = moniker
-                mw.NodeSwitch['node']         = naddress
-                mw.NodeSwitch['switch']       = True
-                mw.NodeSwitch['id']           = ID
-                mw.NodeSwitch['allocated']    = self.allocated_text
-                mw.NodeSwitch['consumed']     = self.consumed_text
-                mw.NodeSwitch['og_consumed']  = deepcopy(self.consumed_text) 
-                mw.NodeSwitch['expirary']     = self.expirary_date
-                
-                
-                # Determine if node has been connected to and if so report last data usage stats
-                # otherwise start a fresh count
-                if not ID in mw.PersistentBandwidth:
-                    mw.PersistentBandwidth[ID] = mw.NodeSwitch
+            while t.is_alive():
+                yield 0.0365
+                if "WireGuard" not in type:
+                    cd.ids.pb.value += 0.001
                 else:
-                    mw.PersistentBandwidth[ID]['og_consumed'] = deepcopy(mw.PersistentBandwidth[ID]['consumed'])
-                
-                # Check if subscription is hourly
-                if "hrs" in self.allocated_text:
-                    self.setQuotaClock(ID, naddress, True)
+                    cd.ids.pb.value += 0.00175
+
+            cd.ids.pb.value = 1
+            mw.ConnectedDict = deepcopy(hwf.connected)
+            
+            yield 0.420
+            try:
+                if hwf.connected['result']:
+                    
+    
+                    mw.CONNECTED                  = True
+                    mw.NodeSwitch['moniker']      = moniker
+                    mw.NodeSwitch['node']         = naddress
+                    mw.NodeSwitch['switch']       = True
+                    mw.NodeSwitch['id']           = ID
+                    mw.NodeSwitch['allocated']    = self.allocated_text
+                    mw.NodeSwitch['consumed']     = self.consumed_text
+                    mw.NodeSwitch['og_consumed']  = deepcopy(self.consumed_text) 
+                    mw.NodeSwitch['expirary']     = self.expirary_date
+                    
+                    
+                    # Determine if node has been connected to and if so report last data usage stats
+                    # otherwise start a fresh count
+                    if not ID in mw.PersistentBandwidth:
+                        mw.PersistentBandwidth[ID] = mw.NodeSwitch
+                    else:
+                        mw.PersistentBandwidth[ID]['og_consumed'] = deepcopy(mw.PersistentBandwidth[ID]['consumed'])
+                    
+                    # Check if subscription is hourly
+                    if "hrs" in self.allocated_text:
+                        self.setQuotaClock(ID, naddress, True)
+                    else:
+                        self.setQuotaClock(ID, naddress, False)
+                    
+                    self.remove_loading_widget()
+                    self.dialog = MDDialog(
+                        title="Connected!",
+                        md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
+                        buttons=[
+                                MDFlatButton(
+                                    text="OK",
+                                    theme_text_color="Custom",
+                                    text_color=self.theme_cls.primary_color,
+                                    on_release=partial(self.call_ip_get, True, moniker)
+                                ),])
+                    self.dialog.open()
+                    
                 else:
-                    self.setQuotaClock(ID, naddress, False)
-                
+                    self.remove_loading_widget()
+                    self.dialog = MDDialog(
+                        title="Something went wrong. Not connected: %s" % hwf.connected['status'],
+                        md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
+                        buttons=[
+                                MDFlatButton(
+                                    text="OK",
+                                    theme_text_color="Custom",
+                                    text_color=self.theme_cls.primary_color,
+                                    on_release=partial(self.call_ip_get, False, "")
+                                ),])
+                    self.dialog.open()
+            except TypeError:
                 self.remove_loading_widget()
                 self.dialog = MDDialog(
-                    title="Connected!",
-                    md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
-                    buttons=[
-                            MDFlatButton(
-                                text="OK",
-                                theme_text_color="Custom",
-                                text_color=self.theme_cls.primary_color,
-                                on_release=partial(self.call_ip_get, True, moniker)
-                            ),])
-                self.dialog.open()
-                
-            else:
-                self.remove_loading_widget()
-                self.dialog = MDDialog(
-                    title="Something went wrong. Not connected",
+                    title="Something went wrong. Not connected: User cancelled",
                     md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
                     buttons=[
                             MDFlatButton(
