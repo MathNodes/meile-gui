@@ -1,5 +1,16 @@
 CHANGELOG
 ========================
+# v0.14.2.0 (24/11/2023)
+* NEW: Non-blocking threading on load screen and connection dialog
+* NEW: sentinel-cli (MathNodes) v0.3.2 - fixes inactive_pending
+* NEW: New wallet implementation by @Tkd-Alex
+* UPDATE: handling of self.connected in wallet.py and widgets.py
+* UPDATE: CoinStats.app API
+* UPDATE: remove async from get_price()
+* FIX: "The Netherlands" node country anomoly
+* FIX: v2ray connection issues in Linux
+* FIX: IBC Payments from Wallet
+
 # v0.14.0.6 (13/10/2023)
 * FIX: Racially deprecated "whitelist" param in HTTPRequests adapter
 * FIX: Deprecated ImageDraw.Draw.textsize() to textbbox()
