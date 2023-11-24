@@ -1,5 +1,13 @@
 CHANGELOG
 ========================
+# v1.7.14 (24/11/2023)
+* NEW: Non-blocking threading on load screen and connection dialog
+* NEW: sentinel-cli (MathNodes) v0.3.2 - fixes inactive_pending
+* UPDATE: handling of self.connected in wallet.py and widgets.py
+* UPDATE: remove async from get_price()
+* FIX: "The Netherlands" node country anomoly
+
+
 # v1.7.12 (05/11/2023)
 * NEW: New Wallet implementation (@TkdAlex)
 * NEW: MathNodes sentinel-cli mod
