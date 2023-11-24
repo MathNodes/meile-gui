@@ -35,6 +35,15 @@ WindowManager:
             text: "Let's Go"
             pos_hint: {"center_x" : .5, "y" : .05}
             on_press: root.switch_window()
+            
+        MDProgressBar:
+            id: pb
+            value: 0.01
+            min: 0
+            max: 1
+            color: get_color_from_hex("#fcb711")
+            pos_hint: {'center_x' : .5, "y" : .275}
+            size_hint_x: .5
 
 <MainWindow>:
     name: "main"
@@ -288,7 +297,7 @@ WindowManager:
                 pos_hint: {'x' : .1 , 'top': .9 }
                 text: "REFRESH"
                 on_release: root.refresh_wallet()
-
+                
             MDRaisedButton:
                 pos_hint: {'x' : .1 , 'top': .83 }
                 text: "NEW WALLET"
@@ -1018,6 +1027,19 @@ WindowManager:
 
 
 <Tab>
+
+<ConnectionDialog>
+    size_hint_y: None
+    height: "7dp"
+
+    MDProgressBar:
+        id: pb
+        value: 0.01
+        min: 0
+        max: 1
+        color: get_color_from_hex("#fcb711")
+        pos_hint: {'center_x' : .5, "y" : .5}
+        size_hint_x: .85
 
 <WalletInfoContent>
     orientation: "vertical"

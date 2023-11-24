@@ -23,6 +23,8 @@ class OurWorld():
     
     CZ      = "Czechia"
     CZ_FULL = "Czech Republic" 
+    NL      = "Netherlands"
+    NL_FULL = "The Netherlands"
     
     CountryLatLong = {'Algeria': [28.0000272, 2.9999825],
                       'Angola': [-11.8775768, 17.5691241], 

@@ -66,7 +66,7 @@ class QRCode():
         robotoFont = ImageFont.truetype(self.MeileConfig.resource_path('../utils/fonts/Roboto-BoldItalic.ttf'), fontSize)
     
         draw = ImageDraw.Draw(background)
-        _,_,w,h  = draw.textbbox((0,0),str(DepositAddress), font=robotoFont)
+        w,h  = draw.textsize(DepositAddress)
         draw.text(((QRimg.size[0]+15 - w)/2,QRimg.size[1]-2),DepositAddress, (0,0,0), font=robotoFont)
         
         background.paste(QRimg, (0,0))

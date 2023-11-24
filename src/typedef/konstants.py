@@ -1,5 +1,13 @@
 from os import path, environ
 
+
+class Arch():
+    LINUX   = "Linux"
+    WINDOWS = "Windows"
+    OSX     = "Darwin"
+    X86     = "x86_64"
+    ARM     = "arm64"
+    
 class ConfParams():
     USER             = environ['SUDO_USER'] if 'SUDO_USER' in environ else environ['USER']
     PATH             = environ['PATH']
@@ -54,10 +62,11 @@ class IBCTokens():
     UNITTOKEN    = {'uscrt' : 'scrt', 'uatom' : 'atom' , 'uosmo' : 'osmo', 'udec' : 'dec', 'udvpn' : 'dvpn', 'tsent' : 'tsent'}
     IBCUNITTOKEN = {'uscrt' : IBCSCRT, 'uatom' : IBCATOM , 'uosmo' : IBCOSMO, 'udec' : IBCDEC, 'udvpn' : 'udvpn', 'tsent' : 'tsent'}
     mu_coins     = ["udvpn", "uscrt", "uosmo", "uatom", "udec"]
+    CSAPPMAP     = {'dec' : 'decentr', 'atom' : 'cosmos', 'scrt' : 'secret', 'osmo' : 'osmosis', 'dvpn' : 'sentinel'}
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
-    VERSION = "v0.14.1.0"
+    VERSION = "v0.14.2.0"
     
 class MeileColors():
     DIALOG_BG_COLOR          = "#121212"
