@@ -463,8 +463,9 @@ class HandleWalletFunctions():
             lines = connection_file.readlines()
             
             for l in lines:
-                if "Error" in l:
+                if "Error" in l and "inactive_pending" not in l:
                     self.connected = {"v2ray_pid" : None,  "result": False, "status" : l}
+                    return
                 
         connection_file.close()           
         sleep(2)

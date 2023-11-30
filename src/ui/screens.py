@@ -36,6 +36,8 @@ import requests
 import sys
 import copy 
 import re
+import os 
+import stat
 from shutil import rmtree
 from time import sleep
 from functools import partial
@@ -944,14 +946,24 @@ class WalletScreen(Screen):
             ],
         )
         self.dialog.open()
-
+    
+    def rmtree(self, top):
+        for root, dirs, files in os.walk(top, topdown=False):
+            for name in files:
+                filename = os.path.join(root, name)
+                os.chmod(filename, stat.S_IWUSR)
+                os.remove(filename)
+            for name in dirs:
+                os.rmdir(os.path.join(root, name))
+        os.rmdir(top)
+    
     def destroy_wallet_open_wallet_dialog(self, _):
         keyring_fpath = path.join(MeileGuiConfig.BASEDIR, "keyring-file")
         img_fpath = path.join(MeileGuiConfig.BASEDIR, "img")
 
         for folder_path in [keyring_fpath, img_fpath]:
             if path.exists(folder_path):
-                rmtree(folder_path)
+                self.rmtree(folder_path)
 
         # Remove also the [wallet] section in config.ini
         # So, if the keyring-file is deleted and the use close accidentaly the application

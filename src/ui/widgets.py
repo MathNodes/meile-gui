@@ -719,11 +719,11 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
             t = Thread(target=lambda: hwf.connect(ID, naddress, type))
             t.start()
             
-            mw.ConnectedDict = deepcopy(hwf.connected)
-            
             while t.is_alive():
                 yield 0.0365
                 cd.ids.pb.value += 0.00175
+            
+            mw.ConnectedDict = deepcopy(hwf.connected)
             
             cd.ids.pb.value = 1
             yield 0.420
@@ -770,7 +770,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
                 else:
                     self.remove_loading_widget()
                     self.dialog = MDDialog(
-                        title="Something went wrong. Not connected: %s" % connected['status'],
+                        title="Something went wrong. Not connected: %s" % hwf.connected['status'],
                         md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
                         buttons=[
                                 MDFlatButton(
@@ -780,7 +780,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
                                     on_release=partial(self.call_ip_get, False, "")
                                 ),])
                     self.dialog.open()
-            except TypeError:
+            except (TypeError, KeyError) as e:
                 self.remove_loading_widget()
                 self.dialog = MDDialog(
                     title="Something went wrong. Not connected: User cancelled",
