@@ -49,6 +49,8 @@ from shutil import rmtree
 from unidecode import unidecode
 from datetime import datetime
 
+from treelib.exceptions import NodeIDAbsentError
+
 class WalletRestore(Screen):
     screemanager = ObjectProperty()
     
@@ -259,7 +261,7 @@ class PreLoadWindow(Screen):
         yield 0.6
         thread2 = Thread(target=lambda: self.progress_load())
         thread2.start()
-        thread = Thread(target=lambda: self.NodeTree.get_nodes("10s"))
+        thread = Thread(target=lambda: self.NodeTree.get_nodes("13s"))
         thread.start()
         Clock.schedule_interval(partial(self.update_status_text, thread), 1.6)
     
@@ -1246,9 +1248,14 @@ class NodeScreen(Screen):
         
         self.NodeTree = node_tree
         
-        
         floc = "imgs/"
-        CountryNodes = self.NodeTree.NodeTree.children(country)
+        
+        try:
+            CountryNodes = self.NodeTree.NodeTree.children(country)
+        except NodeIDAbsentError as e:
+            print(str(e))
+            return
+        
         
         if sort == Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).SortOptions[1]:
             self.SortNodesByMoniker(CountryNodes)
