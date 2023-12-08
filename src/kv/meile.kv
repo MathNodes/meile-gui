@@ -1191,13 +1191,12 @@ WindowManager:
     MDBoxLayout:
         orientation: "horizontal"
         MDSlider:
-            
             id: slider1
             min: 1
             max: 314
             value: 34
             on_value: root.parse_coin_deposit(root.ids.drop_item.current_item)
-            on_touch_up: root.get_usd()
+            on_touch_move: root.get_usd()
             
         MDLabel:
             id: slider1_value
@@ -1240,6 +1239,8 @@ WindowManager:
             font_size: "14sp"
             font_name: root.get_font()
             text_color: get_color_from_hex("#fcb711")
+            
+
             
 <ProcessingSubDialog>
     orientation: "vertical"

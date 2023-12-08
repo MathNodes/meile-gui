@@ -18,6 +18,7 @@ from kivymd.uix.list import OneLineIconListItem
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.behaviors import HoverBehavior
 from kivymd.uix.behaviors.elevation import RectangularElevationBehavior
+from kivymd.uix.slider import MDSlider
 from kivymd.theming import ThemableBehavior
 from kivyoav.delayed import delayable
 
@@ -157,7 +158,7 @@ class SubTypeDialog(BoxLayout):
             )
             self.rvclass.dialog.open()
             
-            
+                
 class SubscribeContent(BoxLayout):
     price_text = StringProperty()
     moniker = StringProperty()
@@ -172,7 +173,9 @@ class SubscribeContent(BoxLayout):
         self.moniker    = moniker
         self.naddress   = naddress
         self.hourly     = hourly
-        print(f"DATA:\n{self.price_text}\n{self.moniker}\n{self.naddress}")
+        #print(f"DATA:\n{self.price_text}\n{self.moniker}\n{self.naddress}")
+        self.price_api = GetPriceAPI()
+        self.price_cache = {}
         self.parse_coin_deposit(CoinsList.ibc_mu_coins[0])
         
         menu_items = [
@@ -265,6 +268,17 @@ class SubscribeContent(BoxLayout):
                 return " GB" 
         except AttributeError:
             return " GB"
+        
+    def refresh_price(self, mu_coin: str = "dvpn", cache: int = 30):
+        # Need check on cache or trought GetPrice api
+        # We don't need to call the price api if the cache is younger that 30s
+
+        if mu_coin not in self.price_cache or time.time() - self.price_cache[mu_coin]["time"] > cache:
+            response = self.price_api.get_usd(mu_coin)
+            self.price_cache[mu_coin] = {
+                "price": float(response['price']),
+                "time": time.time()
+            }
     
     # Should be async
     def get_usd(self):
@@ -276,13 +290,10 @@ class SubscribeContent(BoxLayout):
             amt    = 0.0
             coin   = "dvpn"
         
-        CoinPriceAPI = GetPriceAPI()        
-        PriceDict = CoinPriceAPI.get_usd(coin)
-        self.coin_price = PriceDict['price']
-                
-        self.ids.usd_price.text = '$' + str(round(float(self.coin_price) * float(amt),3))
+        self.refresh_price(coin, cache=30)
+        self.ids.usd_price.text = '$' + str(round(float(self.price_cache[coin]["price"]) * float(amt),3))
 
-        return PriceDict['success']
+        return True
     
     
 class ProcessingSubDialog(BoxLayout):
