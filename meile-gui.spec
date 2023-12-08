@@ -67,5 +67,5 @@ app = BUNDLE(
     name='meile-gui.app',
     icon='icon.icns',
     bundle_identifier='com.mathnodes.meile',
-    version='1.7.16',
+    version='1.7.17',
 )
