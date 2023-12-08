@@ -1,16 +1,46 @@
 CHANGELOG
 ========================
 
+# v1.7.17 (08/12/2023)
+
+* NEW: Implement @TKd-Alex Price Cache for Subscription Dialog
+
+* FIX: Reduce API queries in coin price by half 
+
+* FIX: NodeIDAbsent Exception Handling on Pin Map Country not found Crash
+
+# v1.7.16 (05/12/2023)
+
+* FIX: "North Macedonia" country AWOC bug
+
+# v1.7.15 (01/12/2023)
+
+- FIX: Crash on destroy/create/restore new wallet due to read-only permission error of keyring-dir (WINDOWS)
+
+# v1.7.14 (24/11/2023)
+
+* NEW: Non-blocking threading on load screen and connection dialog
+* NEW: sentinel-cli (MathNodes) v0.3.2 - fixes inactive_pending
+* UPDATE: handling of self.connected in wallet.py and widgets.py
+* UPDATE: remove async from get_price()
+* FIX: "The Netherlands" node country anomoly
 
 # v1.7.12 (05/11/2023)
 
 * NEW: New Wallet implementation (@TkdAlex)
+
 * NEW: MathNodes sentinel-cli mod
+
 * NEW: Non-blocking progress bar in PreloadScreen() (Windows & OS X)
+
 * UPDATE: CoinStats.app API for coin prices
+
 * UPDATE: Add headers to HTTPRequests adapter
+
 * FIX: v2ray error message handling in Linux
+
 * FIX: IBC payment options in Linux
+
 * FIX: "inactive_pending" session errors by sentinel-cli mod# v1.7.12-rc0 (30/10/2023)
 
 * NEW: Added New Wallet Button and Code to create new wallet and replace old one. PR #56 - Tkd-Alex
