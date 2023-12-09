@@ -30,6 +30,7 @@ v2ray_tun2routes_connect_bash = MeileConfig.resource_path("../bin/routes.sh")
 
 
 class HandleWalletFunctions():
+    connected =  {'v2ray_pid' : None, 'result' : False, 'status' : None}
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -254,10 +255,19 @@ class HandleWalletFunctions():
  
         try: 
             tx = Transaction()
-            tx.add_message(MsgCancelRequest(frm=str(address), id=int(subId)))
-    
-            tx = prepare_and_broadcast_basic_transaction(client, tx, wallet)
-            tx.wait_to_complete()
+            try:
+                tx.add_message(MsgCancelRequest(frm=str(address), id=int(subId)))
+            except Exception as e1:
+                print(str(e1))
+                print("Error Failed on add_message")
+                
+                
+            try:
+                tx = prepare_and_broadcast_basic_transaction(client, tx, wallet)
+                tx.wait_to_complete()
+            except Exception as e2:
+                print("error on broadcasting transaction")
+                print(str(e2))
     
             tx_hash     = tx._tx_hash
             tx_response = tx._response.is_successful()
@@ -323,21 +333,25 @@ class HandleWalletFunctions():
             ofile.flush()
             ofile.close()
         except pexpect.exceptions.TIMEOUT:
-            return {"v2ray_pid" : None,  "result": False}
+            self.connected = {"v2ray_pid" : None,  "result": False, "status" : "Error running expect"}
+            return
         
         
         with open(ConfParams.CONNECTIONINFO, "r") as connection_file:
             lines = connection_file.readlines()
             
             for l in lines:
-                if "Error" in l and "v2ray" not in l:
-                    return {"v2ray_pid" : None,  "result": False, "status" : l}
+                if "Error" in l and "v2ray" not in l and "inactive_pending" not in l:
+                    self.connected = {"v2ray_pid" : None,  "result": False, "status" : l}
+                    return
             
         if type == "WireGuard":
             if psutil.net_if_addrs().get("wg99"):
-                return {"v2ray_pid" : None,  "result": True, "status" : "wg99"}
+                self.connected = {"v2ray_pid" : None,  "result": True, "status" : "wg99"}
+                return
             else:
-                return {"v2ray_pid" : None,  "result": False, "status" : "Error bringing up wireguard interface"}
+                self.connected = {"v2ray_pid" : None,  "result": False, "status" : "Error bringing up wireguard interface"}
+                return
         else: 
             TUNIFACE = False
             V2Ray = V2RayHandler(v2ray_tun2routes_connect_bash + " up")
@@ -350,9 +364,9 @@ class HandleWalletFunctions():
                     break
                 
             if TUNIFACE:
-                v2raydict = {"v2ray_pid" : V2Ray.v2ray_pid, "result": True, "status" : TUNIFACE}
-                print(v2raydict) 
-                return v2raydict
+                self.connected = {"v2ray_pid" : V2Ray.v2ray_pid, "result": True, "status" : TUNIFACE}
+                print(self.connected) 
+                return
             else:
                 try: 
                     V2Ray.v2ray_script = v2ray_tun2routes_connect_bash + " down"
@@ -362,9 +376,9 @@ class HandleWalletFunctions():
                 except Exception as e: 
                     print(str(e))
                     
-                v2raydict = {"v2ray_pid" : V2Ray.v2ray_pid,  "result": False, "status": "Error connecting to v2ray node: %s" % TUNIFACE}
-                print(v2raydict)
-                return v2raydict
+                self.connected = {"v2ray_pid" : V2Ray.v2ray_pid,  "result": False, "status": "Error connecting to v2ray node: %s" % TUNIFACE}
+                print(self.connected)
+                return
 
     def get_balance(self, address):
         Request = HTTPRequests.MakeRequest()
