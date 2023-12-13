@@ -1260,10 +1260,13 @@ class NodeScreen(Screen):
         super(NodeScreen, self).__init__()
         
         self.NodeTree = node_tree
-        
-        
         floc = "imgs/"
-        CountryNodes = self.NodeTree.NodeTree.children(country)
+        
+        try:
+            CountryNodes = self.NodeTree.NodeTree.children(country)
+        except NodeIDAbsentError as e:
+            print(str(e))
+            return
         
         if sort == Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).SortOptions[1]:
             self.SortNodesByMoniker(CountryNodes)

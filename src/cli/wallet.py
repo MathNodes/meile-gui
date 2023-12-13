@@ -27,8 +27,8 @@ from cosmpy.aerial.tx_helpers import TxResponse
 from cosmpy.aerial.client.utils import prepare_and_broadcast_basic_transaction
 
 MeileConfig  = MeileGuiConfig()
+
 sentinelcli  = path.join(MeileConfig.BASEBINDIR, 'sentinelcli.exe')
-#sentinelcli  = sentinelcli.replace('\\','/')
 gsudo        = path.join(MeileConfig.BASEBINDIR, 'gsudo.exe')
 v2ray_tun2routes_connect_bash = MeileConfig.resource_path("../bin/routes.sh")
 
@@ -44,9 +44,10 @@ class HandleWalletFunctions():
     def create(self, wallet_name, keyring_passphrase, seed_phrase):
         #sentinelcli = sentinelcli.replace('\\','\\\\')
         #rsentinelcli = sentinelcli.encode('unicode_escape')
-        SCMD = '%s keys add "%s" -i --keyring-backend file --keyring-dir %s' % (sentinelcli, wallet_name, ConfParams.KEYRINGDIR)
-        DUPWALLET = False 
         
+        SCMD = '"%s" keys add "%s" -i --keyring-backend file --keyring-dir "%s"' % (sentinelcli, wallet_name, ConfParams.KEYRINGDIR)
+        DUPWALLET = False 
+        os.environ['WEXPECT_LOGGER_LEVEL'] = 'INFO'
         ofile =  open(ConfParams.WALLETINFO, "w")    
         
         ''' Process to handle wallet in sentinel-cli '''
@@ -145,7 +146,7 @@ class HandleWalletFunctions():
         DENOM = self.DetermineDenom(DEPOSIT)
         
         if hourly:
-            SCMD = "%s tx node subscribe --yes --keyring-backend file --keyring-dir %s --chain-id %s --node %s --gas-prices %s --gas %d --gas-adjustment %f --from '%s' '%s' 0 '%s' %s"  % (sentinelcli,
+            SCMD = '"%s" tx node subscribe --yes --keyring-backend file --keyring-dir "%s" --chain-id %s --node %s --gas-prices %s --gas %d --gas-adjustment %f --from "%s" "%s" 0 "%s" %s'  % (sentinelcli,
                                                                                                                                                                                             ConfParams.KEYRINGDIR, 
                                                                                                                                                                                             ConfParams.CHAINID, 
                                                                                                                                                                                             self.RPC,
@@ -157,7 +158,7 @@ class HandleWalletFunctions():
                                                                                                                                                                                             GB,
                                                                                                                                                                                             DENOM)    
         else:
-            SCMD = "%s tx node subscribe --yes --keyring-backend file --keyring-dir %s --chain-id %s --node %s --gas-prices %s --gas %d --gas-adjustment %f --from '%s' '%s' '%s' 0 %s"  % (sentinelcli,
+            SCMD = '"%s" tx node subscribe --yes --keyring-backend file --keyring-dir "%s" --chain-id %s --node %s --gas-prices %s --gas %d --gas-adjustment %f --from "%s" "%s" "%s" 0 %s'  % (sentinelcli,
                                                                                                                                                                                             ConfParams.KEYRINGDIR, 
                                                                                                                                                                                             ConfParams.CHAINID, 
                                                                                                                                                                                             self.RPC,
@@ -262,7 +263,7 @@ class HandleWalletFunctions():
 
         ofile = open(ConfParams.USUBSCRIBEINFO, "w")
 
-        unsubCMD = "%s keys export --unarmored-hex --unsafe --keyring-backend file --keyring-dir %s '%s'" % (sentinelcli,  ConfParams.KEYRINGDIR, KEYNAME)
+        unsubCMD = '"%s" keys export --unarmored-hex --unsafe --keyring-backend file --keyring-dir "%s" "%s"' % (sentinelcli,  ConfParams.KEYRINGDIR, KEYNAME)
         try:
             
             ''' 
@@ -411,7 +412,7 @@ class HandleWalletFunctions():
         PASSWORD = CONFIG['wallet'].get('password', '')
         KEYNAME = CONFIG['wallet'].get('keyname', '')
         self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
-        connCMD = "%s %s connect --keyring-backend file --keyring-dir %s --chain-id %s --node %s --gas-prices %s --gas %d --gas-adjustment %f --yes --from '%s' %s %s" % (gsudo, 
+        connCMD = '"%s" "%s" connect --keyring-backend file --keyring-dir "%s" --chain-id %s --node %s --gas-prices %s --gas %d --gas-adjustment %f --yes --from "%s" %s %s' % (gsudo, 
                                                                                                                                                                           sentinelcli, 
                                                                                                                                                                           ConfParams.KEYRINGDIR,
                                                                                                                                                                           ConfParams.CHAINID, 
@@ -472,14 +473,9 @@ class HandleWalletFunctions():
         
         if type == "WireGuard":
             if psutil.net_if_addrs().get("wg99"):
-                chdir(MeileConfig.BASEDIR)
                 self.connected = {"v2ray_pid" : None,  "result": True, "status" : "wg99"}
-                return
-            
             else:
-                chdir(MeileConfig.BASEDIR)
                 self.connected = {"v2ray_pid" : None,  "result": False, "status" : "Error bringing up wireguard interface"}
-                return
         else: 
             TUNIFACE = False
             V2Ray = V2RayHandler(v2ray_tun2routes_connect_bash + " up")
@@ -493,10 +489,8 @@ class HandleWalletFunctions():
                 
             if TUNIFACE:
                 v2raydict = {"v2ray_pid" : V2Ray.v2ray_pid, "result": True, "status" : TUNIFACE}
-                print(v2raydict)
-                chdir(MeileConfig.BASEDIR) 
+                print(v2raydict) 
                 self.connected =  v2raydict
-                return
             else:
                 try: 
                     V2Ray.v2ray_script = v2ray_tun2routes_connect_bash + " down"
@@ -506,9 +500,10 @@ class HandleWalletFunctions():
                     
                 v2raydict = {"v2ray_pid" : V2Ray.v2ray_pid,  "result": False, "status": "Error connecting to v2ray node: %s" % TUNIFACE}
                 print(v2raydict)
-                chdir(MeileConfig.BASEDIR)
                 self.connected = v2raydict
-                return
+                
+        chdir(MeileConfig.BASEDIR)
+        return
         
     def get_balance(self, address):
         Request = HTTPRequests.MakeRequest()

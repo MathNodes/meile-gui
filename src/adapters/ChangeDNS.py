@@ -62,13 +62,6 @@ class ChangeDNS():
         elif pltfrm == "Windows":
             gsudo = path.join(MeileConfig.BASEBINDIR, "gsudo.exe")
 
-            """
-            cmd = "netsh interface ip show config"
-            proc = Popen(cmd, shell=True, stdout=PIPE)
-            proc.wait(timeout=60)
-            proc_out, proc_err = proc.communicate()
-            """
-
             for interface in psutil.net_if_addrs().keys():
                 if "tun" in interface.lower() or "wg99" in interface.lower():
                     cmd = [

@@ -227,19 +227,6 @@ class FiatInterface(Screen):
          
     def get_token_price(self, token):
         
-        '''
-        cg_api_keyword = self.CoinGeckoAPI[self.TokenOptions[0]]
-        
-        for key,value in self.CoinGeckoAPI.items():
-            if token == key:
-                cg_api_keyword = value
-        
-        try: 
-            cg = CoinGeckoAPI()
-            cg_price = cg.get_price(ids=[cg_api_keyword], vs_currencies='usd')
-            token_price = cg_price[cg_api_keyword]['usd']
-        '''
-        
         api = GetPriceAPI()
         
         try:

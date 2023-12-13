@@ -180,7 +180,9 @@ class SubscribeContent(BoxLayout):
         self.moniker    = moniker
         self.naddress   = naddress
         self.hourly     = hourly
-        print(f"DATA:\n{self.price_text}\n{self.moniker}\n{self.naddress}")
+        self.price_api = GetPriceAPI()
+        self.price_cache = {}
+        
         self.parse_coin_deposit(CoinsList.ibc_mu_coins[0])
         
         menu_items = [
@@ -273,9 +275,19 @@ class SubscribeContent(BoxLayout):
             else:
                 return " GB" 
         except AttributeError:
-            return " GB" 
+            return " GB"
+         
+    def refresh_price(self, mu_coin: str = "dvpn", cache: int = 60):
+        # Need check on cache or trought GetPrice api
+        # We don't need to call the price api if the cache is younger that 30s
+
+        if mu_coin not in self.price_cache or time.time() - self.price_cache[mu_coin]["time"] > cache:
+            response = self.price_api.get_usd(mu_coin)
+            self.price_cache[mu_coin] = {
+                "price": float(response['price']),
+                "time": time.time()
+            }
     
-    # Should be async
     def get_usd(self):
         deposit_ret = self.return_deposit_text()
         match = re.match(r"([0-9]+.[0-9]+)([a-z]+)", deposit_ret[0], re.I)
@@ -285,14 +297,10 @@ class SubscribeContent(BoxLayout):
             amt    = 0.0
             coin   = "dvpn"
         
-        CoinPriceAPI = GetPriceAPI()        
-        PriceDict = CoinPriceAPI.get_usd(coin)
-        self.coin_price = PriceDict['price']
+        self.refresh_price(coin, cache=60)
+        self.ids.usd_price.text = '$' + str(round(float(self.price_cache[coin]["price"]) * float(amt),3))
 
-
-        self.ids.usd_price.text = '$' + str(round(float(self.coin_price) * float(amt),3))
-
-        return PriceDict['success']
+        return True
 
 class ProcessingSubDialog(BoxLayout):
     moniker = StringProperty()

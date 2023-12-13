@@ -33,8 +33,7 @@ class V2RayHandler():
         
         print("Starting v2ray service...")
         MeileConfig = MeileGuiConfig()
-        routes_bat = path.join(MeileConfig.BASEBINDIR, 'routes.bat')
-        
+        routes_bat = 'routes.bat'
         gateways = netifaces.gateways()
         
         # This is a little tricky on windows, we may be able to use instead:
@@ -48,8 +47,8 @@ class V2RayHandler():
         
         batfile = open(routes_bat, 'w')
         
-        #batfile.write('START /B %s/%s run -c %s/v2ray_config.json' % (MeileConfig.BASEBINDIR, self.v2rayproc, MeileConfig.SENTINELDIR))
-        batfile.write('START /B %s/%s -device tun://tun00 -proxy socks5://127.0.0.1:1080\n' % (MeileConfig.BASEBINDIR,self.tunproc))
+        batfile.write('CD "%s"\n' % MeileConfig.BASEBINDIR)
+        batfile.write('START /B %s -device tun://tun00 -proxy socks5://127.0.0.1:1080"\n' % self.tunproc)
         batfile.write('timeout /t 5\n')
         batfile.write('netsh interface ip set address "tun00" static address=10.10.10.2 mask=255.255.255.0 gateway=10.10.10.1\n')
         batfile.write('netsh interface ip set dns name="tun00" static 1.1.1.1\n')
@@ -79,7 +78,7 @@ class V2RayHandler():
         #default_gateway = gateways['default'][netifaces.AF_INET][0]
         #wifidx = self.get_primary_if_idx(netifaces.gateways()['default'][netifaces.AF_INET][1])
         
-        routes_bat = path.join(MeileConfig.BASEBINDIR, 'delroutes.bat')
+        routes_bat = 'delroutes.bat'
         
         batfile = open(routes_bat, 'w')
         

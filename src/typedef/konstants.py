@@ -67,7 +67,7 @@ class IBCTokens():
     
 class TextStrings():
     dash = "-"
-    VERSION = "v1.7.15"
+    VERSION = "v1.7.17"
 
 class MeileColors():
     DIALOG_BG_COLOR          = "#121212"
