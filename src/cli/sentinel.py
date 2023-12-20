@@ -26,6 +26,7 @@ class NodeTreeData():
     NodeScores    = {}
     NodeLocations = {}
     NodeTypes     = {}
+    NodeHealth    = {}
     
     def __init__(self, node_tree):
         if not node_tree:
@@ -117,6 +118,32 @@ class NodeTreeData():
         self.GetNodeScores()
         self.GetNodeLocations()
         self.GetNodeTypes()
+        self.GetHealthCheckData()
+        
+        
+    def GetHealthCheckData(self):
+        Request = HTTPRequests.MakeRequest(TIMEOUT=2)
+        http = Request.hadapter()
+        try:
+            r = http.get(HTTParams.HEALTH_CHECK) #specify a constant in konstants.py
+            data = r.json()
+
+            for nodehealthdata in data['result']:
+                # integrity check
+                if nodehealthdata['status'] != 1:
+                    self.NodeHealth[nodehealthdata['addr']] = False
+                elif "info_fetch_error " in nodehealthdata:
+                    self.NodeHealth[nodehealthdata['addr']] = False
+                elif "config_exchange_error" in nodehealthdata:
+                    self.NodeHealth[nodehealthdata['addr']] = False
+                elif "location_fetch_error" in nodehealthdata:
+                    self.NodeHealth[nodehealthdata['addr']] = False
+                else:
+                    self.NodeHealth[nodehealthdata['addr']] = True
+
+
+        except Exception as e:
+            print(str(e))
         
     def GetNodeScores(self):
         Request = HTTPRequests.MakeRequest(TIMEOUT=3)

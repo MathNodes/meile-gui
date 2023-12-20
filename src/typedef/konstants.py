@@ -38,6 +38,7 @@ class HTTParams():
                               'https://rpc-sentinel-ia.cosmosia.notional.ventures:443']
     GRPC                   = "grpc+http://aimokoivunen.mathnodes.com:9090/"
     #GRPC                   = "grpc+http://128.199.90.172:9090/"
+    HEALTH_CHECK           = "https://api.health.sentinel.co/v1/records"
     NODE_SCORE_ENDPOINT    = "/api/nodescores"
     NODE_LOCATION_ENDPOINT = "/api/nodelocations"
     NODE_TYPE_ENDPOINT     = "/api/nodetypes"
@@ -74,6 +75,8 @@ class MeileColors():
     INACTIVE_DIALOG_BG_COLOR = "#50507c"
     FONT_FACE                = "fonts/mplus-2c-bold.ttf"
     MAP_MARKER               = "imgs/location_pin.png"
+    HEALTH_ICON              = "shield-plus"
+    SICK_ICON                = "emoticon-sick"
 
 
 class NodeKeys():
