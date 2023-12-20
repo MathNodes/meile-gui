@@ -98,8 +98,12 @@ class NodeTreeData():
                 
             if OurWorld.NL_FULL in d[NodeKeys.NodesInfoKeys[4]]:
                 d[NodeKeys.NodesInfoKeys[4]] = OurWorld.NL
-           
-            d_continent = OurWorld.our_world.get_country_continent_name(d[NodeKeys.NodesInfoKeys[4]])
+            
+            try: 
+                d_continent = OurWorld.our_world.get_country_continent_name(d[NodeKeys.NodesInfoKeys[4]])
+            except NameError as e:
+                print(str(e))
+                continue
             try:
                 self.NodeTree.create_node(d[NodeKeys.NodesInfoKeys[4]],d[NodeKeys.NodesInfoKeys[4]], parent=d_continent)
             except:
