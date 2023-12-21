@@ -23,6 +23,8 @@ class OurWorld():
     
     CZ      = "Czechia"
     CZ_FULL = "Czech Republic"
+    NL      = "Netherlands"
+    NL_FULL = "The Netherlands"
     
     CountryLatLong = {'Algeria': [28.0000272, 2.9999825],
                       'Angola': [-11.8775768, 17.5691241], 
@@ -129,7 +131,8 @@ class OurWorld():
                       'Taiwan': [23.9739374, 120.9820179], 
                       'Tajikistan': [38.6281733, 70.8156541], 
                       'Thailand': [14.8971921, 100.83273], 
-                      'Turkey': [38.9597594, 34.9249653], 
+                      'Turkey': [38.9597594, 34.9249653],
+                      'Türkiye': [38.9597594, 34.9249653], 
                       'United Arab Emirates': [24.0002488, 53.9994829], 
                       'Uzbekistan': [41.32373, 63.9528098], 
                       'Vietnam': [15.9266657, 107.9650855], 

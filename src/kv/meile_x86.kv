@@ -581,7 +581,7 @@ WindowManager:
     size: "180dp", "180dp"
     pos_hint: {"center_x": .5, "center_y": .5}
     orientation: "vertical"
-    padding: 10,10
+    #padding: 10,10
     border_radius: 20
     radius: [10]
     md_bg_color: get_color_from_hex("#121212")
@@ -600,6 +600,8 @@ WindowManager:
     city: " "
     icon: ""
     tooltip: ""
+    healthcheck: ""
+    healthchecktooltip: ""
     ripple_behavior: True
     on_press: root.subscribe_to_node(root.price_text,root.hourly_price_text, root.address_text, root.moniker_text)
     MDGridLayout:
@@ -624,10 +626,6 @@ WindowManager:
                 font_size: "10sp"
                 text_color: (0/255.0,141/255.0,155/255.0,255/255.0)
                 pos_hint: {"x" : 0, "top" : 1.125}
-            TooltipMDIconButton:
-                icon: root.icon
-                tooltip_text: root.tooltip
-                pos_hint: {"x" : .265, "top" : .80}
             MDLabel:
                 text: root.type_text
                 theme_text_color: "Custom"
@@ -709,6 +707,16 @@ WindowManager:
                 source: root.speed_image
                 pos_hint: {"x" : .44 , "top": .95 }
                 size_hint: None, .525
+                
+            TooltipMDIconButton:
+                icon: root.icon
+                tooltip_text: root.tooltip
+                pos_hint: {"x" : .445, "top" : .38}
+            TooltipMDIconButton:
+                icon: root.healthcheck
+                tooltip_text: root.healthchecktooltip
+                pos_hint: {"x" : .475, "top" : .38	}
+                size_hint: None, None
                 
             MDLabel:    
                 text: root.country_text
@@ -1034,6 +1042,19 @@ WindowManager:
 
 <Tab>
 
+<ConnectionDialog>
+    size_hint_y: None
+    height: "7dp"
+
+    MDProgressBar:
+		id: pb
+		value: 0.01
+		min: 0
+		max: 1
+		color: get_color_from_hex("#fcb711")
+		pos_hint: {'center_x' : .5, "y" : .5}
+		size_hint_x: .85
+
 <WalletInfoContent>
     orientation: "vertical"
     spacing: "15dp"
@@ -1209,7 +1230,7 @@ WindowManager:
             max: 314
             value: 34
             on_value: root.parse_coin_deposit(root.ids.drop_item.current_item)
-            on_touch_up: root.get_usd()
+            on_touch_move: root.get_usd()
             
         MDLabel:
             id: slider1_value

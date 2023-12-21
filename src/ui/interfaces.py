@@ -1,4 +1,5 @@
 from kivymd.uix.boxlayout import MDBoxLayout
+from kivymd.uix.floatlayout import MDFloatLayout
 from kivymd.uix.tab import MDTabsBase
 from kivy.uix.screenmanager import ScreenManager
 from kivymd.uix.relativelayout import MDRelativeLayout
@@ -78,4 +79,7 @@ class ClickableTextFieldRoundCVV(MDRelativeLayout):
     hint_text = StringProperty()
 
 class TXContent(BoxLayout):
+    pass
+
+class ConnectionDialog(MDFloatLayout):
     pass
