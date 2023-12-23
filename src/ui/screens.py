@@ -1391,6 +1391,18 @@ class NodeScreen(Screen):
         else:
             IconButton  = "alpha-r-circle"
             ToolTipText = "Residential"
+            
+        if node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip() in self.NodeTree.NodeHealth:
+            if self.NodeTree.NodeHealth[node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip()]:
+                HealthButton = MeileColors.HEALTH_ICON
+                HealthToolTip = "Passed Sentinel Health Check"
+            else:
+                HealthButton = MeileColors.SICK_ICON
+                HealthToolTip = "Failed Sentinel Health Check"
+
+        else:
+            HealthButton = MeileColors.SICK_ICON
+            HealthToolTip = "Failed Sentinel Health Check"
 
         self.ids.rv.data.append(
             {
@@ -1407,6 +1419,8 @@ class NodeScreen(Screen):
                 "city"               : city,
                 "icon"               : IconButton,
                 "tooltip"            : ToolTipText,
+                "healthcheck"        : HealthButton,
+                "healthchecktooltip" : HealthToolTip,
                 "speed_image"        : self.MeileConfig.resource_path(speedimage),
                 "source_image"       : self.MeileConfig.resource_path(flagloc)
 
