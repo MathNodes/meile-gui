@@ -233,16 +233,16 @@ WindowManager:
         orientation: "vertical"
         NodeRV2:
             id: rv
-        #ActionBar:
-        #    background_normal: ''
-        #    background_down: ''
-        #    background_color: get_color_from_hex("#121212")
-        #    ActionView:
-        #        ActionPrevious:
-        #            icon: "arrow-left-circle"
-        #            title: 'Go Back'
-        #            with_previous: True
-        #            on_release: root.set_previous_screen()
+        ActionBar:
+            background_normal: ''
+            background_down: ''
+            background_color: get_color_from_hex("#121212")
+            ActionView:
+                ActionPrevious:
+                    icon: "arrow-left-circle"
+                    title: 'Map'
+                    with_previous: True
+                    on_release: root.set_previous_screen()
                     
 <SubscriptionScreen>
     name: "subscriptions"
@@ -748,9 +748,6 @@ WindowManager:
         text_color: 0,0,0,1
         on_press: root.get_city_of_node(root.address_text)
         
-        
-    MDSeparator:
-        color: 1,1,1,1
 
 <OnHoverMDRaisedButton>:
 
