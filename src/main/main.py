@@ -24,7 +24,7 @@ class MyMainApp(MDApp):
         super(MyMainApp,self).__init__(**kwargs)
         from kivy.config import Config
         from kivy.core.window import Window
-        Window.size = (1010, 710)
+        Window.size = (1280, 800)
         
         # Tkinter error on OS X
         #dim = self.get_curr_screen_geometry()
@@ -33,8 +33,8 @@ class MyMainApp(MDApp):
         dim.append(NSScreen.mainScreen().frame().size.width)
         dim.append(NSScreen.mainScreen().frame().size.height)
 
-        Window.left = int((dim[0] - 1010)/2)
-        Window.top = int((dim[1] - 710)/2)
+        Window.left = int((dim[0] - 1280)/2)
+        Window.top = int((dim[1] - 800)/2)
         
         
           
