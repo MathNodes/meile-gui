@@ -909,17 +909,21 @@ class MainWindow(Screen):
     def load_country_nodes(self, country, *kwargs):
         NodeTree = NodeTreeData(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeTree.NodeTree)
         try:
-            Meile.app.root.remove_widget(Meile.app.root.get_screen(WindowNames.NODES))
+            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).carousel.remove_widget(NodeScreen(name="nodes",
+                                             node_tree=NodeTree,
+                                             country=country,
+                                             sort=Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).Sort))
         except Exception as e:
             print(str(e))
             pass
-        Meile.app.root.add_widget(NodeScreen(name="nodes",
+        Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).carousel.add_widget(NodeScreen(name="nodes",
                                              node_tree=NodeTree,
                                              country=country,
                                              sort=Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).Sort))
 
-        Meile.app.root.transition = SlideTransition(direction = "up")
-        Meile.app.root.current = WindowNames.NODES
+        #Meile.app.root.transition = SlideTransition(direction = "up")
+        #Meile.app.root.current = WindowNames.NODES
+        Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).carousel.load_next()  
         
 class WalletScreen(Screen):
     text = StringProperty()
@@ -1484,9 +1488,8 @@ class NodeScreen(MDBoxLayout):
         )         
     def set_previous_screen(self):
         
-        Meile.app.root.remove_widget(self)
-        Meile.app.root.transistion = SlideTransition(direction="down")
-        Meile.app.root.current = WindowNames.MAIN_WINDOW
+        Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).carousel.remove_widget(self)
+        Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).carousel.load_previous()
 
         
 class RecycleViewCountryRow(MDCard, RectangularElevationBehavior,ThemableBehavior, HoverBehavior):
