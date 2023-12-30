@@ -33,6 +33,9 @@ from kivy.core.window import Window
 from kivymd.uix.behaviors.elevation import RectangularElevationBehavior
 from kivy_garden.mapview import MapMarkerPopup, MapView, MapSource
 from kivymd.toast import toast
+from kivy.uix.image import AsyncImage
+from kivy.uix.carousel import Carousel
+from kivymd.uix.boxlayout import MDBoxLayout
 
 
 from save_thread_result import ThreadWithResult
@@ -402,6 +405,7 @@ class MainWindow(Screen):
         )
         
     def build_meile_map(self):
+        
         if not self.MeileMapBuilt: 
             self.MeileMap = MapView(lat=50.6394, lon=3.057, zoom=2)
             source = MapSource(url="https://server.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}.png",
@@ -414,7 +418,21 @@ class MainWindow(Screen):
             self.MeileMap.map_source = source
 
             
-            self.ids.country_map.add_widget(self.MeileMap)
+            #self.ids.main_carousel.add_widget(self.MeileMap)
+            self.carousel = Carousel(direction='right')
+            self.ids.country_map.add_widget(self.carousel)
+            #for i in range(10):
+            #    src = "http://placehold.it/480x270.png&text=slide-%d&.png" % i
+            #    image = AsyncImage(source=src)
+            #    carousel.add_widget(image)
+                
+            #image = AsyncImage(source=src, fit_mode="contain")
+            #self.ids.main_carousel.add_widget(image)
+            
+            self.carousel.add_widget(self.MeileMap)
+            #src = "http://placehold.it/480x270.png&text=slide-1.png"
+            #image = AsyncImage(source=src)
+            #carousel.add_widget(image)
             self.AddCountryNodePins(False)
             self.MeileMapBuilt = True
             
@@ -1246,7 +1264,7 @@ class SubscriptionScreen(Screen):
         Meile.app.root.current = WindowNames.MAIN_WINDOW
         
         
-class NodeScreen(Screen):
+class NodeScreen(MDBoxLayout):
     NodeTree = None
     Country = None
     MeileConfig = None
@@ -1488,18 +1506,21 @@ class RecycleViewCountryRow(MDCard, RectangularElevationBehavior,ThemableBehavio
     def switch_window(self, country):
         NodeTree = NodeTreeData(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeTree.NodeTree)
         try:
-            Meile.app.root.remove_widget(Meile.app.root.get_screen(WindowNames.NODES))
+            Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).carousel.remove_widget(NodeScreen(name="nodes",
+                                             node_tree=NodeTree,
+                                             country=country,
+                                             sort=Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).Sort))
         except Exception as e:
             print(str(e))
             pass
-        Meile.app.root.add_widget(NodeScreen(name="nodes",
+        Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).carousel.add_widget(NodeScreen(name="nodes",
                                              node_tree=NodeTree,
                                              country=country,
                                              sort=Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).Sort))
 
-        Meile.app.root.transition = SlideTransition(direction = "up")
-        Meile.app.root.current = WindowNames.NODES
-           
+        #Meile.app.root.transition = SlideTransition(direction = "up")
+        #Meile.app.root.current = WindowNames.NODES
+        Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).carousel.load_next()   
     
 class HelpScreen(Screen):
     

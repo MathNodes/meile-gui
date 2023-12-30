@@ -182,6 +182,10 @@ WindowManager:
                 md_bg_color: get_color_from_hex("#121212")    
                 id: rv
                 size_hint: (.3,1)
+                
+            #Carousel:
+            #	id: main_carousel
+            #	direction: "right"
         
         MDBottomNavigation:
             size_hint_y: 0.125
@@ -229,16 +233,16 @@ WindowManager:
         orientation: "vertical"
         NodeRV2:
             id: rv
-        ActionBar:
-            background_normal: ''
-            background_down: ''
-            background_color: get_color_from_hex("#121212")
-            ActionView:
-                ActionPrevious:
-                    icon: "arrow-left-circle"
-                    title: 'Go Back'
-                    with_previous: True
-                    on_release: root.set_previous_screen()
+        #ActionBar:
+        #    background_normal: ''
+        #    background_down: ''
+        #    background_color: get_color_from_hex("#121212")
+        #    ActionView:
+        #        ActionPrevious:
+        #            icon: "arrow-left-circle"
+        #            title: 'Go Back'
+        #            with_previous: True
+        #            on_release: root.set_previous_screen()
                     
 <SubscriptionScreen>
     name: "subscriptions"
@@ -587,7 +591,7 @@ WindowManager:
     size: "180dp", "180dp"
     pos_hint: {"center_x": .5, "center_y": .5}
     orientation: "vertical"
-    padding: 10,10
+    #padding: 10,10
     border_radius: 20
     radius: [10]
     md_bg_color: get_color_from_hex("#121212")
@@ -606,6 +610,8 @@ WindowManager:
     city: " "
     icon: ""
     tooltip: ""
+    healthcheck: ""
+    healthchecktooltip: ""
     ripple_behavior: True
     on_press: root.subscribe_to_node(root.price_text, root.hourly_price_text, root.address_text, root.moniker_text)
     MDGridLayout:
@@ -630,10 +636,7 @@ WindowManager:
                 font_size: "10sp"
                 text_color: (0/255.0,141/255.0,155/255.0,255/255.0)
                 pos_hint: {"x" : 0, "top" : 1.125}
-            TooltipMDIconButton:
-                icon: root.icon
-                tooltip_text: root.tooltip
-                pos_hint: {"x" : .265, "top" : .80}
+            
             MDLabel:
                 text: root.type_text
                 theme_text_color: "Custom"
@@ -652,7 +655,7 @@ WindowManager:
                 text: root.price_text
                 theme_text_color: "Custom"
                 font_style: "Subtitle2"
-                font_size: "13sp"
+                font_size: "11sp"
                 text_color: get_color_from_hex("#fcb711")
                 pos_hint: {"x" : 0.03, "top" : .875}
             MDLabel:
@@ -666,7 +669,7 @@ WindowManager:
                 text: root.hourly_price_text
                 theme_text_color: "Custom"
                 font_style: "Subtitle2"
-                font_size: "13sp"
+                font_size: "11sp"
                 text_color: get_color_from_hex("#fcb711")
                 pos_hint: {"x" : 0.03, "top" : .725}
             MDLabel:
@@ -710,12 +713,20 @@ WindowManager:
                 font_name: root.get_font()
                 font_size: 22
                 text_color: 1,1,1,1
-                pos_hint: {"x" : .43 , "top": .86 }
+                pos_hint: {"x" : .42 , "top": .86 }
             Image:
                 source: root.speed_image
                 pos_hint: {"x" : .44 , "top": .95 }
                 size_hint: None, .525
-                
+            TooltipMDIconButton:
+                icon: root.icon
+                tooltip_text: root.tooltip
+                pos_hint: {"x" : .43, "top" : .40}
+            TooltipMDIconButton:
+                icon: root.healthcheck
+                tooltip_text: root.healthchecktooltip
+                pos_hint: {"x" : .46, "top" : .40	}
+                size_hint: None, None
             MDLabel:    
                 text: root.country_text
                 theme_text_color: "Custom"
