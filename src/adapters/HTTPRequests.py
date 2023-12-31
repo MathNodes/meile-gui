@@ -26,10 +26,13 @@ class MakeRequest():
         self.headers = headers
         self.timeout = TIMEOUT
     def hadapter(self):
+        # https://github.com/urllib3/urllib3/blob/main/CHANGES.rst#1260-2020-11-10
+        # method_whitelist deprecated
+        
         retries = Retry(
             total=2,
             status_forcelist=[429, 500, 502, 503, 504],
-            method_whitelist=["HEAD", "GET", "OPTIONS"]
+            allowed_methods=["HEAD", "GET", "OPTIONS"]
         )
         #adapter = HTTPAdapter(max_retries=retries)
         requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
