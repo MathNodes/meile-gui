@@ -184,7 +184,7 @@ class WalletRestore(Screen):
 
 class PreLoadWindow(Screen):
     StatusMessages = ["Calculating π...",
-                      "Squaring the Circle...", 
+                      "Squaring the Circle...",
                       "Solving the Riemann Hypothesis...",
                       "Computing the Monster group M...",
                       "Finding the Galois group of f(x)...",
@@ -209,8 +209,8 @@ class PreLoadWindow(Screen):
         chdir(MeileGuiConfig.BASEDIR)
 
         self.runNodeThread()
-        
-        
+
+
 
     @delayable
     def runNodeThread(self):
@@ -219,16 +219,16 @@ class PreLoadWindow(Screen):
         thread2.start()
         thread = Thread(target=lambda: self.NodeTree.get_nodes("13s"))
         thread.start()
-        
+
         Clock.schedule_interval(partial(self.update_status_text, thread), 1.6)
-        
+
     @delayable
     def progress_load(self):
         for k in range(1,1000):
             yield 0.0375
             self.manager.get_screen(WindowNames.PRELOAD).ids.pb.value += 0.001
 
-        
+
     def CopyBin(self):
         MeileConfig = MeileGuiConfig()
         MeileConfig.copy_bin_dir()
@@ -288,7 +288,7 @@ class PreLoadWindow(Screen):
         #    self.add_loading_popup("Please start Meile-GUI as root. i.e., sudo -E env PATH=$PATH ./meile-gui or similarly")
 
         yield 1.0
-        
+
         if not t.is_alive():
             self.manager.get_screen(WindowNames.PRELOAD).status_text = self.StatusMessages[6]
             self.manager.get_screen(WindowNames.PRELOAD).ids.pb.value = 1
@@ -296,7 +296,7 @@ class PreLoadWindow(Screen):
             go_button.disabled = False
 
             return
-            
+
         if self.k == 6:
             self.k = 0
         else:
@@ -808,7 +808,7 @@ class MainWindow(Screen):
         NodeCountries = {}
 
         iso2 = OurWorld.our_world.get_country_ISO2(ncountry.tag.lstrip().rstrip()).lower()
-        flagloc = floc + iso2 + ".png"
+        flagloc = path.join(floc, "flags", f"{iso2}.png")
 
         NodeCountries['number']  = len(self.NodeTree.NodeTree.children(ncountry.tag))
         NodeCountries['country'] = ncountry.tag
@@ -970,7 +970,7 @@ class WalletScreen(Screen):
         Meile.app.root.add_widget(fiat_interface.FiatInterface(name=WindowNames.FIAT))
         Meile.app.root.transistion = SlideTransition(direction="right")
         Meile.app.root.current = WindowNames.FIAT
-        
+
     def return_coin_logo(self, coin):
         self.MeileConfig = MeileGuiConfig()
 
@@ -1083,7 +1083,7 @@ class SubscriptionScreen(Screen):
                 iso2 = OurWorld.our_world.get_country_ISO2(sub[NodeKeys.FinalSubsKeys[5]].lstrip().rstrip()).lower()
             except:
                 iso2 = "sc"
-            flagloc = floc + iso2 + ".png"
+            flagloc = path.join(floc, "flags", f"{iso2}.png")
             self.add_sub_rv_data(sub, flagloc)
         self.remove_loading_widget(None)
 
@@ -1217,7 +1217,7 @@ class NodeScreen(Screen):
 
 
         floc = "../imgs/"
-        
+
         try:
             CountryNodes = self.NodeTree.NodeTree.children(country)
         except NodeIDAbsentError as e:
@@ -1232,7 +1232,7 @@ class NodeScreen(Screen):
             for node_child in CountryNodes:
                 node = node_child.data
                 iso2 = OurWorld.our_world.get_country_ISO2(node[NodeKeys.NodesInfoKeys[4]].lstrip().rstrip()).lower()
-                flagloc = floc + iso2 + ".png"
+                flagloc = path.join(floc, "flags", f"{iso2}.png")
                 self.add_rv_data(node, flagloc)
 
     def SortNodesByPrice(self, CountryNodes):
@@ -1281,7 +1281,7 @@ class NodeScreen(Screen):
 
         for node in NodeDataSorted:
             iso2 = OurWorld.our_world.get_country_ISO2(node[NodeKeys.NodesInfoKeys[4]].lstrip().rstrip()).lower()
-            flagloc = floc + iso2 + ".png"
+            flagloc = path.join(floc, "flags", f"{iso2}.png")
             self.add_rv_data(node, flagloc)
 
 
@@ -1391,7 +1391,7 @@ class NodeScreen(Screen):
         else:
             IconButton  = "alpha-r-circle"
             ToolTipText = "Residential"
-            
+
         if node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip() in self.NodeTree.NodeHealth:
             if self.NodeTree.NodeHealth[node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip()]:
                 HealthButton = MeileColors.HEALTH_ICON
