@@ -72,6 +72,7 @@ class TextStrings():
 class MeileColors():
     DIALOG_BG_COLOR          = "#121212"
     INACTIVE_DIALOG_BG_COLOR = "#50507c"
+    ROW_HOVER                = "#39363c"
     FONT_FACE                = "../fonts/mplus-2c-bold.ttf"
     MAP_MARKER               = "../imgs/location_pin.png"
     HEALTH_ICON              = "shield-plus"

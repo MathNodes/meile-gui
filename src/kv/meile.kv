@@ -177,7 +177,7 @@ WindowManager:
             NodeRV:
                 md_bg_color: get_color_from_hex("#121212")    
                 id: rv
-                size_hint: (.3,1)
+                size_hint: (.2,1)
          
         MDBottomNavigation:
             size_hint_y: 0.125
@@ -232,7 +232,7 @@ WindowManager:
             ActionView:
                 ActionPrevious:
                     icon: "arrow-left-circle"
-                    title: 'Go Back'
+                    title: 'Map'
                     with_previous: True
                     on_release: root.set_previous_screen() 
 <SubscriptionScreen>
@@ -248,7 +248,7 @@ WindowManager:
             ActionView:
                 ActionPrevious:
                     icon: "arrow-left-circle"
-                    title: 'Go Back'
+                    title: 'Map'
                     with_previous: True
                     on_release: root.set_previous_screen()
                     
@@ -542,7 +542,7 @@ WindowManager:
     num_text: ""
     country_text: " "
     source_image: " "
-    on_press: root.show_country_nodes(root.country_text)
+    on_press: root.switch_window(root.country_text)
     md_bg_color: get_color_from_hex("#121212")
     MDBoxLayout:
         DisplayPic:

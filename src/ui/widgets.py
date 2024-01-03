@@ -319,7 +319,7 @@ class NodeRV(RecycleView):
 class NodeRV2(RecycleView):    
     pass
 
-class OnHoverMDRaisedButton(MDRaisedButton, HoverBehavior):
+class OnHoverMDRaisedButton(MDFlatButton, HoverBehavior):
     def on_enter(self, *args):
         self.md_bg_color = get_color_from_hex("#fad783")
         Window.set_system_cursor('arrow')
@@ -330,7 +330,10 @@ class OnHoverMDRaisedButton(MDRaisedButton, HoverBehavior):
 
         self.md_bg_color = get_color_from_hex("#fcb711")
         Window.set_system_cursor('arrow')
-
+        
+'''
+Recycler of the node cards after clicking country
+'''
 class RecycleViewRow(MDCard,RectangularElevationBehavior,ThemableBehavior, HoverBehavior):
     text = StringProperty()    
     dialog = None
@@ -340,7 +343,7 @@ class RecycleViewRow(MDCard,RectangularElevationBehavior,ThemableBehavior, Hover
         return Config.resource_path(MeileColors.FONT_FACE)
     
     def on_enter(self, *args):
-        self.md_bg_color = get_color_from_hex("#200c3a")
+        self.md_bg_color = get_color_from_hex(MeileColors.ROW_HOVER)
         Window.set_system_cursor('hand')
         
     def on_leave(self, *args):
