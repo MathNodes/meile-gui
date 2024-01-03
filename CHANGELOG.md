@@ -1,14 +1,31 @@
 CHANGELOG
 ========================
+
+# v1.7.17 (08/12/2023)
+
+* NEW: Implement @TKd-Alex Price Cache for Subscription Dialog
+* FIX: Reduce API queries in coin price by half 
+* FIX: NodeIDAbsent Exception Handling on Pin Map Country not found Crash
+* FIX: v2ray/inactive_pending logic in wallet.py (Linux)
+
+# v1.7.16 (05/12/2023)
+
+* FIX: "North Macedonia" country AWOC bug
+
+# v1.7.15 (01/12/2023)
+
+- FIX: Crash on destroy/create/restore new wallet due to read-only permission error of keyring-dir (WINDOWS)
+
 # v1.7.14 (24/11/2023)
+
 * NEW: Non-blocking threading on load screen and connection dialog
 * NEW: sentinel-cli (MathNodes) v0.3.2 - fixes inactive_pending
 * UPDATE: handling of self.connected in wallet.py and widgets.py
 * UPDATE: remove async from get_price()
 * FIX: "The Netherlands" node country anomoly
 
-
 # v1.7.12 (05/11/2023)
+
 * NEW: New Wallet implementation (@TkdAlex)
 * NEW: MathNodes sentinel-cli mod
 * UPDATE: CoinStats.app API for coin prices
@@ -18,6 +35,7 @@ CHANGELOG
 * FIX: "inactive_pending" session errors by sentinel-cli mod
 
 # v1.7.10 (08/09/2023)
+
 * NEW: Subscription type chooser interface (hourly/bandwidth)
 * NEW: Slider for hourly subscription on range of 1-30 days
 * NEW: Label for subscription expirary on subscription card (meile.kv)
@@ -39,8 +57,8 @@ CHANGELOG
 * REMOVE: FullImage/2 from meile.kv and interfaces.py
 * REMOVE: \<SelectableLabel\>, \<RV\> from meile.kv
 
-
 # v1.7.7 (19/08/2023)
+
 * UPDATE: Sentinel Network Upgrade Version
 * UPDATE: v1->v2 protobuf
 * UPDATE: sentinel-protobuf v0.3.1
@@ -48,6 +66,7 @@ CHANGELOG
 * UPDATE: sentinel.py, wallet.py sentinel-cli commands
 
 # v1.7.2 (06/07/2023)
+
 * NEW: Unsubscribe functions in HandleWalletFunctions()
 * NEW: Check for active or pending sessions before unsub
 * NEW: Click subscription card to prompt user to unsubscribe
@@ -60,6 +79,7 @@ CHANGELOG
 * FIX: Set SubResult = None on refresh to enable subscription refresh
 
 # v1.6.3 (27/04/2023)
+
 * ADD: DNSRequests Adapter
 * NEW: 70% map, 30% country nodes cards
 * NEW: Map pin marker to yellow pin
@@ -78,6 +98,7 @@ CHANGELOG
 * UPDATE: Load existing subs for faster processing
 
 # v1.5.1 (22/03/2023)
+
 * NEW: sentinelcli 0.3.0 
 * NEW: v2ray support added
 * NEW: v2ray 5.1.0 binary added
@@ -95,32 +116,54 @@ CHANGELOG
 * FIX: IBC Coin listing crash
 * FIX: Node version reporting
 
-
 # v1.4.1 (29/01/2023)
+
 * NEW: Toast Message for Rating sent or errored out
+
 * NEW: Version control in Help Screen
+
 * NEW: Mac OS X App Bundle Release
+
 * FIX: Logic in Rating and Location retrieval
+
 * FIX: MapView Cache folder now located in ~/.meile.gui instead of CWD (fixes App Bundle)
+
 * FIX: Wallet logic
+
 * UPDATE: Sentinel-CLI for CosmWasm Sentinel Network Upgrade
+
 * UPDATE: Packager Installer installs App Bundle to Desktop
+
 * UPDATE: Improved HTTPs requests using requests adapter
-# v1.4.0 (17/01/2023)
+  
+  # v1.4.0 (17/01/2023)
+
 * NEW: First Windows Binary Release (Pre-release)
+
 * NEW: gsudo Packaged with Windows binary
+
 * NEW: Wireguard binary packaged with Meile binary
+
 * NEW: HTTPSRequests Adapater for max retries and timeout on API Calls
+
 * NEW: Packaging wexpect binary and collection bundle with app
+
 * CHANGE: Swtiched from pexpect wrapper library to wexpect wrapper library for windows compatability
+
 * CHANGE: Re-worked Ratings/Node Locations Logic
+
 * CHANGE: Removed WARP support for Windows Users
+
 * CHANGE: Updated Help version number routine to a constant
+
 * CHANGE: Pyinstaller .spec file for Windows build. Changes from Linux/ OS X Version to include release for Windows.
+
 * CHANGE: MapView cache now loads in .meile-gui home folder location instead of CWD
+
 * CHANGE: Icon logo for Kivy and for Task Bar and Desktop Icon
 
 # v1.3.0 (06/12/2022)
+
 * NEW: Unicode Support for Moniker names
 * NEW: Rating scores in subscription tab
 * NEW: City names in subscription tabs
@@ -136,14 +179,15 @@ CHANGELOG
 * CHANGE: Housekeeping by adding src/typedef/konstants.py 
 * CHANGE: Housekeeping in wallet.py and sentinel.py
 
-
 # v1.2.3 (13/11/2022)
+
 * NEW: Persisent real-time bandwidth when switching between nodes
 * CHANGE: Handling of CONNECTED boolean
 * FIX: Issue #28
 * FIX: Issue #29
 
 # v1.2.2 (12/11/2022)
+
 * NEW: Real-time bandwidth usage for current session, snapshot taken every two minutes. 
 * NEW: Dependency *psutil* added - needed for bandwidth usage
 * NEW: Unicode Handling in wallet passphrase and other textfields
@@ -154,6 +198,7 @@ CHANGELOG
 * FIX: Multiple spelling and grammatical errors. Thanks to *cryptomole*
 
 # v1.2.0 (20/10/2022)
+
 * NEW: Clickable Pin map with total node listings
 * NEW: Refresh button in wallet screen
 * NEW: Copy button for seed phrase on wallet restore/create
@@ -167,8 +212,8 @@ CHANGELOG
 * FIX: Divide by 0 bug and convert 0.00B to float
 * FIX: Switch set to off if user cancels connection
 
-
 # v1.1.0 (20/09/2022)
+
 * NEW: Cloudflar DoH (DNS-over-HTTPS) WARP integration
 * NEW: Hover focus on node listings
 * NEW: Sort by Price (dpvn) or Moniker
@@ -178,10 +223,12 @@ CHANGELOG
 * FIX: Minor bugs
 
 # v1.0.1 (01/09/2022)
+
 * NEW: .deb package for virtual machine guest OSes
 * FIX: Binary release fix for FIAT Gateway
 
 # v1.0.0 (30/8/2022)
+
 * NEW: Fiat Gateway
 * CHANGE: Added CryptoCompare API alongside CoinGecko for additional DVPN price in FIAT gateway
 * NEW: Automatic DNS resolve configuration for MacOS and Linux. Resolves to cloudflar if host HNS does not work
@@ -189,51 +236,63 @@ CHANGELOG
 * FIX: Major/Minor bug fixes for stability
 
 # v0.9.5-beta.1 (20/08/2022)
+
 * NEW: Ping
 * FIX: pexpect timeout exception handling
 
 # v0.9.4-beta.4 (06/08/2022)
+
 * CHANGE: No longer needed to run as sudo/root. 
 * CHANGE: Propmpts user for system password when connecting/disconnecting
 
 # v0.9.4-beta.3 (06/08/2022)
+
 * ENHANCEMENT: Better UX on sub cards with added info
 
 # v0.9.4-beta.2 (03/08/2022)
+
 * NEW: Gnome-menu launcher and icon (ran as sudo) for .deb package
 * ENHANCEMENT: Faster load times with option to refresh
 * FIX: Subscription button text color
 * FIX: Bug that created multiple nodes screen causing confusion
 
 # v0.9.4-beta.1 (30/07/2022)
+
 * NEW: Refresh Icon with Latency Selector
 * NEW: TextField with currently connected node name
 * FIX: Protected shield icon in pip install
 * FIX: Minor bugs
 
 # v0.9.3-beta.6 (28/07/2022)
+
 * FIX: Disconnect Issues on some platforms
 
 # v0.9.3-beta.5 (27/07/2022)
+
 * NEW: Shield Icon in App Bar to Notify User is Connected
 * FIX: Image stretching on subscriptions. 
 
 # v0.9.3-beta.4 (24/07/2022)
+
 * FIX: Bug when parsing wallet create/restore output
 
 # v0.9.3-beta.3 (22/07/2022)
+
 * NEW: Extra console debug messages 
 * FIX: Wallet Balance retrieval error. Now displays dialog if unable to process wallet balances
 * FIX: Crash on null price in Solar DVPN Node 15 
 
 # v0.9.3-beta.2 (20/07/2022)
+
 * FIX: Error parsing JSON line when subscribing on certain machines/os 
 
 # v0.9.3-beta.1 (18/07/2022)
+
 * NEW: 100% DeepPurple / Amber Theme
 * FIX: Multiple bug fixes and crashes
 
 # v0.9.2-alpha.1 (11/07/2022)
+
 * NEW: Meile ICON logo in app and window bar
 * NEW: Filter out dVPN nodes with version < 0.3.0
 * FIX: Check to see if user is sudo/root. Issues on some linux with users not having network device permissions causing a panic when connecting
@@ -243,13 +302,13 @@ CHANGELOG
 * CHANGE: Removed tkinter support in favor of smaller screen library
 * CHANGE: Determine actual user and place config files in ~/.meile-gui
 
-
 # v0.9.1-alpha.1 (04/07/2022)
+
 * NEW: Main app now runs on main thread 
 * NEW: Sub threads for other routines
 * NEW: Packaged sentinel-cli 0.1.9 in build. No need to install independently
 * FIX: Minor fixes and improvements 
 
-
 # v0.9.0-alpha.1 (02/07/2022)
+
 * Initial Release

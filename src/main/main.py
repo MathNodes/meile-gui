@@ -23,7 +23,7 @@ class MyMainApp(MDApp):
     def __init__(self,**kwargs):
         super(MyMainApp,self).__init__(**kwargs)
         from kivy.core.window import Window
-        Window.size = (1010, 710)
+        Window.size = (1280, 800)
 
         # Get Primary Monitor Resolution
         # Scaled down and not using tkinter library
@@ -40,8 +40,8 @@ class MyMainApp(MDApp):
         dim.append(primary_monitor.width)
         dim.append(primary_monitor.height)
         
-        Window.left = int((dim[0] - 1010)/2)
-        Window.top = int((dim[1] - 710)/2)
+        Window.left = int((dim[0] - 1280)/2)
+        Window.top = int((dim[1] - 800)/2)
         
         
           
