@@ -288,6 +288,7 @@ class HandleWalletFunctions():
         return l
         
     def connect(self, ID, address, type):
+        
         log = open(ConfParams.CONNECTIONINFO, 'w+')
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
@@ -336,28 +337,34 @@ class HandleWalletFunctions():
             
             if psutil.net_if_addrs().get("utun3"):
                 self.connected = {"v2ray_pid" : None,  "result": True, "status" : "wg99"}
-                return
+                
             else:
                 self.connected = {"v2ray_pid" : None,  "result": False, "status" : "Error bringing up wireguard interface"}
-                return
+                
         else: 
             V2Ray = V2RayHandler(v2ray_tun2routes_connect_bash + " up")
             V2Ray.start_daemon() 
-            sleep(20)
+            sleep(15)
             
             if psutil.net_if_addrs().get("utun123"):
                 self.connected = {"v2ray_pid" : V2Ray.v2ray_pid, "result": True, "status" : "utun123"}
-                return
+                
             else:
-                try: 
-                    V2Ray.v2ray_script = v2ray_tun2routes_connect_bash + " down"
-                    V2Ray.kill_daemon()
-                except Exception as e: 
-                    print(str(e))
-            
-                self.connected = {"v2ray_pid" : V2Ray.v2ray_pid,  "result": False, "status": "Error connecting to v2ray node: utun123" }
-                return
-            
+                # Try waiting somemore and check the interface after wait
+                sleep(15)
+                if psutil.net_if_addrs().get("utun123"):
+                    self.connected = {"v2ray_pid" : V2Ray.v2ray_pid, "result": True, "status" : "utun123"}
+                    
+                else:
+                    try: 
+                        V2Ray.v2ray_script = v2ray_tun2routes_connect_bash + " down"
+                        V2Ray.kill_daemon()
+                    except Exception as e: 
+                        print(str(e))
+                
+                    self.connected = {"v2ray_pid" : V2Ray.v2ray_pid,  "result": False, "status": "Error connecting to v2ray node: utun123"}
+        return 
+                
     def get_balance(self, address):
         Request = HTTPRequests.MakeRequest()
         http = Request.hadapter()
