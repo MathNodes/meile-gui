@@ -1,11 +1,8 @@
 # https://raw.githubusercontent.com/kivymd/KivyMD/master/kivymd/uix/expansionpanel/expansionpanel.py
 
 
-import os
-from typing import Union
 
 from kivy.animation import Animation
-from kivy.clock import Clock
 from kivy.lang import Builder
 from kivy.metrics import dp
 from kivy.properties import NumericProperty, ObjectProperty, StringProperty
@@ -13,23 +10,20 @@ from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.widget import WidgetException
 
 import kivymd.material_resources as m_res
-from kivymd import uix_path
 from kivymd.icon_definitions import md_icons
 from kivymd.uix.button import MDIconButton
 from kivymd.uix.list import (
-    IconLeftWidget,
-    ImageLeftWidget,
     IRightBodyTouch,
-    OneLineAvatarIconListItem,
-    ThreeLineAvatarIconListItem,
     TwoLineAvatarIconListItem,
-    TwoLineListItem,
 )
 
-from kivymd.uix.expansionpanel import MDExpansionPanelOneLine, MDExpansionPanelThreeLine, MDExpansionPanelLabel
+from kivymd.uix.expansionpanel import (
+    MDExpansionPanelOneLine,
+    MDExpansionPanelThreeLine,
+    MDExpansionPanelLabel,
+)
 
-from kivymd.uix.behaviors import RoundedRectangularElevationBehavior, CommonElevationBehavior, RectangularRippleBehavior, CircularRippleBehavior
-from kivy.uix.behaviors import ButtonBehavior
+from kivymd.uix.behaviors import CommonElevationBehavior
 from kivymd.uix.fitimage.fitimage import FitImage
 
 
@@ -38,6 +32,7 @@ KV = """<MDExpansionPanelRoundIcon>
     # height: dp(68)
 """
 Builder.load_string(KV)
+
 
 class MDExpansionPanelTwoLineSmall(TwoLineAvatarIconListItem):
     """
@@ -53,6 +48,7 @@ class MDExpansionPanelTwoLineSmall(TwoLineAvatarIconListItem):
     _height = NumericProperty("50dp")
     _num_lines = 2
 
+
 class DisplayPic(CommonElevationBehavior, FitImage):
     pass
 
@@ -61,11 +57,10 @@ class MDExpansionChevronRight(IRightBodyTouch, MDIconButton):
     _angle = NumericProperty(0)
 
 
-
 class MDExpansionPanelRoundIcon(RelativeLayout):
     content = ObjectProperty()
     icon = StringProperty()
-    #TODO: icon size(?)
+    # TODO: icon size(?)
     opening_transition = StringProperty("out_cubic")
     opening_time = NumericProperty(0.2)
     closing_transition = StringProperty("out_sine")
@@ -108,18 +103,18 @@ class MDExpansionPanelRoundIcon(RelativeLayout):
                         )
                     else:
                         # self.panel_cls.add_widget(ImageLeftWidget(source=self.icon, pos_hint={"center_y": 0.5}))
-                        self.panel_cls.add_widget(DisplayPic(
-                            source=self.icon,
-                            elevation=dp(3),
-                            size_hint=(None, None),
-                            size=(dp(30), dp(30)),
-                            radius=dp(360),
-                            pos_hint={'center_x': .12, 'center_y': .5}
-                        ))
+                        self.panel_cls.add_widget(
+                            DisplayPic(
+                                source=self.icon,
+                                elevation=dp(3),
+                                size_hint=(None, None),
+                                size=(dp(30), dp(30)),
+                                radius=dp(360),
+                                pos_hint={"center_x": 0.12, "center_y": 0.5},
+                            )
+                        )
                 else:
-                    self.panel_cls.remove_widget(
-                        self.panel_cls.ids._left_container
-                    )
+                    self.panel_cls.remove_widget(self.panel_cls.ids._left_container)
                     self.panel_cls._txt_left_pad = 0
             else:
                 # if no icon
@@ -183,9 +178,7 @@ class MDExpansionPanelRoundIcon(RelativeLayout):
         if not isinstance(self.panel_cls, MDExpansionPanelLabel):
             Animation(_angle=0, d=self.closing_time).start(instance_chevron)
 
-    def close_panel(
-        self, instance_expansion_panel, press_current_panel: bool
-    ) -> None:
+    def close_panel(self, instance_expansion_panel, press_current_panel: bool) -> None:
         """Method closes the panel."""
 
         if self._anim_playing:

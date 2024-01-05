@@ -5,38 +5,13 @@ from kivy.utils import get_color_from_hex
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivy.uix.screenmanager import ScreenManager, Screen
 
-from kivymd.uix.expansionpanel import MDExpansionPanelOneLine, MDExpansionPanelThreeLine, MDExpansionPanelLabel
 
-from kivymd.uix.behaviors import RoundedRectangularElevationBehavior, CommonElevationBehavior, RectangularRippleBehavior, CircularRippleBehavior
-from kivy.uix.behaviors import ButtonBehavior
-from kivymd.uix.fitimage.fitimage import FitImage
-
-import os
-from typing import Union
-
-from kivy.animation import Animation
-from kivy.clock import Clock
 from kivy.lang import Builder
 from kivy.metrics import dp
-from kivy.properties import NumericProperty, ObjectProperty, StringProperty
-from kivy.uix.relativelayout import RelativeLayout
-from kivy.uix.widget import WidgetException
 
-import kivymd.material_resources as m_res
-from kivymd import uix_path
-from kivymd.icon_definitions import md_icons
-from kivymd.uix.button import MDIconButton
-from kivymd.uix.list import (
-    IconLeftWidget,
-    ImageLeftWidget,
-    IRightBodyTouch,
-    OneLineAvatarIconListItem,
-    ThreeLineAvatarIconListItem,
-    TwoLineAvatarIconListItem,
-    TwoLineListItem,
-)
+from kivymd.uix.list import ImageLeftWidget
 
-
+# meil uix from tests
 from uix.expansionpanel import MDExpansionPanelRoundIcon, MDExpansionPanelTwoLineSmall
 
 KV = """
@@ -154,6 +129,7 @@ WindowManager:
 
 """
 
+
 class WindowManager(ScreenManager):
     pass
 
@@ -169,7 +145,16 @@ class MainScreen(Screen):
 
     def build(self):
         import random
-        countries = ["France", "Italy", "Brasil", "Egypt", "Belgium", "Deutschland", "Canada"]
+
+        countries = [
+            "France",
+            "Italy",
+            "Brasil",
+            "Egypt",
+            "Belgium",
+            "Deutschland",
+            "Canada",
+        ]
         for _ in range(0, 10):
             country = random.choice(countries)
 
@@ -191,32 +176,34 @@ class MainScreen(Screen):
                 icon=f"../../src/imgs/{country[:2].lower()}.png",
                 content=Content(),
                 panel_cls=MDExpansionPanelTwoLineSmall(
-                    radius = [10, 10, 10, 10],
-                    bg_color = get_color_from_hex("#212221"),
-                    text = country,
-                    text_color = "white",
-                    theme_text_color = "Custom",
-                    font_style = "Subtitle1",
-                    secondary_text = f"{random.randint(1, 100)} servers",
-                    secondary_text_color = "white",
-                    secondary_theme_text_color = "Custom",
-                    secondary_font_style = "Caption",
-                )
+                    radius=[10, 10, 10, 10],
+                    bg_color=get_color_from_hex("#212221"),
+                    text=country,
+                    text_color="white",
+                    theme_text_color="Custom",
+                    font_style="Subtitle1",
+                    secondary_text=f"{random.randint(1, 100)} servers",
+                    secondary_text_color="white",
+                    secondary_theme_text_color="Custom",
+                    secondary_font_style="Caption",
+                ),
             )
             self.ids.countries_list.add_widget(item)
 
 
-
 Builder.load_string(KV)
+
+
 class Test(MDApp):
     title = "MainScreen v2"
 
     def build(self):
-        Window.size = (1280,720)
+        Window.size = (1280, 720)
 
         manager = WindowManager()
         manager.add_widget(MainScreen())
         return manager
+
 
 if __name__ == "__main__":
     Test().run()
