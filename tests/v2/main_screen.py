@@ -174,6 +174,7 @@ class MainScreen(Screen):
 
             item = MDExpansionPanelRoundIcon(
                 icon=f"../../src/imgs/{country[:2].lower()}.png",
+                icon_size=(25, 25),
                 content=Content(),
                 panel_cls=MDExpansionPanelTwoLineSmall(
                     radius=[10, 10, 10, 10],

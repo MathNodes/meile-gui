@@ -5,7 +5,7 @@
 from kivy.animation import Animation
 from kivy.lang import Builder
 from kivy.metrics import dp
-from kivy.properties import NumericProperty, ObjectProperty, StringProperty
+from kivy.properties import NumericProperty, ObjectProperty, StringProperty, ListProperty
 from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.widget import WidgetException
 
@@ -15,6 +15,7 @@ from kivymd.uix.button import MDIconButton
 from kivymd.uix.list import (
     IRightBodyTouch,
     TwoLineAvatarIconListItem,
+    IconLeftWidget
 )
 
 from kivymd.uix.expansionpanel import (
@@ -27,7 +28,8 @@ from kivymd.uix.behaviors import CommonElevationBehavior
 from kivymd.uix.fitimage.fitimage import FitImage
 
 
-KV = """<MDExpansionPanelRoundIcon>
+KV = """
+<MDExpansionPanelRoundIcon>
     size_hint_y: None
     # height: dp(68)
 """
@@ -42,7 +44,7 @@ class MDExpansionPanelTwoLineSmall(TwoLineAvatarIconListItem):
     :class:`~kivymd.uix.list.TwoLineAvatarIconListItem` class documentation.
     """
 
-    _txt_top_pad = NumericProperty("20dp")
+    # _txt_top_pad = NumericProperty("20dp")
     _txt_bot_pad = NumericProperty("6dp")
     _txt_left_pad = NumericProperty("50dp")
     _height = NumericProperty("50dp")
@@ -60,7 +62,7 @@ class MDExpansionChevronRight(IRightBodyTouch, MDIconButton):
 class MDExpansionPanelRoundIcon(RelativeLayout):
     content = ObjectProperty()
     icon = StringProperty()
-    # TODO: icon size(?)
+    icon_size = ListProperty((25, 25))
     opening_transition = StringProperty("out_cubic")
     opening_time = NumericProperty(0.2)
     closing_transition = StringProperty("out_sine")
@@ -91,7 +93,12 @@ class MDExpansionPanelRoundIcon(RelativeLayout):
                 on_release=lambda x: self.check_open_panel(self.panel_cls)
             )
             if not isinstance(self.panel_cls, MDExpansionPanelLabel):
-                self.chevron = MDExpansionChevronRight()
+                self.chevron = MDExpansionChevronRight(
+                    icon_color="white",
+                    theme_icon_color="Custom",
+                    md_bg_color_disabled="white",
+                    disabled=False
+                )
                 self.panel_cls.add_widget(self.chevron)
                 if self.icon:
                     if self.icon in md_icons.keys():
@@ -108,7 +115,7 @@ class MDExpansionPanelRoundIcon(RelativeLayout):
                                 source=self.icon,
                                 elevation=dp(3),
                                 size_hint=(None, None),
-                                size=(dp(30), dp(30)),
+                                size=self.icon_size,
                                 radius=dp(360),
                                 pos_hint={"center_x": 0.12, "center_y": 0.5},
                             )
