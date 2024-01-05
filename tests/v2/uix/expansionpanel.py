@@ -99,7 +99,10 @@ class MDExpansionPanelRoundIcon(RelativeLayout):
                     md_bg_color_disabled="white",
                     disabled=False
                 )
+                self.chevron.ripple_scale = 0
+                self.chevron._no_ripple_effect = True
                 self.panel_cls.add_widget(self.chevron)
+
                 if self.icon:
                     if self.icon in md_icons.keys():
                         self.panel_cls.add_widget(

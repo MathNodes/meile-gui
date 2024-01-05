@@ -102,21 +102,44 @@ WindowManager:
                         padding: 10
 
                 MDBoxLayout:
+                    orientation: 'horizontal'
+                    # padding: [20, 0, 0, 0]
                     size_hint_y: None
                     height: 50
+                    spacing: 10
+
+                    canvas:
+                        # draw a background of red. This will be the border
+                        Color:
+                            rgba: get_color_from_hex("#453103")
+                        RoundedRectangle:
+                            pos: self.pos
+                            size: self.size
+
+                        # draw over the above except for 1 pixels around edges, leaving the orange border showing
+                        Color:
+                            rgba: get_color_from_hex("#212221")
+                        RoundedRectangle:
+                            pos: self.x+1, self.y+1
+                            size: self.width-2, self.height-2
 
                     MDIconButton:
-                        icon: "wallet"
+                        icon: "wallet-outline"
                         theme_text_color: "Custom"
                         text_color: "white"
 
                     MDIconButton:
-                        icon: "cog"
+                        icon: "book-open-outline"
                         theme_text_color: "Custom"
                         text_color: "white"
 
                     MDIconButton:
-                        icon: "help-circle"
+                        icon: "cog-outline"
+                        theme_text_color: "Custom"
+                        text_color: "white"
+
+                    MDIconButton:
+                        icon: "help-circle-outline"
                         theme_text_color: "Custom"
                         text_color: "white"
 
