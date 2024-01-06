@@ -48,7 +48,10 @@ class HTTParams():
     API_RATING_ENDPOINT    = "/api/rating"
     SESSIONS_API_URL       = '/sentinel/accounts/%s/sessions'
     BALANCES_ENDPOINT      = "/bank/balances/"
-    
+    ICANHAZURL             = "https://icanhazip.com"
+    ICANHAZDNS             = "icanhazip.com"
+    IFCONFIGDNS            = "ifconfig.co"
+    IFCONFIGURL            = "https://ifconfig.co/json"
     
 class IBCTokens():
     
@@ -82,6 +85,7 @@ class MeileColors():
     MAP_MARKER               = "imgs/location_pin.png"
     HEALTH_ICON              = "shield-plus"
     SICK_ICON                = "emoticon-sick"
+    ARCGIS_MAP               = "https://server.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}.png"
     
 class NodeKeys():
     NodesInfoKeys = ["Moniker","Address","Price","Hourly Price", "Country","Speed","Latency","Peers","Handshake","Type","Version","Status"]

@@ -688,7 +688,7 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
             pass
        
     @delayable
-    def connect_to_node(self, ID, naddress, moniker, type, switchValue, **kwargs):
+    def connect_to_node(self, ID, naddress, moniker, type, country, switchValue, **kwargs):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         '''
            These two conditionals are needed to check
@@ -769,7 +769,7 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
                                     text="OK",
                                     theme_text_color="Custom",
                                     text_color=self.theme_cls.primary_color,
-                                    on_release=partial(self.call_ip_get, True, moniker)
+                                    on_release=partial(self.call_ip_get, True, moniker, country)
                                 ),])
                     self.dialog.open()
                     
@@ -783,9 +783,11 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
                                     text="OK",
                                     theme_text_color="Custom",
                                     text_color=self.theme_cls.primary_color,
-                                    on_release=partial(self.call_ip_get, False, "")
+                                    on_release=partial(self.call_ip_get, False, "", country)
                                 ),])
                     self.dialog.open()
+                    
+                    
             except TypeError:
                 self.remove_loading_widget()
                 self.dialog = MDDialog(
@@ -796,7 +798,7 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
                                 text="OK",
                                 theme_text_color="Custom",
                                 text_color=self.theme_cls.primary_color,
-                                on_release=partial(self.call_ip_get, False, "")
+                                on_release=partial(self.call_ip_get, False, "", country)
                             ),])
                 self.dialog.open()
                 
@@ -911,7 +913,7 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
         
         return total_data
         
-    def call_ip_get(self,result, moniker,  *kwargs):
+    def call_ip_get(self,result, moniker,country, *kwargs):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         if result:
             mw.CONNECTED = True
@@ -923,8 +925,12 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
         if not mw.get_ip_address(None):
             self.remove_loading_widget()
             self.change_dns()
+            mw.close_sub_window()
+            mw.zoom_country_map(country)
         else:
             self.remove_loading_widget()
+            mw.close_sub_window()
+            mw.zoom_country_map(country)
             
     @delayable        
     def change_dns(self):
