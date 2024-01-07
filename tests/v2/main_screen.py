@@ -167,7 +167,7 @@ class MainScreen(Screen):
         self.build()
 
     def build(self):
-        import random
+        import random, string
 
         countries = [
             "France",
@@ -217,82 +217,49 @@ class MainScreen(Screen):
 
         self.data_tables = MDDataTable(
             use_pagination=True,
-            check=True,
+            check=False,
             column_data=[
-                ("No.", dp(30)),
-                ("Status", dp(30)),
-                ("Signal Name", dp(60), self.sort_on_signal),
-                ("Severity", dp(30)),
-                ("Stage", dp(30)),
-                ("Schedule", dp(30), self.sort_on_schedule),
-                ("Team Lead", dp(30), self.sort_on_team),
+                ("Moniker", dp(45)),
+                ("Location", dp(20)),
+                ("Speed", dp(50)),
+                ("Status", dp(20)),
+                ("Price", dp(40)),
+                ("Protocol", dp(20)),
+                ("Type", dp(20)),
             ],
-            row_data=[
-                (
-                    "1",
-                    ("alert", [255 / 256, 165 / 256, 0, 1], "No Signal"),
-                    "Astrid: NE shared managed",
-                    "Medium",
-                    "Triaged",
-                    "0:33",
-                    "Chase Nguyen",
-                ),
-                (
-                    "2",
-                    ("alert-circle", [1, 0, 0, 1], "Offline"),
-                    "Cosmo: prod shared ares",
-                    "Huge",
-                    "Triaged",
-                    "0:39",
-                    "Brie Furman",
-                ),
-                (
-                    "3",
-                    (
-                        "checkbox-marked-circle",
-                        [39 / 256, 174 / 256, 96 / 256, 1],
-                        "Online",
-                    ),
-                    "Phoenix: prod shared lyra-lists",
-                    "Minor",
-                    "Not Triaged",
-                    "3:12",
-                    "Jeremy lake",
-                ),
-                (
-                    "4",
-                    (
-                        "checkbox-marked-circle",
-                        [39 / 256, 174 / 256, 96 / 256, 1],
-                        "Online",
-                    ),
-                    "Sirius: NW prod shared locations",
-                    "Negligible",
-                    "Triaged",
-                    "13:18",
-                    "Angelica Howards",
-                ),
-                (
-                    "5",
-                    (
-                        "checkbox-marked-circle",
-                        [39 / 256, 174 / 256, 96 / 256, 1],
-                        "Online",
-                    ),
-                    "Sirius: prod independent account",
-                    "Negligible",
-                    "Triaged",
-                    "22:06",
-                    "Diane Okuma",
-                ),
-            ],
-            sorted_on="Schedule",
+            sorted_on="Moniker",
             sorted_order="ASC",
             elevation=2,
+            rows_num=10
         )
-        self.data_tables.bind(on_row_press=self.on_row_press)
-        self.data_tables.bind(on_check_press=self.on_check_press)
 
+        row_data = []
+        for _ in range(0, 150):
+            upload = random.uniform(100, 900)
+            download = random.uniform(100, 900)
+            bandwith = "speedometer-medium"
+            if upload + download > 1200:
+                bandwith = "speedometer"
+            elif upload + download < 400:
+                bandwith = "speedometer-slow"
+
+            healthcheck = random.choice([True, False])
+
+            row_data.append(
+                (
+                    ''.join(random.choices(string.printable[:-6], k=random.randint(5, 15))),  # Moniker
+                    random.choice(countries),
+                    (bandwith, [1, 1, 1, 1] ,f"[size=12][color=#00FF00]up[/color] {round(upload, 2)}mb/s[color=#f44336]down[/color] {round(download, 2)}mb/s[/size]"),
+                    ("shield-plus", [39 / 256, 174 / 256, 96 / 256, 1], "Health") if healthcheck is True else ("emoticon-sick", [1, 0, 0, 1], "Sick"),
+                    f"[size=12]{random.randint(1, 100)}dvpn, {random.randint(1, 100)}atom, {random.randint(1, 100)}osmo, {random.randint(1, 100)}srct, {random.randint(1, 100)}dec[/size]",
+                    random.choice(["Wireguard", "V2RAY"]),
+                    random.choice(["Residential", "Datacenter", "Unknown"])
+                )
+            )
+
+        self.data_tables.row_data = row_data
+
+        self.data_tables.bind(on_row_press=self.on_row_press)
         self.ids.servers_datatable.add_widget(self.data_tables)
 
     def on_row_press(self, instance_table, instance_row):
@@ -343,6 +310,10 @@ class Test(MDApp):
 
     def build(self):
         Window.size = (1280, 720)
+
+        # TODO: review this values
+        self.theme_cls.theme_style = "Dark" # (?)
+        self.theme_cls.primary_palette = "Orange"  # (?)
 
         manager = WindowManager()
         manager.add_widget(MainScreen())
