@@ -931,7 +931,7 @@ class MainWindow(Screen):
         self.carousel.remove_widget(self.NodeWidget)
         self.carousel.load_previous()
         
-    def zoom_country_map(self, country):
+    def zoom_country_map(self):
         try:
             self.MeileMap.zoom = 7
             self.MeileMap.center_on(self.LatLong[0],self.LatLong[1])

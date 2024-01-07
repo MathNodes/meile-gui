@@ -769,7 +769,7 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
                                     text="OK",
                                     theme_text_color="Custom",
                                     text_color=self.theme_cls.primary_color,
-                                    on_release=partial(self.call_ip_get, True, moniker, country)
+                                    on_release=partial(self.call_ip_get, True, moniker)
                                 ),])
                     self.dialog.open()
                     
@@ -783,7 +783,7 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
                                     text="OK",
                                     theme_text_color="Custom",
                                     text_color=self.theme_cls.primary_color,
-                                    on_release=partial(self.call_ip_get, False, "", country)
+                                    on_release=partial(self.call_ip_get, False, "")
                                 ),])
                     self.dialog.open()
                     
@@ -798,7 +798,7 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
                                 text="OK",
                                 theme_text_color="Custom",
                                 text_color=self.theme_cls.primary_color,
-                                on_release=partial(self.call_ip_get, False, "", country)
+                                on_release=partial(self.call_ip_get, False, "")
                             ),])
                 self.dialog.open()
                 
@@ -913,7 +913,7 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
         
         return total_data
         
-    def call_ip_get(self,result, moniker,country, *kwargs):
+    def call_ip_get(self,result, moniker, *kwargs):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         if result:
             mw.CONNECTED = True
@@ -926,11 +926,11 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
             self.remove_loading_widget()
             self.change_dns()
             mw.close_sub_window()
-            mw.zoom_country_map(country)
+            mw.zoom_country_map()
         else:
             self.remove_loading_widget()
             mw.close_sub_window()
-            mw.zoom_country_map(country)
+            mw.zoom_country_map()
             
     @delayable        
     def change_dns(self):

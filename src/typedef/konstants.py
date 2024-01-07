@@ -35,9 +35,8 @@ class HTTParams():
     SERVER_URL             = "https://aimokoivunen.mathnodes.com:5000"
     RPC                    = "https://rpc.mathnodes.com:443"
     #RPC                    = 'http://128.199.90.172:26657'
-    RPCS                   = ['https://rpc.mathnodes.com:443', 'https://rpc.sentinel.co:443', 'https://sentinel-rpc.badgerbite.io:443',
-                              'https://sentinel-rpc2.badgerbite.io:443', 'https://rpc.sentinel.quokkastake.io:443', 'https://rpc-sentinel.whispernode.com:443',
-                              'https://rpc-sentinel-ia.cosmosia.notional.ventures:443']
+    RPCS                   = ['https://rpc.mathnodes.com:443', 'https://rpc.dvpn.me:443', 'https://rpc.sentinel.co:443', 'https://sentinel-rpc.badgerbite.io:443',
+                              'https://sentinel-rpc2.badgerbite.io:443', 'https://rpc.sentinel.quokkastake.io:443', 'https://rpc-sentinel.whispernode.com:443',]
     GRPC                   = "grpc+http://aimokoivunen.mathnodes.com:9090/"
     #GRPC                   = "grpc+http://128.199.90.172:9090/"
     HEALTH_CHECK           = "https://api.health.sentinel.co/v1/records"
