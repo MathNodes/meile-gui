@@ -688,7 +688,7 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
             pass
        
     @delayable
-    def connect_to_node(self, ID, naddress, moniker, type, country, switchValue, **kwargs):
+    def connect_to_node(self, ID, naddress, moniker, type, switchValue, **kwargs):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         '''
            These two conditionals are needed to check
