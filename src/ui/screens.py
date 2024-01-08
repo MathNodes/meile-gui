@@ -1,5 +1,5 @@
 from geography.continents import OurWorld
-from ui.interfaces import Tab, LatencyContent, TooltipMDIconButton
+from ui.interfaces import Tab, LatencyContent, TooltipMDIconButton, ConnectionDialog
 from typedef.win import WindowNames
 from cli.sentinel import  NodeTreeData
 from typedef.konstants import NodeKeys, TextStrings, MeileColors, HTTParams, IBCTokens
@@ -270,9 +270,9 @@ class PreLoadWindow(Screen):
         
     @delayable
     def progress_load(self):
-        for k in range(1,1000):
+        for k in range(1,2000):
             yield 0.0375
-            self.manager.get_screen(WindowNames.PRELOAD).ids.pb.value += 0.001
+            self.manager.get_screen(WindowNames.PRELOAD).ids.pb.value += 0.0005
 
         
     def get_logo(self):
@@ -807,13 +807,24 @@ class MainWindow(Screen):
         # Clear Markers on Map
         self.AddCountryNodePins(True)
         yield 0.314
-        self.add_loading_popup("Reloading Nodes...")
+        cd = ConnectionDialog()
+        self.set_conn_dialog(cd, "Reloading Nodes...")
         yield 0.314
-        try: 
+        try:
             self.NodeTree.NodeTree = None
-            thread = ThreadWithResult(target=self.NodeTree.get_nodes, args=(latency.return_latency(),)) 
-            thread.start()
-            thread.join()
+            t = Thread(target=lambda: self.NodeTree.get_nodes(latency.return_latency()))
+            t.start()
+            l = int(latency.return_latency().split('s')[0])
+            pool = l*100
+            inc = float(1/pool)
+            while t.is_alive():
+                yield 0.0365    
+                cd.ids.pb.value += inc
+                
+            cd.ids.pb.value = 1
+            #thread = ThreadWithResult(target=self.NodeTree.get_nodes, args=(latency.return_latency(),)) 
+            #thread.start()
+            #thread.join()
         except Exception as e:
             print(str(e))
             pass
@@ -938,6 +949,17 @@ class MainWindow(Screen):
         except Exception as e:
             print(str(e))
             pass
+        
+    def set_conn_dialog(self, cd, title):
+        self.dialog = None
+        self.dialog = MDDialog(
+                        title=title,
+                        type="custom",
+                        content_cls=cd,
+                        md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
+                    )
+        self.dialog.open() 
+        
     def load_country_nodes(self, country, *kwargs):
         NodeTree = NodeTreeData(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeTree.NodeTree)
         try:
