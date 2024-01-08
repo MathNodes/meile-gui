@@ -18,6 +18,7 @@ from kivymd.uix.list import OneLineIconListItem
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.behaviors import HoverBehavior
 from kivymd.uix.behaviors.elevation import RectangularElevationBehavior
+from kivymd.uix.slider import MDSlider
 from kivymd.theming import ThemableBehavior
 from kivyoav.delayed import delayable
 
@@ -157,7 +158,7 @@ class SubTypeDialog(BoxLayout):
             )
             self.rvclass.dialog.open()
             
-            
+                
 class SubscribeContent(BoxLayout):
     price_text = StringProperty()
     moniker = StringProperty()
@@ -168,13 +169,13 @@ class SubscribeContent(BoxLayout):
     def __init__ (self, price, moniker, naddress, hourly):
         super(SubscribeContent, self).__init__()
         
-        self.price_text  = price
-        self.moniker     = moniker
-        self.naddress    = naddress
-        self.hourly      = hourly
-        self.price_api   = GetPriceAPI()
+        self.price_text = price
+        self.moniker    = moniker
+        self.naddress   = naddress
+        self.hourly     = hourly
+        #print(f"DATA:\n{self.price_text}\n{self.moniker}\n{self.naddress}")
+        self.price_api = GetPriceAPI()
         self.price_cache = {}
-        
         self.parse_coin_deposit(CoinsList.ibc_mu_coins[0])
         
         menu_items = [
@@ -267,7 +268,7 @@ class SubscribeContent(BoxLayout):
                 return " GB" 
         except AttributeError:
             return " GB"
-    
+        
     def refresh_price(self, mu_coin: str = "dvpn", cache: int = 30):
         # Need check on cache or trought GetPrice api
         # We don't need to call the price api if the cache is younger that 30s
@@ -279,6 +280,7 @@ class SubscribeContent(BoxLayout):
                 "time": time.time()
             }
     
+    # Should be async
     def get_usd(self):
         deposit_ret = self.return_deposit_text()
         match = re.match(r"([0-9]+.[0-9]+)([a-z]+)", deposit_ret[0], re.I)
@@ -322,7 +324,7 @@ class NodeRV2(RecycleView):
     pass
 
 
-class OnHoverMDRaisedButton(MDRaisedButton, HoverBehavior):
+class OnHoverMDRaisedButton(MDFlatButton, HoverBehavior):
     def on_enter(self, *args):
         self.md_bg_color = get_color_from_hex("#fad783")
         Window.set_system_cursor('arrow')
@@ -334,6 +336,9 @@ class OnHoverMDRaisedButton(MDRaisedButton, HoverBehavior):
         self.md_bg_color = get_color_from_hex("#fcb711")
         Window.set_system_cursor('arrow')
 
+'''
+Recycler of the node cards after clicking country
+'''
 class RecycleViewRow(MDCard,RectangularElevationBehavior, ThemableBehavior, HoverBehavior):
     text = StringProperty()    
     dialog = None
@@ -343,7 +348,7 @@ class RecycleViewRow(MDCard,RectangularElevationBehavior, ThemableBehavior, Hove
         return Config.resource_path(MeileColors.FONT_FACE)
     
     def on_enter(self, *args):
-        self.md_bg_color = get_color_from_hex("#200c3a")
+        self.md_bg_color = get_color_from_hex(MeileColors.ROW_HOVER)
         Window.set_system_cursor('hand')
         
     def on_leave(self, *args):
@@ -781,6 +786,8 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
                                     on_release=partial(self.call_ip_get, False, "")
                                 ),])
                     self.dialog.open()
+                    
+                    
             except TypeError:
                 self.remove_loading_widget()
                 self.dialog = MDDialog(
@@ -906,7 +913,7 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
         
         return total_data
         
-    def call_ip_get(self,result, moniker,  *kwargs):
+    def call_ip_get(self,result, moniker, *kwargs):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         if result:
             mw.CONNECTED = True
@@ -918,8 +925,12 @@ class RecycleViewSubRow(MDCard, RectangularElevationBehavior):
         if not mw.get_ip_address(None):
             self.remove_loading_widget()
             self.change_dns()
+            mw.close_sub_window()
+            mw.zoom_country_map()
         else:
             self.remove_loading_widget()
+            mw.close_sub_window()
+            mw.zoom_country_map()
             
     @delayable        
     def change_dns(self):

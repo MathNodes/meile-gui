@@ -1,13 +1,14 @@
 from adapters import HTTPRequests
 from typedef.konstants import IBCTokens
 import coin_api.scrtxxs as scrtxxs
-import asyncio
 import random
 
 class GetPriceAPI():
+    #DEC_AscenDEX = "https://ascendex.com/api/pro/v1/spot/ticker?symbol=DEC/USDT"
     CoinStats    = "https://openapiv1.coinstats.app/coins/%s"
+
     
-    async def get_usd(self, coin):
+    def get_usd(self, coin):
         
         N = random.randint(0,len(scrtxxs.COINSTATS_API_KEYS)-1)
         API_KEY = scrtxxs.COINSTATS_API_KEYS[N]
@@ -17,6 +18,7 @@ class GetPriceAPI():
         }
         Request = HTTPRequests.MakeRequest(headers=headers)
         http = Request.hadapter()
+        
         for key,value in IBCTokens.CSAPPMAP.items():
             if coin.lower() == key: 
                 try:
@@ -26,5 +28,5 @@ class GetPriceAPI():
                 except Exception as e:
                     print(str(e))
                     return {'success' : False, 'price' : 0.0}
-                
+
         return {'success' : True, 'price' : coin_price}
