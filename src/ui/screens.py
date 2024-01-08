@@ -435,7 +435,7 @@ class MainWindow(Screen):
         try:
             
             if clear: 
-                for m in self.Makers:
+                for m in self.Markers:
                     self.MeileMap.remove_marker(m)
                 self.Markers.clear()
                 
@@ -592,7 +592,7 @@ class MainWindow(Screen):
             
         self.old_ip = self.ip
         try:
-            resolver = DNSRequests.MakeDNSRequest(domain=HTTParams.IFCONFIGDNS, timeout=2.5, lifetime=2)
+            resolver = DNSRequests.MakeDNSRequest(domain=HTTParams.IFCONFIGDNS, timeout=3.5, lifetime=4)
             ifconfig = resolver.DNSRequest()
             if ifconfig:
                 print("%s:%s" % (HTTParams.ICANHAZDNS, ifconfig))
