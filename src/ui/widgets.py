@@ -330,7 +330,7 @@ class NodeRV2(RecycleView):
     pass
 
 
-class OnHoverMDRaisedButton(MDRaisedButton, HoverBehavior):
+class OnHoverMDRaisedButton(MDFlatButton, HoverBehavior):
     def on_enter(self, *args):
         self.md_bg_color = get_color_from_hex("#fad783")
         Window.set_system_cursor('arrow')
@@ -342,6 +342,9 @@ class OnHoverMDRaisedButton(MDRaisedButton, HoverBehavior):
         self.md_bg_color = get_color_from_hex("#fcb711")
         Window.set_system_cursor('arrow')
 
+'''
+Recycler of the node cards after clicking country
+'''
 class RecycleViewRow(MDCard,RectangularElevationBehavior,ThemableBehavior, HoverBehavior):
     text = StringProperty()    
     dialog = None
@@ -351,7 +354,7 @@ class RecycleViewRow(MDCard,RectangularElevationBehavior,ThemableBehavior, Hover
         return Config.resource_path(MeileColors.FONT_FACE)
     
     def on_enter(self, *args):
-        self.md_bg_color = get_color_from_hex("#200c3a")
+        self.md_bg_color = get_color_from_hex(MeileColors.ROW_HOVER)
         Window.set_system_cursor('hand')
         
     def on_leave(self, *args):
@@ -943,7 +946,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
         return total_data     
         '''        
     
-    def call_ip_get(self,result, moniker,  *kwargs):
+    def call_ip_get(self,result, moniker, *kwargs):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         
         if result:
@@ -956,8 +959,12 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
         if not mw.get_ip_address(None):
             self.remove_loading_widget()
             self.change_dns()
+            mw.close_sub_window()
+            mw.zoom_country_map()
         else:
             self.remove_loading_widget()
+            mw.close_sub_window()
+            mw.zoom_country_map()
     
     
     @delayable        
@@ -976,6 +983,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
             print(str(e))
         yield 1.2
         mw.get_ip_address(None)
+        mw.zoom_country_map()
         self.remove_loading_widget()
         
 class MDMapCountryButton(MDFillRoundFlatButton,ThemableBehavior, HoverBehavior):

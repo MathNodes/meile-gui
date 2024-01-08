@@ -122,7 +122,7 @@ class NodeTreeData():
         
         
     def GetHealthCheckData(self):
-        Request = HTTPRequests.MakeRequest(TIMEOUT=2)
+        Request = HTTPRequests.MakeRequest(TIMEOUT=4)
         http = Request.hadapter()
         try:
             r = http.get(HTTParams.HEALTH_CHECK) #specify a constant in konstants.py
@@ -146,7 +146,7 @@ class NodeTreeData():
             print(str(e))
         
     def GetNodeScores(self):
-        Request = HTTPRequests.MakeRequest(TIMEOUT=3)
+        Request = HTTPRequests.MakeRequest(TIMEOUT=4)
         http = Request.hadapter()
         try:
             r = http.get(HTTParams.SERVER_URL + HTTParams.NODE_SCORE_ENDPOINT)
@@ -160,7 +160,7 @@ class NodeTreeData():
             print(str(e)) 
             
     def GetNodeLocations(self):
-        Request = HTTPRequests.MakeRequest(TIMEOUT=3)
+        Request = HTTPRequests.MakeRequest(TIMEOUT=4)
         http = Request.hadapter()
         try:
             r = http.get(HTTParams.SERVER_URL + HTTParams.NODE_LOCATION_ENDPOINT)

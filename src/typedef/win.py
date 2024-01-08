@@ -1,5 +1,3 @@
-ICANHAZURL = "https://icanhazip.com"
-ICANHAZDNS = "icanhazip.com"
 
 class WindowNames():
     WALLET_RESTORE = "walletrestore"

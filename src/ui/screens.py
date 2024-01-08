@@ -5,17 +5,18 @@ from cli.wallet import HandleWalletFunctions
 from cli.warp import WarpHandler
 from cli.sentinel import disconnect as Disconnect
 from cli.v2ray import V2RayHandler
-from ui.interfaces import Tab, LatencyContent,TooltipMDIconButton
+from ui.interfaces import Tab, LatencyContent,TooltipMDIconButton, ConnectionDialog
 from ui.widgets import WalletInfoContent, MDMapCountryButton, RatingContent, NodeRV, NodeRV2
 from utils.qr import QRCode
 from conf.meile_config import MeileGuiConfig
-from typedef.win import WindowNames, ICANHAZURL, ICANHAZDNS, CoinsList
+from typedef.win import WindowNames, CoinsList
 from typedef.konstants import NodeKeys, TextStrings, MeileColors, HTTParams, IBCTokens
 from fiat import fiat_interface
 from adapters import HTTPRequests, DNSRequests
 
 from kivy.properties import BooleanProperty, StringProperty, ColorProperty
 from kivy.uix.screenmanager import Screen, SlideTransition
+from kivy.uix.carousel import Carousel
 from kivy.clock import Clock, mainthread
 from kivy.properties import ObjectProperty
 from kivy.utils import get_color_from_hex
@@ -30,7 +31,10 @@ from kivymd.uix.dialog import MDDialog
 from kivymd.uix.behaviors.elevation import RectangularElevationBehavior
 from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.behaviors import HoverBehavior
+from kivymd.uix.boxlayout import MDBoxLayout
 from kivyoav.delayed import delayable
+
+
 
 import requests
 import sys
@@ -224,15 +228,15 @@ class PreLoadWindow(Screen):
         yield 0.6
         thread2 = Thread(target=lambda: self.progress_load())
         thread2.start()
-        thread = Thread(target=lambda: self.NodeTree.get_nodes("13s"))
+        thread = Thread(target=lambda: self.NodeTree.get_nodes("18s"))
         thread.start()
         Clock.schedule_interval(partial(self.update_status_text, thread), 1.6)
     
     @delayable
     def progress_load(self):
-        for k in range(1,1000):
+        for k in range(1,2000):
             yield 0.0365
-            self.manager.get_screen(WindowNames.PRELOAD).ids.pb.value += 0.001
+            self.manager.get_screen(WindowNames.PRELOAD).ids.pb.value += 0.0005
             
     def RewriteBIN(self):
         MeileConfig = MeileGuiConfig()
@@ -345,7 +349,9 @@ class MainWindow(Screen):
     clock = None
     PersistentBandwidth = {}
     ConnectedDict = {'v2ray_pid' : None,  'result' : False}
-
+    NodeWidget = None
+    Markers = []
+    LatLong = []
 
     def __init__(self, node_tree, **kwargs):
         super(MainWindow, self).__init__()
@@ -379,7 +385,7 @@ class MainWindow(Screen):
                 
         for name_tab in OurWorld.CONTINENTS:
             tab = Tab(tab_label_text=name_tab)
-            self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.android_tabs.add_widget(tab)
+            self.ids.android_tabs.add_widget(tab)
         
         self.get_ip_address(None)
         
@@ -387,22 +393,24 @@ class MainWindow(Screen):
             None,
             None,
             None,
-            self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.android_tabs.ids.layout.children[-1].text
+            self.ids.android_tabs.ids.layout.children[-1].text
         )
         
     
     def build_meile_map(self):
         if not self.MeileMapBuilt:
             self.MeileMap = MapView(lat=50.6394, lon=3.057, zoom=2)
-            source = MapSource(url="https://server.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}.png",
-                               cache_key="meile-map-canvas-dark-grey-base", 
-                               tile_size=512,
+            source = MapSource(url=MeileColors.ARCGIS_MAP,
+                               cache_key="meile-map-canvas-dark-grey-base-2", 
+                               tile_size=256,
                                image_ext="png",
                                attribution="@ Meile",
                                size_hint=(.7,1))
             self.MeileMap.map_source = source 
             
-            self.ids.country_map.add_widget(self.MeileMap)
+            self.carousel = Carousel(direction='right')
+            self.ids.country_map.add_widget(self.carousel)
+            self.carousel.add_widget(self.MeileMap)
             self.AddCountryNodePins(False)
             self.MeileMapBuilt = True
         
@@ -413,23 +421,28 @@ class MainWindow(Screen):
     def AddCountryNodePins(self, clear):
         Config = MeileGuiConfig()
         try:
+            if clear: 
+                for m in self.Markers:
+                    self.MeileMap.remove_marker(m)
+                self.Markers.clear()
+                
             for continent in self.MeileLand.CONTINENTS:
                 for ncountry in self.NodeTree.NodeTree.children(continent):
-                    loc = self.MeileLand.CountryLatLong[ncountry.tag]
-                    marker = MapMarkerPopup(lat=loc[0],
-                                            lon=loc[1],
-                                            source=Config.resource_path(MeileColors.MAP_MARKER))
-                    
-                    marker.add_widget(MDMapCountryButton(text='%s - %s' %(ncountry.tag, len(self.NodeTree.NodeTree.children(ncountry.tag))),
-                                                   theme_text_color="Custom",
-                                                   md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
-                                                   text_color=(1,1,1,1),
-                                                   on_release=partial(self.load_country_nodes, ncountry.tag)
-                                                   ))
-                    if not clear:
+                    try:
+                        loc = self.MeileLand.CountryLatLong[ncountry.tag]
+                        marker = MapMarkerPopup(lat=loc[0], lon=loc[1], source=Config.resource_path(MeileColors.MAP_MARKER))
+                        marker.add_widget(MDMapCountryButton(text='%s - %s' %(ncountry.tag, len(self.NodeTree.NodeTree.children(ncountry.tag))),
+                                                       theme_text_color="Custom",
+                                                       md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
+                                                       text_color=(1,1,1,1),
+                                                       on_release=partial(self.load_country_nodes, ncountry.tag)
+                                                       ))
+
+                        self.Markers.append(marker)
                         self.MeileMap.add_marker(marker)
-                    else:
-                        self.MeileMap.remove_marker(marker)
+                    except:
+                        continue
+                    
         except Exception as e:
             print(str(e))
             pass        
@@ -584,18 +597,34 @@ class MainWindow(Screen):
         self.old_ip = self.ip
         try: 
             # First check DNS can resolv
-            resolver = DNSRequests.MakeDNSRequest(domain=ICANHAZDNS, timeout=4.7, lifetime=6)
-            icanhazip = resolver.DNSRequest()
-            if icanhazip:
-                print("%s:%s" % (ICANHAZDNS, icanhazip))
+            resolver = DNSRequests.MakeDNSRequest(domain=HTTParams.IFCONFIGDNS, timeout=3.5, lifetime=4)
+            ifconfig = resolver.DNSRequest()
+            if ifconfig:
+                print("%s:%s" % (HTTParams.ICANHAZDNS, ifconfig))
                 Request = HTTPRequests.MakeRequest(TIMEOUT=3)
                 http = Request.hadapter()
-                req = http.get(ICANHAZURL)
-                self.ip = req.text
-            
-                self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.new_ip.text = self.ip
+                req = http.get(HTTParams.IFCONFIGURL)
+                ifJSON = req.json()
+                print(ifJSON)
+                self.ip = str(ifJSON['ip'])
+                self.ids.new_ip.text = self.ip
+                self.LatLong.clear()
+                try:
+                    self.LatLong.append(ifJSON['latitude'])
+                    self.LatLong.append(ifJSON['longitude'])
+                except:
+                    print("No Lat/Long")
+                    try:
+                        country = ifJSON['country']
+                        loc = self.MeileLand.CountryLatLong[country]
+                        self.LatLong.append(loc[0])
+                        self.LatLong.append(loc[1])
+                    except:
+                        print("No Country...Defaulting to my dream.")
+                        loc = self.MeileLand.CountryLatLong["Seychelles"]
+                        self.LatLong.append(loc[0])
+                        self.LatLong.append(loc[1])
                 return True
-                #self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.old_ip.text = "Old IP: " + self.old_ip
             else:
                 print("Error resolving ICANHAZIP... defaulting...")
                 return False
@@ -782,14 +811,23 @@ class MainWindow(Screen):
     @delayable
     def Refresh(self, latency, *kwargs):
         self.remove_loading_widget(None)
+        yield 0.314
         self.AddCountryNodePins(True)
-        self.add_loading_popup("Reloading Nodes...")
-        yield 0.5
+        cd = ConnectionDialog()
+        self.set_conn_dialog(cd, "Reloading Nodes...")
+        yield 0.314
         try: 
             self.NodeTree.NodeTree = None
-            thread = ThreadWithResult(target=self.NodeTree.get_nodes, args=(latency.return_latency(),)) 
-            thread.start()
-            thread.join()
+            t = Thread(target=lambda: self.NodeTree.get_nodes(latency.return_latency()))
+            t.start()
+            l = int(latency.return_latency().split('s')[0])
+            pool = l*100
+            inc = float(1/pool)
+            while t.is_alive():
+                yield 0.0365    
+                cd.ids.pb.value += inc
+
+            cd.ids.pb.value = 1
         except Exception as e:
             print(str(e))
             pass
@@ -800,7 +838,7 @@ class MainWindow(Screen):
     
     @mainthread
     def on_tab_switch(self, instance_tabs, instance_tab, instance_tabs_label, tab_text):
-        self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.rv.data = []
+        self.ids.rv.data = []
         if not tab_text:
             tab_text = OurWorld.CONTINENTS[0]
             
@@ -837,6 +875,7 @@ class MainWindow(Screen):
             pass      
     def get_continent_coordinates(self, c):
         loc = self.MeileLand.ContinentLatLong[c]
+        self.MeileMap.zoom = 4
         self.MeileMap.center_on(loc[0], loc[1])
             
     def build_node_data(self, ncountry):
@@ -883,24 +922,51 @@ class MainWindow(Screen):
         Meile.app.root.current = window
         
     def switch_to_sub_window(self):
-        Meile.app.root.add_widget(SubscriptionScreen(name=WindowNames.SUBSCRIPTIONS, node_tree=self.NodeTree))
-        Meile.app.root.transition = SlideTransition(direction = "left")
-        Meile.app.root.current = WindowNames.SUBSCRIPTIONS
-            
-    def load_country_nodes(self, country, *kwargs):
-        NodeTree = NodeTreeData(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeTree.NodeTree)
         try:
-            Meile.app.root.remove_widget(Meile.app.root.get_screen(WindowNames.NODES))
+            self.carousel.remove_widget(self.NodeWidget)
+        except Exception as e:
+            print(str(e))
+        self.NodeWidget = SubscriptionScreen(name=WindowNames.SUBSCRIPTIONS, node_tree=self.NodeTree)
+        self.carousel.add_widget(self.NodeWidget)
+        self.carousel.load_slide(self.NodeWidget)
+        
+    def close_sub_window(self):
+        self.carousel.remove_widget(self.NodeWidget)
+        self.carousel.load_previous()
+        
+    def zoom_country_map(self):
+        try:
+            self.MeileMap.zoom = 7
+            self.MeileMap.center_on(self.LatLong[0],self.LatLong[1])
         except Exception as e:
             print(str(e))
             pass
-        Meile.app.root.add_widget(NodeScreen(name="nodes",
-                                             node_tree=NodeTree,
-                                             country=country,
-                                             sort=Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).Sort))
-
-        Meile.app.root.transition = SlideTransition(direction = "up")
-        Meile.app.root.current = WindowNames.NODES
+        
+    def set_conn_dialog(self, cd, title):
+        self.dialog = None
+        self.dialog = MDDialog(
+                        title=title,
+                        type="custom",
+                        content_cls=cd,
+                        md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
+                    )
+        self.dialog.open() 
+  
+    def load_country_nodes(self, country, *kwargs):
+        NodeTree = NodeTreeData(self.NodeTree.NodeTree)
+        try:
+            Meile.app.root.remove_widget(Meile.app.root.get_screen(WindowNames.NODES))
+            self.carousel.remove_widget(self.NodeWidget)
+        except Exception as e:
+            print(str(e))
+            pass
+        
+        self.NodeWidget = NodeScreen(name="nodes",
+                                     node_tree=NodeTree,
+                                     country=country,
+                                     sort=self.Sort)
+        self.carousel.add_widget(self.NodeWidget)
+        self.carousel.load_slide(self.NodeWidget)
         
 class WalletScreen(Screen):
     text = StringProperty()
@@ -1083,7 +1149,7 @@ class WalletScreen(Screen):
         Meile.app.root.transistion = SlideTransition(direction="down")
         Meile.app.root.current = WindowNames.MAIN_WINDOW
         
-class SubscriptionScreen(Screen):
+class SubscriptionScreen(MDBoxLayout):
     SubResult = None
 
     def __init__(self, node_tree,  **kwargs):
@@ -1103,7 +1169,7 @@ class SubscriptionScreen(Screen):
 
     def GetSubscriptions(self):
         
-        mw = self.manager.get_screen(WindowNames.MAIN_WINDOW)
+        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         
         try: 
             thread = ThreadWithResult(target=self.NodeTree.get_subscriptions, args=(self.address,))
@@ -1118,7 +1184,7 @@ class SubscriptionScreen(Screen):
     def subs_callback(self, dt):
         floc = "imgs/"
         yield 0.314
-        mw = self.manager.get_screen(WindowNames.MAIN_WINDOW)
+        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
 
         if not mw.SubResult:
             self.GetSubscriptions()
@@ -1248,11 +1314,15 @@ class SubscriptionScreen(Screen):
         self.dialog.open()
 
     def set_previous_screen(self):
-        Meile.app.root.remove_widget(self)
-        Meile.app.root.transistion = SlideTransition(direction="right")
-        Meile.app.root.current = WindowNames.MAIN_WINDOW
-        
-class NodeScreen(Screen):
+        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
+        mw.carousel.remove_widget(mw.NodeWidget)
+        mw.carousel.load_previous()
+
+'''
+Main widget of country cards in carousel.
+Contains: widgets.RecyclerViewRow, RecyclerViewCountryRow        
+'''        
+class NodeScreen(MDBoxLayout):
     NodeTree = None
     Country = None
     MeileConfig = None
@@ -1472,41 +1542,40 @@ class NodeScreen(Screen):
         )   
         
     def set_previous_screen(self):
-        
-        Meile.app.root.remove_widget(self)
-        Meile.app.root.transistion = SlideTransition(direction="down")
-        Meile.app.root.current = WindowNames.MAIN_WINDOW
-            
+        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
+        mw.carousel.remove_widget(mw.NodeWidget)
+        mw.carousel.load_previous()
+
+'''
+This is the card class of the country cards on the left panel        
+'''    
 class RecycleViewCountryRow(MDCard,RectangularElevationBehavior,ThemableBehavior, HoverBehavior):
     text = StringProperty()    
     
     def on_enter(self, *args):
-        self.md_bg_color = get_color_from_hex("#200c3a")
+        self.md_bg_color = get_color_from_hex(MeileColors.ROW_HOVER)
         Window.set_system_cursor('hand')
         
     def on_leave(self, *args):
         self.md_bg_color = get_color_from_hex(MeileColors.DIALOG_BG_COLOR)
         Window.set_system_cursor('arrow')
-    
-    def show_country_nodes(self, country):
-        print(country)
-        self.switch_window(country)
         
     def switch_window(self, country):
-        NodeTree = NodeTreeData(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeTree.NodeTree)
+        print(country)
+        mw       = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
+        NodeTree = NodeTreeData(mw.NodeTree.NodeTree)
         try:
-            Meile.app.root.remove_widget(Meile.app.root.get_screen(WindowNames.NODES))
+            mw.carousel.remove_widget(mw.NodeWidget)
         except Exception as e:
             print(str(e))
             pass
-        Meile.app.root.add_widget(NodeScreen(name="nodes",
-                                             node_tree=NodeTree,
-                                             country=country,
-                                             sort=Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).Sort))
-
-        Meile.app.root.transition = SlideTransition(direction = "up")
-        Meile.app.root.current = WindowNames.NODES
-           
+        
+        mw.NodeWidget = NodeScreen(name="nodes",
+                                   node_tree=NodeTree,
+                                   country=country,
+                                   sort=mw.Sort)
+        mw.carousel.add_widget(mw.NodeWidget)
+        mw.carousel.load_next()
         
     
 class HelpScreen(Screen):
