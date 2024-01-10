@@ -12,6 +12,7 @@ from kivy.metrics import dp
 from kivymd.uix.list import ImageLeftWidget
 
 from kivymd.uix.datatables import MDDataTable
+from kivymd.uix.datatables.datatables import TableHeader, TableData
 
 # meil uix from tests
 from uix.expansionpanel import MDExpansionPanelRoundIcon, MDExpansionPanelTwoLineSmall
@@ -218,6 +219,7 @@ class MainScreen(Screen):
         self.data_tables = MDDataTable(
             use_pagination=True,
             check=False,
+            # name column, width column, sorting function column(optional), custom tooltip
             column_data=[
                 ("Moniker", dp(45)),
                 ("Location", dp(20)),
@@ -232,6 +234,13 @@ class MainScreen(Screen):
             elevation=2,
             rows_num=10
         )
+
+        self.data_tables.header.ids.header.adaptive_size = False
+        self.data_tables.header.ids.header.size_hint_min = (self.data_tables.header.ids.header.minimum_width, self.data_tables.header.ids.header.minimum_height)
+        self.data_tables.header.ids.header.adaptive_height = True
+
+        self.data_tables.table_data.ids.row_controller.size_hint_min = (self.data_tables.table_data.ids.row_controller.minimum_width, self.data_tables.table_data.ids.row_controller.minimum_height)
+        self.data_tables.table_data.ids.row_controller.size_hint = (1, None)
 
         row_data = []
         for _ in range(0, 150):
