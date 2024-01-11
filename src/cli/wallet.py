@@ -48,7 +48,14 @@ class HandleWalletFunctions():
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
 
-
+    def __keyring(self, keyring_passphrase: str):
+        kr = CryptFileKeyring()
+        kr.filename = "keyring.cfg"
+        print(ConfParams.KEYRINGDIR)
+        kr.file_path = path.join(ConfParams.KEYRINGDIR, kr.filename)
+        print(kr.file_path)
+        kr.keyring_key = keyring_passphrase
+        return kr
 
     def create(self, wallet_name, keyring_passphrase, seed_phrase = None):
         # Credtis: https://github.com/ctrl-Felix/mospy/blob/master/src/mospy/utils.py
@@ -69,12 +76,7 @@ class HandleWalletFunctions():
         print(account_address)
 
         # Create a class of separated method for keyring please
-        kr = CryptFileKeyring()
-        kr.filename = "keyring.cfg"
-        print(ConfParams.KEYRINGDIR)
-        kr.file_path = path.join(ConfParams.KEYRINGDIR, kr.filename)
-        print(kr.file_path)
-        kr.keyring_key = keyring_passphrase
+        kr = self.__keyring(keyring_passphrase)
         kr.set_password("meile-gui", wallet_name, bip44_def_ctx.PrivateKey().Raw().ToBytes().hex())
 
         return {
@@ -101,13 +103,7 @@ class HandleWalletFunctions():
         grpc = self.GRPC.replace("grpc+http://", "").replace("/", "")  # TODO: why const is grpc is saved as ... (?)
         grpcaddr, grpcport = grpc.split(":")
 
-        # Create a class of separated method for keyring please
-        kr = CryptFileKeyring()
-        kr.filename = "keyring.cfg"
-        print(ConfParams.KEYRINGDIR)
-        kr.file_path = path.join(ConfParams.KEYRINGDIR, kr.filename)
-        print(kr.file_path)
-        kr.keyring_key = PASSWORD  # TODO: very ungly
+        kr = self.__keyring(PASSWORD)
         private_key = kr.get_password("meile-gui", KEYNAME)  # TODO: very ungly
 
         print(private_key)  # TODO: only-4-debug
