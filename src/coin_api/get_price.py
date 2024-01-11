@@ -1,7 +1,6 @@
 from adapters import HTTPRequests
 from typedef.konstants import IBCTokens
 import coin_api.scrtxxs as scrtxxs
-import asyncio
 import random
 
 class GetPriceAPI():
@@ -9,7 +8,7 @@ class GetPriceAPI():
     CoinStats    = "https://openapiv1.coinstats.app/coins/%s"
 
 
-    async def get_usd(self, coin):
+    def get_usd(self, coin):
         N = random.randint(0,len(scrtxxs.COINSTATS_API_KEYS)-1)
         API_KEY = scrtxxs.COINSTATS_API_KEYS[N]
         headers = {
