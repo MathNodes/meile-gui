@@ -156,40 +156,6 @@ class HandleWalletFunctions():
             if value in deposit:
                 return value
 
-    """
-    def ParseSubscribe(self):
-        SUBJSON = False
-        with open(ConfParams.SUBSCRIBEINFO, 'r') as sub_file:
-                lines = sub_file.readlines()
-                for l in lines:
-                    if "Error" in l:
-                        return(False, l)
-
-                for l in lines:
-                    try:
-                        tx_json = json.loads(l)
-                        SUBJSON = True
-                    except Exception as e:
-                        continue
-                if SUBJSON:
-                    if tx_json['data']:
-                        try:
-                            sub_id = tx_json['logs'][0]['events'][4]['attributes'][0]['value']
-                            if sub_id:
-                                #remove(ConfParams.SUBSCRIBEINFO)
-                                return (True,0)
-                            else:
-                                #remove(ConfParams.SUBSCRIBEINFO)
-                                return (False,2.71828)
-                        except:
-                            #remove(ConfParams.SUBSCRIBEINFO)
-                            return (False, 3.14159)
-                    elif 'insufficient' in tx_json['raw_log']:
-                        #remove(ConfParams.SUBSCRIBEINFO)
-                        return (False, tx_json['raw_log'])
-                else:
-                    return(False, "Error loading JSON")
-    """
 
     def unsubscribe(self, subId):
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
@@ -199,99 +165,37 @@ class HandleWalletFunctions():
         if not KEYNAME:
             return {'hash' : "0x0", 'success' : False, 'message' : "ERROR Retrieving Keyname"}
 
-        ofile = open(ConfParams.USUBSCRIBEINFO, "wb")
+        self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
 
-        unsubCMD = "%s keys export --unarmored-hex --unsafe --keyring-backend file --keyring-dir %s '%s'" % (sentinelcli,  ConfParams.KEYRINGDIR, KEYNAME)
+        grpc = self.GRPC.replace("grpc+http://", "").replace("/", "")  # TODO: why const is grpc is saved as ... (?)
+        grpcaddr, grpcport = grpc.split(":")
 
-        try:
-            child = pexpect.spawn(unsubCMD)
-            child.logfile = ofile
+        kr = self.__keyring(PASSWORD)
+        private_key = kr.get_password("meile-gui", KEYNAME)  # TODO: very ungly
 
-            child.expect(".*")
-            child.sendline("y")
-            child.expect("Enter*")
-            child.sendline(PASSWORD)
-            child.expect(pexpect.EOF)
+        print(private_key)  # TODO: only-4-debug
+        sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key)
 
-            ofile.flush()
-            ofile.close()
-        except Exception as e:
-            return {'hash' : "0x0", 'success' : False, 'message' : f"ERROR: {str(e)}"}
+        # From ConfParams
+        # GASPRICE         = "0.2udvpn"
+        # GASADJUSTMENT    = 1.15
+        # GAS              = 500000
+        # ConfParams.GASPRICE, ConfParams.GAS, ConfParams.GASADJUSTMENT,
 
-        privkey_hex = self.ParseUnSubscribe()
-        return self.grpc_unsubscribe(privkey_hex, subId)
-
-    def grpc_unsubscribe(self, privkey, subId):
-        pass
-
-    """
-    def grpc_unsubscribe(self, privkey, subId):
-        tx_success = False
-        tx_hash    = "0x0"
-
-        cfg = NetworkConfig(
-            chain_id=ConfParams.CHAINID,
-            url=HTTParams.GRPC,
-            fee_minimum_gas_price=0.4,
-            fee_denomination=IBCTokens.mu_coins[0],
-            staking_denomination=IBCTokens.mu_coins[0],
+        tx_params = TxParams(
+            # denom="udvpn",  # TODO: from ConfParams
+            # fee_amount=20000,  # TODO: from ConfParams
+            # gas=ConfParams.GAS,
+            gas_multiplier=ConfParams.GASADJUSTMENT
         )
+        tx = sdk.subscriptions.Cancel(subId, tx_params=tx_params)
+        tx_height = 0
+        if tx.get("log", None) is None:
+            tx_response = sdk.nodes.wait_transaction(tx["hash"])
+            tx_height = tx_response.tx_response.height
 
-        client = LedgerClient(cfg)
-
-        priv_key_bytes = binascii.unhexlify(bytes(privkey.rstrip().lstrip(), encoding="utf8"))
-
-        wallet = LocalWallet(PrivateKey(priv_key_bytes), prefix="sent")
-        address = wallet.address()
-
-        print(f"Address: {address},\nSubscription ID: {subId}")
-
-        try:
-            tx = Transaction()
-            try:
-                tx.add_message(MsgCancelRequest(frm=str(address), id=int(subId)))
-            except Exception as e1:
-                print(str(e1))
-                print("Error Failed on add_message")
-
-
-            try:
-                tx = prepare_and_broadcast_basic_transaction(client, tx, wallet)
-                tx.wait_to_complete()
-            except Exception as e2:
-                print("error on broadcasting transaction")
-                print(str(e2))
-
-            tx_hash     = tx._tx_hash
-            tx_response = tx._response.is_successful()
-            tx_height   = int(tx._response.height)
-
-            print("Hash: %s" % str(tx_hash))
-            print("Response: %s" % tx_response)
-            print("Height: %d" % int(tx._response.height))
-
-            if tx_response:
-                tx_success = tx_response
-                message    = "Unsubscribe from Subscription ID: %s, was successful at Height: %d" % (subId, tx_height )
-
-            else:
-                message = "Unsubscribe failed"
-        except Exception as e:
-            message = f"Error creating or broadcasting unsubscribe tx message: {str(e)}"
-
-        return {'hash' : tx_hash, 'success' : tx_success, 'message' : message}
-    """
-
-    def ParseUnSubscribe(self):
-        with open(ConfParams.USUBSCRIBEINFO, 'r') as usubfile:
-            lines = usubfile.readlines()
-            lines = [l for l in lines if l != '\n']
-            for l in lines:
-                l.replace('\n','')
-
-        usubfile.close()
-        remove(ConfParams.USUBSCRIBEINFO)
-        return l
+        message = f"Unsubscribe from Subscription ID: {subId}, was successful at Height: {tx_height}" if tx.get("log", None) is None else tx.get["log"]
+        return {'hash' : tx.get("hash", None), 'success' : tx.get("log", None) is None, 'message' : message}
 
 
     def connect(self, ID, address, type):
