@@ -20,6 +20,9 @@ from bip_utils import Bip39SeedGenerator, Bip44, Bip44Coins
 from sentinel_protobuf.sentinel.subscription.v2.msg_pb2 import MsgCancelRequest, MsgCancelResponse
 
 from sentinel_sdk.sdk import SDKInstance
+from sentinel_sdk.types import NodeType, TxParams, Status
+from sentinel_sdk.utils import search_attribute
+
 from mnemonic import Mnemonic
 from keyrings.cryptfile.cryptfile import CryptFileKeyring
 import ecdsa
@@ -65,6 +68,7 @@ class HandleWalletFunctions():
         account_address = bech32.bech32_encode("sent", five_bit_r)
         print(account_address)
 
+        # Create a class of separated method for keyring please
         kr = CryptFileKeyring()
         kr.filename = "keyring.cfg"
         print(ConfParams.KEYRINGDIR)
@@ -80,65 +84,83 @@ class HandleWalletFunctions():
 
 
     def subscribe(self, KEYNAME, NODE, DEPOSIT, GB, hourly):
-        CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
-        PASSWORD = CONFIG['wallet'].get('password', '')
-        self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
-        ofile =  open(ConfParams.SUBSCRIBEINFO, "wb")
-
-        if not KEYNAME:
+        if not KEYNAME:  # TODO: (?)
             return (False, 1337)
+
         print("Deposit/denom")
         print(DEPOSIT)
         DENOM = self.DetermineDenom(DEPOSIT)
         print(DENOM)
 
-        if hourly:
-            SCMD = "%s tx node subscribe --yes --keyring-backend file --keyring-dir %s --chain-id %s --node %s --gas-prices %s --gas %d --gas-adjustment %f --from '%s' '%s' 0 '%s' %s"  % (sentinelcli,
-                                                                                                                                                                                        ConfParams.KEYRINGDIR,
-                                                                                                                                                                                        ConfParams.CHAINID,
-                                                                                                                                                                                        self.RPC,
-                                                                                                                                                                                        ConfParams.GASPRICE,
-                                                                                                                                                                                        ConfParams.GAS,
-                                                                                                                                                                                        ConfParams.GASADJUSTMENT,
-                                                                                                                                                                                        KEYNAME,
-                                                                                                                                                                                        NODE,
-                                                                                                                                                                                        GB,
-                                                                                                                                                                                        DENOM)
-        else:
-            SCMD = "%s tx node subscribe --yes --keyring-backend file --keyring-dir %s --chain-id %s --node %s --gas-prices %s --gas %d --gas-adjustment %f --from '%s' '%s' '%s' 0 %s"  % (sentinelcli,
-                                                                                                                                                                                            ConfParams.KEYRINGDIR,
-                                                                                                                                                                                            ConfParams.CHAINID,
-                                                                                                                                                                                            self.RPC,
-                                                                                                                                                                                            ConfParams.GASPRICE,
-                                                                                                                                                                                            ConfParams.GAS,
-                                                                                                                                                                                            ConfParams.GASADJUSTMENT,
-                                                                                                                                                                                            KEYNAME,
-                                                                                                                                                                                            NODE,
-                                                                                                                                                                                            GB,
-                                                                                                                                                                                            DENOM)
+        CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
+        PASSWORD = CONFIG['wallet'].get('password', '')
 
-        print(SCMD)
-        try:
-            child = pexpect.spawn(SCMD)
-            child.logfile = ofile
+        self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
+        self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
 
-            child.expect(".*")
-            child.sendline(PASSWORD)
-            child.expect(pexpect.EOF)
+        grpc = self.GRPC.replace("grpc+http://", "").replace("/", "")  # TODO: why const is grpc is saved as ... (?)
+        grpcaddr, grpcport = grpc.split(":")
 
-            ofile.flush()
-            ofile.close()
-        except pexpect.exceptions.TIMEOUT:
-            return (False, 1415)
+        # Create a class of separated method for keyring please
+        kr = CryptFileKeyring()
+        kr.filename = "keyring.cfg"
+        print(ConfParams.KEYRINGDIR)
+        kr.file_path = path.join(ConfParams.KEYRINGDIR, kr.filename)
+        print(kr.file_path)
+        kr.keyring_key = PASSWORD  # TODO: very ungly
+        private_key = kr.get_password("meile-gui", KEYNAME)  # TODO: very ungly
 
-        return self.ParseSubscribe()
+        print(private_key)  # TODO: only-4-debug
+        sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key)
+
+        # From ConfParams
+        # GASPRICE         = "0.2udvpn"
+        # GASADJUSTMENT    = 1.15
+        # GAS              = 500000
+        # ConfParams.GASPRICE, ConfParams.GAS, ConfParams.GASADJUSTMENT,
+
+        tx_params = TxParams(
+            # denom="udvpn",  # TODO: from ConfParams
+            # fee_amount=20000,  # TODO: from ConfParams
+            # gas=ConfParams.GAS,
+            gas_multiplier=ConfParams.GASADJUSTMENT
+        )
+
+        print("node_address", NODE)
+        print("gigabytes", 0 if hourly else GB)  # TODO: review this please
+        print("hours", GB if hourly else 0)  # TODO: review this please
+        print("denom", DENOM)
+        print("tx_params", tx_params)
+
+        tx = sdk.nodes.SubscribeToNode(
+            node_address=NODE,
+            gigabytes=0 if hourly else GB,  # TODO: review this please
+            hours=GB if hourly else 0,  # TODO: review this please
+            denom=DENOM,
+            tx_params=tx_params,
+        )
+        if tx.get("log", None) is not None:
+            return(False, tx["log"])
+
+        if tx.get("hash", None) is not None:
+            tx_response = sdk.nodes.wait_transaction(tx["hash"])
+            print(tx_response)
+            subscription_id = search_attribute(
+                tx_response, "sentinel.node.v2.EventCreateSubscription", "id"
+            )
+            if subscription_id:
+                return (True,0)
+
+        return(False, "Tx error")
+
+        # return self.ParseSubscribe()
 
     def DetermineDenom(self, deposit):
         for key,value in IBCTokens.IBCUNITTOKEN.items():
             if value in deposit:
                 return value
 
-
+    """
     def ParseSubscribe(self):
         SUBJSON = False
         with open(ConfParams.SUBSCRIBEINFO, 'r') as sub_file:
@@ -171,6 +193,7 @@ class HandleWalletFunctions():
                         return (False, tx_json['raw_log'])
                 else:
                     return(False, "Error loading JSON")
+    """
 
     def unsubscribe(self, subId):
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
