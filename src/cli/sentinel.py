@@ -24,6 +24,23 @@ MeileConfig = MeileGuiConfig()
 sentinelcli = MeileConfig.resource_path("../bin/sentinelcli")
 v2ray_tun2routes_connect_bash = MeileConfig.resource_path("../bin/routes.sh")
 
+# https://lindevs.com/code-snippets/convert-file-size-in-bytes-into-human-readable-string-using-python
+# TODO: find another place for this method :)
+def format_file_size(size, decimals=2, binary_system=True):
+    if binary_system:
+        units = ["B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB"]
+        largest_unit = "YiB"
+        step = 1024
+    else:
+        units = ["B", "kB", "MB", "GB", "TB", "PB", "EB", "ZB"]
+        largest_unit = "YB"
+        step = 1000
+    for unit in units:
+        if size < step:
+            return ("%." + str(decimals) + "f %s") % (size, unit)
+        size /= step
+    return ("%." + str(decimals) + "f %s") % (size, largest_unit)
+
 class NodeTreeData():
     NodeTree      = None
     NodeScores    = {}
@@ -253,7 +270,7 @@ class NodeTreeData():
             'Gigabytes': f"{subscription.gigabytes}",
             'Hours': f"{subscription.hours}",
             'ID': f"{subscription.base.id}",
-            'Inactive Date': datetime.fromtimestamp(subscription.base.inactive_at.seconds).strftime('%Y-%m-%d %H:%M:%S.%f'), # ' 2024-03-26 19:37:52.52297981   ',
+            'Inactive Date': datetime.fromtimestamp(subscription.base.inactive_at.seconds).strftime('%Y-%m-%d %H:%M:%S.%f'), # '2024-03-26 19:37:52.52297981',
             'Node': subscription.node_address,
             'Owner': subscription.base.address,
             'Plan': '0',  # TODO: (?)
@@ -316,28 +333,19 @@ class NodeTreeData():
 
         return SubsFinalResult
 
-
     def GetQuota(self, id):
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
-        self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
-        quotaCMD = [sentinelcli, 'query', 'allocations', '--node', self.RPC, '--page', '1', id]
-        proc = Popen(quotaCMD, stdout=PIPE)
-        h=1
-        for line in proc.stdout.readlines():
-            if h < 4:
-                h += 1
-                continue
-            if h >=4 and '+-----------+' in str(line.decode('utf-8')):
-                break
-            else:
-                nodeQuota = str(line.decode('utf-8')).split("|")[2:-1]
-                allotted = float(re.findall(r'[0-9]+\.[0-9]+', nodeQuota[0])[0])
-                consumed = float(re.findall(r'[0-9]+\.[0-9]+', nodeQuota[1])[0])
 
-                if allotted == consumed:
-                    return None
-                else:
-                    return nodeQuota
+        self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
+        grpc = self.GRPC.replace("grpc+http://", "").replace("/", "")  # TODO: why const is grpc is saved as ... (?)
+        grpcaddr, grpcport = grpc.split(":")
+        sdk = SDKInstance(grpcaddr, int(grpcport))
+        allocations = sdk.subscriptions.QueryAllocations(subscription_id=int(id))
+
+        for allocation in allocations:
+            if int(allocation.granted_bytes) == int(allocation.utilised_bytes):
+                return None
+            return [format_file_size(int(allocation.granted_bytes), binary_system=False), format_file_size(int(allocation.utilised_bytes), binary_system=False)]
 
     def GetHourAllocation(self, hours, idate):
         nodeQuota       = []

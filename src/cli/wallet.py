@@ -283,7 +283,7 @@ class HandleWalletFunctions():
             # Uint64ToBigEndian
             bige_session = int(session_id).to_bytes(8, byteorder="big")
 
-            signature = sk.sign_deterministic(bige_session)
+            signature = sk.sign(bige_session)
             payload = {
                 "key": key,
                 "signature": base64.b64encode(signature).decode("utf-8"),
