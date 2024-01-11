@@ -3,6 +3,7 @@ import json
 import requests
 import psutil
 import binascii
+import time
 from time import sleep
 from os import path, remove
 
@@ -15,6 +16,10 @@ from typedef.konstants import HTTParams
 from adapters import HTTPRequests
 from cli.v2ray import V2RayHandler
 
+import base64
+import uuid
+import configparser
+
 import bech32
 from bip_utils import Bip39SeedGenerator, Bip44, Bip44Coins
 from sentinel_protobuf.sentinel.subscription.v2.msg_pb2 import MsgCancelRequest, MsgCancelResponse
@@ -22,7 +27,7 @@ from sentinel_protobuf.sentinel.subscription.v2.msg_pb2 import MsgCancelRequest,
 from sentinel_sdk.sdk import SDKInstance
 from sentinel_sdk.types import NodeType, TxParams, Status
 from sentinel_sdk.utils import search_attribute
-
+from pywgkey import WgKey
 from mnemonic import Mnemonic
 from keyrings.cryptfile.cryptfile import CryptFileKeyring
 import ecdsa
@@ -199,11 +204,149 @@ class HandleWalletFunctions():
 
 
     def connect(self, ID, address, type):
-
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
         PASSWORD = CONFIG['wallet'].get('password', '')
         KEYNAME = CONFIG['wallet'].get('keyname', '')
+
+        self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
+
+        grpc = self.GRPC.replace("grpc+http://", "").replace("/", "")  # TODO: why const is grpc is saved as ... (?)
+        grpcaddr, grpcport = grpc.split(":")
+
+        kr = self.__keyring(PASSWORD)
+        private_key = kr.get_password("meile-gui", KEYNAME)  # TODO: very ungly
+
+        print(private_key)  # TODO: only-4-debug
+        sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key)
+
+        # From ConfParams
+        # GASPRICE         = "0.2udvpn"
+        # GASADJUSTMENT    = 1.15
+        # GAS              = 500000
+        # ConfParams.GASPRICE, ConfParams.GAS, ConfParams.GASADJUSTMENT,
+
+        tx_params = TxParams(
+            # denom="udvpn",  # TODO: from ConfParams
+            # fee_amount=20000,  # TODO: from ConfParams
+            # gas=ConfParams.GAS,
+            gas_multiplier=ConfParams.GASADJUSTMENT
+        )
+
+        sessions = sdk.sessions.QuerySessionsForSubscription(int(ID))
+        for session in sessions:
+            if session.status == Status.ACTIVE.value:
+                tx = sdk.sessions.EndSession(session_id=session.id, rating=0, tx_params=tx_params)
+                print(sdk.sessions.wait_transaction(tx["hash"]))
+
+        tx = sdk.sessions.StartSession(subscription_id=int(ID), address=address)
+        if tx.get("log", None) is not None:
+            self.connected = {"v2ray_pid" : None,  "result": False, "status" : tx["log"]}
+            print(self.connected)
+            return
+
+        tx_response = sdk.sessions.wait_transaction(tx["hash"])
+        session_id = search_attribute(tx_response, "sentinel.session.v2.EventStart", "id")
+
+        time.sleep(1)  # Wait a few seconds....
+        # The sleep is required because the session_id could not be fetched from the node / rpc
+
+        node = sdk.nodes.QueryNode(address)
+
+        # response = sdk.nodes.PostSession(int(session_id), node.remote_url, NodeType.WIREGUARD if type == "WireGuard" else NodeType.V2RAY)
+        # re-implement here sdk.nodes.PostSession ...
+
+        if type == "WireGuard":
+            # [from golang] wgPrivateKey, err = wireguardtypes.NewPrivateKey()
+            # [from golang] key = wgPrivateKey.Public().String()
+            wgkey = WgKey()
+            # The private key should be used by the wireguard client
+            key = wgkey.pubkey
+        else:  # NodeType.V2RAY
+            # os.urandom(16)
+            # [from golang] uid, err = uuid.GenerateRandomBytes(16)
+            # [from golang] key = base64.StdEncoding.EncodeToString(append([]byte{0x01}, uid...))
+            key = base64.b64encode(uuid.uuid4().bytes).decode("utf-8")
+
+        sk = ecdsa.SigningKey.from_string(
+            sdk._account.private_key, curve=ecdsa.SECP256k1, hashfunc=hashlib.sha256
+        )
+
+        session_id = int(session_id)
+        # Uint64ToBigEndian
+        bige_session = session_id.to_bytes(8, "big")
+        signature = sk.sign(bige_session)
+
+        payload = {
+            "key": key,
+            "signature": base64.b64encode(signature).decode("utf-8"),
+        }
+        response = requests.post(f"{node.remote_url}/accounts/{sdk._account.address}/sessions/{session_id}", json=payload, headers={"Content-Type": "application/json; charset=utf-8"}, verify=False)
+        if response.ok is False:
+            self.connected = {"v2ray_pid" : None,  "result": False, "status" : response.text}
+            print(self.connected)
+            return
+        
+        response = response.json()
+        if response.get("success", True) is True:
+            decode = base64.b64decode(response["result"])
+
+            address = f"{decode[0]}.{decode[1]}.{decode[2]}.{decode[3]}/32"
+            host = f"{decode[20]}.{decode[21]}.{decode[22]}.{decode[23]}"
+            port = (decode[24] & -1) << 8 | decode[25] & -1
+            peer_endpoint = f"{host}:{port}"
+
+            print("address", address)
+            print("host", host)
+            print("port", port)
+            print("peer_endpoint", peer_endpoint)
+
+            public_key = base64.b64encode(decode[26:58]).decode("utf-8")
+            print("public_key", public_key)
+
+            config = configparser.ConfigParser()
+            config.optionxform = str
+
+            config.add_section("Interface")
+            config.set("Interface", "Address", address)
+            config.set("Interface", "PrivateKey", wgkey.privkey)
+            # config.set("Interface", "DNS", "1.1.1.1")
+            config.add_section("Peer")
+            config.set("Peer", "PublicKey", public_key)
+            config.set("Peer", "Endpoint", peer_endpoint)
+            config.set("Peer", "AllowedIPs", "0.0.0.0/0")
+            config.set("Peer", "PersistentKeepalive", "25")
+
+            iface = "wg99"
+            config_file = path.join(ConfParams.BASEDIR, f"{iface}.conf")
+
+            if path.isfile(config_file) is True:
+                remove(config_file)
+
+            with open(config_file, "w", encoding="utf-8") as example:
+                config.write(example)
+
+            import subprocess
+            # Workaround only for Linux, just for test please :)
+            subprocess.Popen(
+                f"ip link delete {iface}".split(),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            ).wait()
+            subprocess.Popen(
+                f"wg-quick up {config_file}".split(),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            ).wait()
+
+            if psutil.net_if_addrs().get(iface):
+                self.connected = {"v2ray_pid" : None,  "result": True, "status" : iface}
+                return
+
+            self.connected = {"v2ray_pid" : None,  "result": False, "status" : "Error bringing up wireguard interface"}
+            return
+
+
         connCMD = "pkexec env PATH=%s %s connect --home %s --keyring-backend file --keyring-dir %s --chain-id %s --node %s --gas-prices %s --gas %d --gas-adjustment %f --yes --from '%s' %s %s" % (ConfParams.PATH,
                                                                                                                                                                                                     sentinelcli,
                                                                                                                                                                                                     ConfParams.BASEDIR,
