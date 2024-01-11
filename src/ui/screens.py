@@ -943,7 +943,7 @@ class WalletScreen(Screen):
                     theme_text_color="Custom",
                     text_color=(1,1,1,1),
                     on_release=partial(self.wallet_restore, True)
-                    ),
+                ),
 
                 MDRaisedButton(
                     text="RESTORE",
