@@ -3,23 +3,20 @@ import json
 import requests
 import psutil
 import binascii
-import time
 from time import sleep
 from os import path, remove
 
 from json.decoder import JSONDecodeError
 
 from conf.meile_config import MeileGuiConfig
-from typedef.konstants import IBCTokens
-from typedef.konstants import ConfParams
-from typedef.konstants import HTTParams
+from typedef.konstants import IBCTokens, ConfParams, HTTParams, V2Ray
 from adapters import HTTPRequests
 from cli.v2ray import V2RayHandler
 
 import base64
 import uuid
 import configparser
-
+import socket
 import bech32
 from bip_utils import Bip39SeedGenerator, Bip44, Bip44Coins
 from sentinel_protobuf.sentinel.subscription.v2.msg_pb2 import MsgCancelRequest, MsgCancelResponse
@@ -248,10 +245,19 @@ class HandleWalletFunctions():
         tx_response = sdk.sessions.wait_transaction(tx["hash"])
         session_id = search_attribute(tx_response, "sentinel.session.v2.EventStart", "id")
 
-        time.sleep(1)  # Wait a few seconds....
+        from_event = {
+            "subscription_id": search_attribute(tx_response, "sentinel.session.v2.EventStart", "subscription_id"),
+            "address": search_attribute(tx_response, "sentinel.session.v2.EventStart", "address"),
+            "node_address": search_attribute(tx_response, "sentinel.session.v2.EventStart", "node_address"),
+        }
+        # Double check :)
+        assert from_event["subscription_id"] == ID and from_event["address"] == sdk._account.address and from_event["node_address"] == address
+
+        sleep(1)  # Wait a few seconds....
         # The sleep is required because the session_id could not be fetched from the node / rpc
 
         node = sdk.nodes.QueryNode(address)
+        assert node.address == address
 
         # response = sdk.nodes.PostSession(int(session_id), node.remote_url, NodeType.WIREGUARD if type == "WireGuard" else NodeType.V2RAY)
         # re-implement here sdk.nodes.PostSession ...
@@ -263,163 +269,179 @@ class HandleWalletFunctions():
             # The private key should be used by the wireguard client
             key = wgkey.pubkey
         else:  # NodeType.V2RAY
-            # os.urandom(16)
             # [from golang] uid, err = uuid.GenerateRandomBytes(16)
+            uid_16b = uuid.uuid4()
             # [from golang] key = base64.StdEncoding.EncodeToString(append([]byte{0x01}, uid...))
-            key = base64.b64encode(uuid.uuid4().bytes).decode("utf-8")
+            # data length must be 17 bytes...
+            key = base64.b64encode(bytes(0x01) + uid_16b.bytes).decode("utf-8")
 
-        sk = ecdsa.SigningKey.from_string(
-            sdk._account.private_key, curve=ecdsa.SECP256k1, hashfunc=hashlib.sha256
-        )
+        sk = ecdsa.SigningKey.from_string(sdk._account.private_key, curve=ecdsa.SECP256k1, hashfunc=hashlib.sha256)
 
-        session_id = int(session_id)
         # Uint64ToBigEndian
-        bige_session = session_id.to_bytes(8, "big")
-        signature = sk.sign(bige_session)
+        bige_session = int(session_id).to_bytes(8, byteorder="big")
+        signature = sk.sign_deterministic(bige_session)
+
+        # vk = sk.get_verifying_key()
+        # vk.verify(signature, bige_session)
 
         payload = {
             "key": key,
             "signature": base64.b64encode(signature).decode("utf-8"),
         }
-        response = requests.post(f"{node.remote_url}/accounts/{sdk._account.address}/sessions/{session_id}", json=payload, headers={"Content-Type": "application/json; charset=utf-8"}, verify=False)
+        response = requests.post(
+            f"{node.remote_url}/accounts/{sdk._account.address}/sessions/{session_id}",
+            json=payload,
+            headers={"Content-Type": "application/json; charset=utf-8"},
+            verify=False,
+            timeout=60  # TODO: configurable
+        )
+
         if response.ok is False:
             self.connected = {"v2ray_pid" : None,  "result": False, "status" : response.text}
             print(self.connected)
             return
-        
+
         response = response.json()
         if response.get("success", True) is True:
             decode = base64.b64decode(response["result"])
 
-            address = f"{decode[0]}.{decode[1]}.{decode[2]}.{decode[3]}/32"
-            host = f"{decode[20]}.{decode[21]}.{decode[22]}.{decode[23]}"
-            port = (decode[24] & -1) << 8 | decode[25] & -1
-            peer_endpoint = f"{host}:{port}"
-
-            print("address", address)
-            print("host", host)
-            print("port", port)
-            print("peer_endpoint", peer_endpoint)
-
-            public_key = base64.b64encode(decode[26:58]).decode("utf-8")
-            print("public_key", public_key)
-
-            config = configparser.ConfigParser()
-            config.optionxform = str
-
-            config.add_section("Interface")
-            config.set("Interface", "Address", address)
-            config.set("Interface", "PrivateKey", wgkey.privkey)
-            # config.set("Interface", "DNS", "1.1.1.1")
-            config.add_section("Peer")
-            config.set("Peer", "PublicKey", public_key)
-            config.set("Peer", "Endpoint", peer_endpoint)
-            config.set("Peer", "AllowedIPs", "0.0.0.0/0")
-            config.set("Peer", "PersistentKeepalive", "25")
-
-            iface = "wg99"
-            config_file = path.join(ConfParams.BASEDIR, f"{iface}.conf")
-
-            if path.isfile(config_file) is True:
-                remove(config_file)
-
-            with open(config_file, "w", encoding="utf-8") as example:
-                config.write(example)
-
-            import subprocess
-            # Workaround only for Linux, just for test please :)
-            subprocess.Popen(
-                f"ip link delete {iface}".split(),
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            ).wait()
-            subprocess.Popen(
-                f"wg-quick up {config_file}".split(),
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            ).wait()
-
-            if psutil.net_if_addrs().get(iface):
-                self.connected = {"v2ray_pid" : None,  "result": True, "status" : iface}
-                return
-
-            self.connected = {"v2ray_pid" : None,  "result": False, "status" : "Error bringing up wireguard interface"}
-            return
-
-
-        connCMD = "pkexec env PATH=%s %s connect --home %s --keyring-backend file --keyring-dir %s --chain-id %s --node %s --gas-prices %s --gas %d --gas-adjustment %f --yes --from '%s' %s %s" % (ConfParams.PATH,
-                                                                                                                                                                                                    sentinelcli,
-                                                                                                                                                                                                    ConfParams.BASEDIR,
-                                                                                                                                                                                                    ConfParams.KEYRINGDIR,
-                                                                                                                                                                                                    ConfParams.CHAINID,
-                                                                                                                                                                                                    self.RPC,
-                                                                                                                                                                                                    ConfParams.GASPRICE,
-                                                                                                                                                                                                    ConfParams.GAS,
-                                                                                                                                                                                                    ConfParams.GASADJUSTMENT,
-                                                                                                                                                                                                    KEYNAME,
-                                                                                                                                                                                                    ID,
-                                                                                                                                                                                                    address)
-
-        print(connCMD)
-        ofile =  open(ConfParams.CONNECTIONINFO, "wb")
-
-        try:
-            child = pexpect.spawn(connCMD)
-            child.logfile = ofile
-
-            child.expect(".*")
-            child.sendline(PASSWORD)
-            child.expect(pexpect.EOF)
-
-            ofile.flush()
-            ofile.close()
-        except pexpect.exceptions.TIMEOUT:
-            self.connected = {"v2ray_pid" : None,  "result": False, "status" : "Error running expect"}
-            return
-
-
-        with open(ConfParams.CONNECTIONINFO, "r") as connection_file:
-            lines = connection_file.readlines()
-
-            for l in lines:
-                if "Error" in l and "v2ray" not in l and "inactive_pending" not in l:
-                    self.connected = {"v2ray_pid" : None,  "result": False, "status" : l}
+            if type == "WireGuard":
+                if len(decode) != 58:
+                    self.connected = {"v2ray_pid" : None,  "result": False, "status" : f"Incorrect result size: {len(decode)}"}
+                    print(self.connected)
                     return
 
-        if type == "WireGuard":
-            if psutil.net_if_addrs().get("wg99"):
-                self.connected = {"v2ray_pid" : None,  "result": True, "status" : "wg99"}
-                return
-            else:
-                self.connected = {"v2ray_pid" : None,  "result": False, "status" : "Error bringing up wireguard interface"}
-                return
-        else:
-            TUNIFACE = False
-            V2Ray = V2RayHandler(v2ray_tun2routes_connect_bash + " up")
-            V2Ray.start_daemon()
-            sleep(15)
+                address = f"{decode[0]}.{decode[1]}.{decode[2]}.{decode[3]}/32"
+                host = f"{decode[20]}.{decode[21]}.{decode[22]}.{decode[23]}"
+                port = (decode[24] & -1) << 8 | decode[25] & -1
+                peer_endpoint = f"{host}:{port}"
 
-            for iface in psutil.net_if_addrs().keys():
-                if "tun" in iface:
-                    TUNIFACE = True
-                    break
+                print("address", address)
+                print("host", host)
+                print("port", port)
+                print("peer_endpoint", peer_endpoint)
 
-            if TUNIFACE:
-                self.connected = {"v2ray_pid" : V2Ray.v2ray_pid, "result": True, "status" : TUNIFACE}
-                print(self.connected)
-                return
-            else:
-                try:
-                    V2Ray.v2ray_script = v2ray_tun2routes_connect_bash + " down"
-                    V2Ray.kill_daemon()
-                    #V2Ray.kill_daemon()
-                    #Tun2Socks.kill_daemon()
-                except Exception as e:
-                    print(str(e))
+                public_key = base64.b64encode(decode[26:58]).decode("utf-8")
+                print("public_key", public_key)
 
-                self.connected = {"v2ray_pid" : V2Ray.v2ray_pid,  "result": False, "status": "Error connecting to v2ray node: %s" % TUNIFACE}
-                print(self.connected)
-                return
+                config = configparser.ConfigParser()
+                config.optionxform = str
+
+                config.add_section("Interface")
+                config.set("Interface", "Address", address)
+                config.set("Interface", "PrivateKey", wgkey.privkey)
+                # config.set("Interface", "DNS", "1.1.1.1")
+                config.add_section("Peer")
+                config.set("Peer", "PublicKey", public_key)
+                config.set("Peer", "Endpoint", peer_endpoint)
+                config.set("Peer", "AllowedIPs", "0.0.0.0/0")
+                config.set("Peer", "PersistentKeepalive", "25")
+
+                iface = "wg99"
+                # ConfParams.KEYRINGDIR (.meile-gui)
+                config_file = path.join(ConfParams.KEYRINGDIR, f"{iface}.conf")
+
+                if path.isfile(config_file) is True:
+                    remove(config_file)
+
+                with open(config_file, "w", encoding="utf-8") as f:
+                    config.write(f)
+
+                import subprocess
+                # Workaround only for Linux, just for test please :)
+                subprocess.Popen(
+                    f"ip link delete {iface}".split(),
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                ).wait()
+                subprocess.Popen(
+                    f"wg-quick up {config_file}".split(),
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                ).wait()
+
+                if psutil.net_if_addrs().get(iface):
+                    self.connected = {"v2ray_pid" : None,  "result": True, "status" : iface}
+                    return
+            else:  # v2ray
+                if len(decode) != 7:
+                    self.connected = {"v2ray_pid" : None,  "result": False, "status" : f"Incorrect result size: {len(decode)}"}
+                    print(self.connected)
+                    return
+
+                vmess_address = f"{decode[0]}.{decode[1]}.{decode[2]}.{decode[3]}"
+                vmess_port = (decode[4] & -1) << 8 | decode[5] & -1
+                vmess_transports = {  # Could be a simple array :)
+                    0x01: "tcp",
+					0x02: "mkcp",
+					0x03: "websocket",
+					0x04: "http",
+					0x05: "domainsocket",
+					0x06: "quic",
+					0x07: "gun",
+					0x08: "grpc",
+                }
+
+                # [from golang] apiPort, err := netutil.GetFreeTCPPort()
+                # https://gist.github.com/gabrielfalcao/20e567e188f588b65ba2
+                tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                tcp.bind(('', 0))
+                _, api_port = tcp.getsockname()
+                tcp.close()
+
+                print("api_port", api_port)
+                print("vmess_port", vmess_port)
+                print("vmess_address", vmess_address)
+                print("vmess_uid", f"{uid_16b}")
+                print("vmess_transport", vmess_transports[decode[-1]])
+
+                v2ray_object = V2Ray(
+                    api_port=api_port,
+                    vmess_port=vmess_port,
+                    vmess_address=vmess_address,
+                    vmess_uid=f"{uid_16b}",
+                    vmess_transport=vmess_transports[decode[-1]],
+                    proxy_port=1080
+                )
+                # ConfParams.KEYRINGDIR (.meile-gui)
+                config_file = path.join(ConfParams.KEYRINGDIR, "v2ray_config.json")
+                if path.isfile(config_file) is True:
+                    remove(config_file)
+                with open(config_file, "w", encoding="utf-8") as f:
+                    f.write(json.dumps(v2ray_object.configuration(), indent=4))
+
+                # v2ray_tun2routes_connect_bash
+                # >> hardcoded = proxy port >> 1080
+                # >> hardcoded = v2ray file >> /home/${USER}/.meile-gui/v2ray_config.json
+
+                tuniface = False
+                v2ray_handler = V2RayHandler(f"{v2ray_tun2routes_connect_bash} up")
+                v2ray_handler.start_daemon()
+                sleep(15)
+
+                for iface in psutil.net_if_addrs().keys():
+                    if "tun" in iface:
+                        tuniface = True
+                        break
+
+                if tuniface is True:
+                    self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid, "result": True, "status" : tuniface}
+                    print(self.connected)
+                    return
+                else:
+                    try:
+                        v2ray_handler.v2ray_script = f"{v2ray_tun2routes_connect_bash} down"
+                        v2ray_handler.kill_daemon()
+                    except Exception as e:
+                        print(str(e))
+
+                    self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid,  "result": False, "status": f"Error connecting to v2ray node: {tuniface}"}
+                    print(self.connected)
+                    return
+
+        self.connected = {"v2ray_pid" : None,  "result": False, "status": "boh"}
+        return
+
 
     def get_balance(self, address):
         Request = HTTPRequests.MakeRequest()

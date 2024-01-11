@@ -19,17 +19,17 @@ if [[ ${STATE} = "up" ]]; then
 	echo ${PRIMARY_IFACE} > /home/${USER}/.meile-gui/iface
 
         # start v2ray
-        /home/${USER}/.meile-gui/bin/v2ray run -c /home/${USER}/.sentinelcli/v2ray_config.json &
+        /home/${USER}/.meile-gui/bin/v2ray run -c /home/${USER}/.meile-gui/v2ray_config.json &
         sleep 3
-        
+
         # get v2ray proxy IP
         PROXY_IP=`curl --preproxy socks5://localhost:1080 https://icanhazip.com`
         echo ${PROXY_IP} > /home/${USER}/.meile-gui/v2ray.proxy
         echo ${PROXY_IP}
         sleep 2
-        
+
         # add tun interface
-        TUNID=${RANDOM} 
+        TUNID=${RANDOM}
         TUNIFACE="tun"${TUNID}
         echo ${TUNIFACE} > /home/${USER}/.meile-gui/tuniface
         ip tuntap add mode tun dev ${TUNIFACE}
@@ -47,8 +47,8 @@ if [[ ${STATE} = "up" ]]; then
         #sysctl net.ipv4.conf.tun0.rp_filter=2
 	#sysctl net.ipv4.conf.tun0.forwarding=1
 	#sysctl net.ipv4.conf.${PRIMARY_IFACE}.forwarding=1
-	
-	# start tun2socks 
+
+	# start tun2socks
         /home/${USER}/.meile-gui/bin/tun2socks -device tun://${TUNIFACE} -proxy socks5://127.0.0.1:1080 -interface ${PRIMARY_IFACE} -mtu 1500 -tcp-sndbuf 1024k -tcp-rcvbuf 1024k -tcp-auto-tuning
 
         #tun2socks -device tun0 -proxy socks5://127.0.0.1:1080 -interface ${PRIMARY_IFACE} -loglevel debug &
@@ -63,7 +63,7 @@ else
 	PRIMARY_IFACE=`cat /home/${USER}/.meile-gui/iface | cut -d " " -f 1`
 	TUNIFACE=`cat /home/${USER}/.meile-gui/tuniface | cut -d " " -f 1`
         PROXY_IP=`cat /home/${USER}/.meile-gui/v2ray.proxy`
-        
+
         # terminate the v2ray setup
         pkill -11 tun2socks
         pkill -11 v2ray
@@ -73,12 +73,12 @@ else
         ip addr del 10.10.10.10/24 dev ${TUNIFACE}
         ip link set dev ${TUNIFACE} down
         ip tuntap del mode tun dev ${TUNIFACE}
-        
+
         # delete routes
         ip route del default
         ip route del default via 10.10.10.10 dev ${TUNIFACE} metric 1
         ip route del ${PROXY_IP} via ${GATEWAY}
-        
+
         # add default route to LAN gateway
         ip route add default via ${GATEWAY} dev ${PRIMARY_IFACE} metric 100
 
