@@ -3,6 +3,7 @@ import json
 import requests
 import psutil
 import binascii
+import random
 from time import sleep
 from os import path, remove
 
@@ -275,26 +276,34 @@ class HandleWalletFunctions():
             # data length must be 17 bytes...
             key = base64.b64encode(bytes(0x01) + uid_16b.bytes).decode("utf-8")
 
-        sk = ecdsa.SigningKey.from_string(sdk._account.private_key, curve=ecdsa.SECP256k1, hashfunc=hashlib.sha256)
+        # Sometime we get a random "code":4,"message":"invalid signature ...``
+        for _ in range(0, 3):  # 3 as max_attempt:
+            sk = ecdsa.SigningKey.from_string(sdk._account.private_key, curve=ecdsa.SECP256k1, hashfunc=hashlib.sha256)
 
-        # Uint64ToBigEndian
-        bige_session = int(session_id).to_bytes(8, byteorder="big")
-        signature = sk.sign_deterministic(bige_session)
+            # Uint64ToBigEndian
+            bige_session = int(session_id).to_bytes(8, byteorder="big")
 
-        # vk = sk.get_verifying_key()
-        # vk.verify(signature, bige_session)
+            signature = sk.sign_deterministic(bige_session)
+            payload = {
+                "key": key,
+                "signature": base64.b64encode(signature).decode("utf-8"),
+            }
+            print(payload)
+            response = requests.post(
+                f"{node.remote_url}/accounts/{sdk._account.address}/sessions/{session_id}",
+                json=payload,
+                headers={"Content-Type": "application/json; charset=utf-8"},
+                verify=False,
+                timeout=60  # TODO: configurable
+            )
+            print(response, response.text)
+            if response.ok is True:
+                break
 
-        payload = {
-            "key": key,
-            "signature": base64.b64encode(signature).decode("utf-8"),
-        }
-        response = requests.post(
-            f"{node.remote_url}/accounts/{sdk._account.address}/sessions/{session_id}",
-            json=payload,
-            headers={"Content-Type": "application/json; charset=utf-8"},
-            verify=False,
-            timeout=60  # TODO: configurable
-        )
+            sleep(random.uniform(0.5, 1))
+            # Continue ireation only for code == 4 (invalid signature)
+            if response.json()["error"]["code"] != 4:
+                break
 
         if response.ok is False:
             self.connected = {"v2ray_pid" : None,  "result": False, "status" : response.text}
@@ -311,12 +320,14 @@ class HandleWalletFunctions():
                     print(self.connected)
                     return
 
-                address = f"{decode[0]}.{decode[1]}.{decode[2]}.{decode[3]}/32"
-                host = f"{decode[20]}.{decode[21]}.{decode[22]}.{decode[23]}"
+                ipv4_address = socket.inet_ntoa(decode[0:4]) + "/32"
+                ipv6_address = socket.inet_ntop(socket.AF_INET6, decode[4:20]) + "/128"
+                host = socket.inet_ntoa(decode[20:24])
                 port = (decode[24] & -1) << 8 | decode[25] & -1
                 peer_endpoint = f"{host}:{port}"
 
-                print("address", address)
+                print("ipv4_address", ipv4_address)
+                print("ipv6_address", ipv6_address)
                 print("host", host)
                 print("port", port)
                 print("peer_endpoint", peer_endpoint)
@@ -327,15 +338,22 @@ class HandleWalletFunctions():
                 config = configparser.ConfigParser()
                 config.optionxform = str
 
+                # [from golang] listenPort, err := netutil.GetFreeUDPPort()
+                sock = socket.socket()
+                sock.bind(('', 0))
+                listen_port = sock.getsockname()[1]
+                sock.close()
+
                 config.add_section("Interface")
-                config.set("Interface", "Address", address)
+                config.set("Interface", "Address", ",".join([ipv4_address, ipv6_address]))
+                config.set("Interface", "ListenPort", f"{listen_port}")
                 config.set("Interface", "PrivateKey", wgkey.privkey)
-                # config.set("Interface", "DNS", "1.1.1.1")
+                config.set("Interface", "DNS", ",".join(["10.8.0.1","1.0.0.1","1.1.1.1"]))  # TODO: 8.8.8.8 (?)
                 config.add_section("Peer")
                 config.set("Peer", "PublicKey", public_key)
                 config.set("Peer", "Endpoint", peer_endpoint)
-                config.set("Peer", "AllowedIPs", "0.0.0.0/0")
-                config.set("Peer", "PersistentKeepalive", "25")
+                config.set("Peer", "AllowedIPs", ",".join(["0.0.0.0/0","::/0"]))
+                config.set("Peer", "PersistentKeepalive", "25")  # TODO: 15(?) from golang file
 
                 iface = "wg99"
                 # ConfParams.KEYRINGDIR (.meile-gui)
@@ -347,18 +365,8 @@ class HandleWalletFunctions():
                 with open(config_file, "w", encoding="utf-8") as f:
                     config.write(f)
 
-                import subprocess
-                # Workaround only for Linux, just for test please :)
-                subprocess.Popen(
-                    f"ip link delete {iface}".split(),
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                ).wait()
-                subprocess.Popen(
-                    f"wg-quick up {config_file}".split(),
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                ).wait()
+                child = pexpect.spawn(f"pkexec sh -c 'ip link delete {iface}; wg-quick up {config_file}'")
+                child.expect(pexpect.EOF)
 
                 if psutil.net_if_addrs().get(iface):
                     self.connected = {"v2ray_pid" : None,  "result": True, "status" : iface}
@@ -369,7 +377,7 @@ class HandleWalletFunctions():
                     print(self.connected)
                     return
 
-                vmess_address = f"{decode[0]}.{decode[1]}.{decode[2]}.{decode[3]}"
+                vmess_address = socket.inet_ntoa(decode[0:4])
                 vmess_port = (decode[4] & -1) << 8 | decode[5] & -1
                 vmess_transports = {  # Could be a simple array :)
                     0x01: "tcp",
@@ -384,10 +392,10 @@ class HandleWalletFunctions():
 
                 # [from golang] apiPort, err := netutil.GetFreeTCPPort()
                 # https://gist.github.com/gabrielfalcao/20e567e188f588b65ba2
-                tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                tcp.bind(('', 0))
-                _, api_port = tcp.getsockname()
-                tcp.close()
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.bind(('', 0))
+                api_port = sock.getsockname()[1]
+                sock.close()
 
                 print("api_port", api_port)
                 print("vmess_port", vmess_port)
