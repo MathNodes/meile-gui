@@ -33,9 +33,8 @@ class HTTParams():
     SERVER_URL             = "https://aimokoivunen.mathnodes.com:5000"
     RPC                    = "https://rpc.mathnodes.com:443"
     # Note http://128.199.90.172:26657 is testnet ONLY!
-    RPCS                   = ['https://rpc.mathnodes.com:443', 'https://rpc.sentinel.co:443', 'https://sentinel-rpc.badgerbite.io:443',
-                              'https://sentinel-rpc2.badgerbite.io:443', 'https://rpc.sentinel.quokkastake.io:443', 'https://rpc-sentinel.whispernode.com:443',
-                              'https://rpc-sentinel-ia.cosmosia.notional.ventures:443']
+    RPCS                   = ['https://rpc.mathnodes.com:443', 'https://rpc.dvpn.me:443', 'https://rpc.sentinel.co:443', 'https://sentinel-rpc.badgerbite.io:443',
+                              'https://sentinel-rpc2.badgerbite.io:443', 'https://rpc.sentinel.quokkastake.io:443', 'https://rpc-sentinel.whispernode.com:443']
     GRPC                   = "grpc+http://aimokoivunen.mathnodes.com:9090/"
     #GRPC                   = "grpc+http://128.199.90.172:9090/"
     HEALTH_CHECK           = "https://api.health.sentinel.co/v1/records"
@@ -46,6 +45,10 @@ class HTTParams():
     API_RATING_ENDPOINT    = "/api/rating"
     SESSIONS_API_URL       = '/sentinel/accounts/%s/sessions'
     BALANCES_ENDPOINT      = "/bank/balances/"
+    ICANHAZURL             = "https://icanhazip.com"
+    ICANHAZDNS             = "icanhazip.com"
+    IFCONFIGDNS            = "ifconfig.co"
+    IFCONFIGURL            = "https://ifconfig.co/json"
     
     
 class IBCTokens():
@@ -77,6 +80,7 @@ class MeileColors():
     MAP_MARKER               = "../imgs/location_pin.png"
     HEALTH_ICON              = "shield-plus"
     SICK_ICON                = "emoticon-sick"
+    ARCGIS_MAP               = "https://server.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}.png"
     
 class NodeKeys():
     NodesInfoKeys = ["Moniker","Address","Price","Hourly Price", "Country","Speed","Latency","Peers","Handshake","Type","Version","Status"]

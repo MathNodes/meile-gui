@@ -1,6 +1,6 @@
 from geography.continents import OurWorld
-from ui.interfaces import Tab, LatencyContent, TooltipMDIconButton
-from typedef.win import WindowNames, ICANHAZURL, ICANHAZDNS
+from ui.interfaces import Tab, LatencyContent, TooltipMDIconButton, ConnectionDialog
+from typedef.win import WindowNames
 from cli.sentinel import  NodeTreeData
 from typedef.konstants import NodeKeys, TextStrings, MeileColors, HTTParams, IBCTokens
 from cli.sentinel import disconnect as Disconnect
@@ -219,16 +219,16 @@ class PreLoadWindow(Screen):
         yield 0.6
         thread2 = Thread(target=lambda: self.progress_load())
         thread2.start()
-        thread = Thread(target=lambda: self.NodeTree.get_nodes("13s"))
+        thread = Thread(target=lambda: self.NodeTree.get_nodes("23s"))
         thread.start()
         
         Clock.schedule_interval(partial(self.update_status_text, thread), 1.6)
         
     @delayable
     def progress_load(self):
-        for k in range(1,1000):
+        for k in range(1,2000):
             yield 0.0375
-            self.manager.get_screen(WindowNames.PRELOAD).ids.pb.value += 0.001
+            self.manager.get_screen(WindowNames.PRELOAD).ids.pb.value += 0.0005
 
         
     def CopyBin(self):
@@ -341,6 +341,7 @@ class MainWindow(Screen):
     ConnectedDict = {'v2ray_pid' : None,  'result' : False}
     NodeWidget = None
     Markers = []
+    LatLong = []
 
 
     def __init__(self, node_tree, **kwargs):
@@ -392,9 +393,9 @@ class MainWindow(Screen):
         
         if not self.MeileMapBuilt: 
             self.MeileMap = MapView(lat=50.6394, lon=3.057, zoom=2)
-            source = MapSource(url="https://server.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}.png",
-                               cache_key="meile-map-canvas-dark-grey-base", 
-                               tile_size=512,
+            source = MapSource(url=MeileColors.ARCGIS_MAP,
+                               cache_key="meile-map-canvas-dark-grey-base-2", 
+                               tile_size=256,
                                image_ext="png",
                                attribution="@ Meile",
                                size_hint=(.7,1))
@@ -415,7 +416,7 @@ class MainWindow(Screen):
         try:
             
             if clear: 
-                for m in self.Makers:
+                for m in self.Markers:
                     self.MeileMap.remove_marker(m)
                 self.Markers.clear()
                 
@@ -570,16 +571,33 @@ class MainWindow(Screen):
 
         self.old_ip = self.ip
         try:
-            resolver = DNSRequests.MakeDNSRequest(domain=ICANHAZDNS, timeout=1.5, lifetime=2.5)
-            icanhazip = resolver.DNSRequest()
-            if icanhazip:
-                print("%s:%s" % (ICANHAZDNS, icanhazip))
+            resolver = DNSRequests.MakeDNSRequest(domain=HTTParams.IFCONFIGDNS, timeout=3.5, lifetime=3.5)
+            ifconfig = resolver.DNSRequest()
+            if ifconfig:
+                print("%s:%s" % (HTTParams.IFCONFIGDNS, ifconfig))
                 Request = HTTPRequests.MakeRequest()
                 http = Request.hadapter()
-                req = http.get(ICANHAZURL)
-                self.ip = req.text
-
-                self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.new_ip.text = self.ip
+                req = http.get(HTTParams.IFCONFIGURL)
+                ifJSON = req.json()
+                print(ifJSON)
+                self.ip = str(ifJSON['ip'])
+                self.ids.new_ip.text = self.ip
+                self.LatLong.clear()
+                try:
+                    self.LatLong.append(ifJSON['latitude'])
+                    self.LatLong.append(ifJSON['longitude'])
+                except:
+                    print("No Lat/Long")
+                    try:
+                        country = ifJSON['country']
+                        loc = self.MeileLand.CountryLatLong[country]
+                        self.LatLong.append(loc[0])
+                        self.LatLong.append(loc[1])
+                    except:
+                        print("No Country...Defaulting to my dream.")
+                        loc = self.MeileLand.CountryLatLong["Seychelles"]
+                        self.LatLong.append(loc[0])
+                        self.LatLong.append(loc[1])
                 return True
                 #self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.old_ip.text = "Old IP: " + self.old_ip
             else:
@@ -761,13 +779,21 @@ class MainWindow(Screen):
         self.remove_loading_widget(None)
         self.AddCountryNodePins(True)
         yield 0.314
-        self.add_loading_popup("Reloading Nodes...")
+        cd = ConnectionDialog()
+        self.set_conn_dialog(cd, "Reloading Nodes...")
         yield 0.314
         try:
             self.NodeTree.NodeTree = None
-            thread = ThreadWithResult(target=self.NodeTree.get_nodes, args=(latency.return_latency(),))
-            thread.start()
-            thread.join()
+            t = Thread(target=lambda: self.NodeTree.get_nodes(latency.return_latency()))
+            t.start()
+            l = int(latency.return_latency().split('s')[0])
+            pool = l*100
+            inc = float(1/pool)
+            while t.is_alive():
+                yield 0.0365    
+                cd.ids.pb.value += inc
+
+            cd.ids.pb.value = 1
         except Exception as e:
             print(str(e))
             pass
@@ -817,6 +843,7 @@ class MainWindow(Screen):
             pass
     def get_continent_coordinates(self, c):
         loc = self.MeileLand.ContinentLatLong[c]
+        self.MeileMap.zoom = 4
         self.MeileMap.center_on(loc[0], loc[1])
 
     def build_node_data(self, ncountry):
@@ -872,6 +899,28 @@ class MainWindow(Screen):
         self.carousel.add_widget(self.NodeWidget)
         self.carousel.load_slide(self.NodeWidget)
 
+    def close_sub_window(self):
+        self.carousel.remove_widget(self.NodeWidget)
+        self.carousel.load_previous()
+
+    def zoom_country_map(self):
+        try:
+            self.MeileMap.zoom = 7
+            self.MeileMap.center_on(self.LatLong[0],self.LatLong[1])
+        except Exception as e:
+            print(str(e))
+            pass
+        
+    def set_conn_dialog(self, cd, title):
+        self.dialog = None
+        self.dialog = MDDialog(
+                        title=title,
+                        type="custom",
+                        content_cls=cd,
+                        md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
+                    )
+        self.dialog.open()
+        
     def load_country_nodes(self, country, *kwargs):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         NodeTree = NodeTreeData(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeTree.NodeTree)

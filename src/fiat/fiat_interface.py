@@ -21,7 +21,8 @@ from os import path
 import requests
 from requests.auth import HTTPBasicAuth
 
-import stripe 
+import stripe
+import time
 from stripe.error import CardError
 from fiat.stripe_pay.charge import HotwalletFuncs as HandleWalletFunctions
 import fiat.stripe_pay.charge as Charge
@@ -61,7 +62,8 @@ class FiatInterface(Screen):
     
     def __init__(self, **kwargs):
         super(FiatInterface, self).__init__()
-        
+        self.price_api = GetPriceAPI()
+        self.price_cache = {}
         self.CoinOptions = self.DynamicCoinOptions()
         self.DVPNOptions = self.CoinOptions['dvpn']
         self.DECOptions  = self.CoinOptions['dec']
@@ -177,7 +179,6 @@ class FiatInterface(Screen):
         MAX_SPEND = 25
         coins = self.TokenOptions
         CoinOptions = {coins[0] : None, coins[1] : None, coins[2] : None}
-        api = GetPriceAPI()
         
         Request = HTTPRequests.MakeRequest()
         http = Request.hadapter()
@@ -189,11 +190,15 @@ class FiatInterface(Screen):
             pass
         
         for c in coins:
-            response = api.get_usd(c)
-            
-            qty = int(MAX_SPEND/float(response['price']))
+            self.refresh_price(c, cache=30)
+                        
+            if self.price_cache[c]["price"] == 0:
+                x = 0
+                qty = 0
+            else:
+                x = 1 /self.price_cache[c]["price"]
+                qty = int(MAX_SPEND/self.price_cache[c]["price"])
 
-            x = 1 / float(response['price'])
             
             if x < 1:
                 factor = 0.1
@@ -223,33 +228,32 @@ class FiatInterface(Screen):
                 
         return CoinOptions
         
-        
+    def refresh_price(self, mu_coin: str = "dvpn", cache: int = 30):
+        # Need check on cache or trought GetPrice api
+        # We don't need to call the price api if the cache is younger that 30s
+
+        if mu_coin not in self.price_cache or time.time() - self.price_cache[mu_coin]["time"] > cache:
+            response = self.price_api.get_usd(mu_coin)
+            if response['success']:
+                self.price_cache[mu_coin] = {
+                    "price": float(response['price']),
+                    "time": time.time()
+                }
+            else:
+                self.price_cache[mu_coin] = {
+                    "price": float(0),
+                    "time": time.time()
+                }
+                    
     def set_token_price(self, token, dt):
         self.ids.dvpn_price.text = "%s: $" % token.upper() + str(self.get_token_price(token))
          
     def get_token_price(self, token):
-        
-        '''
-        cg_api_keyword = self.CoinGeckoAPI[self.TokenOptions[0]]
-        
-        for key,value in self.CoinGeckoAPI.items():
-            if token == key:
-                cg_api_keyword = value
-        
-        try: 
-            cg = CoinGeckoAPI()
-            cg_price = cg.get_price(ids=[cg_api_keyword], vs_currencies='usd')
-            token_price = cg_price[cg_api_keyword]['usd']
-        '''
-        
-        api = GetPriceAPI()
-        
         try:
-            response = api.get_usd(token)
-            if response['success']:
-                token_price = response['price']
-            else:
-                raise Exception("Error getting price from CoinStats or AscenDEX") 
+            self.refresh_price(token, cache=30)
+            token_price = self.price_cache[token]["price"]
+            if token_price == 0:
+                raise Exception("Error getting price from CoinStats")
         except Exception as e:
             print(str(e)) 
             print("Getting price from CryptoCompare...")
@@ -258,7 +262,7 @@ class FiatInterface(Screen):
             HEADERS = {'authorization' : "Apikey %s" % scrtsxx.CCOMPAREAPI}
             try: 
                 r = http.get(scrtsxx.CCOMPARE_API_URL % token.upper(), headers=HEADERS)
-                sentinel_price = r.json()['USD']
+                token_price = r.json()['USD']
             except Exception as e:
                 print(str(e))
                 return 0
