@@ -936,8 +936,12 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
         if not mw.get_ip_address(None):
             self.remove_loading_widget()
             self.change_dns()
+            mw.close_sub_window()
+            mw.zoom_country_map()
         else:
             self.remove_loading_widget()
+            mw.close_sub_window()
+            mw.zoom_country_map()
             
     @delayable        
     def change_dns(self):
