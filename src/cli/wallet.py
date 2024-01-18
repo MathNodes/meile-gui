@@ -118,6 +118,19 @@ class HandleWalletFunctions():
         # GAS              = 500000
         # ConfParams.GASPRICE, ConfParams.GAS, ConfParams.GASADJUSTMENT,
 
+        balance = self.get_balance(sdk._account.address)
+
+        amount_required = float(DEPOSIT.replace(DENOM, ""))
+        token_ibc = {v: k for k, v in IBCTokens.IBCUNITTOKEN.items()}
+        # Balance keys are dvpn, src, dec etc, alredy / /IBCTokens.SATOSHI
+        # We could paramtrize that method and ask if we want dvpn or udvpn
+        # For the moment leave as is
+        # [1:] remove the 'u'
+        ubalance = balance.get(token_ibc[DENOM][1:], 0) * IBCTokens.SATOSHI
+        # < amount_required what about the fee and gas?
+        if ubalance < amount_required:
+            return(False, f"Balance is too low, required: {round(amount_required / IBCTokens.SATOSHI, 4)}{token_ibc[DENOM][1:]}")
+
         tx_params = TxParams(
             # denom="udvpn",  # TODO: from ConfParams
             # fee_amount=20000,  # TODO: from ConfParams
