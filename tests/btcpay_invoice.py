@@ -105,7 +105,7 @@ if __name__ == '__main__':
                                           "merchantName" : "Meile dVPN",
                                           "itemDesc" : "Meile Residential Node Subscription Plan",
                                           "notificationEmail" : scrtsxx.BTCPayEmail,
-                                          "trasnactionSpeed" : "high",
+                                          "transactionSpeed" : "high",
                                           "buyer" : buyer})
     
     
