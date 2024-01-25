@@ -1,0 +1,9 @@
+SECRET_KEY         = "sk_live_...."
+WALLET_ADDRESS     = 'sent...'
+SERVER_ADDRESS     = "https://your-server.de:5000"
+API_ENDPOINT       = "/api/endpoint"
+MAX_SPEND_ENDPOINT = "/api/endpoint2"
+USERNAME           = 'username'
+PASSWORD           = 'password'
+CCOMPAREAPI        = 'apikey'
+CCOMPARE_API_URL   = "https://min-api.cryptocompare.com/data/price?fsym=%s&tsyms=USD&extraParams=Meile"

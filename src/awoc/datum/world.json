@@ -3960,6 +3960,24 @@
     "Area KM2": "780580"
   },
   {
+    "Country Name": "T\u00FCrkiye",
+    "ISO2": "TR",
+    "ISO3": "TUR",
+    "TLD": "tr",
+    "FIPS": "TU",
+    "ISO Numeric": "792",
+    "GeoNameID": "298795",
+    "E164": "90",
+    "Phone Code": "90",
+    "Continent Name": "Asia",
+    "Continent Code": "as",
+    "Capital": "Ankara",
+    "Time Zone in Capital": "Europe/Istanbul",
+    "Currency Name": "Lira",
+    "Languages": "Turkish (official), Kurdish, other minority languages",
+    "Area KM2": "780580"
+  },
+  {
     "Country Name": "Turkmenistan",
     "ISO2": "TM",
     "ISO3": "TKM",

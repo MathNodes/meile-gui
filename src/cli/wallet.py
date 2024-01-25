@@ -255,10 +255,19 @@ class HandleWalletFunctions():
  
         try: 
             tx = Transaction()
-            tx.add_message(MsgCancelRequest(frm=str(address), id=int(subId)))
-    
-            tx = prepare_and_broadcast_basic_transaction(client, tx, wallet)
-            tx.wait_to_complete()
+            try:
+                tx.add_message(MsgCancelRequest(frm=str(address), id=int(subId)))
+            except Exception as e1:
+                print(str(e1))
+                print("Error Failed on add_message")
+                
+                
+            try:
+                tx = prepare_and_broadcast_basic_transaction(client, tx, wallet)
+                tx.wait_to_complete()
+            except Exception as e2:
+                print("error on broadcasting transaction")
+                print(str(e2))
     
             tx_hash     = tx._tx_hash
             tx_response = tx._response.is_successful()
@@ -332,7 +341,7 @@ class HandleWalletFunctions():
             lines = connection_file.readlines()
             
             for l in lines:
-                if "Error" in l and ("v2ray" not in l or "inactive_pending" not in l):
+                if "Error" in l and "v2ray" not in l and "inactive_pending" not in l:
                     self.connected = {"v2ray_pid" : None,  "result": False, "status" : l}
                     return
             

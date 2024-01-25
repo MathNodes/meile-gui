@@ -10,6 +10,7 @@ from os import path
 from conf.meile_config import MeileGuiConfig
 
 from typedef.win import CoinsList
+from typedef.konstants import MeileColors
 
 class QRCode():
     IMGDIR = None
@@ -63,10 +64,10 @@ class QRCode():
             
         background = Image.new('RGBA', (QRimg.size[0], QRimg.size[1] + 15), (255,255,255,255))
         #robotoFont = ImageFont.truetype(pkg_resources.resource_filename(__name__, os.path.join('fonts', 'Roboto-BoldItalic.ttf')), fontSize)
-        robotoFont = ImageFont.truetype(self.MeileConfig.resource_path('../utils/fonts/Roboto-BoldItalic.ttf'), fontSize)
+        robotoFont = ImageFont.truetype(self.MeileConfig.resource_path(MeileColors.QR_FONT_FACE), fontSize)
     
         draw = ImageDraw.Draw(background)
-        w,h  = draw.textsize(DepositAddress)
+        _, _, w, h = draw.textbbox((0, 0), text=str(DepositAddress))
         draw.text(((QRimg.size[0]+15 - w)/2,QRimg.size[1]-2),DepositAddress, (0,0,0), font=robotoFont)
         
         background.paste(QRimg, (0,0))

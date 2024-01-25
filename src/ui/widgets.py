@@ -174,7 +174,8 @@ class SubscribeContent(BoxLayout):
         self.moniker    = moniker
         self.naddress   = naddress
         self.hourly     = hourly
-        print(f"DATA:\n{self.price_text}\n{self.moniker}\n{self.naddress}")
+        self.price_api = GetPriceAPI()
+        self.price_cache = {}
         self.parse_coin_deposit(CoinsList.ibc_mu_coins[0])
         
         menu_items = [
@@ -266,27 +267,30 @@ class SubscribeContent(BoxLayout):
                 return " GB" 
         except AttributeError:
             return " GB"   
-    # Should be async
+    def refresh_price(self, mu_coin: str = "dvpn", cache: int = 30):
+        # Need check on cache or trought GetPrice api
+        # We don't need to call the price api if the cache is younger that 30s
+
+        if mu_coin not in self.price_cache or time.time() - self.price_cache[mu_coin]["time"] > cache:
+            response = self.price_api.get_usd(mu_coin)
+            self.price_cache[mu_coin] = {
+                "price": float(response['price']),
+                "time": time.time()
+            }
+            
     def get_usd(self):
         deposit_ret = self.return_deposit_text()
         match = re.match(r"([0-9]+.[0-9]+)([a-z]+)", deposit_ret[0], re.I)
         if match:
             amt, coin = match.groups()
-            #coin = coin.lstrip("u") # Remove u
-            #price_text = f"{amount}{coin}"
         else:
             amt    = 0.0
             coin   = "dvpn"
-        #amt = re.findall(r"[0-9]+.[0-9]+",depost_ret[0])[0]
-        #coin = self.ids.drop_item.current_item
-
-        CoinPriceAPI = GetPriceAPI()        
-        PriceDict = CoinPriceAPI.get_usd(coin)
-        self.coin_price = PriceDict['price']
         
-        self.ids.usd_price.text = '$' + str(round(float(self.coin_price) * float(amt),3))
+        self.refresh_price(coin, cache=30)
+        self.ids.usd_price.text = '$' + str(round(float(self.price_cache[coin]["price"]) * float(amt),3))
 
-        return PriceDict['success']
+        return True
 
 class ProcessingSubDialog(BoxLayout):
     moniker = StringProperty()
@@ -315,7 +319,7 @@ class NodeRV(RecycleView):
 class NodeRV2(RecycleView):    
     pass
 
-class OnHoverMDRaisedButton(MDRaisedButton, HoverBehavior):
+class OnHoverMDRaisedButton(MDFlatButton, HoverBehavior):
     def on_enter(self, *args):
         self.md_bg_color = get_color_from_hex("#fad783")
         Window.set_system_cursor('arrow')
@@ -326,7 +330,10 @@ class OnHoverMDRaisedButton(MDRaisedButton, HoverBehavior):
 
         self.md_bg_color = get_color_from_hex("#fcb711")
         Window.set_system_cursor('arrow')
-
+        
+'''
+Recycler of the node cards after clicking country
+'''
 class RecycleViewRow(MDCard,RectangularElevationBehavior,ThemableBehavior, HoverBehavior):
     text = StringProperty()    
     dialog = None
@@ -336,7 +343,7 @@ class RecycleViewRow(MDCard,RectangularElevationBehavior,ThemableBehavior, Hover
         return Config.resource_path(MeileColors.FONT_FACE)
     
     def on_enter(self, *args):
-        self.md_bg_color = get_color_from_hex("#200c3a")
+        self.md_bg_color = get_color_from_hex(MeileColors.ROW_HOVER)
         Window.set_system_cursor('hand')
         
     def on_leave(self, *args):
@@ -929,8 +936,12 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
         if not mw.get_ip_address(None):
             self.remove_loading_widget()
             self.change_dns()
+            mw.close_sub_window()
+            mw.zoom_country_map()
         else:
             self.remove_loading_widget()
+            mw.close_sub_window()
+            mw.zoom_country_map()
             
     @delayable        
     def change_dns(self):

@@ -160,5 +160,4 @@ cython_debug/
 #.idea/
 
 # Custom
-scrtsxx.py
 src/meile_gui.egg-info/*

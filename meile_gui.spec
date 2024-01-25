@@ -1,4 +1,17 @@
 # -*- mode: python ; coding: utf-8 -*-
+from PyInstaller.utils.hooks import collect_all
+
+datas = [('src/fonts', '../fonts'), ('src/awoc/datum/', 'datum'), ('src/utils/fonts/', '../utils/fonts'), ('src/utils/coinimg/', '../utils/coinimg'), ('src/imgs/', '../imgs'), ('src/kv/', '../kv'), ('src/conf/config/', 'config'), ('src/bin/', '../bin')]
+binaries = []
+hiddenimports = []
+tmp_ret = collect_all('cosmpy')
+datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
+tmp_ret = collect_all('sentinel-protobuf')
+datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
+tmp_ret = collect_all('stripe')
+datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
+tmp_ret = collect_all('kivy_garden')
+datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 
 
 block_cipher = None
@@ -7,9 +20,9 @@ block_cipher = None
 a = Analysis(
     ['src/main/meile_gui.py'],
     pathex=[],
-    binaries=[],
-    datas=[('src/awoc/data/', 'data'), ('src/utils/fonts/', '../utils/fonts'), ('src/utils/coinimg/', '../utils/coinimg'), ('src/imgs/', '../imgs'), ('src/kv/', '../kv'), ('src/conf/config/', 'config'), ('src/bin/', '../bin')],
-    hiddenimports=[],
+    binaries=binaries,
+    datas=datas,
+    hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
