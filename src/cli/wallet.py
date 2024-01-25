@@ -12,9 +12,9 @@ from os import path, remove
 from json.decoder import JSONDecodeError
 
 from conf.meile_config import MeileGuiConfig
-from typedef.konstants import IBCTokens, ConfParams, HTTParams, V2Ray
+from typedef.konstants import IBCTokens, ConfParams, HTTParams
 from adapters import HTTPRequests
-from cli.v2ray import V2RayHandler
+from cli.v2ray import V2RayHandler, V2RayConfiguration
 
 import base64
 import uuid
@@ -119,6 +119,19 @@ class HandleWalletFunctions():
         # GASADJUSTMENT    = 1.15
         # GAS              = 500000
         # ConfParams.GASPRICE, ConfParams.GAS, ConfParams.GASADJUSTMENT,
+
+        balance = self.get_balance(sdk._account.address)
+
+        amount_required = float(DEPOSIT.replace(DENOM, ""))
+        token_ibc = {v: k for k, v in IBCTokens.IBCUNITTOKEN.items()}
+        # Balance keys are dvpn, src, dec etc, alredy / /IBCTokens.SATOSHI
+        # We could paramtrize that method and ask if we want dvpn or udvpn
+        # For the moment leave as is
+        # [1:] remove the 'u'
+        ubalance = balance.get(token_ibc[DENOM][1:], 0) * IBCTokens.SATOSHI
+        # < amount_required what about the fee and gas?
+        if ubalance < amount_required:
+            return(False, f"Balance is too low, required: {round(amount_required / IBCTokens.SATOSHI, 4)}{token_ibc[DENOM][1:]}")
 
         tx_params = TxParams(
             # denom="udvpn",  # TODO: from ConfParams
@@ -422,7 +435,7 @@ class HandleWalletFunctions():
                 print("vmess_uid", f"{uid_16b}")
                 print("vmess_transport", vmess_transports[decode[-1]])
 
-                v2ray_object = V2Ray(
+                v2ray_config = V2RayConfiguration(
                     api_port=api_port,
                     vmess_port=vmess_port,
                     vmess_address=vmess_address,
@@ -435,7 +448,7 @@ class HandleWalletFunctions():
                 if path.isfile(config_file) is True:
                     remove(config_file)
                 with open(config_file, "w", encoding="utf-8") as f:
-                    f.write(json.dumps(v2ray_object.configuration(), indent=4))
+                    f.write(json.dumps(v2ray_config.get(), indent=4))
 
                 # v2ray_tun2routes_connect_bash
                 # >> hardcoded = proxy port >> 1080
