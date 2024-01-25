@@ -1,6 +1,30 @@
 CHANGELOG
 ========================
 
+# v1.8.0 (11/01/2024)
+
+* NEW: Carousel to include subcards and node cards within main screen
+* NEW: Zoom to Lat/Long of location of connected IP address
+* NEW: Add background threading and progress bar to refresh
+* NEW: Add @Tkd-Alex coin cache to FIAT gateway
+* UPDATE: Change dimensions to 16:10 (1280x800)
+* UPDATE: Change map tile size for smoother rendering
+* UPDATE: Change size of left panel
+* UPDATE: Change MN-API timeout to 4 seconds
+* UPDATE: Drop support of icanhazip and use ifconfnig.co JSON results for DNS, IP, and Lat/Long
+* UPDATE: Refactor IP from win.py to konstants
+* UPDATE: include MeileMap data in konstants
+* UPDATE: Change hover color to darkish grey on sub and node cards
+* FIX: Country Node Pins not loading on erroneous AWOC data https://github.com/MathNodes/meile-gui/commit/33ed1237e8457657928f623513cfacd5a23c14f5
+* FIX: Error on connecting to v2ray #80 https://github.com/MathNodes/meile-gui/commit/df890224f91c1cc4419bd7d060a201ce3b07cf19
+
+# v1.7.18 (20/12/2023)
+
+* NEW: Sentinel Health Check Data with Status Icons
+* UPDATE: Include error handling for country names not in AWOC
+* FIX: Turkish spelling in AWOC. 
+* FIX: Update unicode in AWOC.
+
 # v1.7.17 (08/12/2023)
 
 * NEW: Implement @TKd-Alex Price Cache for Subscription Dialog
