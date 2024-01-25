@@ -4,10 +4,10 @@ import requests
 import psutil
 import binascii
 import random
-import grpc
 import re
 from time import sleep
 from os import path, remove
+from grpc import RpcError
 
 from json.decoder import JSONDecodeError
 
@@ -210,7 +210,7 @@ class HandleWalletFunctions():
 
         try:
             tx = sdk.subscriptions.Cancel(subId, tx_params=tx_params)
-        except grpc.RpcError as rpc_error:
+        except RpcError as rpc_error:
             details = rpc_error.details()  # pylint: disable=no-member
             # TODO: the following prints are only for debug
             print("details", details)
@@ -241,8 +241,8 @@ class HandleWalletFunctions():
 
         self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
 
-        grpc = self.GRPC.replace("grpc+http://", "").replace("/", "")  # TODO: why const is grpc is saved as ... (?)
-        grpcaddr, grpcport = grpc.split(":")
+        grpc_url = self.GRPC.replace("grpc+http://", "").replace("/", "")  # TODO: why const is grpc is saved as ... (?)
+        grpcaddr, grpcport = grpc_url.split(":")
 
         kr = self.__keyring(PASSWORD)
         private_key = kr.get_password("meile-gui", KEYNAME)  # TODO: very ungly
