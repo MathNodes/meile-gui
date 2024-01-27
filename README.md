@@ -86,8 +86,6 @@ sudo rpm -i meile-gui-v1.8.0-1.fc36.x86_64.rpm
 
 *dnf* is **recommended** as it will install all dependencies for Meile to function correctly.
 
-
-
 # Arch Linux (.zst)
 
 Our wonderful community member and part-time developer @Tkd-Alex has graciously taken on the role of compiling an Arch Linux package. The current release version is **1.8.0** and can be downloaded from: [Meile Arch Linux Release](https://github.com/MathNodes/meile-gui/releases/download/v1.8.0/meile-gui-1.8.0-1-x86_64.pkg.tar.zst)
@@ -98,18 +96,23 @@ To install, run:
 sudo pacman -U --noconfirm meile-gui-1.8.0-1-x86_64.pkg.tar.zst
 ```
 
-
-
 ## Installing via pip
 
 **Requirements:** python<=3.10
+
+**Recommended:** python==3.10.x
+
+To install python3.10 on Ubuntu 20.04/Fedora 36 or older follow the instructions here:
+
+
+[Install python3.10 as python on ubuntu 20.04 · GitHub](https://gist.github.com/ant1fact/8fdacea1b925ec9219cb04467783b18c)
 
 
 
 Meile dVPN GUI v0.15.0.0 is now available as a pip packages as well. These are pre-releases scheduled to be built into a binary for the various platforms. First install system dependencies:
 
 ```shell
-sudo apt install -y  wireguard-tools openresolv mesa-utils libgl1-mesa-glx xclip python3-devel curl net-tools python3-venv
+sudo apt install -y  wireguard-tools openresolv mesa-utils libgl1-mesa-glx xclip python3-dev curl net-tools python3.10-venv build-essential
 ```
 
 Then install via pip
@@ -159,8 +162,6 @@ We package the following binaries with our releases:
 * gsudo ([GitHub - gerardog/gsudo: Sudo for Windows](https://github.com/gerardog/gsudo))
 
 We have built tun2socks, v2ray, and sentinel-cli from source on the target architectures. Cloudflare warp is closed-source and so we packaged the binaries direct from the install link above. For windows we downloaded the pre-built gsudo binary from the above github. 
-
-
 
 **Note:** we use **v2ray** version **5.1.0** as this is what the dvpn-node software also uses and it is recommended to use the same client version as the server version.
 
