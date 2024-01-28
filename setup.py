@@ -36,7 +36,7 @@ setup(
     ],
     package_dir={"": "src"},
     packages=find_packages(where="src"),
-    install_requires=['kivymd', 'pydash', 'treelib==1.6.1', 'kivyoav', 'pexpect', 'qrcode', 'save_thread_result', 'screeninfo', 'mapview', 'psutil', 'unidecode', 'dnspython','cosmpy==0.8.0','sentinel-protobuf==0.3.1','stripe'],
+    install_requires=['kivy==2.2.0', 'kivymd', 'pydash','google-api-core==2.11.1', 'treelib==1.6.1', 'kivyoav', 'pexpect', 'qrcode', 'save_thread_result', 'screeninfo', 'mapview', 'psutil', 'unidecode', 'dnspython','cosmpy','sentinel-protobuf==0.3.1','stripe', 'bip_utils'],
     package_data={'conf': ['config/config.ini'], 'bin' : ['sentinelcli', 'warp-cli', 'warp-svc', 'tun2socks', 'v2ray'], 'awoc' : ['datum/world.json'],
                   'fonts': ['Roboto-BoldItalic.ttf', 'arial-unicode-ms.ttf', 'mplus-2c-bold.ttf'], 'imgs' : ["ad.png","ae.png","af.png","ag.png",
                                                               "ai.png","al.png","am.png","ao.png",
