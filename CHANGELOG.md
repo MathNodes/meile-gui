@@ -1,6 +1,14 @@
 CHANGELOG
 ========================
 
+# v0.15.0.1 (28/01/2024)
+
+* Force kivy==2.2.0
+
+* Force google-api-core==2.11.1
+
+* FIX: method_whitelist (de3c263c755e7c81e2b72b9ca15d05ad0b92b5f1)
+
 # v0.15.0.0 (25/01/2024)
 
 * Updated to v1.8.0 source
