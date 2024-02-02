@@ -6,7 +6,7 @@ import binascii
 import random
 from time import sleep
 from os import path, remove
-
+from urllib.parse import urlparse
 from json.decoder import JSONDecodeError
 
 from conf.meile_config import MeileGuiConfig
@@ -103,8 +103,8 @@ class HandleWalletFunctions():
         self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
         self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
 
-        grpc = self.GRPC.replace("grpc+http://", "").replace("/", "")  # TODO: why const is grpc is saved as ... (?)
-        grpcaddr, grpcport = grpc.split(":")
+        
+        grpcaddr, grpcport = urlparse(self.GRPC).netloc.split(":")
 
         kr = self.__keyring(PASSWORD)
         private_key = kr.get_password("meile-gui", KEYNAME)  # TODO: very ungly
@@ -183,8 +183,8 @@ class HandleWalletFunctions():
 
         self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
 
-        grpc = self.GRPC.replace("grpc+http://", "").replace("/", "")  # TODO: why const is grpc is saved as ... (?)
-        grpcaddr, grpcport = grpc.split(":")
+        
+        grpcaddr, grpcport = urlparse(self.GRPC).netloc.split(":")
 
         kr = self.__keyring(PASSWORD)
         private_key = kr.get_password("meile-gui", KEYNAME)  # TODO: very ungly
@@ -222,8 +222,8 @@ class HandleWalletFunctions():
 
         self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
 
-        grpc = self.GRPC.replace("grpc+http://", "").replace("/", "")  # TODO: why const is grpc is saved as ... (?)
-        grpcaddr, grpcport = grpc.split(":")
+        
+        grpcaddr, grpcport = urlparse(self.GRPC).netloc.split(":")
 
         kr = self.__keyring(PASSWORD)
         private_key = kr.get_password("meile-gui", KEYNAME)  # TODO: very ungly
