@@ -4,9 +4,12 @@ import requests
 import psutil
 import binascii
 import random
+import re
 from time import sleep
 from os import path, remove
 from urllib.parse import urlparse
+from grpc import RpcError
+
 from json.decoder import JSONDecodeError
 
 from conf.meile_config import MeileGuiConfig
@@ -103,7 +106,7 @@ class HandleWalletFunctions():
         self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
         self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
 
-        
+
         grpcaddr, grpcport = urlparse(self.GRPC).netloc.split(":")
 
         kr = self.__keyring(PASSWORD)
@@ -183,7 +186,7 @@ class HandleWalletFunctions():
 
         self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
 
-        
+
         grpcaddr, grpcport = urlparse(self.GRPC).netloc.split(":")
 
         kr = self.__keyring(PASSWORD)
@@ -204,8 +207,25 @@ class HandleWalletFunctions():
             # gas=ConfParams.GAS,
             gas_multiplier=ConfParams.GASADJUSTMENT
         )
-        tx = sdk.subscriptions.Cancel(subId, tx_params=tx_params)
         tx_height = 0
+
+        try:
+            tx = sdk.subscriptions.Cancel(subId, tx_params=tx_params)
+        except RpcError as rpc_error:
+            details = rpc_error.details()  # pylint: disable=no-member
+            # TODO: the following prints are only for debug
+            print("details", details)
+            print("code", rpc_error.code())  # pylint: disable=no-member
+            print("debug_error_string", rpc_error.debug_error_string())  # pylint: disable=no-member
+
+            search = f"invalid status inactive_pending for subscription {subId}"
+            if re.search(search, details, re.IGNORECASE):
+                message = "Cannot unsubscribe. Pending session still on blockchain. Try your request again later."
+            else:
+                message = "Error connecting to gRPC server. Try your request again later."
+
+            return {'hash' : None, 'success' : False, 'message' : message}
+
         if tx.get("log", None) is None:
             tx_response = sdk.nodes.wait_transaction(tx["hash"])
             tx_height = tx_response.tx_response.height
@@ -222,7 +242,7 @@ class HandleWalletFunctions():
 
         self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
 
-        
+
         grpcaddr, grpcport = urlparse(self.GRPC).netloc.split(":")
 
         kr = self.__keyring(PASSWORD)
