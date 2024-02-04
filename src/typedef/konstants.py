@@ -29,6 +29,7 @@ class ConfParams():
 class HTTParams():
     TIMEOUT                = 5
     APIURL                 = "https://api.sentinel.mathnodes.com"
+    NODE_API               = "https://metabase.mathnodes.com/api/public/card/822823f7-9374-435d-b283-2cd3847c1668/query/json"
     #APIURL                 = "http://128.199.90.172:1317"
     SERVER_URL             = "https://aimokoivunen.mathnodes.com:5000"
     RPC                    = "https://rpc.mathnodes.com:443"
@@ -83,11 +84,11 @@ class MeileColors():
     ARCGIS_MAP               = "https://server.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}.png"
     
 class NodeKeys():
-    NodesInfoKeys = ["Moniker","Address","Price","Hourly Price", "Country","Speed","Latency","Peers","Handshake","Type","Version","Status"]
+    NodesInfoKeys = ["Moniker","Address","Price","Hourly Price", "Country","City","Latitude","Longitude","Download","Upload","Peers","Max Peers","Handshake","Type","Version"]
     SubsInfoKeys  = ["ID", "Owner", "Inactive Date", "Status", "Node", "Gigabytes", "Hours", "Deposit", "Plan", "Denom"]
     # [ "ID", "Moniker", "Node", "Gigabytes", "Deposit", "Country", "Allocated", "Consumed", "Type", "Inactive Date", "Hours"]
-    FinalSubsKeys = [SubsInfoKeys[0], NodesInfoKeys[0],SubsInfoKeys[4],SubsInfoKeys[5], SubsInfoKeys[7], NodesInfoKeys[4], "Allocated", "Consumed", NodesInfoKeys[9],SubsInfoKeys[2],SubsInfoKeys[6]]
-    NodeVersions  = [str(item).zfill(3) for item in range(30,1000)]
+    FinalSubsKeys = [SubsInfoKeys[0], NodesInfoKeys[0],SubsInfoKeys[4],SubsInfoKeys[5], SubsInfoKeys[7], NodesInfoKeys[4], "Allocated", "Consumed", NodesInfoKeys[13],SubsInfoKeys[2],SubsInfoKeys[6]]
+    NodeVersions  = [str(item).zfill(3) for item in range(70,1000)]
     Nodetypes = ['residential', 'business', 'hosting', 'edu']
 
 

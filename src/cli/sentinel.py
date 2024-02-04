@@ -41,6 +41,8 @@ class NodeTreeData():
    
     def get_nodes(self, latency, *kwargs):
         AllNodesInfo = []
+        ninfos       = []
+        '''
         print("Running sentinel-cli with latency: %s" % latency)
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
@@ -75,17 +77,53 @@ class NodeTreeData():
                 else:
                     AllNodesInfo.append(dict(zip(NodeKeys.NodesInfoKeys, ninfos)))
         
-        AllNodesInfoSorted = sorted(AllNodesInfo, key=lambda d: d[NodeKeys.NodesInfoKeys[4]])
+        '''
         
-        #result = collections.defaultdict(list)
+        
+        # Use Cache Server for faster loading.  
+        Request = HTTPRequests.MakeRequest(TIMEOUT=23) # long timeout in case there is heavy load
+        http = Request.hadapter()
+        try:
+            r = http.get(HTTParams.NODE_API) 
+            data = r.json()
+            
+            for node in data:
+                ninfos.append(node['Moniker'])
+                ninfos.append(node['Node Address'])
+                ninfos.append(node['Gigabyte Prices'])
+                ninfos.append(node['Hourly Prices'])
+                ninfos.append(node['Country'])
+                ninfos.append(node['City'])
+                ninfos.append(node['Latitude'])
+                ninfos.append(node['Longitude'])
+                ninfos.append(node['Bandwidth Down'])
+                ninfos.append(node['Bandwidth Up'])
+                ninfos.append(node['Connected Peers'])
+                ninfos.append(node['Max Peers'])
+                ninfos.append(node['Handshake'])
+                ninfos.append(node['Node Type'])
+                ninfos.append(node['Node Version'])
+                AllNodesInfo.append(dict(zip(NodeKeys.NodesInfoKeys, ninfos)))
+                
+        except Exception as e:
+            print(str(e))
+            pass
+        
+        AllNodesInfoSorted = sorted(AllNodesInfo, key=lambda d: d[NodeKeys.NodesInfoKeys[4]])
         
         self.NodeTree = self.CreateNodeTreeStructure()
         
         for d in AllNodesInfoSorted:
+            
+            '''Not sure I need this now that I'm parsing JSON
             for key in NodeKeys.NodesInfoKeys:
                 d[key] = d[key].lstrip().rstrip()
-            d[NodeKeys.NodesInfoKeys[10]] = d[NodeKeys.NodesInfoKeys[10]].split('-')[0]
-            version = d[NodeKeys.NodesInfoKeys[10]].replace('.','')
+            '''
+            
+            '''Parse out old node versions < 0.7.0'''   
+            
+            d[NodeKeys.NodesInfoKeys[14]] = d[NodeKeys.NodesInfoKeys[14]].split('-')[0]
+            version = d[NodeKeys.NodesInfoKeys[14]].replace('.','')
             if version not in NodeKeys.NodeVersions:
                 continue
             
@@ -98,17 +136,27 @@ class NodeTreeData():
             d[NodeKeys.NodesInfoKeys[3]] = self.parse_coin_deposit(d[NodeKeys.NodesInfoKeys[3]])
             
             
+            '''This was updated in src/geography and AWOC data (world.json)
             if  OurWorld.CZ in d[NodeKeys.NodesInfoKeys[4]]:
                 d[NodeKeys.NodesInfoKeys[4]] = OurWorld.CZ_FULL
                 
                 
             if OurWorld.NL_FULL in d[NodeKeys.NodesInfoKeys[4]]:
                 d[NodeKeys.NodesInfoKeys[4]] = OurWorld.NL
+            '''
+            
+            # Sanity check:
+            # if country doesn't exists in AWOC don't crash
             try:
                 d_continent = OurWorld.our_world.get_country_continent_name(d[NodeKeys.NodesInfoKeys[4]])
             except NameError as e:
                 print(str(e))
                 continue
+            
+            '''These may longer not be necessary as we move away
+            from continents. Parents should be countries.
+            Haven't decided yet
+            '''
             try:
                 self.NodeTree.create_node(d[NodeKeys.NodesInfoKeys[4]],d[NodeKeys.NodesInfoKeys[4]], parent=d_continent)
             except:
@@ -118,9 +166,13 @@ class NodeTreeData():
             except:
                 pass
             
+        # For pretty output. Unicode is used in treelib > 1.6.1     
         self.NodeTree.show()
+        # User-submitted Ratings
         self.GetNodeScores()
-        self.GetNodeLocations()
+        #Direct node location is now coming from Cache server
+        #self.GetNodeLocations()
+        # Hosting, Residential, etc
         self.GetNodeTypes()
         self.GetHealthCheckData()
 
