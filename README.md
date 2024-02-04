@@ -1,5 +1,6 @@
 Meile-GUI (may•lah)
 ========================
+
 [![Github All Releases](https://img.shields.io/github/downloads/mathnodes/meile-gui/total?style=for-the-badge)](https://github.com/MathNodes/meile-gui/releases)
 [![GitHub license](https://img.shields.io/github/license/mathnodes/meile-gui?style=for-the-badge)](https://github.com/MathNodes/meile-gui/blob/main/LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/mathnodes/meile-gui?style=for-the-badge)](https://github.com/mathnodes/meile-gui/stargazers)
@@ -13,29 +14,27 @@ Meile dVPN GUI for Linux, OS X, and Windows - Powered by the Sentinel Network - 
 
 # Full Version
 
-The full version 1.7.12 has been released to GitHub. Branches include **main**, **osx-fiat-intel**, **windows**, **fiat**, **osx-fiat**, **pip**. The exception is that we did not include the scrtsxx.py which contains credentials for the FIAT gateway. Please navigate the various branches to understand the different interworkings. It is our intention to eventually merge all branches into a unified code source. 
-
+The full version 1.8.0 has been released to GitHub. Branches include **main**, **osx-fiat-intel**, **windows**, **fiat**, **osx-fiat**, **pip**. The exception is that we did not include the scrtsxx.py which contains credentials for the FIAT gateway. Please navigate the various branches to understand the different interworkings. It is our intention to eventually merge all branches into a unified code source. 
 
 ## Windows
 
-The current release is version **1.7.11**. Please note this does not use Windows APIs to ask for Administration privleges and relies on an open source implementation called "gsudo". Gsudo is just a hack to ask the user to modify network adapters so that Meile may connect without hassel. 
+The current release is version **1.8.0**. Please note this does not use Windows APIs to ask for Administration privileges and relies on an open source implementation called "gsudo". Gsudo is just a hack to ask the user to modify network adapters so that Meile may connect without issue. 
 
-Also, Meile opens a debug console in the background. Do not close this otherwise the app will close as well. We are working on getting a Microsoft Developers Certificate so we may sign the app for official release. Also, when we get the certificate we will eliminate the debug console as well. This is all in the works. 
+Also, Meile opens a debug console in the background. Do not close this otherwise the app will close as well. We are working on getting a Microsoft Developers Certificate so we may sign the app for official release. Also, when we get the certificate we will eliminate the debug console as well. We also have plans to integrate an MSI installer package. This is all in the works. 
 
-
-Download: [Meile for Windows (v1.7.11)](https://github.com/MathNodes/meile-gui/releases/tag/v1.7.11)
-
+Download: [Meile for Windows (v1.8.0)](https://github.com/MathNodes/meile-gui/releases/tag/v1.8.0)
 
 ## Mac OS X
-Download the latest release as a DMG: [Mac OS X v1.7.11](https://github.com/MathNodes/meile-gui/releases/tag/v1.7.11)
 
-The OS X M1/M2 and Intel builds are packaged as a disk image (DMG). To install, simply download the correct DMG for your architecture (Intel or Apple Silicon). Double click on the DMG file and move the Meile app bundle to your desktop or to the Applications folder. 
+Download the latest release as a DMG: [Mac OS X v1.8.0](https://github.com/MathNodes/meile-gui/releases/tag/v1.8.0)
+
+The OS X M1/M2 and Intel builds are packaged as a disk image (DMG). To install, simply download the correct DMG for your architecture (Intel or Apple Silicon [arm]). Double click on the DMG file and move the Meile app bundle to your desktop or to the Applications folder. 
 
 Both the OS X Intel and Apple Silicon release are signed by a Apple Developer Certificate. There should be no errors when running these. 
 
 ### NOTE:
-pip install is not currently available for Mac OS X. We are working on bringing this as a separate packages. 
 
+pip install is not currently available for Mac OS X or Windows. We are working on bringing this as a separate packages. 
 
 ## Debian .deb package
 
@@ -44,7 +43,7 @@ The latest version of Meile GUI comes packaged as a Debian archive. Simply downl
 and run apt for your build:
 
 ```shell
-sudo apt install -y ./meile-gui-v1.7.12_ubuntu22.04_amd64.deb
+sudo apt install -y ./meile-gui-v1.8.0_ubuntu22.04_amd64.deb
 ```
 
 This release will install wireguard tools, resolvconf, curl, and net-tools alongside the Meile GUI. To connect to nodes or disconnect requires "sudo" privileges. You will be prompted by your system dialog to enter your username's password to give authorization to complete the connection. This is due to how Linux handles permissions with regards to network interfaces. 
@@ -61,42 +60,63 @@ Or goto your panel menu under Internet and there will be a clickable icon.
 
 Because there were issues loading certain mesa OpenGL drivers in various Debian Virtual Machines, we have included a separate .deb archive that automatically configures the system to handle the Meile dependencies. Please use this version if you are running a Debian flavor in a virutal machine (VM).
 
-[Debian/Ubuntu 20.04 Virtual Machine](https://github.com/MathNodes/meile-gui/releases/download/v1.7.12/meile-gui-v1.7.12_ubuntu2004_amd64_vm.deb)
+[Debian/Ubuntu 20.04 Virtual Machine](https://github.com/MathNodes/meile-gui/releases/download/v1.8.0/meile-gui-v1.8.0_ubuntu2004_amd64_vm.deb)
 
-[Debian/Ubuntu 22.04 Virtual Machine](https://github.com/MathNodes/meile-gui/releases/download/v1.7.12/meile-gui-v1.7.12_ubuntu2204_amd64_vm.deb)
+[Debian/Ubuntu 22.04 Virtual Machine](https://github.com/MathNodes/meile-gui/releases/download/v1.8.0/meile-gui-v1.8.0_ubuntu2204_amd64_vm.deb)
 
 ## Redhat/CentOS/Fedora (.rpm)
 
 Download the latest RPM for RedHat releases:
 
-[RedHat RPM (fc36)](https://github.com/MathNodes/meile-gui/releases/download/v1.7.12/meile-gui-v1.7.12-1.fc36.x86_64.rpm)
+[RedHat RPM (fc36)](https://github.com/MathNodes/meile-gui/releases/download/v1.8.0/meile-gui-v1.8.0-1.fc36.x86_64.rpm)
 
-[RedHat RPM (fc37)](https://github.com/MathNodes/meile-gui/releases/download/v1.7.12/meile-gui-v1.7.12-1.fc37.x86_64.rpm)
-
+[RedHat RPM (fc37)](https://github.com/MathNodes/meile-gui/releases/download/v1.8.0/meile-gui-v1.8.0-1.fc37.x86_64.rpm)
 
 Install the rpm from a terminal via *dnf* (**RECOMMENDED**):
+
 ```shell
-sudo dnf install meile-gui-v1.7.12-1.fc36.x86_64.rpm
+sudo dnf install meile-gui-v1.8.0-1.fc36.x86_64.rpm
 ```
 
 or via *rpm*:
 
 ```shell
-sudo rpm -i meile-gui-v1.7.12-1.fc36.x86_64.rpm
+sudo rpm -i meile-gui-v1.8.0-1.fc36.x86_64.rpm
 ```
 
 *dnf* is **recommended** as it will install all dependencies for Meile to function correctly.
 
+# Arch Linux (.zst)
+
+Our wonderful community member and part-time developer @Tkd-Alex has graciously taken on the role of compiling an Arch Linux package. The current release version is **1.8.0** and can be downloaded from: [Meile Arch Linux Release](https://github.com/MathNodes/meile-gui/releases/download/v1.8.0/meile-gui-1.8.0-1-x86_64.pkg.tar.zst)
+
+To install, run:
+
+```shell
+sudo pacman -U --noconfirm meile-gui-1.8.0-1-x86_64.pkg.tar.zst
+```
 
 ## Installing via pip
 
-Meile dVPN GUI v0.14.1 is now available as a pip packages as well. These are pre-releases scheduled to be built into a binary. First install system dependencies:
+**Requirements:** python<=3.10
+
+**Recommended:** python==3.10.x
+
+To install python3.10 on Ubuntu 20.04/Fedora 36 or older follow the instructions here:
+
+
+[Install python3.10 as python on ubuntu 20.04 · GitHub](https://gist.github.com/ant1fact/8fdacea1b925ec9219cb04467783b18c)
+
+
+
+Meile dVPN GUI v0.15.0.0 is now available as a pip packages as well. These are pre-releases scheduled to be built into a binary for the various platforms. First install system dependencies:
 
 ```shell
-sudo apt install -y  wireguard-tools openresolv mesa-utils libgl1-mesa-glx xclip python3-devel curl net-tools python3-venv
+sudo apt install -y  wireguard-tools openresolv mesa-utils libgl1-mesa-glx xclip python3-dev curl net-tools python3.10-venv build-essential
 ```
 
 Then install via pip
+
 ```shell
 pip3 install meile-gui
 ```
@@ -105,7 +125,7 @@ via a virtual environment:
 
 ```shell
 mkdir ~/venv && python3 -m venv ~/venv/meile
-source venv/meile/bin/activate
+source ~/venv/meile/bin/activate
 pip3 install meile-gui
 ```
 
@@ -115,7 +135,6 @@ Upgrade via pip
 pip3 install meile-gui --upgrade
 ```
 
-
 To run Meile GUI after pip install do the following:
 
 ```shell
@@ -124,9 +143,27 @@ meile-gui
 
 ### NOTE:
 
-The FIAT gateway is not included in the pip package. This is due to certain credentials needing to remain secret for OPSEC reasons. The pip package will continue to get updated with the FIAT release in bug fixes and feature additions. 
+The FIAT gateway is not included in the pip package. This is due to certain credentials needing to remain secret for OPSEC reasons. The pip package will continue to get updated without the FIAT gateway with bug fixes and feature additions. 
 
 We consider the pip releases to be pre-releases of the compiled binaries. Pip is considered the bleeding edge of Meile releases
+
+### Packaged Binaries
+
+We package the following binaries with our releases:
+
+* tun2socks([GitHub - xjasonlyu/tun2socks: tun2socks - powered by gVisor TCP/IP stack](https://github.com/xjasonlyu/tun2socks))
+
+* v2ray ([GitHub - v2fly/v2ray-core: A platform for building proxies to bypass network restrictions.](https://github.com/v2fly/v2ray-core))
+
+* sentinel-cli ([GitHub - sentinel-official/cli-client: The official Sentinel CLI client](https://github.com/sentinel-official/cli-client))
+
+* warp ([Download WARP · Cloudflare Zero Trust docs](https://developers.cloudflare.com/cloudflare-one/connections/connect-devices/warp/download-warp/))
+
+* gsudo ([GitHub - gerardog/gsudo: Sudo for Windows](https://github.com/gerardog/gsudo))
+
+We have built tun2socks, v2ray, and sentinel-cli from source on the target architectures. Cloudflare warp is closed-source and so we packaged the binaries direct from the install link above. For windows we downloaded the pre-built gsudo binary from the above github. 
+
+**Note:** we use **v2ray** version **5.1.0** as this is what the dvpn-node software also uses and it is recommended to use the same client version as the server version.
 
 ## Help
 
@@ -139,15 +176,14 @@ Please make comments, suggestions, and issues on the issues page here at GitHub.
 Session:
 ![session](./img/session_qr.png)
 
-
 All suggestions are welcome.
-
 
 ## Creating a Binary for your distribution:
 
 In order to create a binary for your distribution some packages need to be installed first.
 
 Pyinstaller:
+
 ```shell
 pip3 install pyinstaller
 ```
@@ -159,11 +195,13 @@ sudo apt install python3-venv
 ```
 
 Then clone the repo:
+
 ```shell
 git clone https://github.com/MathNodes/meile-gui
 ```
 
 Switch to the pip branch as this is the one without FIAT gateway
+
 ```
 cd meile-gui && git checkout pip
 ```
@@ -178,7 +216,7 @@ pip install -r requriements.txt  && pip install -e .
 
 Once meile-gui and it's dependencies have been installed within the python virutal environment, a binary release can be created:
 
-```
+```shell
 bash pyinstaller.cmd
 ```
 
@@ -200,26 +238,32 @@ Because we are working on a small grant with no VC funding, any additional contr
 
 ## BTC (Bitcoin)
 
-`bc1qtvc9l3cr9u4qg6uwe6pvv7jufvsnn0xxpdyftl`
+```
+bc1qtvc9l3cr9u4qg6uwe6pvv7jufvsnn0xxpdyftl
+```
 
 ![BTC](./img/BTC.png)
 
 ## DVPN (Sentinel)
 
-`sent12v8ghhg98e2n0chyje3su4uqlsg75sh4lwcyww`
+```
+sent12v8ghhg98e2n0chyje3su4uqlsg75sh4lwcyww
+```
 
 ![dvpn](./img/DVPN.png)
 
 ## XMR (Monero)
 
-`87qHJPU5dZGWaWzuoC3My5SgoQSuxh4sHSv1FXRZrQ9XZHWnfC33EX1NLv5HujpVhbPbbF9RcXXD94byT18HonAQ75b9dyR`
+```
+87qHJPU5dZGWaWzuoC3My5SgoQSuxh4sHSv1FXRZrQ9XZHWnfC33EX1NLv5HujpVhbPbbF9RcXXD94byT18HonAQ75b9dyR
+```
 
 ![xmr](./img/XMR.png)
 
 ## ARRR (Pirate Chain)
 
-`zs1gn457262c52z5xa666k77zafqmke0hd60qvc38dk48w9fx378h4zjs5rrwnl0x8qazj4q3x4svz`
+```
+zs1gn457262c52z5xa666k77zafqmke0hd60qvc38dk48w9fx378h4zjs5rrwnl0x8qazj4q3x4svz
+```
 
 ![ARRR](./img/ARRR.png)
-
-
