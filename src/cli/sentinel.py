@@ -7,7 +7,7 @@ from urllib3.exceptions import InsecureRequestWarning
 from subprocess import Popen, PIPE, STDOUT
 from datetime import datetime,timedelta
 import time
-
+from urllib.parse import urlparse
 from treelib import  Tree
 
 from geography.continents import OurWorld
@@ -258,8 +258,8 @@ class NodeTreeData():
         self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
 
         self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
-        grpc = self.GRPC.replace("grpc+http://", "").replace("/", "")  # TODO: why const is grpc is saved as ... (?)
-        grpcaddr, grpcport = grpc.split(":")
+        
+        grpcaddr, grpcport = urlparse(self.GRPC).netloc.split(":")
         sdk = SDKInstance(grpcaddr, int(grpcport))
         subscriptions = sdk.subscriptions.QuerySubscriptionsForAccount(ADDRESS, pagination=PageRequest(limit=1000))
 
@@ -337,8 +337,8 @@ class NodeTreeData():
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
 
         self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
-        grpc = self.GRPC.replace("grpc+http://", "").replace("/", "")  # TODO: why const is grpc is saved as ... (?)
-        grpcaddr, grpcport = grpc.split(":")
+        
+        grpcaddr, grpcport = urlparse(self.GRPC).netloc.split(":")
         sdk = SDKInstance(grpcaddr, int(grpcport))
         allocations = sdk.subscriptions.QueryAllocations(subscription_id=int(id))
 
