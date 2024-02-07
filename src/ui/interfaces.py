@@ -16,6 +16,7 @@ from kivy_garden.mapview.view import MapView
 from kivymd.uix.behaviors import RoundedRectangularElevationBehavior, CircularElevationBehavior, RectangularRippleBehavior, CircularRippleBehavior
 from kivymd.uix.fitimage.fitimage import FitImage
 from kivy.uix.behaviors import ButtonBehavior 
+from kivymd.uix.textfield.textfield import MDTextField
 
 class Tab(MDBoxLayout, MDTabsBase):
     pass
@@ -27,6 +28,14 @@ class SubscribeContent(BoxLayout):
     def __init_ (self, price):
         self.price_text = price
 '''
+
+class IPAddressTextField(MDTextField):
+    pass
+
+class ConnectedNode(MDTextField):
+    pass
+
+
 class LatencyContent(BoxLayout):
     
     def return_latency(self):

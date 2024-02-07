@@ -1,5 +1,5 @@
 from geography.continents import OurWorld
-from ui.interfaces import Tab, LatencyContent, TooltipMDIconButton, ConnectionDialog
+from ui.interfaces import Tab, LatencyContent, TooltipMDIconButton, ConnectionDialog, IPAddressTextField, ConnectedNode
 from typedef.win import WindowNames
 from cli.sentinel import  NodeTreeData
 from typedef.konstants import NodeKeys, TextStrings, MeileColors, HTTParams, IBCTokens
@@ -34,6 +34,7 @@ from kivy_garden.mapview import MapMarkerPopup, MapView, MapSource
 from kivymd.toast import toast
 from kivy.uix.carousel import Carousel
 from kivymd.uix.boxlayout import MDBoxLayout
+from kivy.uix.floatlayout import FloatLayout
 
 
 import requests
@@ -401,9 +402,13 @@ class MainWindow(Screen):
                                size_hint=(.7,1))
             #self.MeileMap.map_source = "osm"
             self.MeileMap.map_source = source
+            layout = FloatLayout(size_hint=(1,1))
+            layout.add_widget(self.MeileMap)
+            layout.add_widget(self.map_widget_1)
+            layout.add_widget(self.map_widget_2)
             self.carousel = Carousel(direction='right')
             self.ids.country_map.add_widget(self.carousel)
-            self.carousel.add_widget(self.MeileMap)
+            self.carousel.add_widget(layout)
             self.AddCountryNodePins(False)
             self.MeileMapBuilt = True
 
@@ -453,13 +458,15 @@ class MainWindow(Screen):
 
     def set_protected_icon(self, setbool, moniker):
         MeileConfig = MeileGuiConfig()
+        self.map_widget_2 = ConnectedNode()
         if setbool:
             self.ids.protected.opacity = 1
-            self.ids.connected_node.text = moniker
+            self.map_widget_2.text = moniker
         else:
             self.ids.protected.opacity = 0
-            self.ids.connected_node.text = moniker
+            self.map_widget_2.text = moniker
         return MeileConfig.resource_path("../imgs/protected.png")
+
 
     def get_config(self, dt):
         MeileConfig = MeileGuiConfig()
@@ -566,6 +573,8 @@ class MainWindow(Screen):
         return self.MeileConfig.resource_path("../imgs/logo.png")
 
     def get_ip_address(self, dt):
+        self.map_widget_1 = IPAddressTextField()
+        
         if self.dialog:
             self.dialog.dismiss()
 
@@ -581,7 +590,7 @@ class MainWindow(Screen):
                 ifJSON = req.json()
                 print(ifJSON)
                 self.ip = str(ifJSON['ip'])
-                self.ids.new_ip.text = self.ip
+                self.map_widget_1.text = self.ip
                 self.LatLong.clear()
                 try:
                     self.LatLong.append(ifJSON['latitude'])

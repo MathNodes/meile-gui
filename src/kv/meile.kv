@@ -53,52 +53,6 @@ WindowManager:
         MDFloatLayout:
             orientation: "horizontal"
             size_hint_y: .18
-            MDTextField:
-                canvas.after:
-                    Color:
-                        rgba: root.box_color if not self.focus else (0, 0, 0, 0)
-                    Line:
-                        width: dp(1)
-                        rectangle: (*self.pos, *self.size)
-                hint_text: "IP Address"
-                id: new_ip
-                size_hint_x: .15
-                size_hint_y: .47
-                font_size: 11
-                pos_hint: {"x" : 0.01, "center_y": .67}                
-                readonly: True
-                opacity: 1
-                mode: "fill"
-                text_color_focus: '#fcb711'
-                text_color_normal: '#fcb711'
-                hint_text: 'IP Address:'
-                hint_text_color_normal: '#fcb711'
-                hint_text_color_focus: '#fcb711'
-                fill_color_normal: get_color_from_hex("#121212")
-                fill_color_focus: get_color_from_hex("#000000")
-            MDTextField:
-                canvas.after:
-                    Color:
-                        rgba: root.box_color if not self.focus else (0, 0, 0, 0)
-                    Line:
-                        width: dp(1)
-                        rectangle: (*self.pos, *self.size)
-                hint_text: "Node:"
-                id: connected_node
-                mode: "fill"
-                size_hint_x: .4
-                size_hint_y: .47
-                font_size: 11
-                font_name: root.get_font()            
-                pos_hint: {"x" : .18, "center_y": .67}                
-                readonly: True
-                opacity: 1
-                text_color_focus: '#fcb711'
-                text_color_normal: '#fcb711'                
-                hint_text_color_normal: '#fcb711'
-                hint_text_color_focus: '#fcb711'
-                fill_color_normal: get_color_from_hex("#121212")
-                fill_color_focus: get_color_from_hex("#000000")
             MDLabel:
                 text: "Bandwidth"
                 font_size: 11
@@ -174,50 +128,100 @@ WindowManager:
         MDBoxLayout:
             id: country_map
             orientation: "horizontal"
-            NodeRV:
-                md_bg_color: get_color_from_hex("#121212")    
-                id: rv
-                size_hint: (.2,1)
-         
-        MDBottomNavigation:
-            size_hint_y: 0.125
-            panel_color: get_color_from_hex("#121212")
-            text_color_normal: get_color_from_hex("#fcb711")
-            text_color_active: get_color_from_hex("#fad783")
-            selected_color_background: get_color_from_hex("#200c3a")
-            MDBottomNavigationItem:
-                name: "wallet"
-                text: "Wallet"
-                icon: "wallet"
-                on_tab_release: root.wallet_dialog()
-                on_tab_press:
-                
-            MDBottomNavigationItem:
-                name: "subscriptions"
-                text: "Subscriptions"
-                icon: "book-open-variant"
-                on_tab_release: root.switch_to_sub_window()
-                 
-            MDBottomNavigationItem:
-                name: "Refresh"
-                text: "Refresh"
-                icon: "shield-refresh"
-                on_tab_release: root.refresh_nodes_and_subs()
-            
-            MDBottomNavigationItem:
-                name: "settings"
-                text: "Settings"
-                icon: "cogs"
-                on_tab_release: root.build_settings_screen_interface()
-                
-            MDBottomNavigationItem:
-                name: "help"
-                text: "Help"
-                icon: "account-question"
-                on_tab_release: root.build_help_screen_interface()
-                
+            MDBoxLayout:
+                orientation: "vertical"
+                size_hint: (.25, 1)
+                NodeRV:
+                    md_bg_color: get_color_from_hex("#121212")    
+                    id: rv
+                    size_hint: (1,1)
+                MDBoxLayout:    
+                    #orientation: ''
+                    # padding: [20, 0, 0, 0]
+                    #size_hint_y: None
+                    #size_hint_x: .3
+                    #width: 50
+                    size_hint: (1,None)
+                    height: 50
+                    spacing: 6
+                    
+                    canvas:
+                        # draw a background of red. This will be the border
+                        Color:
+                            rgba: get_color_from_hex("#fcb711")
+                        RoundedRectangle:
+                            pos: self.pos
+                            size: self.size
+    
+                        # draw over the above except for 1 pixels around edges, leaving the orange border showing
+                        Color:
+                            rgba: get_color_from_hex("#212221")
+                        RoundedRectangle:
+                            pos: self.x+1, self.y+1
+                            size: self.width-2, self.height-2
+    
+                    MDIconButton:
+                        icon: "wallet-outline"
+                        theme_text_color: "Custom"
+                        text_color: get_color_from_hex("#fcb711")
+    
+                    MDIconButton:
+                        icon: "book-open-outline"
+                        theme_text_color: "Custom"
+                        text_color: get_color_from_hex("#fcb711")
+                        
+                    MDIconButton:
+                        icon: "animation-outline"
+                        theme_text_color: "Custom"
+                        text_color: get_color_from_hex("#fcb711")
+    
+                    MDIconButton:
+                        icon: "cog-outline"
+                        theme_text_color: "Custom"
+                        text_color: get_color_from_hex("#fcb711")
+    
+                    MDIconButton:
+                        icon: "help-circle-outline"
+                        theme_text_color: "Custom"
+                        text_color: get_color_from_hex("#fcb711")
     
 <TooltipMDRaisedButton@MDRaisedButton+MDTooltip>
+
+<IPAddressTextField@MDTextField>
+    id: new_ip
+    size_hint_x: .15
+    size_hint_y: .075
+    font_size: 11
+    pos_hint: {"x" : 0.01, "center_y": .1}                
+    readonly: True
+    opacity: .5
+    mode: "round"
+    icon_left: "ip-network-outline"
+    text_color_focus: '#fcb711'
+    text_color_normal: '#fcb711'
+    #hint_text: 'IP Address:'
+    #fill_color_normal: get_color_from_hex("#121212")
+    #fill_color_focus: get_color_from_hex("#000000")  
+    fill_color_normal: 0,0,0,0
+    fill_color_focus: 0,0,0,0
+<ConnectedNode@MDTextField>
+    id: connected_node
+    mode: "round"
+    size_hint_x: .4
+    size_hint_y: .075
+    font_size: 11      
+    pos_hint: {"x" : .18, "center_y": .1}                
+    readonly: True
+    opacity: .5
+    icon_left: "laptop"
+    text_color_focus: '#fcb711'
+    text_color_normal: '#fcb711'                
+    #hint_text_color_normal: '#fcb711'
+    #hint_text_color_focus: '#fcb711'
+    #fill_color_normal: get_color_from_hex("#121212")
+    #fill_color_focus: get_color_from_hex("#000000")
+    fill_color_normal: 0,0,0,0
+    fill_color_focus: 0,0,0,0     
             
 <NodeScreen>
     name: "nodes"
