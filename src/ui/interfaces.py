@@ -17,6 +17,8 @@ from kivymd.uix.behaviors import RoundedRectangularElevationBehavior, CircularEl
 from kivymd.uix.fitimage.fitimage import FitImage
 from kivy.uix.behaviors import ButtonBehavior 
 from kivymd.uix.textfield.textfield import MDTextField
+from kivymd.uix.label.label import MDLabel
+from kivymd.uix.progressbar.progressbar import MDProgressBar
 
 class Tab(MDBoxLayout, MDTabsBase):
     pass
@@ -35,6 +37,11 @@ class IPAddressTextField(MDTextField):
 class ConnectedNode(MDTextField):
     pass
 
+class BandwidthLabel(MDLabel):
+    pass
+
+class BandwidthBar(MDProgressBar):
+    pass
 
 class LatencyContent(BoxLayout):
     

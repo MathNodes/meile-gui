@@ -810,8 +810,8 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
                 allocated_str         = deepcopy(allocated)
                 allocated             = float(allocated.split('hrs')[0].rstrip().lstrip())
                 consumed              = self.compute_consumed_hours(allocated_str,mw.NodeSwitch['expirary'])
-                mw.ids.quota_pct.text = str(round(float(float(consumed/allocated)*100),2)) + "%"
-                mw.ids.quota.value    = round(float(float(consumed/allocated)*100),2)
+                mw.quota_pct.text = str(round(float(float(consumed/allocated)*100),2)) + "%"
+                mw.quota.value    = round(float(float(consumed/allocated)*100),2)
                 try: 
                     mw.clock()
                 except Exception as e:
@@ -820,11 +820,11 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
             else:
                 allocated = self.compute_consumed_data(allocated)
                 consumed  = self.compute_consumed_data(consumed)
-                mw.ids.quota_pct.text = str(round(float(float(consumed/allocated)*100),2)) + "%"
+                mw.quota_pct.text = str(round(float(float(consumed/allocated)*100),2)) + "%"
                 return round(float(float(consumed/allocated)*100),3)
         else:
-            mw.ids.quota_pct.text = "0.00%"
-            mw.ids.quota.value    = 0
+            mw.quota_pct.text = "0.00%"
+            mw.quota.value    = 0
             return float(0)
         
             
@@ -863,12 +863,12 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
             startConsumption = mw.PersistentBandwidth[ID]['og_consumed']
             mw.PersistentBandwidth[ID]['consumed'] = self.GetConsumedWhileConnected(self.compute_consumed_data(startConsumption),BytesDict)
             
-            mw.ids.quota.value = self.connected_quota(mw.PersistentBandwidth[ID]['allocated'],
+            mw.quota.value = self.connected_quota(mw.PersistentBandwidth[ID]['allocated'],
                                                       mw.PersistentBandwidth[ID]['consumed'],
                                                       None)
             print("%s,%s - %s%%" % (mw.PersistentBandwidth[ID]['consumed'],
                                   startConsumption,
-                                  mw.ids.quota.value))
+                                  mw.quota.value))
         except Exception as e:
             print("Error getting bandwidth!")
             

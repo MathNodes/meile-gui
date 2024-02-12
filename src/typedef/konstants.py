@@ -79,6 +79,8 @@ class MeileColors():
     ROW_HOVER                = "#39363c"
     FONT_FACE                = "../fonts/mplus-2c-bold.ttf"
     MAP_MARKER               = "../imgs/location_pin.png"
+    LOGO                     = "../imgs/logo.png"
+    LOGO_TEXT                = "../imgs/logo_text.png"
     HEALTH_ICON              = "shield-plus"
     SICK_ICON                = "emoticon-sick"
     ARCGIS_MAP               = "https://server.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}.png"

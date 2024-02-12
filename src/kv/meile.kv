@@ -51,68 +51,118 @@ WindowManager:
         orientation: 'vertical'
         md_bg_color: get_color_from_hex("#121212")
         MDFloatLayout:
-            orientation: "horizontal"
-            size_hint_y: .18
-            MDLabel:
-                text: "Bandwidth"
-                font_size: 11
-                theme_text_color: "Custom"
-                text_color: get_color_from_hex("#fcb711")
-                normal_color: app.theme_cls.accent_color
-                pos_hint: {"x" : .01, "center_y": .2}
-            MDProgressBar:
-                id: quota
-                value: 0
-                color: app.theme_cls.accent_color
-                #back_color: get_color_from_hex("#ffffff")
-                pos_hint: {"x" : .085, "center_y" : .2 }
-                size_hint_x: .475
-                size_hint_y: .06
-            MDLabel:
-                id: quota_pct
-                text: "0.00%"
-                font_size: 11
-                theme_text_color: "Custom"
-                text_color: get_color_from_hex("#fcb711")
-                normal_color: app.theme_cls.accent_color
-                pos_hint: {"x" : .57, "center_y": .2}
-            MDLabel:
-                text: "Sort"
-                theme_text_color: "Custom"
-                text_color: get_color_from_hex("#fcb711")
-                normal_color: app.theme_cls.accent_color
-                pos_hint: {"x" : .63, "y": .25}
-            MDDropDownItem:
-                id: drop_item
-                pos_hint: {'x': .625, 'y': .25}
-                text: "None"
-                on_release: root.menu.open()  
-            TooltipMDRaisedButton:
-                tooltip_text: "VPNs encrypt your internet traffic, however DNS traffic is still in plaintext. Cloudflare's WARP will encrypt your DNS traffic ensuring no one can see your browsing history."
-                md_bg_color: get_color_from_hex("#121212")
-                pos_hint: {'x' : .72, 'center_y': .5}
-                on_press: root.start_warp()
-                
-                Image:
-                    id: warp
-                    size_hint: 2,2
-                    source: root.set_warp_icon()
-                    center_x: self.parent.center_x
-                    center_y: self.parent.center_y
+            #orientation: "horizontal"
+            size_hint_y: .11
+            #MDTextField:
+            #    canvas.after:
+            #        Color:
+            #            rgba: root.box_color if not self.focus else (0, 0, 0, 0)
+            #        Line:
+            #            width: dp(1)
+            #            rectangle: (*self.pos, *self.size)
+            #    hint_text: "IP Address"
+            #    id: new_ip
+            #    size_hint_x: .15
+            #    size_hint_y: .47
+            #    font_size: 11
+            #    pos_hint: {"x" : 0.01, "center_y": .67}                
+            #    readonly: True
+            #    opacity: 1
+            #    mode: "fill"
+            #    text_color_focus: '#fcb711'
+            #    text_color_normal: '#fcb711'
+            #    hint_text: 'IP Address:'
+            #    hint_text_color_normal: '#fcb711'
+            #    hint_text_color_focus: '#fcb711'
+            #    fill_color_normal: get_color_from_hex("#121212")
+            #    fill_color_focus: get_color_from_hex("#000000")
+            #MDTextField:
+            #    canvas.after:
+            #        Color:
+            #            rgba: root.box_color if not self.focus else (0, 0, 0, 0)
+            #        Line:
+            #            width: dp(1)
+            #            rectangle: (*self.pos, *self.size)
+            #    hint_text: "Node:"
+            #    id: connected_node
+            #    mode: "fill"
+            #    size_hint_x: .4
+            #    size_hint_y: .47
+            #    font_size: 11
+            #    font_name: root.get_font()            
+            #    pos_hint: {"x" : .18, "center_y": .67}                
+            #    readonly: True
+            #    opacity: 1
+            #    text_color_focus: '#fcb711'
+            #    text_color_normal: '#fcb711'                
+            #    hint_text_color_normal: '#fcb711'
+            #    hint_text_color_focus: '#fcb711'
+            #    fill_color_normal: get_color_from_hex("#121212")
+            #    fill_color_focus: get_color_from_hex("#000000")
+            #MDLabel:
+            #    text: "Bandwidth"
+            #    font_size: 11
+            #    theme_text_color: "Custom"
+            #    text_color: get_color_from_hex("#fcb711")
+            #    normal_color: app.theme_cls.accent_color
+            #    pos_hint: {"x" : .01, "center_y": .2}
+            #MDProgressBar:
+            #    id: quota
+            #    value: 0
+            #    color: app.theme_cls.accent_color
+            #    #back_color: get_color_from_hex("#ffffff")
+            #    pos_hint: {"x" : .085, "center_y" : .2 }
+            #    size_hint_x: .475
+            #    size_hint_y: .06
+            #MDLabel:
+            #    id: quota_pct
+            #    text: "0.00%"
+            #    font_size: 11
+            #    theme_text_color: "Custom"
+            #    text_color: get_color_from_hex("#fcb711")
+            #    normal_color: app.theme_cls.accent_color
+            #    pos_hint: {"x" : .57, "center_y": .2}
+            #MDLabel:
+            #    text: "Sort"
+            #    theme_text_color: "Custom"
+            #    text_color: get_color_from_hex("#fcb711")
+            #    normal_color: app.theme_cls.accent_color
+            #    pos_hint: {"x" : .63, "y": .25}
+            #MDDropDownItem:
+            #    id: drop_item
+            #    pos_hint: {'x': .625, 'y': .25}
+            #    text: "None"
+            #    on_release: root.menu.open()  
+            #TooltipMDRaisedButton:
+            #    tooltip_text: "VPNs encrypt your internet traffic, however DNS traffic is still in plaintext. Cloudflare's WARP will encrypt your DNS traffic ensuring no one can see your browsing history."
+            #    md_bg_color: get_color_from_hex("#121212")
+            #    pos_hint: {'x' : .72, 'center_y': .5}
+            #    on_press: root.start_warp()
+            #    
+            #    Image:
+            #        id: warp
+            #        size_hint: 2,2
+            #        source: root.set_warp_icon()
+            #        center_x: self.parent.center_x
+            #        center_y: self.parent.center_y
                             
-            Image:
-                id: protected
-                source: root.set_protected_icon(False, "")
-                opacity: 0
-                size_hint: None, None
-                height: "65dp"
-                pos_hint: {'x' : .8, 'center_y' : .5}    
+            #Image:
+            #    id: protected
+            #    source: root.set_protected_icon(False, "")
+            #    opacity: 0
+            #    size_hint: None, None
+            #    height: "65dp"
+            #    pos_hint: {'x' : .8, 'center_y' : .5}    
             Image:
                 source: root.get_logo()
                 size_hint: None, None
-                height: "75dp"
-                pos_hint: {'x' : .9, 'center_y' : .5}
-        
+                height: sp(50)
+                pos_hint: {'x' : .0001, 'center_y' : .5}
+            Image:
+                source: root.get_logo_text()
+                size_hint: None, None
+                height: sp(150)
+                pos_hint: {'x' : .06, 'center_y' : .5}
 
 
         MDTabs:
@@ -184,32 +234,72 @@ WindowManager:
                         icon: "help-circle-outline"
                         theme_text_color: "Custom"
                         text_color: get_color_from_hex("#fcb711")
+         
+        #MDBottomNavigation:
+        #    size_hint_y: 0.125
+        #    panel_color: get_color_from_hex("#121212")
+        #    text_color_normal: get_color_from_hex("#fcb711")
+        #    text_color_active: get_color_from_hex("#fad783")
+        #    selected_color_background: get_color_from_hex("#200c3a")
+        #    MDBottomNavigationItem:
+        #        name: "wallet"
+        #        text: "Wallet"
+        #        icon: "wallet"
+        #        on_tab_release: root.wallet_dialog()
+        #        on_tab_press:
+        #        
+        #    MDBottomNavigationItem:
+        #        name: "subscriptions"
+        #        text: "Subscriptions"
+        #        icon: "book-open-variant"
+        #        on_tab_release: root.switch_to_sub_window()
+        #         
+        #    MDBottomNavigationItem:
+        #        name: "Refresh"
+        #        text: "Refresh"
+        #       icon: "shield-refresh"
+        #        on_tab_release: root.refresh_nodes_and_subs()
+        #    
+        #    MDBottomNavigationItem:
+        #        name: "settings"
+        #        text: "Settings"
+        #        icon: "cogs"
+        #        on_tab_release: root.build_settings_screen_interface()
+        #        
+        #    MDBottomNavigationItem:
+        #        name: "help"
+        #        text: "Help"
+        #        icon: "account-question"
+        #        on_tab_release: root.build_help_screen_interface()
+                
     
 <TooltipMDRaisedButton@MDRaisedButton+MDTooltip>
 
 <IPAddressTextField@MDTextField>
     id: new_ip
     size_hint_x: .15
-    size_hint_y: .075
-    font_size: 11
+    size_hint_y: .05
+    font_size: sp(14)
     pos_hint: {"x" : 0.01, "center_y": .1}                
     readonly: True
     opacity: .5
     mode: "round"
+    text: "0.0.0.0"
     icon_left: "ip-network-outline"
     text_color_focus: '#fcb711'
     text_color_normal: '#fcb711'
     #hint_text: 'IP Address:'
     #fill_color_normal: get_color_from_hex("#121212")
     #fill_color_focus: get_color_from_hex("#000000")  
-    fill_color_normal: 0,0,0,0
-    fill_color_focus: 0,0,0,0
+    #fill_color_normal: 0,0,0,0
+    #fill_color_focus: 0,0,0,0
+    
 <ConnectedNode@MDTextField>
     id: connected_node
     mode: "round"
     size_hint_x: .4
-    size_hint_y: .075
-    font_size: 11      
+    size_hint_y: .05
+    font_size: sp(14)      
     pos_hint: {"x" : .18, "center_y": .1}                
     readonly: True
     opacity: .5
@@ -220,8 +310,37 @@ WindowManager:
     #hint_text_color_focus: '#fcb711'
     #fill_color_normal: get_color_from_hex("#121212")
     #fill_color_focus: get_color_from_hex("#000000")
-    fill_color_normal: 0,0,0,0
-    fill_color_focus: 0,0,0,0     
+
+<BandwidthLabel@MDLabel>    
+    text: "Bandwidth"
+    font_size: sp(11)
+    theme_text_color: "Custom"
+    text_color: get_color_from_hex("#fcb711")
+    pos_hint: {"x" : .01, "center_y": .035}
+
+<BandwidthBar@MDProgressBar>
+    id: quota
+    value: 0
+    color: app.theme_cls.primary_color
+    back_color: 0,0,0,.3
+    pos_hint: {"x" : .1, "center_y" : .035 }
+    size_hint_x: .45
+    size_hint_y: None
+    height:dp(4)                                   
+    canvas:
+
+        Color: 
+            rgba: 0,0,0,.3
+        BorderImage:
+            border: (dp(4), dp(4), dp(4), dp(4))
+            pos: self.x, self.center_y - dp(2)
+            size: self.width, dp(4)
+        Color:
+            rgba: get_color_from_hex("#fcb711")                        
+        BorderImage:
+            border: [int(min(self.width * (self.value / float(self.max)) if self.max else 0, dp(4)))] * 4
+            pos: self.x, self.center_y -dp(2)
+            size: self.width * (self.value / float(self.max)) if self.max else 0, dp(4)    
             
 <NodeScreen>
     name: "nodes"

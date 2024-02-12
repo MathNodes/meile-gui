@@ -380,8 +380,6 @@ class MainWindow(Screen):
             tab = Tab(tab_label_text=name_tab)
             self.ids.android_tabs.add_widget(tab)
 
-        self.get_ip_address(None)
-
         self.on_tab_switch(
             None,
             None,
@@ -402,12 +400,27 @@ class MainWindow(Screen):
                                size_hint=(.7,1))
             #self.MeileMap.map_source = "osm"
             self.MeileMap.map_source = source
+            
             layout = FloatLayout(size_hint=(1,1))
+            bw_label          = BandwidthLabel()
+            self.quota        = BandwidthBar()
+            self.quota_pct    = QuotaPct()
+            self.map_widget_1 = IPAddressTextField()
+            self.map_widget_2 = ConnectedNode()
+            
             layout.add_widget(self.MeileMap)
             layout.add_widget(self.map_widget_1)
             layout.add_widget(self.map_widget_2)
+            layout.add_widget(bw_label)
+            layout.add_widget(self.quota)
+            layout.add_widget(self.quota_pct)
+            
+            self.quota.value = 50
+            self.quota_pct.text = "50%"
+
             self.carousel = Carousel(direction='right')
             self.ids.country_map.add_widget(self.carousel)
+            #self.carousel.add_widget(self.MeileMap)
             self.carousel.add_widget(layout)
             self.AddCountryNodePins(False)
             self.MeileMapBuilt = True
@@ -570,10 +583,14 @@ class MainWindow(Screen):
 
     def get_logo(self):
         self.MeileConfig = MeileGuiConfig()
-        return self.MeileConfig.resource_path("../imgs/logo.png")
+        return self.MeileConfig.resource_path(MeileColors.LOGO)
+
+    def get_logo_text(self):
+        self.MeileConfig = MeileGuiConfig()
+        return self.MeileConfig.resource_path(MeileColors.LOGO_TEXT)
+
 
     def get_ip_address(self, dt):
-        self.map_widget_1 = IPAddressTextField()
         
         if self.dialog:
             self.dialog.dismiss()
@@ -821,6 +838,8 @@ class MainWindow(Screen):
 
         # Check to build Map
         self.build_meile_map()
+        
+        self.get_ip_address(None)
 
         # use lambda in future
         if tab_text == OurWorld.CONTINENTS[0]:
