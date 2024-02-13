@@ -3,18 +3,22 @@ from kivymd.app import MDApp
 from kivy.core.window import Window
 from kivy.utils import get_color_from_hex
 from kivymd.uix.boxlayout import MDBoxLayout
+from kivymd.uix.gridlayout import MDGridLayout
 from kivy.uix.screenmanager import ScreenManager, Screen
 
 
 from kivy.lang import Builder
 from kivy.metrics import dp
 
-from kivymd.uix.list import ImageLeftWidget
+from kivymd.uix.list import ImageLeftWidget, BaseListItem
 
 from kivymd.uix.datatables import MDDataTable
+from kivymd.uix.datatables.datatables import TableHeader, TableData
 
 # meil uix from tests
 from uix.expansionpanel import MDExpansionPanelRoundIcon, MDExpansionPanelTwoLineSmall
+from uix.expansionnode import Node, NodeAccordion, NodeDetails
+
 
 KV = """
 #:import get_color_from_hex kivy.utils.get_color_from_hex
@@ -46,6 +50,7 @@ WindowManager:
         font_style: "Overline"
         bg_color: "black"
 
+
 <MainScreen>:
     name: "main"
     MDGridLayout:
@@ -66,7 +71,7 @@ WindowManager:
 
         MDGridLayout:
             cols: 2
-            md_bg_color: get_color_from_hex("#212221")
+            # md_bg_color: get_color_from_hex("#212221")
 
             MDGridLayout:
                 rows: 4
@@ -145,21 +150,72 @@ WindowManager:
                         theme_text_color: "Custom"
                         text_color: "white"
 
-            AnchorLayout:
-                orientation: "horizontal"
-                md_bg_color: get_color_from_hex("#131313")
-                id: servers_datatable
+            # AnchorLayout:
+            #     orientation: "horizontal"
+            #     md_bg_color: get_color_from_hex("#131313")
+            #     id: servers_datatable
 
+            MDGridLayout:
+                rows: 2
+
+                MDGridLayout:
+                    cols: 7
+                    height: 25
+                    adaptive_height: True
+                    padding: [15, 25, 0, 25]
+
+                    MDLabel:
+                        text: "Moniker"
+                        bold: True
+                        size_hint_x: 2
+
+                    MDLabel:
+                        text: "Location"
+                        bold: True
+                        size_hint_x: 1
+
+                    MDLabel:
+                        text: "Speed"
+                        bold: True
+                        size_hint_x: 2
+
+                    # MDLabel:
+                    #     text: "Status"
+                    #     bold: True
+                    #     size_hint_x: 1
+
+                    # MDLabel:
+                    #     text: "Price"
+                    #     bold: True
+                    #     size_hint_x: 2
+
+                    MDLabel:
+                        text: "Protocol"
+                        bold: True
+                        size_hint_x: 1
+
+                    MDLabel:
+                        text: "Type"
+                        bold: True
+                        size_hint_x: 1
+
+                ScrollView:
+                    do_scroll_y: True
+                    MDBoxLayout:
+                        size_hint_y: None
+                        adaptive_height: True
+
+                        orientation: "vertical"
+                        padding: [10, 10, 10, 50]
+                        spacing: 10
+                        id: servers_list
 """
-
 
 class WindowManager(ScreenManager):
     pass
 
-
 class Content(MDBoxLayout):
     pass
-
 
 class MainScreen(Screen):
     def __init__(self, **kwargs):
@@ -214,93 +270,24 @@ class MainScreen(Screen):
             )
             self.ids.countries_list.add_widget(item)
 
-
-        self.data_tables = MDDataTable(
-            use_pagination=True,
-            check=False,
-            column_data=[
-                ("Moniker", dp(45)),
-                ("Location", dp(20)),
-                ("Speed", dp(50)),
-                ("Status", dp(20)),
-                ("Price", dp(40)),
-                ("Protocol", dp(20)),
-                ("Type", dp(20)),
-            ],
-            sorted_on="Moniker",
-            sorted_order="ASC",
-            elevation=2,
-            rows_num=10
-        )
-
-        row_data = []
-        for _ in range(0, 150):
+        for _ in range(0, 50):
             upload = random.uniform(100, 900)
             download = random.uniform(100, 900)
-            bandwith = "speedometer-medium"
-            if upload + download > 1200:
-                bandwith = "speedometer"
-            elif upload + download < 400:
-                bandwith = "speedometer-slow"
-
-            healthcheck = random.choice([True, False])
-
-            row_data.append(
-                (
-                    ''.join(random.choices(string.printable[:-6], k=random.randint(5, 15))),  # Moniker
-                    random.choice(countries),
-                    (bandwith, [1, 1, 1, 1] ,f"[size=12][color=#00FF00]up[/color] {round(upload, 2)}mb/s[color=#f44336]down[/color] {round(download, 2)}mb/s[/size]"),
-                    ("shield-plus", [39 / 256, 174 / 256, 96 / 256, 1], "Health") if healthcheck is True else ("emoticon-sick", [1, 0, 0, 1], "Sick"),
-                    f"[size=12]{random.randint(1, 100)}dvpn, {random.randint(1, 100)}atom, {random.randint(1, 100)}osmo, {random.randint(1, 100)}srct, {random.randint(1, 100)}dec[/size]",
-                    random.choice(["Wireguard", "V2RAY"]),
-                    random.choice(["Residential", "Datacenter", "Unknown"])
+            item = NodeAccordion(
+                node=Node(
+                    moniker=''.join(random.choices(string.printable[:-6], k=random.randint(5, 15))),  # Moniker
+                    location=random.choice(countries),
+                    speed=f"[color=#00FF00]↑[/color] {round(upload, 2)}mb/s [color=#f44336]↓[/color] {round(download, 2)}mb/s",
+                    status="Status",
+                    protocol=random.choice(["Wireguard", "V2RAY"]),
+                    node_type=random.choice(["Residential", "Datacenter", "Unknown"]),
+                ),
+                content=NodeDetails(
+                    health_check=random.choice([True, False]),
+                    price=f"{random.randint(1, 100)}[b]dvpn[/b], {random.randint(1, 100)}[b]atom[/b], {random.randint(1, 100)}[b]osmo[/b], {random.randint(1, 100)}[b]srct[/b], {random.randint(1, 100)}[b]dec[/b]",
                 )
             )
-
-        self.data_tables.row_data = row_data
-
-        self.data_tables.bind(on_row_press=self.on_row_press)
-        self.ids.servers_datatable.add_widget(self.data_tables)
-
-    def on_row_press(self, instance_table, instance_row):
-        '''Called when a table row is clicked.'''
-
-        print(instance_table, instance_row)
-
-    def on_check_press(self, instance_table, current_row):
-        '''Called when the check box in the table row is checked.'''
-
-        print(instance_table, current_row)
-
-    # Sorting Methods:
-    # since the https://github.com/kivymd/KivyMD/pull/914 request, the
-    # sorting method requires you to sort out the indexes of each data value
-    # for the support of selections.
-    #
-    # The most common method to do this is with the use of the builtin function
-    # zip and enumerate, see the example below for more info.
-    #
-    # The result given by these funcitons must be a list in the format of
-    # [Indexes, Sorted_Row_Data]
-
-    def sort_on_signal(self, data):
-        return zip(*sorted(enumerate(data), key=lambda l: l[1][2]))
-
-    def sort_on_schedule(self, data):
-        return zip(
-            *sorted(
-                enumerate(data),
-                key=lambda l: sum(
-                    [
-                        int(l[1][-2].split(":")[0]) * 60,
-                        int(l[1][-2].split(":")[1]),
-                    ]
-                ),
-            )
-        )
-
-    def sort_on_team(self, data):
-        return zip(*sorted(enumerate(data), key=lambda l: l[1][-1]))
+            self.ids.servers_list.add_widget(item)
 
 Builder.load_string(KV)
 

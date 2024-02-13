@@ -166,8 +166,11 @@ class MDExpansionPanelRoundIcon(RelativeLayout):
                         press_current_panel = True
                     panel.remove_widget(panel.children[0])
                     if not isinstance(self.panel_cls, MDExpansionPanelLabel):
-                        chevron = panel.children[0].children[1].children[0]  # Fix [0/1]
-                        self.set_chevron_up(chevron)
+                        for y in range(0, len(panel.children[0].children)):
+                            chevron = panel.children[0].children[y].children[0]  # Fix [0/1]
+                            if isinstance(chevron, MDExpansionChevronRight):
+                                self.set_chevron_up(chevron)
+                                break
                     self.close_panel(panel, press_current_panel)
                     self.dispatch("on_close")
                     break
