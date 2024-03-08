@@ -7,6 +7,7 @@ from urllib3.exceptions import InsecureRequestWarning
 from subprocess import Popen, PIPE, STDOUT
 from datetime import datetime,timedelta
 import time
+from urllib.parse import urlparse
 
 from treelib import  Tree
 from treelib.exceptions import DuplicatedNodeIdError
@@ -16,8 +17,10 @@ from conf.meile_config import MeileGuiConfig
 from typedef.konstants import ConfParams, HTTParams, IBCTokens, TextStrings, NodeKeys
 from adapters import HTTPRequests
 from cli.v2ray import V2RayHandler
-from dns.rdataclass import NONE
+from helpers import helpers
 
+from sentinel_sdk.sdk import SDKInstance
+from sentinel_sdk.types import PageRequest, Status
 
 MeileConfig = MeileGuiConfig()
 sentinelcli = MeileConfig.resource_path("../bin/sentinelcli")
@@ -38,93 +41,6 @@ class NodeTreeData():
             
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
-            
-    '''
-    def get_nodes(self, latency, *kwargs):
-        AllNodesInfo = []
-        print("Running sentinel-cli with latency: %s" % latency)
-        CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
-        self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
-        nodeCMD = [sentinelcli, "query", "nodes", "--node", self.RPC, "--limit", "20000", "--timeout", "%s" % latency]
-    
-        proc = Popen(nodeCMD, stdout=PIPE)
-        
-        k=1
-        
-        
-        for line in proc.stdout.readlines():
-            line = str(line.decode('utf-8'))
-            if k < 4:  
-                k += 1 
-                continue
-            if k >=4 and '+-------+' in line:
-                break
-            elif "freak12techno" in line:
-                ninfos = []
-                ninfos.append(line.split('|')[1])
-                for ninf in line.split('|')[3:-1]:
-                    ninfos.append(ninf)
-                AllNodesInfo.append(dict(zip(NodeKeys.NodesInfoKeys, ninfos)))
-            elif "Testserver" in line:
-                continue
-            else: 
-                ninfos = line.split('|')[1:-1]
-                if ninfos[0].isspace():
-                    continue
-                elif ninfos[1].isspace():
-                    continue
-                else:
-                    AllNodesInfo.append(dict(zip(NodeKeys.NodesInfoKeys, ninfos)))
-        
-        AllNodesInfoSorted = sorted(AllNodesInfo, key=lambda d: d[NodeKeys.NodesInfoKeys[4]])
-        
-        #result = collections.defaultdict(list)
-        
-        self.NodeTree = self.CreateNodeTreeStructure()
-        
-        for d in AllNodesInfoSorted:
-            for key in NodeKeys.NodesInfoKeys:
-                d[key] = d[key].lstrip().rstrip()
-            d[NodeKeys.NodesInfoKeys[10]] = d[NodeKeys.NodesInfoKeys[10]].split('-')[0]
-            version = d[NodeKeys.NodesInfoKeys[10]].replace('.','')
-            if version not in NodeKeys.NodeVersions:
-                continue
-            
-            # Gigabyte Prices
-            d[NodeKeys.NodesInfoKeys[2]] = self.return_denom(d[NodeKeys.NodesInfoKeys[2]])
-            d[NodeKeys.NodesInfoKeys[2]] = self.parse_coin_deposit(d[NodeKeys.NodesInfoKeys[2]])
-            
-            # Hourly Prices
-            d[NodeKeys.NodesInfoKeys[3]] = self.return_denom(d[NodeKeys.NodesInfoKeys[3]])
-            d[NodeKeys.NodesInfoKeys[3]] = self.parse_coin_deposit(d[NodeKeys.NodesInfoKeys[3]])
-            
-            
-            if  OurWorld.CZ in d[NodeKeys.NodesInfoKeys[4]]:
-                d[NodeKeys.NodesInfoKeys[4]] = OurWorld.CZ_FULL
-                
-                
-            if OurWorld.NL_FULL in d[NodeKeys.NodesInfoKeys[4]]:
-                d[NodeKeys.NodesInfoKeys[4]] = OurWorld.NL
-            try:
-                d_continent = OurWorld.our_world.get_country_continent_name(d[NodeKeys.NodesInfoKeys[4]])
-            except NameError as e:
-                print(str(e))
-                continue
-            try:
-                self.NodeTree.create_node(d[NodeKeys.NodesInfoKeys[4]],d[NodeKeys.NodesInfoKeys[4]], parent=d_continent)
-            except:
-                pass
-            try:
-                self.NodeTree.create_node(d[NodeKeys.NodesInfoKeys[1]], d[NodeKeys.NodesInfoKeys[1]],parent=d[NodeKeys.NodesInfoKeys[4]], data=d )
-            except:
-                pass
-            
-        self.NodeTree.show()
-        self.GetNodeScores()
-        self.GetNodeLocations()
-        self.GetNodeTypes()
-        self.GetHealthCheckData()
-    '''
         
     def get_nodes(self, latency, *kwargs):
         AllNodesInfo = []
@@ -173,11 +89,6 @@ class NodeTreeData():
         
         for d in AllNodesInfoSorted:
             
-            '''Not sure I need this now that I'm parsing JSON
-            for key in NodeKeys.NodesInfoKeys:
-                d[key] = d[key].lstrip().rstrip()
-            '''
-            
             '''Parse out old node versions < 0.7.0'''   
             
             d[NodeKeys.NodesInfoKeys[14]] = d[NodeKeys.NodesInfoKeys[14]].split('-')[0]
@@ -193,37 +104,7 @@ class NodeTreeData():
             d[NodeKeys.NodesInfoKeys[3]] = self.return_denom(d[NodeKeys.NodesInfoKeys[3]])
             d[NodeKeys.NodesInfoKeys[3]] = self.parse_coin_deposit(d[NodeKeys.NodesInfoKeys[3]])
             
-            
-            '''This was updated in src/geography and AWOC data (world.json)
-            if  OurWorld.CZ in d[NodeKeys.NodesInfoKeys[4]]:
-                d[NodeKeys.NodesInfoKeys[4]] = OurWorld.CZ_FULL
-                
-                
-            if OurWorld.NL_FULL in d[NodeKeys.NodesInfoKeys[4]]:
-                d[NodeKeys.NodesInfoKeys[4]] = OurWorld.NL
-            '''
-            
-            # Sanity check:
-            # if country doesn't exists in AWOC don't crash
-            try:
-                d_country = d[NodeKeys.NodesInfoKeys[4]]
-            except NameError as e:
-                print(str(e))
-                continue
-            
-            '''These may longer not be necessary as we move away
-            from continents. Parents should be countries.
-            Haven't decided yet
-            '''
-    
-            ''' This is not necessary. But may want to get sub_tree of root node and see if country
-            already exists, if not create the node in the root. This way every oddball country definition will be created. 
-            Will consider this in later builds. 
-            try:
-                self.NodeTree.create_node(d[NodeKeys.NodesInfoKeys[4]],d[NodeKeys.NodesInfoKeys[4]], parent=d_country)
-            except:
-                pass
-            '''
+
             try:
                 self.NodeTree.create_node(d[NodeKeys.NodesInfoKeys[1]], d[NodeKeys.NodesInfoKeys[1]],parent=d[NodeKeys.NodesInfoKeys[4]], data=d )
             except Exception as e:
@@ -237,6 +118,8 @@ class NodeTreeData():
         # Hosting, Residential, etc
         self.GetNodeTypes()
         # Sentinel Health Check Results
+        # Will process Health Check on-the-fly in NodeScreen. 
+        # Not loading all the data here is a 2x improvement on loadtime
         #self.GetHealthCheckData()
 
     def GetHealthCheckData(self):
@@ -324,10 +207,7 @@ class NodeTreeData():
                     NodeTreeBase.create_node(c, c, parent=RootIdentifier)
             except DuplicatedNodeIdError:
                 continue 
-        #for c in OurWorld.our_world.get_countries_list():
-            #NodeTreeBase.create_node(c, c, parent=RootIdentifier)
-            
-        #NodeTreeBase.show()
+
         return NodeTreeBase
     
     def return_denom(self, tokens):
@@ -365,30 +245,36 @@ class NodeTreeData():
         print("Geting Subscriptions... %s" % ADDRESS)
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
-        subsCMD = [sentinelcli, "query", "subscriptions", "--node", self.RPC, "--limit", "1000", "--address" ,ADDRESS]
-        proc = Popen(subsCMD, stdout=PIPE)
-    
-        k=1
-        for line in proc.stdout.readlines():
-            if k < 4:
-                k += 1 
-                continue
-            elif k % 2 == 0: 
-                ninfos = str(line.decode('utf-8')).lstrip().rstrip().split('|')[1:-1]
-                # List of Dictionaries
-                SubsNodesInfo.append(dict(zip(NodeKeys.SubsInfoKeys, ninfos)))
-                k += 1
-            else:
-                k += 1
+
+        self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
+        
+        grpcaddr, grpcport = urlparse(self.GRPC).netloc.split(":")
+        sdk = SDKInstance(grpcaddr, int(grpcport))
+        subscriptions = sdk.subscriptions.QuerySubscriptionsForAccount(ADDRESS, pagination=PageRequest(limit=1000))
+
+        # TODO: Casting all to str is required?
+        SubsNodesInfo = [{
+            'Denom': "",  # TODO: (?)
+            'Deposit': f"{subscription.deposit.amount}{subscription.deposit.denom}",
+            'Gigabytes': f"{subscription.gigabytes}",
+            'Hours': f"{subscription.hours}",
+            'ID': f"{subscription.base.id}",
+            'Inactive Date': datetime.fromtimestamp(subscription.base.inactive_at.seconds).strftime('%Y-%m-%d %H:%M:%S.%f'), # '2024-03-26 19:37:52.52297981',
+            'Node': subscription.node_address,
+            'Owner': subscription.base.address,
+            'Plan': '0',  # TODO: (?)
+            'Status': ["unspecified", "active", "inactive_pending", "inactive"][subscription.base.status],
+        } for subscription in subscriptions]
+
         # A Dictionary of Lists
         SubsResult = collections.defaultdict(list)
-        
+
         # Create IBC Denoms
         for d in SubsNodesInfo:
             for k, v in d.items():
                 v = self.return_denom(v)
                 SubsResult[k].append(v.lstrip().rstrip())
-                
+
         k=0
         #print(SubsResult)
         for snaddress in SubsResult[NodeKeys.SubsInfoKeys[4]]:
@@ -411,13 +297,13 @@ class NodeTreeData():
                 print("Sub not found in list")
                 k += 1
                 continue
-            
+
             if int(SubsResult[NodeKeys.SubsInfoKeys[6]][k]) > 0:
                 SubsResult[NodeKeys.SubsInfoKeys[2]][k],nodeQuota = self.GetHourAllocation(SubsResult[NodeKeys.SubsInfoKeys[6]][k], SubsResult[NodeKeys.SubsInfoKeys[2]][k])
-                
-            else:    
+
+            else:
                 nodeQuota = self.GetQuota(SubsResult[NodeKeys.SubsInfoKeys[0]][k])
-                
+
             if nodeQuota:
                 SubsFinalResult.append({
                                             NodeKeys.FinalSubsKeys[0] : SubsResult[NodeKeys.SubsInfoKeys[0]][k],
@@ -428,36 +314,29 @@ class NodeTreeData():
                                             NodeKeys.FinalSubsKeys[5] : NodeData[NodeKeys.NodesInfoKeys[4]],
                                             NodeKeys.FinalSubsKeys[6] : nodeQuota[0],
                                             NodeKeys.FinalSubsKeys[7] : nodeQuota[1],
-                                            NodeKeys.FinalSubsKeys[8] : NodeData[NodeKeys.NodesInfoKeys[13]],
+                                            NodeKeys.FinalSubsKeys[8] : NodeData[NodeKeys.NodesInfoKeys[9]],
                                             NodeKeys.FinalSubsKeys[9] : SubsResult[NodeKeys.SubsInfoKeys[2]][k],
                                             NodeKeys.FinalSubsKeys[10]: SubsResult[NodeKeys.SubsInfoKeys[6]][k]
                                             })
-            k += 1 
+            k += 1
 
-        return SubsFinalResult   
+        return SubsFinalResult
 
 
     def GetQuota(self, id):
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
-        self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
-        quotaCMD = [sentinelcli, 'query', 'allocations', '--node', self.RPC, '--page', '1', id]
-        proc = Popen(quotaCMD, stdout=PIPE)
-        h=1
-        for line in proc.stdout.readlines():
-            if h < 4:
-                h += 1 
-                continue
-            if h >=4 and '+-----------+' in str(line.decode('utf-8')):
-                break
-            else:
-                nodeQuota = str(line.decode('utf-8')).split("|")[2:-1]
-                allotted = float(re.findall(r'[0-9]+\.[0-9]+', nodeQuota[0])[0])
-                consumed = float(re.findall(r'[0-9]+\.[0-9]+', nodeQuota[1])[0])
-                
-                if allotted == consumed:
-                    return None
-                else:
-                    return nodeQuota
+
+        self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
+        
+        grpcaddr, grpcport = urlparse(self.GRPC).netloc.split(":")
+        sdk = SDKInstance(grpcaddr, int(grpcport))
+        allocations = sdk.subscriptions.QueryAllocations(subscription_id=int(id))
+
+        for allocation in allocations:
+            if int(allocation.granted_bytes) == int(allocation.utilised_bytes):
+                return None
+            return [helpers.format_file_size(int(allocation.granted_bytes), binary_system=False), helpers.format_file_size(int(allocation.utilised_bytes), binary_system=False)]
+
                 
     def GetHourAllocation(self, hours, idate):
         nodeQuota       = []
