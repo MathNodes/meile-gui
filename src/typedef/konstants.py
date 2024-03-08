@@ -34,8 +34,10 @@ class HTTParams():
     SERVER_URL             = "https://aimokoivunen.mathnodes.com:5000"
     RPC                    = "https://rpc.mathnodes.com:443"
     # Note http://128.199.90.172:26657 is testnet ONLY!
-    RPCS                   = ['https://rpc.mathnodes.com:443', 'https://rpc.dvpn.me:443', 'https://rpc.sentinel.co:443', 'https://sentinel-rpc.badgerbite.io:443',
-                              'https://sentinel-rpc2.badgerbite.io:443', 'https://rpc.sentinel.quokkastake.io:443', 'https://rpc-sentinel.whispernode.com:443']
+    RPCS                   = ['https://rpc.mathnodes.com:443', 'https://rpc.dvpn.me:443', 'https://rpc.sentinel.co:443',
+                              'https://rpc.sentinelgrowthdao.com:443', 'https://rpc.trinityvalidator.com.com:443',
+                              'https://sentinel-rpc.badgerbite.io:443','https://sentinel-rpc2.badgerbite.io:443',
+                              'https://rpc.sentinel.quokkastake.io:443', 'https://rpc-sentinel.whispernode.com:443']
     GRPC                   = "grpc+http://aimokoivunen.mathnodes.com:9090/"
     #GRPC                   = "grpc+http://128.199.90.172:9090/"
     HEALTH_CHECK           = "https://api.health.sentinel.co/v1/records"
@@ -71,13 +73,17 @@ class IBCTokens():
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
-    VERSION = "v1.7.18"
+    VERSION = "v1.8.0"
+    RootTag = "SENTINEL"
+    PassedHealthCheck = "Passed Sentinel Health Check"
+    FailedHealthCheck = "Failed Sentinel Health Check"
     
 class MeileColors():
     DIALOG_BG_COLOR          = "#121212"
     INACTIVE_DIALOG_BG_COLOR = "#50507c"
     ROW_HOVER                = "#39363c"
     FONT_FACE                = "../fonts/mplus-2c-bold.ttf"
+    QR_FONT_FACE             = "../fonts/Roboto-BoldItalic.ttf"
     MAP_MARKER               = "../imgs/location_pin.png"
     LOGO                     = "../imgs/logo.png"
     LOGO_TEXT                = "../imgs/logo_text.png"
@@ -86,11 +92,19 @@ class MeileColors():
     ARCGIS_MAP               = "https://server.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}.png"
     
 class NodeKeys():
+    '''v1.8.0
+    NodesInfoKeys = ["Moniker","Address","Price","Hourly Price", "Country","Speed","Latency","Peers","Handshake","Type","Version","Status"]
+    SubsInfoKeys  = ["ID", "Owner", "Inactive Date", "Status", "Node", "Gigabytes", "Hours", "Deposit", "Plan", "Denom"]
+    # [ "ID", "Moniker", "Node", "Gigabytes", "Deposit", "Country", "Allocated", "Consumed", "Type", "Inactive Date", "Hours"]
+    FinalSubsKeys = [SubsInfoKeys[0], NodesInfoKeys[0],SubsInfoKeys[4],SubsInfoKeys[5], SubsInfoKeys[7], NodesInfoKeys[4], "Allocated", "Consumed", NodesInfoKeys[9],SubsInfoKeys[2],SubsInfoKeys[6]]
+    NodeVersions  = [str(item).zfill(3) for item in range(30,1000)]
+    Nodetypes = ['residential', 'business', 'hosting', 'edu']
+    '''
+    
     NodesInfoKeys = ["Moniker","Address","Price","Hourly Price", "Country","City","Latitude","Longitude","Download","Upload","Peers","Max Peers","Handshake","Type","Version"]
     SubsInfoKeys  = ["ID", "Owner", "Inactive Date", "Status", "Node", "Gigabytes", "Hours", "Deposit", "Plan", "Denom"]
     # [ "ID", "Moniker", "Node", "Gigabytes", "Deposit", "Country", "Allocated", "Consumed", "Type", "Inactive Date", "Hours"]
     FinalSubsKeys = [SubsInfoKeys[0], NodesInfoKeys[0],SubsInfoKeys[4],SubsInfoKeys[5], SubsInfoKeys[7], NodesInfoKeys[4], "Allocated", "Consumed", NodesInfoKeys[13],SubsInfoKeys[2],SubsInfoKeys[6]]
     NodeVersions  = [str(item).zfill(3) for item in range(70,1000)]
     Nodetypes = ['residential', 'business', 'hosting', 'edu']
-
 

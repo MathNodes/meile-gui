@@ -160,20 +160,20 @@ WindowManager:
                 pos_hint: {'x' : .0001, 'center_y' : .5}
             Image:
                 source: root.get_logo_text()
-                size_hint: None, None
-                height: sp(150)
-                pos_hint: {'x' : .06, 'center_y' : .5}
+                size_hint_y: .6
+                size_hint_x: .6
+                pos_hint: {'x' : -.15, 'center_y' : .5}
 
 
-        MDTabs:
-            id: android_tabs
-            on_tab_switch: root.on_tab_switch(*args)
-            size_hint_y: None
-            height: "48dp"
-            tab_indicator_anim: True
-            color: 1,1,1,1
-            normal_color: get_color_from_hex("#fcb711")
-            background_color: get_color_from_hex("#fcb711")
+        #MDTabs:
+        #    id: android_tabs
+        #    on_tab_switch: root.on_tab_switch(*args)
+        #    size_hint_y: None
+        #    height: "48dp"
+        #    tab_indicator_anim: True
+        #    color: 1,1,1,1
+        #    normal_color: get_color_from_hex("#fcb711")
+        #    background_color: get_color_from_hex("#fcb711")
         
         MDBoxLayout:
             id: country_map
@@ -181,6 +181,28 @@ WindowManager:
             MDBoxLayout:
                 orientation: "vertical"
                 size_hint: (.25, 1)
+                MDFloatLayout:
+                    size_hint: None,.175
+                    TooltipMDFlatButton:
+                        tooltip_text: "Connect to Node"
+                        md_bg_color: get_color_from_hex("#121212")
+                        pos_hint: {'x' : .3, 'y': .6}
+                        Image:
+                            id: connect_button
+                            size_hint: 3,3
+                            source: root.return_connect_button()
+                            
+                            
+                    MDTextField:
+                        opacity: 1
+                        hint_text: "Search"
+                        icon_right: "magnify"
+                        pos_hint: {'x' : .1, 'y': 0}
+                        size_hint_x: 1.5
+                        size_hint_y: .6
+                        font_size: sp(12)
+                                        
+                            
                 NodeRV:
                     md_bg_color: get_color_from_hex("#121212")    
                     id: rv
@@ -195,42 +217,47 @@ WindowManager:
                     height: 50
                     spacing: 6
                     
-                    canvas:
-                        # draw a background of red. This will be the border
-                        Color:
-                            rgba: get_color_from_hex("#fcb711")
-                        RoundedRectangle:
-                            pos: self.pos
-                            size: self.size
+                    #canvas:
+                    #    # draw a background of red. This will be the border
+                    #    Color:
+                    #        rgba: get_color_from_hex("#fcb711")
+                    #    RoundedRectangle:
+                    #        pos: self.pos
+                    #        size: self.size
     
                         # draw over the above except for 1 pixels around edges, leaving the orange border showing
-                        Color:
-                            rgba: get_color_from_hex("#212221")
-                        RoundedRectangle:
-                            pos: self.x+1, self.y+1
-                            size: self.width-2, self.height-2
+                    #    Color:
+                    #        rgba: get_color_from_hex("#212221")
+                    #    RoundedRectangle:
+                    #        pos: self.x+1, self.y+1
+                    #        size: self.width-2, self.height-2
     
-                    MDIconButton:
+                    ToolTipMDIconButton:
+                        tooltip_text: "Wallet"
                         icon: "wallet-outline"
                         theme_text_color: "Custom"
                         text_color: get_color_from_hex("#fcb711")
     
-                    MDIconButton:
+                    ToolTipMDIconButton:
+                        tooltip_text: "Subscriptions"
                         icon: "book-open-outline"
                         theme_text_color: "Custom"
                         text_color: get_color_from_hex("#fcb711")
                         
-                    MDIconButton:
+                    ToolTipMDIconButton:
+                        tooltip_text: "Plans"
                         icon: "animation-outline"
                         theme_text_color: "Custom"
                         text_color: get_color_from_hex("#fcb711")
     
-                    MDIconButton:
+                    ToolTipMDIconButton:
+                        tooltip_text: "Settings"
                         icon: "cog-outline"
                         theme_text_color: "Custom"
                         text_color: get_color_from_hex("#fcb711")
     
-                    MDIconButton:
+                    ToolTipMDIconButton:
+                        tooltip_text: "Help"
                         icon: "help-circle-outline"
                         theme_text_color: "Custom"
                         text_color: get_color_from_hex("#fcb711")
@@ -274,6 +301,8 @@ WindowManager:
                 
     
 <TooltipMDRaisedButton@MDRaisedButton+MDTooltip>
+<TooltipMDFlatButton@MDFlatButton+MDTooltip>
+<ToolTipMDIconButton@MDIconButton+MDTooltip>
 
 <IPAddressTextField@MDTextField>
     id: new_ip
@@ -340,8 +369,17 @@ WindowManager:
         BorderImage:
             border: [int(min(self.width * (self.value / float(self.max)) if self.max else 0, dp(4)))] * 4
             pos: self.x, self.center_y -dp(2)
-            size: self.width * (self.value / float(self.max)) if self.max else 0, dp(4)    
-            
+            size: self.width * (self.value / float(self.max)) if self.max else 0, dp(4)
+    
+<QuotaPct@MDLabel>
+    id: quota_pct
+    text: "0.00%"
+    font_size: 11
+    theme_text_color: "Custom"
+    text_color: get_color_from_hex("#fcb711")
+    pos_hint: {"x" : .57, "center_y": .035}
+    
+          
 <NodeScreen>
     name: "nodes"
     MDBoxLayout:

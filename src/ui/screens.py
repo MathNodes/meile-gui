@@ -1,5 +1,5 @@
 from geography.continents import OurWorld
-from ui.interfaces import Tab, LatencyContent, TooltipMDIconButton, ConnectionDialog, IPAddressTextField, ConnectedNode
+from ui.interfaces import Tab, LatencyContent, TooltipMDIconButton, ConnectionDialog, IPAddressTextField, ConnectedNode, QuotaPct,BandwidthBar,BandwidthLabel
 from typedef.win import WindowNames
 from cli.sentinel import  NodeTreeData
 from typedef.konstants import NodeKeys, TextStrings, MeileColors, HTTParams, IBCTokens
@@ -35,6 +35,7 @@ from kivymd.toast import toast
 from kivy.uix.carousel import Carousel
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivy.uix.floatlayout import FloatLayout
+from kivymd.uix.anchorlayout import MDAnchorLayout
 
 
 import requests
@@ -220,7 +221,7 @@ class PreLoadWindow(Screen):
         yield 0.6
         thread2 = Thread(target=lambda: self.progress_load())
         thread2.start()
-        thread = Thread(target=lambda: self.NodeTree.get_nodes("23s"))
+        thread = Thread(target=lambda: self.NodeTree.get_nodes("13s"))
         thread.start()
         
         Clock.schedule_interval(partial(self.update_status_text, thread), 1.6)
@@ -343,6 +344,7 @@ class MainWindow(Screen):
     NodeWidget = None
     Markers = []
     LatLong = []
+    
 
 
     def __init__(self, node_tree, **kwargs):
@@ -354,28 +356,30 @@ class MainWindow(Screen):
 
         Clock.schedule_once(self.get_config,1)
         Clock.schedule_once(self.build, 1)
-        sort_icons = ["sort-variant", "sort-alphabetical-ascending", "sort-numeric-ascending"]
-        menu_items = [
-            {
-                "viewclass": "IconListItem",
-                "icon": f"{k}",
-                "text": f"{i}",
-                "height": dp(56),
-                "on_release": lambda x=f"{i}": self.set_item(x),
-            } for i,k in zip(self.SortOptions, sort_icons)
-        ]
-        self.menu = MDDropdownMenu(
-            caller=self.ids.drop_item,
-            background_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
-            items=menu_items,
-            position="center",
-            width_mult=4,
-        )
-        self.menu.bind()
+        #sort_icons = ["sort-variant", "sort-alphabetical-ascending", "sort-numeric-ascending"]
+        #menu_items = [
+        #    {
+        #        "viewclass": "IconListItem",
+        #        "icon": f"{k}",
+        #        "text": f"{i}",
+        #        "height": dp(56),
+        #        "on_release": lambda x=f"{i}": self.set_item(x),
+        #    } for i,k in zip(self.SortOptions, sort_icons)
+        #]
+        #self.menu = MDDropdownMenu(
+        #    caller=self.ids.drop_item,
+        #    background_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
+        #    items=menu_items,
+        #    position="center",
+        #    width_mult=4,
+        #)
+        #self.menu.bind()
 
     def build(self, dt):
+        '''
         OurWorld.CONTINENTS.remove(OurWorld.CONTINENTS[1])
-
+        
+        
         for name_tab in OurWorld.CONTINENTS:
             tab = Tab(tab_label_text=name_tab)
             self.ids.android_tabs.add_widget(tab)
@@ -386,12 +390,45 @@ class MainWindow(Screen):
             None,
             self.ids.android_tabs.ids.layout.children[-1].text
         )
+        '''
+        
+        # Check to build Map
+        self.build_meile_map()
+        
+        CountryTree = []
+        CountryTreeTags = []
+        # Add counry cards
+        for ncountry in self.NodeTree.NodeTree.children(TextStrings.RootTag.lower()):
+            CountryTree.append(ncountry)
+            CountryTreeTags.append(ncountry.tag)
+            
+        CTTagsSorted = sorted(CountryTreeTags)
+        print(CTTagsSorted)
+        for tag in CTTagsSorted:
+            for ctree in CountryTree:
+                if tag == ctree.tag:
+                    self.add_country_rv_data(self.build_node_data(ctree))
+        
+        # WOuld be good to process this in a background thread so as to not hang the UI
+        self.get_ip_address(None)
 
+    def build_node_data(self, ncountry):
+        floc = "../imgs/"
+        NodeCountries = {}
+
+        iso2 = OurWorld.our_world.get_country_ISO2(ncountry.tag.lstrip().rstrip()).lower()
+        flagloc = floc + iso2 + ".png"
+
+        NodeCountries['number']  = len(self.NodeTree.NodeTree.children(ncountry.tag))
+        NodeCountries['country'] = ncountry.tag
+        NodeCountries['flagloc'] = flagloc
+
+        return NodeCountries
 
     def build_meile_map(self):
         
         if not self.MeileMapBuilt: 
-            self.MeileMap = MapView(lat=50.6394, lon=3.057, zoom=2)
+            self.MeileMap = MapView(zoom=2)
             source = MapSource(url=MeileColors.ARCGIS_MAP,
                                cache_key="meile-map-canvas-dark-grey-base-2", 
                                tile_size=256,
@@ -424,10 +461,18 @@ class MainWindow(Screen):
             self.carousel.add_widget(layout)
             self.AddCountryNodePins(False)
             self.MeileMapBuilt = True
+            
+            
 
-    def get_font(self):
-        Config = MeileGuiConfig()
-        return Config.resource_path(MeileColors.FONT_FACE)
+    def add_country_rv_data(self, NodeCountries):
+        self.ids.rv.data.append(
+            {
+                "viewclass"      : "RecycleViewCountryRow",
+                "num_text"       : str(NodeCountries['number']) + " Nodes",
+                "country_text"   : NodeCountries['country'],
+                "source_image"   : self.MeileConfig.resource_path(NodeCountries['flagloc'])
+            },
+        )
 
     def AddCountryNodePins(self, clear):
         Config = MeileGuiConfig()
@@ -438,27 +483,27 @@ class MainWindow(Screen):
                     self.MeileMap.remove_marker(m)
                 self.Markers.clear()
                 
-            for continent in self.MeileLand.CONTINENTS:
-                for ncountry in self.NodeTree.NodeTree.children(continent):
-                    try:
-                        loc = self.MeileLand.CountryLatLong[ncountry.tag]
-                        marker = MapMarkerPopup(lat=loc[0], lon=loc[1], source=Config.resource_path(MeileColors.MAP_MARKER))
-                        marker.add_widget(MDMapCountryButton(text='%s - %s' %(ncountry.tag, len(self.NodeTree.NodeTree.children(ncountry.tag))),
-                                                       theme_text_color="Custom",
-                                                       md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
-                                                       text_color=(1,1,1,1),
-                                                       on_release=partial(self.load_country_nodes, ncountry.tag)
-                                                       ))
-                        
-                        self.Markers.append(marker)
-                        self.MeileMap.add_marker(marker)
-                    except:
-                        continue
+            
+            for ncountry in self.NodeTree.NodeTree.children(TextStrings.RootTag.lower()):
+                try:
+                    loc = self.MeileLand.CountryLatLong[ncountry.tag]
+                    marker = MapMarkerPopup(lat=loc[0], lon=loc[1], source=Config.resource_path(MeileColors.MAP_MARKER))
+                    marker.add_widget(MDMapCountryButton(text='%s - %s' %(ncountry.tag, len(self.NodeTree.NodeTree.children(ncountry.tag))),
+                                                   theme_text_color="Custom",
+                                                   md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
+                                                   text_color=(1,1,1,1),
+                                                   on_release=partial(self.load_country_nodes, ncountry.tag)
+                                                   ))
+                    
+                    self.Markers.append(marker)
+                    self.MeileMap.add_marker(marker)
+                except:
+                    continue
         except Exception as e:
             print(str(e))
             pass
                 
-        self.get_continent_coordinates(self.MeileLand.CONTINENTS[0])
+        #self.get_continent_coordinates(self.MeileLand.CONTINENTS[0])
 
     def set_item(self, text_item):
         self.ids.drop_item.set_item(text_item)
@@ -468,7 +513,7 @@ class MainWindow(Screen):
     def set_warp_icon(self):
         MeileConfig = MeileGuiConfig()
         return MeileConfig.resource_path("../imgs/warp.png")
-
+    '''
     def set_protected_icon(self, setbool, moniker):
         MeileConfig = MeileGuiConfig()
         self.map_widget_2 = ConnectedNode()
@@ -479,8 +524,7 @@ class MainWindow(Screen):
             self.ids.protected.opacity = 0
             self.map_widget_2.text = moniker
         return MeileConfig.resource_path("../imgs/protected.png")
-
-
+    '''
     def get_config(self, dt):
         MeileConfig = MeileGuiConfig()
         CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
@@ -588,7 +632,6 @@ class MainWindow(Screen):
     def get_logo_text(self):
         self.MeileConfig = MeileGuiConfig()
         return self.MeileConfig.resource_path(MeileColors.LOGO_TEXT)
-
 
     def get_ip_address(self, dt):
         
@@ -751,15 +794,7 @@ class MainWindow(Screen):
         else:
             self.build_wallet_interface()
 
-    def add_country_rv_data(self, NodeCountries):
-        self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.rv.data.append(
-            {
-                "viewclass"      : "RecycleViewCountryRow",
-                "num_text"       : str(NodeCountries['number']) + " Nodes",
-                "country_text"   : NodeCountries['country'],
-                "source_image"   : self.MeileConfig.resource_path(NodeCountries['flagloc'])
-            },
-        )
+    
 
     @mainthread
     def add_loading_popup(self, title_text):
@@ -830,6 +865,7 @@ class MainWindow(Screen):
         self.AddCountryNodePins(False)
         self.remove_loading_widget(None)
 
+    ''' No tabs anymore :*(
     @mainthread
     def on_tab_switch(self, instance_tabs, instance_tab, instance_tabs_label, tab_text):
         self.ids.rv.data = []
@@ -869,24 +905,17 @@ class MainWindow(Screen):
         # Search Criteria
         else:
             pass
+            
+    '''
     def get_continent_coordinates(self, c):
         loc = self.MeileLand.ContinentLatLong[c]
         self.MeileMap.zoom = 4
         self.MeileMap.center_on(loc[0], loc[1])
 
-    def build_node_data(self, ncountry):
-        floc = "../imgs/"
-        NodeCountries = {}
-
-        iso2 = OurWorld.our_world.get_country_ISO2(ncountry.tag.lstrip().rstrip()).lower()
-        flagloc = floc + iso2 + ".png"
-
-        NodeCountries['number']  = len(self.NodeTree.NodeTree.children(ncountry.tag))
-        NodeCountries['country'] = ncountry.tag
-        NodeCountries['flagloc'] = flagloc
-
-        return NodeCountries
-
+    def get_font(self):
+        Config = MeileGuiConfig()
+        return Config.resource_path(MeileColors.FONT_FACE)
+    
     def wallet_restore(self, NewWallet, inst):
         if NewWallet:
             self.NewWallet = True
@@ -951,7 +980,7 @@ class MainWindow(Screen):
         
     def load_country_nodes(self, country, *kwargs):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
-        NodeTree = NodeTreeData(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeTree.NodeTree)
+        NodeTree = NodeTreeData(self.NodeTree.NodeTree)
         try:
             mw.carousel.remove_widget(self.NodeWidget)
         except Exception as e:
@@ -965,7 +994,12 @@ class MainWindow(Screen):
         self.carousel.add_widget(self.NodeWidget)
         self.carousel.load_slide(self.NodeWidget)
 
-
+    def return_connect_button(self):
+        MeileConfig = MeileGuiConfig()
+        
+        button_path = "../imgs/ConnectButton.png"
+        
+        return MeileConfig.resource_path(button_path)
 class WalletScreen(Screen):
     text = StringProperty()
     ADDRESS = None
@@ -1193,12 +1227,14 @@ class SubscriptionScreen(MDBoxLayout):
         else:
             nscore = "null"
             votes  = "0"
-
+        
+        ''' Not pulling cities from API any more. It comes with node data. 
         if node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip() in self.NodeTree.NodeLocations:
             city = self.NodeTree.NodeLocations[node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip()]
         else:
             city = " "
-
+        '''
+            
         price = node[NodeKeys.FinalSubsKeys[4]].lstrip().rstrip()
         match = re.match(r"([0-9]+)([a-z]+)", price, re.I)
         if match:
@@ -1230,7 +1266,7 @@ class SubscriptionScreen(MDBoxLayout):
                      "source_image"   : self.MeileConfig.resource_path(flagloc),
                      "score"          : nscore,
                      "votes"          : votes,
-                     "city"           : city,
+                     "city"           : "",
                      "expirary_date"  : expirary_date,
                      "md_bg_color"    : MeileColors.INACTIVE_DIALOG_BG_COLOR
                  },
@@ -1253,7 +1289,7 @@ class SubscriptionScreen(MDBoxLayout):
                     "source_image"   : self.MeileConfig.resource_path(flagloc),
                     "score"          : nscore,
                     "votes"          : votes,
-                    "city"           : city,
+                    "city"           : "",
                     "expirary_date"  : expirary_date,
                     "md_bg_color"    : MeileColors.DIALOG_BG_COLOR
 
@@ -1385,73 +1421,44 @@ class NodeScreen(MDBoxLayout):
             flagloc = floc + iso2 + ".png"
             self.add_rv_data(node, flagloc)
 
-
+    def compute_speed_rate(self, bandwidth):
+        
+        speedRate = []
+        
+        for b in bandwidth:
+            speed = b
+            if speed > 1000:
+                speed = round(float(speed / 1024),3)
+                if speed > 1000:
+                    speed = round(float(speed / 1024),3)
+                    if speed > 1000:
+                        speed = round(float(speed / 1024),3)
+                        speedRate.append(str(speed) + "GB")
+                    else:    
+                        speedRate.append(str(speed) + "MB")
+                else:
+                    speedRate.append(str(speed) + "KB")
+            elif speed < 0:
+                speed = 0
+                speedRate.append(str(speed) + "B")
+            else:
+                speedRate.append(str(speed) + "B")
+                
+        return speedRate
+        
+    
     def add_rv_data(self, node, flagloc):
         self.MeileConfig = MeileGuiConfig()
         speedRate = []
+        bandwidth = []
         floc = "../imgs/"
-        speed = node[NodeKeys.NodesInfoKeys[5]].lstrip().rstrip().split('+')
-        speedAdj = node[NodeKeys.NodesInfoKeys[5]].lstrip().rstrip().split('+')
+        
+        bandwidth.append(int(node[NodeKeys.NodesInfoKeys[8]]))
+        bandwidth.append(int(node[NodeKeys.NodesInfoKeys[9]]))
 
-        if "GB" in speedAdj[0]:
-            speedRate.append("GB")
-        elif "MB" in speedAdj[0]:
-            speedRate.append("MB")
-        elif "KB" in speedAdj[0]:
-            speedRate.append("KB")
-        else:
-            speedRate.append("B")
+        speedRate = self.compute_speed_rate(bandwidth)
 
-        if "GB" in speedAdj[1]:
-            speedRate.append("GB")
-        elif "MB" in speedAdj[1]:
-            speedRate.append("MB")
-        elif "KB" in speedAdj[1]:
-            speedRate.append("KB")
-        else:
-            speedRate.append("B")
-
-
-        speedAdj[0] = speedAdj[0].replace('GB', '').replace('MB', '').replace('KB', '').replace('B', '')
-        speedAdj[1] = speedAdj[1].replace('GB', '').replace('MB', '').replace('KB', '').replace('B', '')
-
-        if float(speedAdj[0]) < 0:
-                speedAdj[0] = 0
-
-        if float(speedAdj[1]) < 0:
-                speedAdj[1] = 0
-
-        # Values are reversed in nodeTree
-        if "0B" in str(str(speedAdj[1]) + speedRate[1]) or "0B" in str(str(speedAdj[0]) + speedRate[0]):
-            speedText = "    " + str(speedAdj[1]) + speedRate[1] + "↓" + "," + str(speedAdj[0]) + speedRate[0] + "↑"
-        else:
-            speedText = str(speedAdj[1]) + speedRate[1] + "↓" + "," + str(speedAdj[0]) + speedRate[0] + "↑"
-
-        if "GB" in speed[0]:
-            speed[0] = float(speed[0].replace("GB", '')) * 1024
-        elif "MB" in speed[0]:
-            speed[0] = float(speed[0].replace("MB", ''))
-        elif "KB" in speed[0]:
-            speed[0] = float(float(speed[0].replace("KB", '')) / 1024 )
-        else:
-            speed[0] = 10
-
-        if speed[0] < 0:
-            speed[0] = 0
-
-        if "GB" in speed[1]:
-            speed[1] = float(speed[1].replace("GB", '')) * 1024
-        elif "MB" in speed[1]:
-            speed[1] = float(speed[1].replace("MB", ''))
-        elif "KB" in speed[1]:
-            speed[1] = float(float(speed[1].replace("KB", '')) / 1024 )
-        else:
-            speed[1] = 10
-
-        if speed[1] < 0:
-            speed[1] = 0
-
-        total = float(speed[0] + speed[1])
+        total = float(bandwidth[0] + bandwidth[1])
         if total >= 200:
             speedimage = floc + "fast.png"
         elif 125 <= total < 200:
@@ -1462,7 +1469,10 @@ class NodeScreen(MDBoxLayout):
             speedimage = floc + "slowavg.png"
         else:
             speedimage = floc + "slow.png"
-
+        
+        speedText = str(speedRate[0]) + "↓," + str(speedRate[1]) + "↑"
+        if "0B" in speedRate[0] or "0B" in speedRate[1]:
+            speedText = "    " + speedText
 
         if node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip() in self.NodeTree.NodeScores:
             nscore = str(self.NodeTree.NodeScores[node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip()][0])
@@ -1470,12 +1480,7 @@ class NodeScreen(MDBoxLayout):
         else:
             nscore = "null"
             votes  = "0"
-
-        if node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip() in self.NodeTree.NodeLocations:
-            city = self.NodeTree.NodeLocations[node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip()]
-        else:
-            city = " "
-
+        
         if node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip() in self.NodeTree.NodeTypes:
             if self.NodeTree.NodeTypes[node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip()] == NodeKeys.Nodetypes[0]:
                 IconButton  = "alpha-r-circle"
@@ -1496,14 +1501,14 @@ class NodeScreen(MDBoxLayout):
         if node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip() in self.NodeTree.NodeHealth:
             if self.NodeTree.NodeHealth[node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip()]:
                 HealthButton = MeileColors.HEALTH_ICON
-                HealthToolTip = "Passed Sentinel Health Check"
+                HealthToolTip = TextStrings.PassedHealthCheck
             else:
                 HealthButton = MeileColors.SICK_ICON
-                HealthToolTip = "Failed Sentinel Health Check"
+                HealthToolTip = TextStrings.FailedHealthCheck
 
         else:
             HealthButton = MeileColors.SICK_ICON
-            HealthToolTip = "Failed Sentinel Health Check"
+            HealthToolTip = TextStrings.FailedHealthCheck
 
         self.ids.rv.data.append(
             {
@@ -1513,11 +1518,11 @@ class NodeScreen(MDBoxLayout):
                 "hourly_price_text"  : node[NodeKeys.NodesInfoKeys[3]].lstrip().rstrip(),
                 "country_text"       : node[NodeKeys.NodesInfoKeys[4]].lstrip().rstrip(),
                 "address_text"       : node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip(),
-                "type_text"          : node[NodeKeys.NodesInfoKeys[9]].lstrip().rstrip(),
+                "type_text"          : node[NodeKeys.NodesInfoKeys[13]].lstrip().rstrip(),
                 "speed_text"         : speedText,
                 "node_score"         : nscore,
                 "votes"              : votes,
-                "city"               : city,
+                "city"               : node[NodeKeys.NodesInfoKeys[5]],
                 "icon"               : IconButton,
                 "tooltip"            : ToolTipText,
                 "healthcheck"        : HealthButton,

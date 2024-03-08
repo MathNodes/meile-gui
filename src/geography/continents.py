@@ -21,12 +21,10 @@ class OurWorld():
                          'South America': [-21.0002179, -61.0006565]
                          }
     
-    ''' No longer required. Updated in world.json AWOC data
     CZ      = "Czechia"
     CZ_FULL = "Czech Republic" 
     NL      = "Netherlands"
     NL_FULL = "The Netherlands"
-    '''
     
     CountryLatLong = {'Algeria': [28.0000272, 2.9999825],
                       'Angola': [-11.8775768, 17.5691241], 
@@ -149,7 +147,6 @@ class OurWorld():
                       'Croatia': [45.5643442, 17.0118954], 
                       'Cyprus': [34.9823018, 33.1451285], 
                       'Czech Republic': [49.7439047, 15.3381061], 
-                      'Czechia' : [49.7439047, 15.3381061],
                       'Denmark': [55.670249, 10.3333283], 
                       'Estonia': [58.7523778, 25.3319078], 
                       'Faroe Islands': [62.0448724, -7.0322972], 
@@ -176,8 +173,7 @@ class OurWorld():
                       'Moldova': [47.2879608, 28.5670941], 
                       'Monaco': [43.7323492, 7.4276832], 
                       'Montenegro': [42.9868853, 19.5180992], 
-                      'Netherlands': [52.2434979, 5.6343227],
-                      'The Netherlands': [52.2434979, 5.6343227], 
+                      'Netherlands': [52.2434979, 5.6343227], 
                       'Norway': [60.5000209, 9.0999715], 
                       'Poland': [52.215933, 19.134422], 
                       'Portugal': [39.6621648, -8.1353519], 

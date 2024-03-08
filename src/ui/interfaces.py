@@ -31,6 +31,9 @@ class SubscribeContent(BoxLayout):
         self.price_text = price
 '''
 
+class ToolTipMDIconButton(MDIconButton, MDTooltip):
+    pass
+
 class IPAddressTextField(MDTextField):
     pass
 
@@ -43,6 +46,9 @@ class BandwidthLabel(MDLabel):
 class BandwidthBar(MDProgressBar):
     pass
 
+class QuotaPct(MDLabel):
+    pass
+
 class LatencyContent(BoxLayout):
     
     def return_latency(self):
@@ -50,6 +56,8 @@ class LatencyContent(BoxLayout):
 class YellowSwitch(Switch):
     pass
 class TooltipMDRaisedButton(MDRaisedButton, MDTooltip):
+    pass
+class TooltipMDFlatButton(MDFlatButton, MDTooltip):
     pass
 
 class TooltipMDIconButton(MDIconButton, MDTooltip):

@@ -9,6 +9,7 @@ from datetime import datetime,timedelta
 import time
 
 from treelib import  Tree
+from treelib.exceptions import DuplicatedNodeIdError
 
 from geography.continents import OurWorld
 from conf.meile_config import MeileGuiConfig
@@ -38,11 +39,9 @@ class NodeTreeData():
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
             
-   
+    '''
     def get_nodes(self, latency, *kwargs):
         AllNodesInfo = []
-        ninfos       = []
-        '''
         print("Running sentinel-cli with latency: %s" % latency)
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
@@ -77,7 +76,59 @@ class NodeTreeData():
                 else:
                     AllNodesInfo.append(dict(zip(NodeKeys.NodesInfoKeys, ninfos)))
         
-        '''
+        AllNodesInfoSorted = sorted(AllNodesInfo, key=lambda d: d[NodeKeys.NodesInfoKeys[4]])
+        
+        #result = collections.defaultdict(list)
+        
+        self.NodeTree = self.CreateNodeTreeStructure()
+        
+        for d in AllNodesInfoSorted:
+            for key in NodeKeys.NodesInfoKeys:
+                d[key] = d[key].lstrip().rstrip()
+            d[NodeKeys.NodesInfoKeys[10]] = d[NodeKeys.NodesInfoKeys[10]].split('-')[0]
+            version = d[NodeKeys.NodesInfoKeys[10]].replace('.','')
+            if version not in NodeKeys.NodeVersions:
+                continue
+            
+            # Gigabyte Prices
+            d[NodeKeys.NodesInfoKeys[2]] = self.return_denom(d[NodeKeys.NodesInfoKeys[2]])
+            d[NodeKeys.NodesInfoKeys[2]] = self.parse_coin_deposit(d[NodeKeys.NodesInfoKeys[2]])
+            
+            # Hourly Prices
+            d[NodeKeys.NodesInfoKeys[3]] = self.return_denom(d[NodeKeys.NodesInfoKeys[3]])
+            d[NodeKeys.NodesInfoKeys[3]] = self.parse_coin_deposit(d[NodeKeys.NodesInfoKeys[3]])
+            
+            
+            if  OurWorld.CZ in d[NodeKeys.NodesInfoKeys[4]]:
+                d[NodeKeys.NodesInfoKeys[4]] = OurWorld.CZ_FULL
+                
+                
+            if OurWorld.NL_FULL in d[NodeKeys.NodesInfoKeys[4]]:
+                d[NodeKeys.NodesInfoKeys[4]] = OurWorld.NL
+            try:
+                d_continent = OurWorld.our_world.get_country_continent_name(d[NodeKeys.NodesInfoKeys[4]])
+            except NameError as e:
+                print(str(e))
+                continue
+            try:
+                self.NodeTree.create_node(d[NodeKeys.NodesInfoKeys[4]],d[NodeKeys.NodesInfoKeys[4]], parent=d_continent)
+            except:
+                pass
+            try:
+                self.NodeTree.create_node(d[NodeKeys.NodesInfoKeys[1]], d[NodeKeys.NodesInfoKeys[1]],parent=d[NodeKeys.NodesInfoKeys[4]], data=d )
+            except:
+                pass
+            
+        self.NodeTree.show()
+        self.GetNodeScores()
+        self.GetNodeLocations()
+        self.GetNodeTypes()
+        self.GetHealthCheckData()
+    '''
+        
+    def get_nodes(self, latency, *kwargs):
+        AllNodesInfo = []
+        ninfos       = []
         
         
         # Use Cache Server for faster loading.  
@@ -86,12 +137,16 @@ class NodeTreeData():
         try:
             r = http.get(HTTParams.NODE_API) 
             data = r.json()
-            
+            #rint(data)
             for node in data:
                 ninfos.append(node['Moniker'])
                 ninfos.append(node['Node Address'])
                 ninfos.append(node['Gigabyte Prices'])
                 ninfos.append(node['Hourly Prices'])
+                if "The Netherlands" in node['Country']:
+                    node['Country'] = "Netherlands"
+                elif "Czech Republic" in node['Country']:
+                    node['Country'] = "Czechia"
                 ninfos.append(node['Country'])
                 ninfos.append(node['City'])
                 ninfos.append(node['Latitude'])
@@ -101,9 +156,10 @@ class NodeTreeData():
                 ninfos.append(node['Connected Peers'])
                 ninfos.append(node['Max Peers'])
                 ninfos.append(node['Handshake'])
-                ninfos.append(node['Node Type'])
+                ninfos.append("WireGuard" if node['Node Type'] == 1 else "V2Ray")
                 ninfos.append(node['Node Version'])
                 AllNodesInfo.append(dict(zip(NodeKeys.NodesInfoKeys, ninfos)))
+                ninfos.clear()
                 
         except Exception as e:
             print(str(e))
@@ -111,7 +167,9 @@ class NodeTreeData():
         
         AllNodesInfoSorted = sorted(AllNodesInfo, key=lambda d: d[NodeKeys.NodesInfoKeys[4]])
         
-        self.NodeTree = self.CreateNodeTreeStructure()
+        self.NodeTree = self.CreateNodeTreeStructure(data)
+        
+        #print(AllNodesInfoSorted)
         
         for d in AllNodesInfoSorted:
             
@@ -148,7 +206,7 @@ class NodeTreeData():
             # Sanity check:
             # if country doesn't exists in AWOC don't crash
             try:
-                d_continent = OurWorld.our_world.get_country_continent_name(d[NodeKeys.NodesInfoKeys[4]])
+                d_country = d[NodeKeys.NodesInfoKeys[4]]
             except NameError as e:
                 print(str(e))
                 continue
@@ -157,25 +215,29 @@ class NodeTreeData():
             from continents. Parents should be countries.
             Haven't decided yet
             '''
+    
+            ''' This is not necessary. But may want to get sub_tree of root node and see if country
+            already exists, if not create the node in the root. This way every oddball country definition will be created. 
+            Will consider this in later builds. 
             try:
-                self.NodeTree.create_node(d[NodeKeys.NodesInfoKeys[4]],d[NodeKeys.NodesInfoKeys[4]], parent=d_continent)
+                self.NodeTree.create_node(d[NodeKeys.NodesInfoKeys[4]],d[NodeKeys.NodesInfoKeys[4]], parent=d_country)
             except:
                 pass
+            '''
             try:
                 self.NodeTree.create_node(d[NodeKeys.NodesInfoKeys[1]], d[NodeKeys.NodesInfoKeys[1]],parent=d[NodeKeys.NodesInfoKeys[4]], data=d )
-            except:
+            except Exception as e:
+                print(str(e)) # print the exception in this early build to identify any issues building the nodetree
                 pass
             
         # For pretty output. Unicode is used in treelib > 1.6.1     
         self.NodeTree.show()
         # User-submitted Ratings
         self.GetNodeScores()
-        #Direct node location is now coming from Cache server
-        #self.GetNodeLocations()
         # Hosting, Residential, etc
         self.GetNodeTypes()
-        self.GetHealthCheckData()
-
+        # Sentinel Health Check Results
+        #self.GetHealthCheckData()
 
     def GetHealthCheckData(self):
         Request = HTTPRequests.MakeRequest(TIMEOUT=4)
@@ -242,16 +304,30 @@ class NodeTreeData():
         except Exception as e:
             print(str(e))
     
-    def CreateNodeTreeStructure(self, **kwargs):
+    def CreateNodeTreeStructure(self, data, **kwargs):
         NodeTreeBase = Tree()
-        RootTag = "CONTINENTS"
+        RootTag = "SENTINEL"
         RootIdentifier = RootTag.lower()
         NodeTreeBase.create_node(RootTag, RootIdentifier)
         
-        for c in OurWorld.CONTINENTS:
-            NodeTreeBase.create_node(c, c, parent=RootIdentifier)
+        for node in data:
+            if "The Netherlands" in node['Country']:
+                node['Country'] = "Netherlands"
+            elif "Czech Republic" in node['Country']:
+                node['Country'] = "Czechia"
             
-        NodeTreeBase.show()
+            c = node['Country']
+            try:
+                if NodeTreeBase.contains(c):
+                    continue
+                else:
+                    NodeTreeBase.create_node(c, c, parent=RootIdentifier)
+            except DuplicatedNodeIdError:
+                continue 
+        #for c in OurWorld.our_world.get_countries_list():
+            #NodeTreeBase.create_node(c, c, parent=RootIdentifier)
+            
+        #NodeTreeBase.show()
         return NodeTreeBase
     
     def return_denom(self, tokens):
@@ -352,7 +428,7 @@ class NodeTreeData():
                                             NodeKeys.FinalSubsKeys[5] : NodeData[NodeKeys.NodesInfoKeys[4]],
                                             NodeKeys.FinalSubsKeys[6] : nodeQuota[0],
                                             NodeKeys.FinalSubsKeys[7] : nodeQuota[1],
-                                            NodeKeys.FinalSubsKeys[8] : NodeData[NodeKeys.NodesInfoKeys[9]],
+                                            NodeKeys.FinalSubsKeys[8] : NodeData[NodeKeys.NodesInfoKeys[13]],
                                             NodeKeys.FinalSubsKeys[9] : SubsResult[NodeKeys.SubsInfoKeys[2]][k],
                                             NodeKeys.FinalSubsKeys[10]: SubsResult[NodeKeys.SubsInfoKeys[6]][k]
                                             })
