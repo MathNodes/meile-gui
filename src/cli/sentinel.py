@@ -335,7 +335,7 @@ class NodeTreeData():
         for allocation in allocations:
             if int(allocation.granted_bytes) == int(allocation.utilised_bytes):
                 return None
-            return [helpers.format_file_size(int(allocation.granted_bytes), binary_system=False), helpers.format_file_size(int(allocation.utilised_bytes), binary_system=False)]
+            return [helpers.format_byte_size(int(allocation.granted_bytes), binary_system=False), helpers.format_byte_size(int(allocation.utilised_bytes), binary_system=False)]
 
                 
     def GetHourAllocation(self, hours, idate):
