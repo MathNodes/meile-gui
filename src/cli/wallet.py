@@ -1,28 +1,37 @@
-import pexpect
 import json
 import requests
 import psutil
 import binascii
+import random
+import re
 from time import sleep 
 from os import path, remove
+from urllib.parse import urlparse
+from grpc import RpcError
 
 from json.decoder import JSONDecodeError 
 
 from conf.meile_config import MeileGuiConfig
-from typedef.konstants import IBCTokens 
-from typedef.konstants import ConfParams 
-from typedef.konstants import HTTParams
+from typedef.konstants import IBCTokens, ConfParams, HTTParams
 from adapters import HTTPRequests
-from cli.v2ray import V2RayHandler
+from cli.v2ray import V2RayHandler, V2RayConfiguration
 
-from cosmpy.aerial.client import LedgerClient, NetworkConfig
+import base64
+import uuid
+import configparser
+import socket
+import bech32
 from bip_utils import Bip39SeedGenerator, Bip44, Bip44Coins
-from cosmpy.aerial.wallet import LocalWallet
-from cosmpy.crypto.keypairs import PrivateKey
 from sentinel_protobuf.sentinel.subscription.v2.msg_pb2 import MsgCancelRequest, MsgCancelResponse
-from cosmpy.aerial.tx import Transaction
-from cosmpy.aerial.tx_helpers import TxResponse
-from cosmpy.aerial.client.utils import prepare_and_broadcast_basic_transaction
+
+from sentinel_sdk.sdk import SDKInstance
+from sentinel_sdk.types import NodeType, TxParams, Status
+from sentinel_sdk.utils import search_attribute
+from pywgkey import WgKey
+from mnemonic import Mnemonic
+from keyrings.cryptfile.cryptfile import CryptFileKeyring
+import ecdsa
+import hashlib
 
 MeileConfig = MeileGuiConfig()
 sentinelcli = MeileConfig.resource_path("../bin/sentinelcli")
@@ -38,170 +47,108 @@ class HandleWalletFunctions():
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
         
-        
-    
-    def create(self, wallet_name, keyring_passphrase, seed_phrase):
-        SCMD = '%s keys add "%s" -i --keyring-backend file --keyring-dir %s' % (sentinelcli, wallet_name, ConfParams.KEYRINGDIR)
-        DUPWALLET = False 
-        ofile =  open(ConfParams.WALLETINFO, "wb")    
-        
-        ''' Process to handle wallet in sentinel-cli '''
-        child = pexpect.spawn(SCMD)
-        child.logfile = ofile
-        
-        # > Enter your bip39 mnemonic, or hit enter to generate one.
-        child.expect(".*")
-        
-        # Send line to generate new, or send seed_phrase to recover
-        if seed_phrase:
-            child.sendline(seed_phrase)
-        else:
-            child.sendline()
-            
-        child.expect(".*")
-        child.sendline()
-        child.expect("Enter .*")
-        child.sendline(keyring_passphrase)
-        try:
-            index = child.expect(["Re-enter.", "override.", pexpect.EOF])
-            if index == 0:
-                child.sendline(keyring_passphrase)
-                child.expect(pexpect.EOF)
-            elif index ==1:
-                child.sendline("N")
-                print("NO Duplicating Wallet..")
-                DUPWALLET = True
-                child.expect(pexpect.EOF)
-                ofile.flush()
-                ofile.closae()
-                remove(ConfParams.WALLETINFO)
-                return None
-            else:
-                child.expect(pexpect.EOF)
-        except Exception as e:
-            child.expect(pexpect.EOF)
-            print("passing: %s" % str(e))
-            pass
-        
-        
-        ofile.flush()
-        ofile.close()
-      
-        
-     
-        if not DUPWALLET:
-            with open(ConfParams.WALLETINFO, "r") as dvpn_file:
-                WalletDict = {}   
-                lines = dvpn_file.readlines()
-                lines = [l for l in lines if l != '\n']
-                for l in lines:
-                    if "address:" in l:
-                        WalletDict['address'] = l.split(":")[-1].lstrip().rstrip()
-                        
-                WalletDict['seed'] = lines[-1].lstrip().rstrip()
-                dvpn_file.close()
-                remove(ConfParams.WALLETINFO)
-                return WalletDict
-    
-        else:
-            remove(ConfParams.WALLETINFO)
-            return None
+    def __keyring(self, keyring_passphrase: str):
+        kr = CryptFileKeyring()
+        kr.filename = "keyring.cfg"
+        print(ConfParams.KEYRINGDIR)
+        kr.file_path = path.join(ConfParams.KEYRINGDIR, kr.filename)
+        print(kr.file_path)
+        kr.keyring_key = keyring_passphrase
+        return kr
 
-    
+    def create(self, wallet_name, keyring_passphrase, seed_phrase = None):
+        # Credtis: https://github.com/ctrl-Felix/mospy/blob/master/src/mospy/utils.py
+
+        if seed_phrase is None:
+            seed_phrase = Mnemonic("english").generate(strength=256)
+            
+        seed_bytes = Bip39SeedGenerator(seed_phrase).Generate()
+        bip44_def_ctx = Bip44.FromSeed(seed_bytes, Bip44Coins.COSMOS).DeriveDefaultPath()
+
+        privkey_obj = ecdsa.SigningKey.from_string(bip44_def_ctx.PrivateKey().Raw().ToBytes(), curve=ecdsa.SECP256k1)
+        pubkey  = privkey_obj.get_verifying_key()
+        s = hashlib.new("sha256", pubkey.to_string("compressed")).digest()
+        r = hashlib.new("ripemd160", s).digest()
+        five_bit_r = bech32.convertbits(r, 8, 5)
+        account_address = bech32.bech32_encode("sent", five_bit_r)
+
+        # Create a class of separated method for keyring please
+        kr = self.__keyring(keyring_passphrase)
+        kr.set_password("meile-gui", wallet_name, bip44_def_ctx.PrivateKey().Raw().ToBytes().hex())
+
+        return {
+            'address': account_address,
+            'seed': seed_phrase
+        }
     
     def subscribe(self, KEYNAME, NODE, DEPOSIT, GB, hourly):
-        CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
-        PASSWORD = CONFIG['wallet'].get('password', '')
-        self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
-        ofile =  open(ConfParams.SUBSCRIBEINFO, "wb")
-            
         if not KEYNAME:
             return (False, 1337)
+        
         print("Deposit/denom")
         print(DEPOSIT)
         DENOM = self.DetermineDenom(DEPOSIT)
         print(DENOM)
         
-        if hourly:
-            SCMD = "%s tx node subscribe --yes --keyring-backend file --keyring-dir %s --chain-id %s --node %s --gas-prices %s --gas %d --gas-adjustment %f --from '%s' '%s' 0 '%s' %s"  % (sentinelcli,
-                                                                                                                                                                                        ConfParams.KEYRINGDIR, 
-                                                                                                                                                                                        ConfParams.CHAINID, 
-                                                                                                                                                                                        self.RPC,
-                                                                                                                                                                                        ConfParams.GASPRICE,
-                                                                                                                                                                                        ConfParams.GAS,
-                                                                                                                                                                                        ConfParams.GASADJUSTMENT,
-                                                                                                                                                                                        KEYNAME,
-                                                                                                                                                                                        NODE,
-                                                                                                                                                                                        GB,
-                                                                                                                                                                                        DENOM)    
-        else:
-            SCMD = "%s tx node subscribe --yes --keyring-backend file --keyring-dir %s --chain-id %s --node %s --gas-prices %s --gas %d --gas-adjustment %f --from '%s' '%s' '%s' 0 %s"  % (sentinelcli,
-                                                                                                                                                                                            ConfParams.KEYRINGDIR, 
-                                                                                                                                                                                            ConfParams.CHAINID, 
-                                                                                                                                                                                            self.RPC,
-                                                                                                                                                                                            ConfParams.GASPRICE,
-                                                                                                                                                                                            ConfParams.GAS,
-                                                                                                                                                                                            ConfParams.GASADJUSTMENT,
-                                                                                                                                                                                            KEYNAME,
-                                                                                                                                                                                            NODE,
-                                                                                                                                                                                            GB,
-                                                                                                                                                                                            DENOM)    
+        CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
+        PASSWORD = CONFIG['wallet'].get('password', '')
         
-        print(SCMD)
-        try:
-            child = pexpect.spawn(SCMD)
-            child.logfile = ofile
-            
-            child.expect(".*")
-            child.sendline(PASSWORD)
-            child.expect(pexpect.EOF)
-            
-            ofile.flush()
-            ofile.close()
-        except pexpect.exceptions.TIMEOUT:
-            return (False, 1415)
+        #self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
+        self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
         
-        return self.ParseSubscribe()
+        grpcaddr, grpcport = urlparse(self.GRPC).netloc.split(":")
+
+        kr = self.__keyring(PASSWORD)
+        private_key = kr.get_password("meile-gui", KEYNAME)
+        
+        sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key)
     
+        balance = self.get_balance(sdk._account.address)
+        
+        amount_required = float(DEPOSIT.replace(DENOM, ""))
+        token_ibc = {v: k for k, v in IBCTokens.IBCUNITTOKEN.items()}
+        
+        ubalance = balance.get(token_ibc[DENOM][1:], 0) * IBCTokens.SATOSHI
+        
+        if ubalance < amount_required:
+            return(False, f"Balance is too low, required: {round(amount_required / IBCTokens.SATOSHI, 4)}{token_ibc[DENOM][1:]}")
+
+        tx_params = TxParams(
+            # denom="udvpn",  # TODO: from ConfParams
+            # fee_amount=20000,  # TODO: from ConfParams
+            # gas=ConfParams.GAS,
+            gas_multiplier=ConfParams.GASADJUSTMENT
+        )
+        
+        tx = sdk.nodes.SubscribeToNode(
+            node_address=NODE,
+            gigabytes=0 if hourly else GB,
+            hours=GB if hourly else 0,
+            denom=DENOM,
+            tx_params=tx_params,
+        )
+        
+        if tx.get("log", None) is not None:
+            return(False, tx["log"])
+
+        if tx.get("hash", None) is not None:
+            tx_response = sdk.nodes.wait_transaction(tx["hash"])
+            print(tx_response)
+            subscription_id = search_attribute(
+                tx_response, "sentinel.node.v2.EventCreateSubscription", "id"
+            )
+            if subscription_id:
+                return (True, subscription_id)
+
+        return(False, "Tx error")
+        
     def DetermineDenom(self, deposit):
         for key,value in IBCTokens.IBCUNITTOKEN.items():
             if value in deposit:
                 return value
             
             
-    def ParseSubscribe(self):
-        SUBJSON = False
-        with open(ConfParams.SUBSCRIBEINFO, 'r') as sub_file:
-                lines = sub_file.readlines()
-                for l in lines:
-                    if "Error" in l:
-                        return(False, l)
-
-                for l in lines:
-                    try:
-                        tx_json = json.loads(l)
-                        SUBJSON = True
-                    except Exception as e:
-                        continue
-                if SUBJSON:            
-                    if tx_json['data']:
-                        try: 
-                            sub_id = tx_json['logs'][0]['events'][4]['attributes'][0]['value']
-                            if sub_id:
-                                #remove(ConfParams.SUBSCRIBEINFO)
-                                return (True,0)
-                            else:
-                                #remove(ConfParams.SUBSCRIBEINFO)
-                                return (False,2.71828) 
-                        except:
-                            #remove(ConfParams.SUBSCRIBEINFO)
-                            return (False, 3.14159)
-                    elif 'insufficient' in tx_json['raw_log']:
-                        #remove(ConfParams.SUBSCRIBEINFO)
-                        return (False, tx_json['raw_log'])
-                else:
-                    return(False, "Error loading JSON")
-                
+    
     def unsubscribe(self, subId):
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
@@ -210,175 +157,286 @@ class HandleWalletFunctions():
         if not KEYNAME:
             return {'hash' : "0x0", 'success' : False, 'message' : "ERROR Retrieving Keyname"}
 
-        ofile = open(ConfParams.USUBSCRIBEINFO, "wb")
+        
+        self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
 
-        unsubCMD = "%s keys export --unarmored-hex --unsafe --keyring-backend file --keyring-dir %s '%s'" % (sentinelcli,  ConfParams.KEYRINGDIR, KEYNAME)
+        grpcaddr, grpcport = urlparse(self.GRPC).netloc.split(":")
+
+        kr = self.__keyring(PASSWORD)
+        private_key = kr.get_password("meile-gui", KEYNAME) 
+
+        sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key)
+
+        tx_params = TxParams(
+            gas_multiplier=ConfParams.GASADJUSTMENT
+        )
+        tx_height = 0
 
         try:
-            child = pexpect.spawn(unsubCMD)
-            child.logfile = ofile
+            tx = sdk.subscriptions.Cancel(subId, tx_params=tx_params)
+        except RpcError as rpc_error:
+            details = rpc_error.details()
+            print("details", details)
+            print("code", rpc_error.code()) 
+            print("debug_error_string", rpc_error.debug_error_string()) 
 
-            child.expect(".*")
-            child.sendline("y")
-            child.expect("Enter*")
-            child.sendline(PASSWORD)
-            child.expect(pexpect.EOF)
-
-            ofile.flush()
-            ofile.close()
-        except Exception as e:
-            return {'hash' : "0x0", 'success' : False, 'message' : f"ERROR: {str(e)}"}
-
-        privkey_hex = self.ParseUnSubscribe()
-        return self.grpc_unsubscribe(privkey_hex, subId)
-
-    def grpc_unsubscribe(self, privkey, subId):
-        tx_success = False
-        tx_hash    = "0x0"
-
-        cfg = NetworkConfig(
-            chain_id=ConfParams.CHAINID,
-            url=HTTParams.GRPC,
-            fee_minimum_gas_price=0.4,
-            fee_denomination=IBCTokens.mu_coins[0],
-            staking_denomination=IBCTokens.mu_coins[0],
-            )
-
-        client = LedgerClient(cfg)    
-
-        priv_key_bytes = binascii.unhexlify(bytes(privkey.rstrip().lstrip(), encoding="utf8"))
-
-        wallet = LocalWallet(PrivateKey(priv_key_bytes), prefix="sent")
-        address = wallet.address()
-
-        print(f"Address: {address},\nSubscription ID: {subId}")
- 
-        try: 
-            tx = Transaction()
-            try:
-                tx.add_message(MsgCancelRequest(frm=str(address), id=int(subId)))
-            except Exception as e1:
-                print(str(e1))
-                print("Error Failed on add_message")
-                
-                
-            try:
-                tx = prepare_and_broadcast_basic_transaction(client, tx, wallet)
-                tx.wait_to_complete()
-            except Exception as e2:
-                print("error on broadcasting transaction")
-                print(str(e2))
-    
-            tx_hash     = tx._tx_hash
-            tx_response = tx._response.is_successful()
-            tx_height   = int(tx._response.height)
-    
-            print("Hash: %s" % str(tx_hash))
-            print("Response: %s" % tx_response)
-            print("Height: %d" % int(tx._response.height))
-    
-            if tx_response:
-                tx_success = tx_response
-                message    = "Unsubscribe from Subscription ID: %s, was successful at Height: %d" % (subId, tx_height )
-    
+            search = f"invalid status inactive_pending for subscription {subId}"
+            if re.search(search, details, re.IGNORECASE):
+                message = "Cannot unsubscribe. Pending session still on blockchain. Try your request again later."
             else:
-                message = "Unsubscribe failed"
-        except Exception as e:
-            message = f"Error creating or broadcasting unsubscribe tx message: {str(e)}" 
+                message = "Error connecting to gRPC server. Try your request again later."
 
-        return {'hash' : tx_hash, 'success' : tx_success, 'message' : message}
+            return {'hash' : None, 'success' : False, 'message' : message}
 
-    def ParseUnSubscribe(self):
-        with open(ConfParams.USUBSCRIBEINFO, 'r') as usubfile:
-            lines = usubfile.readlines()
-            lines = [l for l in lines if l != '\n']
-            for l in lines:
-                l.replace('\n','')
+        if tx.get("log", None) is None:
+            tx_response = sdk.nodes.wait_transaction(tx["hash"])
+            tx_height = tx_response.tx_response.height
 
-        usubfile.close()
-        remove(ConfParams.USUBSCRIBEINFO)
-        return l
+        message = f"Unsubscribe from Subscription ID: {subId}, was successful at Height: {tx_height}" if tx.get("log", None) is None else tx.get["log"]
+        return {'hash' : tx.get("hash", None), 'success' : tx.get("log", None) is None, 'message' : message}
+    
             
     
     def connect(self, ID, address, type):
 
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
-        self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
+       
         PASSWORD = CONFIG['wallet'].get('password', '')
         KEYNAME = CONFIG['wallet'].get('keyname', '')
-        connCMD = "pkexec env PATH=%s %s connect --home %s --keyring-backend file --keyring-dir %s --chain-id %s --node %s --gas-prices %s --gas %d --gas-adjustment %f --yes --from '%s' %s %s" % (ConfParams.PATH, 
-                                                                                                                                                                                                    sentinelcli, 
-                                                                                                                                                                                                    ConfParams.BASEDIR, 
-                                                                                                                                                                                                    ConfParams.KEYRINGDIR,
-                                                                                                                                                                                                    ConfParams.CHAINID, 
-                                                                                                                                                                                                    self.RPC,
-                                                                                                                                                                                                    ConfParams.GASPRICE,
-                                                                                                                                                                                                    ConfParams.GAS,
-                                                                                                                                                                                                    ConfParams.GASADJUSTMENT, 
-                                                                                                                                                                                                    KEYNAME, 
-                                                                                                                                                                                                    ID, 
-                                                                                                                                                                                                    address)
-            
-        print(connCMD)
-        ofile =  open(ConfParams.CONNECTIONINFO, "wb")    
-    
-        try:
-            child = pexpect.spawn(connCMD)
-            child.logfile = ofile
-    
-            child.expect(".*")
-            child.sendline(PASSWORD)
-            child.expect(pexpect.EOF)
-            
-            ofile.flush()
-            ofile.close()
-        except pexpect.exceptions.TIMEOUT:
-            self.connected = {"v2ray_pid" : None,  "result": False, "status" : "Error running expect"}
-            return
+       
+        self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)   
         
-        
-        with open(ConfParams.CONNECTIONINFO, "r") as connection_file:
-            lines = connection_file.readlines()
-            
-            for l in lines:
-                if "Error" in l and "v2ray" not in l and "inactive_pending" not in l:
-                    self.connected = {"v2ray_pid" : None,  "result": False, "status" : l}
-                    return
-            
-        if type == "WireGuard":
-            if psutil.net_if_addrs().get("wg99"):
-                self.connected = {"v2ray_pid" : None,  "result": True, "status" : "wg99"}
-                return
-            else:
-                self.connected = {"v2ray_pid" : None,  "result": False, "status" : "Error bringing up wireguard interface"}
-                return
-        else: 
-            TUNIFACE = False
-            V2Ray = V2RayHandler(v2ray_tun2routes_connect_bash + " up")
-            V2Ray.start_daemon() 
-            sleep(15)
+        grpcaddr, grpcport = urlparse(self.GRPC).netloc.split(":")
 
-            for iface in psutil.net_if_addrs().keys():
-                if "tun" in iface:
-                    TUNIFACE = True
-                    break
-                
-            if TUNIFACE:
-                self.connected = {"v2ray_pid" : V2Ray.v2ray_pid, "result": True, "status" : TUNIFACE}
-                print(self.connected) 
-                return
-            else:
-                try: 
-                    V2Ray.v2ray_script = v2ray_tun2routes_connect_bash + " down"
-                    V2Ray.kill_daemon()
-                    #V2Ray.kill_daemon()
-                    #Tun2Socks.kill_daemon()
-                except Exception as e: 
-                    print(str(e))
-                    
-                self.connected = {"v2ray_pid" : V2Ray.v2ray_pid,  "result": False, "status": "Error connecting to v2ray node: %s" % TUNIFACE}
-                print(self.connected)
-                return
+        kr = self.__keyring(PASSWORD)
+        private_key = kr.get_password("meile-gui", KEYNAME)
+        
+        sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key)
+        
+        tx_params = TxParams(
+            gas_multiplier=ConfParams.GASADJUSTMENT
+        )
+        
+        # End active sessions if any. INACTIVE_PENDING is moot
+        sessions = sdk.sessions.QuerySessionsForSubscription(int(ID))
+        for session in sessions:
+            if session.status == Status.ACTIVE.value:
+                tx = sdk.sessions.EndSession(session_id=session.id, rating=0, tx_params=tx_params)
+                print(sdk.sessions.wait_transaction(tx["hash"]))
+        
+        tx = sdk.sessions.StartSession(subscription_id=int(ID), address=address)
+        # Will need to handle log responses with friendly UI response in case of session create error
+        if tx.get("log", None) is not None:
+            self.connected = {"v2ray_pid" : None,  "result": False, "status" : tx["log"]}
+            print(self.connected)
+            return
+       
+        tx_response = sdk.sessions.wait_transaction(tx["hash"])
+        session_id = search_attribute(tx_response, "sentinel.session.v2.EventStart", "id")
+
+        from_event = {
+            "subscription_id": search_attribute(tx_response, "sentinel.session.v2.EventStart", "subscription_id"),
+            "address": search_attribute(tx_response, "sentinel.session.v2.EventStart", "address"),
+            "node_address": search_attribute(tx_response, "sentinel.session.v2.EventStart", "node_address"),
+        }
+        
+        # Sanity Check. Not needed
+        #assert from_event["subscription_id"] == ID and from_event["address"] == sdk._account.address and from_event["node_address"] == address
+       
+        sleep(1.5)  # Wait a few seconds....
+        # The sleep is required because the session_id could not be fetched from the node / rpc
+
+        node = sdk.nodes.QueryNode(address)
+        # Again sanity check. Not needed unless the blockchain is foobar'ed
+        #assert node.address == address
+        
+        if type == "WireGuard":
+            # [from golang] wgPrivateKey, err = wireguardtypes.NewPrivateKey()
+            # [from golang] key = wgPrivateKey.Public().String()
+            wgkey = WgKey()
+            # The private key should be used by the wireguard client
+            key = wgkey.pubkey
+        else:  # NodeType.V2RAY
+            # [from golang] uid, err = uuid.GenerateRandomBytes(16)
+            uid_16b = uuid.uuid4()
+            # [from golang] key = base64.StdEncoding.EncodeToString(append([]byte{0x01}, uid...))
+            # data length must be 17 bytes...
+            key = base64.b64encode(bytes(0x01) + uid_16b.bytes).decode("utf-8")
+            
+         # Sometime we get a random "code":4,"message":"invalid signature ...``
+        for _ in range(0, 3):  # 3 as max_attempt:
+            sk = ecdsa.SigningKey.from_string(sdk._account.private_key, curve=ecdsa.SECP256k1, hashfunc=hashlib.sha256)
+
+            # Uint64ToBigEndian
+            bige_session = int(session_id).to_bytes(8, byteorder="big")
+
+            signature = sk.sign(bige_session)
+            payload = {
+                "key": key,
+                "signature": base64.b64encode(signature).decode("utf-8"),
+            }
+            print(payload)
+            response = requests.post(
+                f"{node.remote_url}/accounts/{sdk._account.address}/sessions/{session_id}",
+                json=payload,
+                headers={"Content-Type": "application/json; charset=utf-8"},
+                verify=False,
+                timeout=10
+            )
+            print(response, response.text)
+            if response.ok is True:
+                break
+
+            sleep(random.uniform(0.5, 1))
+            # Continue iteration only for code == 4 (invalid signature)
+            if response.json()["error"]["code"] != 4:
+                break
+
+        if response.ok is False:
+            self.connected = {"v2ray_pid" : None,  "result": False, "status" : response.text}
+            print(self.connected)
+            return
+
+        response = response.json()
+        if response.get("success", True) is True:
+            decode = base64.b64decode(response["result"])
+
+            if type == "WireGuard":
+                if len(decode) != 58:
+                    self.connected = {"v2ray_pid" : None,  "result": False, "status" : f"Incorrect result size: {len(decode)}"}
+                    print(self.connected)
+                    return
+
+                ipv4_address = socket.inet_ntoa(decode[0:4]) + "/32"
+                ipv6_address = socket.inet_ntop(socket.AF_INET6, decode[4:20]) + "/128"
+                host = socket.inet_ntoa(decode[20:24])
+                port = (decode[24] & -1) << 8 | decode[25] & -1
+                peer_endpoint = f"{host}:{port}"
+
+                print("ipv4_address", ipv4_address)
+                print("ipv6_address", ipv6_address)
+                print("host", host)
+                print("port", port)
+                print("peer_endpoint", peer_endpoint)
+
+                public_key = base64.b64encode(decode[26:58]).decode("utf-8")
+                print("public_key", public_key)
+
+                config = configparser.ConfigParser()
+                config.optionxform = str
+
+                # [from golang] listenPort, err := netutil.GetFreeUDPPort()
+                sock = socket.socket()
+                sock.bind(('', 0))
+                listen_port = sock.getsockname()[1]
+                sock.close()
+
+                config.add_section("Interface")
+                config.set("Interface", "Address", ",".join([ipv4_address, ipv6_address]))
+                config.set("Interface", "ListenPort", f"{listen_port}")
+                config.set("Interface", "PrivateKey", wgkey.privkey)
+                config.set("Interface", "DNS", ",".join(["10.8.0.1","1.0.0.1","1.1.1.1"]))  # TODO: 8.8.8.8 (?)
+                config.add_section("Peer")
+                config.set("Peer", "PublicKey", public_key)
+                config.set("Peer", "Endpoint", peer_endpoint)
+                config.set("Peer", "AllowedIPs", ",".join(["0.0.0.0/0","::/0"]))
+                config.set("Peer", "PersistentKeepalive", "25")  # TODO: 15(?) from golang file
+
+                iface = "wg99"
+                # ConfParams.KEYRINGDIR (.meile-gui)
+                config_file = path.join(ConfParams.KEYRINGDIR, f"{iface}.conf")
+
+                if path.isfile(config_file) is True:
+                    remove(config_file)
+
+                with open(config_file, "w", encoding="utf-8") as f:
+                    config.write(f)
+
+                child = pexpect.spawn(f"pkexec sh -c 'ip link delete {iface}; wg-quick up {config_file}'")
+                child.expect(pexpect.EOF)
+
+                if psutil.net_if_addrs().get(iface):
+                    self.connected = {"v2ray_pid" : None,  "result": True, "status" : iface}
+                    return
+            else:  # v2ray
+                if len(decode) != 7:
+                    self.connected = {"v2ray_pid" : None,  "result": False, "status" : f"Incorrect result size: {len(decode)}"}
+                    print(self.connected)
+                    return
+
+                vmess_address = socket.inet_ntoa(decode[0:4])
+                vmess_port = (decode[4] & -1) << 8 | decode[5] & -1
+                vmess_transports = {  # Could be a simple array :)
+                    0x01: "tcp",
+                    0x02: "mkcp",
+                    0x03: "websocket",
+                    0x04: "http",
+                    0x05: "domainsocket",
+                    0x06: "quic",
+                    0x07: "gun",
+                    0x08: "grpc",
+                }
+
+                # [from golang] apiPort, err := netutil.GetFreeTCPPort()
+                # https://gist.github.com/gabrielfalcao/20e567e188f588b65ba2
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.bind(('', 0))
+                api_port = sock.getsockname()[1]
+                sock.close()
+
+                print("api_port", api_port)
+                print("vmess_port", vmess_port)
+                print("vmess_address", vmess_address)
+                print("vmess_uid", f"{uid_16b}")
+                print("vmess_transport", vmess_transports[decode[-1]])
+
+                v2ray_config = V2RayConfiguration(
+                    api_port=api_port,
+                    vmess_port=vmess_port,
+                    vmess_address=vmess_address,
+                    vmess_uid=f"{uid_16b}",
+                    vmess_transport=vmess_transports[decode[-1]],
+                    proxy_port=1080
+                )
+                # ConfParams.KEYRINGDIR (.meile-gui)
+                config_file = path.join(ConfParams.KEYRINGDIR, "v2ray_config.json")
+                if path.isfile(config_file) is True:
+                    remove(config_file)
+                with open(config_file, "w", encoding="utf-8") as f:
+                    f.write(json.dumps(v2ray_config.get(), indent=4))
+
+                # v2ray_tun2routes_connect_bash
+                # >> hardcoded = proxy port >> 1080
+                # >> hardcoded = v2ray file >> /home/${USER}/.meile-gui/v2ray_config.json
+
+                tuniface = False
+                v2ray_handler = V2RayHandler(f"{v2ray_tun2routes_connect_bash} up")
+                v2ray_handler.start_daemon()
+                sleep(15)
+
+                for iface in psutil.net_if_addrs().keys():
+                    if "tun" in iface:
+                        tuniface = True
+                        break
+
+                if tuniface is True:
+                    self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid, "result": True, "status" : tuniface}
+                    print(self.connected)
+                    return
+                else:
+                    try:
+                        v2ray_handler.v2ray_script = f"{v2ray_tun2routes_connect_bash} down"
+                        v2ray_handler.kill_daemon()
+                    except Exception as e:
+                        print(str(e))
+
+                    self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid,  "result": False, "status": f"Error connecting to v2ray node: {tuniface}"}
+                    print(self.connected)
+                    return
+
+        self.connected = {"v2ray_pid" : None,  "result": False, "status": "boh"}
+        return   
+           
 
     def get_balance(self, address):
         Request = HTTPRequests.MakeRequest()
