@@ -164,7 +164,7 @@ class HandleWalletFunctions():
                 tx_response, "sentinel.node.v2.EventCreateSubscription", "id"
             )
             if subscription_id:
-                return (True,0)
+                return (True, subscription_id)
 
         return(False, "Tx error")
 
