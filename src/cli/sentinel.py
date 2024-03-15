@@ -258,7 +258,7 @@ class NodeTreeData():
         self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
 
         self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
-        
+
         grpcaddr, grpcport = urlparse(self.GRPC).netloc.split(":")
         sdk = SDKInstance(grpcaddr, int(grpcport))
         subscriptions = sdk.subscriptions.QuerySubscriptionsForAccount(ADDRESS, pagination=PageRequest(limit=1000))
@@ -337,7 +337,7 @@ class NodeTreeData():
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
 
         self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
-        
+
         grpcaddr, grpcport = urlparse(self.GRPC).netloc.split(":")
         sdk = SDKInstance(grpcaddr, int(grpcport))
         allocations = sdk.subscriptions.QueryAllocations(subscription_id=int(id))
