@@ -72,7 +72,7 @@ class HandleWalletFunctions():
                 child.expect(".*")
                 child.sendline("y")
                 child.expect("Enter*")
-                child.sendline("carmelino")
+                child.sendline(PASSWORD)
 
                 outputs = child.readlines()
                 private_key = outputs[-1].strip().decode("utf-8")
