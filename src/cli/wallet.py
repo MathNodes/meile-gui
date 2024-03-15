@@ -54,6 +54,35 @@ class HandleWalletFunctions():
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
 
+        # Migrate existing wallet to v2
+        self.__migrate_wallets()
+
+    def __migrate_wallets(self):
+        # https://github.com/MathNodes/meile-gui/blob/main/src/cli/wallet.py#L215-L230
+        # Before continue make sure that sentinelcli still exist
+        if path.isfile(sentinelcli):
+            CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
+            PASSWORD = CONFIG['wallet'].get('password', '')
+            KEYNAME = CONFIG['wallet'].get('keyname', '')
+
+            kr = self.__keyring(PASSWORD)
+            if kr.get_password("meile-gui", KEYNAME) is None:  # TODO: very ungly
+                export_cmd = f"{sentinelcli} keys export {KEYNAME} --unsafe --unarmored-hex --keyring-backend file --keyring-dir {ConfParams.KEYRINGDIR}"
+                child = pexpect.spawn(export_cmd)
+                child.expect(".*")
+                child.sendline("y")
+                child.expect("Enter*")
+                child.sendline("carmelino")
+
+                outputs = child.readlines()
+                private_key = outputs[-1].strip().decode("utf-8")
+
+                child.expect(pexpect.EOF)
+
+                kr = self.__keyring(PASSWORD)
+                kr.set_password("meile-gui", KEYNAME, private_key)
+
+
     def __keyring(self, keyring_passphrase: str):
         kr = CryptFileKeyring()
         kr.filename = "keyring.cfg"
