@@ -47,6 +47,35 @@ class HandleWalletFunctions():
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
         
+        # Migrate existing wallet to v2
+        self.__migrate_wallets()
+
+    def __migrate_wallets(self):
+        # https://github.com/MathNodes/meile-gui/blob/main/src/cli/wallet.py#L215-L230
+        # Before continue make sure that sentinelcli still exist
+        if path.isfile(sentinelcli):
+            CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
+            PASSWORD = CONFIG['wallet'].get('password', '')
+            KEYNAME = CONFIG['wallet'].get('keyname', '')
+
+            kr = self.__keyring(PASSWORD)
+            if kr.get_password("meile-gui", KEYNAME) is None:  # TODO: very ungly
+                export_cmd = f"{sentinelcli} keys export {KEYNAME} --unsafe --unarmored-hex --keyring-backend file --keyring-dir {ConfParams.KEYRINGDIR}"
+                child = pexpect.spawn(export_cmd)
+                child.expect(".*")
+                child.sendline("y")
+                child.expect("Enter*")
+                child.sendline(PASSWORD)
+
+                outputs = child.readlines()
+                private_key = outputs[-1].strip().decode("utf-8")
+
+                child.expect(pexpect.EOF)
+
+                kr = self.__keyring(PASSWORD)
+                kr.set_password("meile-gui", KEYNAME, private_key)
+
+        
     def __keyring(self, keyring_passphrase: str):
         kr = CryptFileKeyring()
         kr.filename = "keyring.cfg"
@@ -132,7 +161,7 @@ class HandleWalletFunctions():
             return(False, tx["log"])
 
         if tx.get("hash", None) is not None:
-            tx_response = sdk.nodes.wait_transaction(tx["hash"])
+            tx_response = sdk.nodes.wait_for_tx(tx["hash"])
             print(tx_response)
             subscription_id = search_attribute(
                 tx_response, "sentinel.node.v2.EventCreateSubscription", "id"
@@ -189,7 +218,7 @@ class HandleWalletFunctions():
             return {'hash' : None, 'success' : False, 'message' : message}
 
         if tx.get("log", None) is None:
-            tx_response = sdk.nodes.wait_transaction(tx["hash"])
+            tx_response = sdk.nodes.wait_for_tx(tx["hash"])
             tx_height = tx_response.tx_response.height
 
         message = f"Unsubscribe from Subscription ID: {subId}, was successful at Height: {tx_height}" if tx.get("log", None) is None else tx.get["log"]
@@ -222,7 +251,7 @@ class HandleWalletFunctions():
         for session in sessions:
             if session.status == Status.ACTIVE.value:
                 tx = sdk.sessions.EndSession(session_id=session.id, rating=0, tx_params=tx_params)
-                print(sdk.sessions.wait_transaction(tx["hash"]))
+                print(sdk.sessions.wait_for_tx(tx["hash"]))
         
         tx = sdk.sessions.StartSession(subscription_id=int(ID), address=address)
         # Will need to handle log responses with friendly UI response in case of session create error
@@ -231,7 +260,7 @@ class HandleWalletFunctions():
             print(self.connected)
             return
        
-        tx_response = sdk.sessions.wait_transaction(tx["hash"])
+        tx_response = sdk.sessions.wait_for_tx(tx["hash"])
         session_id = search_attribute(tx_response, "sentinel.session.v2.EventStart", "id")
 
         from_event = {
