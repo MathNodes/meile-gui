@@ -107,3 +107,5 @@ class TXContent(BoxLayout):
 
 class ConnectionDialog(MDFloatLayout):
     pass
+
+

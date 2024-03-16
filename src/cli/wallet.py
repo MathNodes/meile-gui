@@ -48,7 +48,7 @@ class HandleWalletFunctions():
         self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
         
         # Migrate existing wallet to v2
-        self.__migrate_wallets()
+        #self.__migrate_wallets()
 
     def __migrate_wallets(self):
         # https://github.com/MathNodes/meile-gui/blob/main/src/cli/wallet.py#L215-L230

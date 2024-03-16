@@ -5,7 +5,7 @@ from cli.sentinel import  NodeTreeData
 from typedef.konstants import NodeKeys, TextStrings, MeileColors, HTTParams, IBCTokens
 from cli.sentinel import disconnect as Disconnect
 import main.main as Meile
-from ui.widgets import WalletInfoContent, MDMapCountryButton, RatingContent, NodeRV, NodeRV2
+from ui.widgets import WalletInfoContent, MDMapCountryButton, RatingContent, NodeRV, NodeRV2, NodeAccordion, NodeRow, NodeDetails
 from utils.qr import QRCode
 from cli.wallet import HandleWalletFunctions
 from conf.meile_config import MeileGuiConfig
@@ -403,7 +403,7 @@ class MainWindow(Screen):
             CountryTreeTags.append(ncountry.tag)
             
         CTTagsSorted = sorted(CountryTreeTags)
-        print(CTTagsSorted)
+        #print(CTTagsSorted)
         for tag in CTTagsSorted:
             for ctree in CountryTree:
                 if tag == ctree.tag:
@@ -1509,30 +1509,26 @@ class NodeScreen(MDBoxLayout):
         else:
             HealthButton = MeileColors.SICK_ICON
             HealthToolTip = TextStrings.FailedHealthCheck
-
-        self.ids.rv.data.append(
-            {
-                "viewclass"          : "RecycleViewRow",
-                "moniker_text"       : node[NodeKeys.NodesInfoKeys[0]].lstrip().rstrip(),
-                "price_text"         : node[NodeKeys.NodesInfoKeys[2]].lstrip().rstrip(),
-                "hourly_price_text"  : node[NodeKeys.NodesInfoKeys[3]].lstrip().rstrip(),
-                "country_text"       : node[NodeKeys.NodesInfoKeys[4]].lstrip().rstrip(),
-                "address_text"       : node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip(),
-                "type_text"          : node[NodeKeys.NodesInfoKeys[13]].lstrip().rstrip(),
-                "speed_text"         : speedText,
-                "node_score"         : nscore,
-                "votes"              : votes,
-                "city"               : node[NodeKeys.NodesInfoKeys[5]],
-                "icon"               : IconButton,
-                "tooltip"            : ToolTipText,
-                "healthcheck"        : HealthButton,
-                "healthchecktooltip" : HealthToolTip,
-                "speed_image"        : self.MeileConfig.resource_path(speedimage),
-                "source_image"       : self.MeileConfig.resource_path(flagloc)
-
-            },
+            
+        item = NodeAccordion(
+            node=NodeRow(
+                moniker=node[NodeKeys.NodesInfoKeys[0]],
+                location=node[NodeKeys.NodesInfoKeys[4]],
+                speed=speedText,
+                status="Status",
+                protocol=node[NodeKeys.NodesInfoKeys[13]],
+                node_type=ToolTipText,
+            ),
+            content=NodeDetails(
+                health_check=True if HealthToolTip == TextStrings.PassedHealthCheck else False,
+                price=node[NodeKeys.NodesInfoKeys[2]],
+            )
         )
-
+        self.ids.rv.add_widget(item)
+        
+        
+        
+        
     def set_previous_screen(self):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         mw.carousel.remove_widget(mw.NodeWidget)
@@ -1554,8 +1550,9 @@ class RecycleViewCountryRow(MDCard,RectangularElevationBehavior,ThemableBehavior
 
     def switch_window(self, country):
         print(country)
-        NodeTree = NodeTreeData(Meile.app.root.get_screen(WindowNames.MAIN_WINDOW).NodeTree.NodeTree)
         mw       = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
+        NodeTree = NodeTreeData(mw.NodeTree.NodeTree)
+        
         
         try:
             mw.carousel.remove_widget(mw.NodeWidget)

@@ -380,7 +380,7 @@ WindowManager:
     pos_hint: {"x" : .57, "center_y": .035}
     
           
-<NodeScreen>
+<NodeScreen_OLD>
     name: "nodes"
     MDBoxLayout:
         orientation: "vertical"
@@ -396,6 +396,7 @@ WindowManager:
                     title: 'Map'
                     with_previous: True
                     on_release: root.set_previous_screen() 
+                                        
 <SubscriptionScreen>
     name: "subscriptions"
     MDBoxLayout:
@@ -733,7 +734,156 @@ WindowManager:
                 text_color: get_color_from_hex("#ffffff")
                 pos_hint: {"x" : .125, "top" : .80}
                 #size_hint_x: None
-                    
+
+<NodeScreen>:
+    MDGridLayout:
+        rows: 3
+        size_hint_x: 1
+    
+        MDGridLayout:
+            cols: 7
+            height: 25
+            adaptive_height: True
+            padding: [15, 25, 0, 25]
+    
+            MDLabel:
+                text: "Moniker"
+                bold: True
+                size_hint_x: 2
+    
+            MDLabel:
+                text: "Location"
+                bold: True
+                size_hint_x: 1
+    
+            MDLabel:
+                text: "Speed"
+                bold: True
+                size_hint_x: 2
+    
+            # MDLabel:
+            #     text: "Status"
+            #     bold: True
+            #     size_hint_x: 1
+    
+            # MDLabel:
+            #     text: "Price"
+            #     bold: True
+            #     size_hint_x: 2
+    
+            MDLabel:
+                text: "Protocol"
+                bold: True
+                size_hint_x: 1
+    
+            MDLabel:
+                text: "Type"
+                bold: True
+                size_hint_x: 1
+        ScrollView:
+            do_scroll_y: True
+            MDBoxLayout:
+                size_hint_y: None
+                adaptive_height: True
+
+                orientation: "vertical"
+                padding: [10, 10, 10, 50]
+                spacing: 10
+                id: rv
+        ActionBar:
+            background_normal: ''
+            background_down: ''
+            background_color: get_color_from_hex("#121212")
+            ActionView:
+                ActionPrevious:
+                    icon: "arrow-left-circle"
+                    title: 'Map'
+                    with_previous: True
+                    on_release: root.set_previous_screen()
+        #ScrollView:
+        #    do_scroll_y: True
+        #    MDBoxLayout:
+        #        size_hint_y: None
+        #        adaptive_height: True
+        #    
+        #        orientation: "vertical"
+        #        padding: [10, 10, 10, 50]
+        #        spacing: 10
+        #        id: servers_list
+
+
+<NodeRow>:
+    cols: 7
+
+    MDLabel:
+        padding: [10, 0, 0, 0]
+        text: root.moniker
+        markup: True
+        size_hint_x: 2
+        font_name: "../../src/fonts/arial-unicode-ms.ttf"
+
+    MDLabel:
+        text: root.location
+        markup: True
+        size_hint_x: 1
+        font_name: "../../src/fonts/arial-unicode-ms.ttf"
+
+    MDLabel:
+        text: root.speed
+        markup: True
+        size_hint_x: 2
+        font_name: "../../src/fonts/arial-unicode-ms.ttf"
+
+    # MDLabel:
+    #     text: root.status
+    #     markup: True
+    #     size_hint_x: 1
+        font_name: "../../src/fonts/arial-unicode-ms.ttf"
+
+    # MDLabel:
+    #     text: root.price
+    #     markup: True
+    #     size_hint_x: 2
+        font_name: "../../src/fonts/arial-unicode-ms.ttf"
+
+    MDLabel:
+        text: root.protocol
+        markup: True
+        size_hint_x: 1
+        font_name: "../../src/fonts/arial-unicode-ms.ttf"
+
+    MDLabel:
+        text: root.node_type
+        markup: True
+        size_hint_x: 1
+        font_name: "../../src/fonts/arial-unicode-ms.ttf"
+
+
+<NodeDetails>:
+    adaptive_height: True
+    orientation: 'horizontal'
+
+    TooltipMDIconButton:
+        icon: "shield-plus" if root.health_check is True else 'emoticon-sick'
+        icon_color: "green" if root.health_check is True else "red"
+
+        tooltip_text: "Passed Sentinel Health Check" if root.health_check is True else "Failed Sentinel Health Check"
+        pos_hint: {"center_x": .5, "center_y": .5}
+
+    MDLabel
+        text: root.price
+        markup: True
+
+
+<NodeAccordion>:
+    rows: 2
+    md_bg_color: get_color_from_hex("#1C1D1B")
+    radius: [5, 5, 5, 5]
+
+    height: 50
+    adaptive_height: True
+
+
 <RecycleViewRow>:
     size_hint_y: None
     size: "180dp", "180dp"
