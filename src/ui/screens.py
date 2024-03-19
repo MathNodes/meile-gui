@@ -1470,7 +1470,8 @@ class NodeScreen(MDBoxLayout):
         else:
             speedimage = floc + "slow.png"
         
-        speedText = str(speedRate[0]) + "↓," + str(speedRate[1]) + "↑"
+        #speedText = str(speedRate[0]) + "↓," + str(speedRate[1]) + "↑"
+        speedText = f"{speedRate[0]}[color=#00FF00]↓[/color], {speedRate[1]}[color=#f44336]↑[/color]"
         if "0B" in speedRate[0] or "0B" in speedRate[1]:
             speedText = "    " + speedText
 
@@ -1509,7 +1510,7 @@ class NodeScreen(MDBoxLayout):
         else:
             HealthButton = MeileColors.SICK_ICON
             HealthToolTip = TextStrings.FailedHealthCheck
-            
+        '''will use for Meile plans    
         item = NodeAccordion(
             node=NodeRow(
                 moniker=node[NodeKeys.NodesInfoKeys[0]],
@@ -1524,7 +1525,30 @@ class NodeScreen(MDBoxLayout):
                 price=node[NodeKeys.NodesInfoKeys[2]],
             )
         )
-        self.ids.rv.add_widget(item)
+        '''
+        self.ids.rv.data.append(
+            {
+                "viewclass"          : "RecycleViewRow",
+                "moniker_text"       : node[NodeKeys.NodesInfoKeys[0]],
+                #"price_text"         : node[NodeKeys.NodesInfoKeys[2]].lstrip().rstrip(),
+                #"hourly_price_text"  : node[NodeKeys.NodesInfoKeys[3]].lstrip().rstrip(),
+                "country_text"       : node[NodeKeys.NodesInfoKeys[4]],
+                #"address_text"       : node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip(),
+                "protocol_text"      : node[NodeKeys.NodesInfoKeys[13]],
+                "speed_text"         : speedText,
+                "isp_type_text"      : ToolTipText
+                #"node_score"         : nscore,
+                #"votes"              : votes,
+                #"city"               : city,
+                #"icon"               : IconButton,
+                #"tooltip"            : ToolTipText,
+                #"healthcheck"        : HealthButton,
+                #"healthchecktooltip" : HealthToolTip,
+                #"speed_image"        : self.MeileConfig.resource_path(speedimage),
+                #"source_image"       : self.MeileConfig.resource_path(flagloc)
+
+            },
+        )
         
         
         

@@ -671,6 +671,7 @@ WindowManager:
     md_bg_color: get_color_from_hex("#121212")    
     size_hint: (1,1)       
     key_viewclass: "viewclass"
+    #key_viewclass: "NodeAccordion"
     bar_width: dp(12)
     scroll_type: ["bars", "content"]
     canvas.before:
@@ -683,7 +684,7 @@ WindowManager:
         id: grid
         md_bg_color: get_color_from_hex("#121212")
         cols:1
-        default_size: dp(200), dp(150)
+        default_size: dp(200), dp(50)
         default_size_hint: 1, None
         size_hint_y: None
         height: self.minimum_height
@@ -749,12 +750,12 @@ WindowManager:
             MDLabel:
                 text: "Moniker"
                 bold: True
-                size_hint_x: 2
+                size_hint_x: 2.1
     
             MDLabel:
                 text: "Location"
                 bold: True
-                size_hint_x: 1
+                size_hint_x: 1.5
     
             MDLabel:
                 text: "Speed"
@@ -774,32 +775,45 @@ WindowManager:
             MDLabel:
                 text: "Protocol"
                 bold: True
-                size_hint_x: 1
+                size_hint_x: 1.2
     
             MDLabel:
                 text: "Type"
                 bold: True
                 size_hint_x: 1
-        ScrollView:
-            do_scroll_y: True
-            MDBoxLayout:
-                size_hint_y: None
-                adaptive_height: True
+            TooltipMDIconButton:
+                icon: "earth"
+                tooltip_text: "Map"
+                size_hint_x: .25
+                theme_text_color: "Custom"
+                text_color: app.theme_cls.primary_color
+                on_release: root.set_previous_screen()
+                #pos_hint: {"x" : .455, "top" : .40}
+        NodeRV2:
+            id: rv
+        #RecycleView:
+            #do_scroll_y: True
+        #    id: rv
+        #    bar_width: dp(12)
+        #    scroll_type: ["bars", "content"]
+            #MDBoxLayout:
+            #    size_hint_y: None
+            #    adaptive_height: True
 
-                orientation: "vertical"
-                padding: [10, 10, 10, 50]
-                spacing: 10
-                id: rv
-        ActionBar:
-            background_normal: ''
-            background_down: ''
-            background_color: get_color_from_hex("#121212")
-            ActionView:
-                ActionPrevious:
-                    icon: "arrow-left-circle"
-                    title: 'Map'
-                    with_previous: True
-                    on_release: root.set_previous_screen()
+            #   orientation: "vertical"
+            #    padding: [10, 10, 10, 50]
+            #    spacing: 10
+            #    id: rv
+        #ActionBar:
+        #    background_normal: ''
+        #    background_down: ''
+        #    background_color: get_color_from_hex("#121212")
+        #    ActionView:
+        #        ActionPrevious:
+        #            icon: "arrow-left-circle"
+        #            title: 'Map'
+        #            with_previous: True
+        #            on_release: root.set_previous_screen()
         #ScrollView:
         #    do_scroll_y: True
         #    MDBoxLayout:
@@ -814,7 +828,6 @@ WindowManager:
 
 <NodeRow>:
     cols: 7
-
     MDLabel:
         padding: [10, 0, 0, 0]
         text: root.moniker
@@ -886,7 +899,8 @@ WindowManager:
 
 <RecycleViewRow>:
     size_hint_y: None
-    size: "180dp", "180dp"
+    #size: "180dp", "180dp"
+    size: "180dp", "25dp"
     pos_hint: {"center_x": .5, "center_y": .5}
     orientation: "vertical"
     #padding: 10,10
@@ -898,7 +912,8 @@ WindowManager:
     price_text: "."
     hourly_price_text: "."
     address_text: "."
-    type_text: "."
+    protocol_text: "."
+    isp_type_text: " "
     city_text: " "
     source_image: " "
     speed_image: " "
@@ -913,139 +928,154 @@ WindowManager:
     ripple_behavior: True
     on_press: root.subscribe_to_node(root.price_text, root.hourly_price_text, root.address_text, root.moniker_text)
     MDGridLayout:
-        cols: 1
+        cols: 5
         
-        MDFloatLayout:
+        #MDFloatLayout:
         
-            MDLabel:
-                text: root.moniker_text
-                theme_text_color: "Custom"
-                font_style: "H6"
-                font_size: "22sp"
-                font_name: root.get_font()
-                text_color: get_color_from_hex("#fcb711")
-                pos_hint: {"x" : 0, "top" : 1.325}
-                size_hint_x: None
-                width: "500dp"
-            MDLabel:
-                text: root.address_text
-                theme_text_color: "Custom"
-                font_style: "Subtitle2"
-                font_size: "10sp"
-                text_color: (0/255.0,141/255.0,155/255.0,255/255.0)
-                pos_hint: {"x" : 0, "top" : 1.125}
-            MDLabel:
-                text: root.type_text
-                theme_text_color: "Custom"
-                font_style: "Subtitle2"
-                font_size: "10sp"
-                text_color: get_color_from_hex("#ffffff")
-                pos_hint: {"x" : 0, "top" : 1.01}
-            MDLabel:
-                text: "GB:"
-                theme_text_color: "Custom"
-                font_style: "Subtitle2"
-                font_size: "13sp"
-                text_color: get_color_from_hex("#ffffff")
-                pos_hint: {"x" : 0, "top" : .875}
-            MDLabel:
-                text: root.price_text
-                theme_text_color: "Custom"
-                font_style: "Subtitle2"
-                font_size: "13sp"
-                text_color: get_color_from_hex("#fcb711")
-                pos_hint: {"x" : 0.03, "top" : .875}
-            MDLabel:
-                text: "Hs:"
-                theme_text_color: "Custom"
-                font_style: "Subtitle2"
-                font_size: "13sp"
-                text_color: get_color_from_hex("#ffffff")
-                pos_hint: {"x" : 0, "top" : .725}
-            MDLabel:
-                text: root.hourly_price_text
-                theme_text_color: "Custom"
-                font_style: "Subtitle2"
-                font_size: "13sp"
-                text_color: get_color_from_hex("#fcb711")
-                pos_hint: {"x" : 0.03, "top" : .725}
-            MDLabel:
-                text: "SCORE: "
-                theme_text_color: "Custom"
-                font_style: "Subtitle2"
-                font_size: "11sp"
-                text_color: get_color_from_hex("#ffffff")
-                pos_hint: {"x" : 0, "top" : .575}
-            MDLabel:
-                text: root.node_score
-                theme_text_color: "Custom"
-                font_style: "Subtitle2"
-                font_size: "11sp"
-                text_color: get_color_from_hex("#ffffff")
-                pos_hint: {"x" : .055, "top" : .575}
-            MDLabel:
-                text: "VOTES: "
-                theme_text_color: "Custom"
-                font_style: "Subtitle2"
-                font_size: "11sp"
-                text_color: get_color_from_hex("#ffffff")
-                pos_hint: {"x" : .125, "top" : .575}
-            MDLabel:
-                text: root.votes
-                theme_text_color: "Custom"
-                font_style: "Subtitle2"
-                font_size: "11sp"
-                text_color: get_color_from_hex("#ffffff")
-                pos_hint: {"x" : .175, "top" : .575}
-                
-            Image:
-                source: root.source_image
-                # {"x", "y", "top", "bottom", "left", "right" }
-                pos_hint: {"x" : .3, "top" : 1.2 }
+        MDLabel:
+            text: root.moniker_text
+            theme_text_color: "Custom"
+            font_style: "H6"
+            font_size: "16sp"
+            font_name: root.get_font()
+            text_color: get_color_from_hex("#fcb711")
+            #pos_hint: {"x" : 0, "top" : 1.325}
+            #size_hint_x: None
+            #width: "500dp"
+            size_hint_x: 2
+        MDLabel:    
+            text: root.country_text
+            theme_text_color: "Custom"
+            font_style: "H6"
+            font_size: "12sp"
+            text_color: (1,1,1,1)  
+            #pos_hint: {"right" : 1.75 , "top": .8 }
+            size_hint_x: 1
+        MDLabel:
+            text: root.speed_text
+            theme_text_color: "Custom"
+            markup: True
+            #font_style: "Subtitle2"
+            font_name: root.get_font()
+            font_size: "12sp"
+            text_color: 1,1,1,1
+            #pos_hint: {"x" : .43 , "top": .86 }
+            size_hint_x: 2
+        #MDLabel:
+        #    text: root.address_text
+        #    theme_text_color: "Custom"
+        #    font_style: "Subtitle2"
+        #    font_size: "10sp"
+        #    text_color: (0/255.0,141/255.0,155/255.0,255/255.0)
+        #    pos_hint: {"x" : 0, "top" : 1.125}
+        MDLabel:
+            text: root.protocol_text
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "12sp"
+            text_color: get_color_from_hex("#ffffff")
+            #pos_hint: {"x" : 0, "top" : 1.01}
+            size_hint_x: 1
+        MDLabel:
+            text: root.isp_type_text
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "12sp"
+            text_color: get_color_from_hex("#ffffff")
+            ##pos_hint: {"x" : 0, "top" : 1.01}
+            size_hint_x: 1
+        #MDLabel:
+        #    text: "GB:"
+        #    theme_text_color: "Custom"
+        #    font_style: "Subtitle2"
+        #    font_size: "13sp"
+        #    text_color: get_color_from_hex("#ffffff")
+        #    pos_hint: {"x" : 0, "top" : .875}
+        #MDLabel:
+        #    text: root.price_text
+        #    theme_text_color: "Custom"
+        #    font_style: "Subtitle2"
+        #    font_size: "13sp"
+        #    text_color: get_color_from_hex("#fcb711")
+        #    pos_hint: {"x" : 0.03, "top" : .875}
+        #MDLabel:
+        #    text: "Hs:"
+        #    theme_text_color: "Custom"
+        #    font_style: "Subtitle2"
+        #    font_size: "13sp"
+        #    text_color: get_color_from_hex("#ffffff")
+        #    pos_hint: {"x" : 0, "top" : .725}
+        #MDLabel:
+        #    text: root.hourly_price_text
+        #    theme_text_color: "Custom"
+        #    font_style: "Subtitle2"
+        #    font_size: "13sp"
+        #    text_color: get_color_from_hex("#fcb711")
+        #    pos_hint: {"x" : 0.03, "top" : .725}
+        #MDLabel:
+        #    text: "SCORE: "
+        #    theme_text_color: "Custom"
+        #    font_style: "Subtitle2"
+        #    font_size: "11sp"
+        #    text_color: get_color_from_hex("#ffffff")
+        #    pos_hint: {"x" : 0, "top" : .575}
+        #MDLabel:
+        #    text: root.node_score
+        #    theme_text_color: "Custom"
+        #    font_style: "Subtitle2"
+        #    font_size: "11sp"
+        #    text_color: get_color_from_hex("#ffffff")
+        #    pos_hint: {"x" : .055, "top" : .575}
+        #MDLabel:
+        #    text: "VOTES: "
+        #    theme_text_color: "Custom"
+        #    font_style: "Subtitle2"
+        #    font_size: "11sp"
+        #    text_color: get_color_from_hex("#ffffff")
+        #    pos_hint: {"x" : .125, "top" : .575}
+        #MDLabel:
+        #    text: root.votes
+        #    theme_text_color: "Custom"
+        #    font_style: "Subtitle2"
+        #    font_size: "11sp"
+        #    text_color: get_color_from_hex("#ffffff")
+        #    pos_hint: {"x" : .175, "top" : .575}
+            
+        #Image:
+        #    source: root.source_image
+        #    # {"x", "y", "top", "bottom", "left", "right" }
+        #    pos_hint: {"x" : .3, "top" : 1.2 }
 
-            MDLabel:
-                text: root.speed_text
-                theme_text_color: "Custom"
-                #font_style: "Subtitle2"
-                font_name: root.get_font()
-                font_size: "12sp"
-                text_color: 1,1,1,1
-                pos_hint: {"x" : .43 , "top": .86 }
-            Image:
-                source: root.speed_image
-                pos_hint: {"x" : .44 , "top": .95 }
-                size_hint: None, .525
-                
-            TooltipMDIconButton:
-                icon: root.icon
-                tooltip_text: root.tooltip
-                pos_hint: {"x" : .455, "top" : .40}
-            TooltipMDIconButton:
-                icon: root.healthcheck
-                tooltip_text: root.healthchecktooltip
-                pos_hint: {"x" : .485, "top" : .40  }
-                size_hint: None, None
-                
-            MDLabel:    
-                text: root.country_text
-                theme_text_color: "Custom"
-                font_style: "H6"
-                font_size: "22sp"
-                text_color: (1,1,1,1)  
-                pos_hint: {"right" : 1.75 , "top": .8 }
-            MDLabel:    
-                text: root.city
-                theme_text_color: "Custom"
-                font_style: "Subtitle2"
-                font_size: "13sp"
-                text_color: get_color_from_hex("#fcb711")
-                pos_hint: {"right" : 1.75 , "top": .625 }  
+        
+        #Image:
+        #    source: root.speed_image
+        #    pos_hint: {"x" : .44 , "top": .95 }
+        #    size_hint: None, .525
+            
+        #TooltipMDIconButton:
+        #    icon: root.icon
+        #    tooltip_text: root.tooltip
+        #    pos_hint: {"x" : .455, "top" : .40}
+        #TooltipMDIconButton:
+        #    icon: root.healthcheck
+        #    tooltip_text: root.healthchecktooltip
+        #    pos_hint: {"x" : .485, "top" : .40  }
+        #    size_hint: None, None
+            
+        
+        #MDLabel:    
+        #    text: root.city
+        #    theme_text_color: "Custom"
+        #    font_style: "Subtitle2"
+        #    font_size: "13sp"
+        #    text_color: get_color_from_hex("#fcb711")
+        #    pos_hint: {"right" : 1.75 , "top": .625 }  
 
-    OnHoverMDRaisedButton:
-        text: "Get Details"
-        md_bg_color: get_color_from_hex("#fcb711")
-        text_color: 0,0,0,1
-        on_press: root.get_city_of_node(root.address_text)
+    #OnHoverMDRaisedButton:
+    #    text: "Get Details"
+    #    md_bg_color: get_color_from_hex("#fcb711")
+    #    text_color: 0,0,0,1
+    #    on_press: root.get_city_of_node(root.address_text)
         
 
 <OnHoverMDRaisedButton>:
