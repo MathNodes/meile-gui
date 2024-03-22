@@ -228,9 +228,9 @@ class PreLoadWindow(Screen):
         
     @delayable
     def progress_load(self):
-        for k in range(1,2000):
+        for k in range(1,666):
             yield 0.0375
-            self.manager.get_screen(WindowNames.PRELOAD).ids.pb.value += 0.0005
+            self.manager.get_screen(WindowNames.PRELOAD).ids.pb.value += 0.0015
 
         
     def CopyBin(self):
@@ -1475,21 +1475,21 @@ class NodeScreen(MDBoxLayout):
         if "0B" in speedRate[0] or "0B" in speedRate[1]:
             speedText = "    " + speedText
 
-        if node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip() in self.NodeTree.NodeScores:
-            nscore = str(self.NodeTree.NodeScores[node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip()][0])
-            votes  = str(self.NodeTree.NodeScores[node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip()][1])
+        if node[NodeKeys.NodesInfoKeys[1]] in self.NodeTree.NodeScores:
+            nscore = str(self.NodeTree.NodeScores[node[NodeKeys.NodesInfoKeys[1]]][0])
+            votes  = str(self.NodeTree.NodeScores[node[NodeKeys.NodesInfoKeys[1]]][1])
         else:
             nscore = "null"
             votes  = "0"
         
-        if node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip() in self.NodeTree.NodeTypes:
-            if self.NodeTree.NodeTypes[node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip()] == NodeKeys.Nodetypes[0]:
+        if node[NodeKeys.NodesInfoKeys[1]] in self.NodeTree.NodeTypes:
+            if self.NodeTree.NodeTypes[node[NodeKeys.NodesInfoKeys[1]]] == NodeKeys.Nodetypes[0]:
                 IconButton  = "alpha-r-circle"
                 ToolTipText = "Residential"
-            elif self.NodeTree.NodeTypes[node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip()] == NodeKeys.Nodetypes[1]:
+            elif self.NodeTree.NodeTypes[node[NodeKeys.NodesInfoKeys[1]]] == NodeKeys.Nodetypes[1]:
                 IconButton  = "alpha-b-circle"
                 ToolTipText = "Business"
-            elif self.NodeTree.NodeTypes[node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip()] == NodeKeys.Nodetypes[3]:
+            elif self.NodeTree.NodeTypes[node[NodeKeys.NodesInfoKeys[1]]] == NodeKeys.Nodetypes[3]:
                 IconButton  = "alpha-u-circle"
                 ToolTipText = "University"
             else:
@@ -1499,8 +1499,8 @@ class NodeScreen(MDBoxLayout):
             IconButton  = "alpha-r-circle"
             ToolTipText = "Residential"
             
-        if node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip() in self.NodeTree.NodeHealth:
-            if self.NodeTree.NodeHealth[node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip()]:
+        if node[NodeKeys.NodesInfoKeys[1]] in self.NodeTree.NodeHealth:
+            if self.NodeTree.NodeHealth[node[NodeKeys.NodesInfoKeys[1]]]:
                 HealthButton = MeileColors.HEALTH_ICON
                 HealthToolTip = TextStrings.PassedHealthCheck
             else:
@@ -1536,7 +1536,11 @@ class NodeScreen(MDBoxLayout):
                 #"address_text"       : node[NodeKeys.NodesInfoKeys[1]].lstrip().rstrip(),
                 "protocol_text"      : node[NodeKeys.NodesInfoKeys[13]],
                 "speed_text"         : speedText,
-                "isp_type_text"      : ToolTipText
+                "isp_type_text"      : ToolTipText,
+                "node_data"          : node,
+                "node_types"         : self.NodeTree.NodeTypes,
+                "node_scores"        : self.NodeTree.NodeScores,
+                "node_formula"       : self.NodeTree.NodeFormula
                 #"node_score"         : nscore,
                 #"votes"              : votes,
                 #"city"               : city,
@@ -1557,6 +1561,8 @@ class NodeScreen(MDBoxLayout):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         mw.carousel.remove_widget(mw.NodeWidget)
         mw.carousel.load_previous()
+
+
 
 '''
 This is the card class of the country cards on the left panel        
@@ -1588,8 +1594,9 @@ class RecycleViewCountryRow(MDCard,RectangularElevationBehavior,ThemableBehavior
                                    node_tree=NodeTree,
                                    country=country,
                                    sort=mw.Sort)
+        print(mw.NodeWidget)
         mw.carousel.add_widget(mw.NodeWidget)
-        mw.carousel.load_next()
+        mw.carousel.load_slide(mw.NodeWidget)
 
 class HelpScreen(Screen):
 

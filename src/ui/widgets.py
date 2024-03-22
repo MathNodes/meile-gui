@@ -37,7 +37,7 @@ import psutil
 import time
 
 
-from typedef.konstants import IBCTokens, HTTParams, MeileColors
+from typedef.konstants import IBCTokens, HTTParams, MeileColors, NodeKeys
 from typedef.win import CoinsList, WindowNames
 from conf.meile_config import MeileGuiConfig
 from cli.wallet import HandleWalletFunctions
@@ -47,6 +47,8 @@ from adapters import HTTPRequests
 from ui.interfaces import TXContent, ConnectionDialog
 from coin_api.get_price import GetPriceAPI
 from adapters.ChangeDNS import ChangeDNS
+from kivy.uix.recyclegridlayout import RecycleGridLayout
+from helpers.helpers import format_byte_size
 
 class WalletInfoContent(BoxLayout):
     def __init__(self, seed_phrase, name, address, password, **kwargs):
@@ -334,7 +336,7 @@ class OnHoverMDRaisedButton(MDFlatButton, HoverBehavior):
         Window.set_system_cursor('arrow')
 
 
-class NodeRow(MDGridLayout):
+class NodeRow(RecycleGridLayout):
     moniker = StringProperty()
     location = StringProperty()
     speed = StringProperty()
@@ -347,7 +349,7 @@ class NodeDetails(MDBoxLayout):
     health_check = BooleanProperty(False)
     price = StringProperty()
 
-class NodeAccordion(ButtonBehavior, MDGridLayout):
+class NodeAccordion(ButtonBehavior, RecycleGridLayout):
     node = ObjectProperty()  # Main node info
 
     # https://github.com/kivymd/KivyMD/blob/master/kivymd/uix/expansionpanel/expansionpanel.py
@@ -392,7 +394,7 @@ class NodeAccordion(ButtonBehavior, MDGridLayout):
     :attr:`closing_time` is a :class:`~kivy.properties.NumericProperty`
     and defaults to `0.2`.
     """
-
+    
     _state = StringProperty("close")
     _anim_playing = False
 
@@ -474,13 +476,101 @@ class NodeAccordion(ButtonBehavior, MDGridLayout):
         if self.content:
             self.content.y = dp(36)
             self.add_widget(self.content)
-
+            
+class NodeCarousel(MDBoxLayout):
+    moniker         = StringProperty()
+    address         = StringProperty()
+    gb_prices       = StringProperty()
+    hr_prices       = StringProperty()
+    download        = StringProperty()
+    upload          = StringProperty()
+    connected_peers = StringProperty()
+    max_peers       = StringProperty()
+    protocol        = StringProperty()
+    version         = StringProperty()
+    handshake       = StringProperty()
+    health_check    = StringProperty()
+    isp_type        = StringProperty()
+    node_formula    = StringProperty()
+    votes           = StringProperty()
+    score           = StringProperty()
+    location        = StringProperty()
+    
+    def __init__(self, node, types, scores, formula, **kwargs):
+        super(NodeCarousel, self).__init__()
+        
+        gbprices = node[NodeKeys.NodesInfoKeys[2]].split(',')
+        hrprices = node[NodeKeys.NodesInfoKeys[3]].split(',')
+        
+        g = gbprices[0]
+        self.gb_prices = deepcopy(g)
+        
+        for g in gbprices:
+            self.gb_prices = '\n'.join([self.gb_prices,g])
+        
+        h = hrprices[0]
+        self.hr_prices = deepcopy(h)
+        
+        for h in hrprices:
+            self.hr_prices = '\n'.join([self.hr_prices,h])
+        
+        self.moniker         = node[NodeKeys.NodesInfoKeys[0]]
+        self.address         = node[NodeKeys.NodesInfoKeys[1]]
+        #self.gb_prices       = node[NodeKeys.NodesInfoKeys[2]]
+        #self.hr_prices       = node[NodeKeys.NodesInfoKeys[3]]
+        self.download        = format_byte_size(node[NodeKeys.NodesInfoKeys[8]])+ "/s"
+        self.upload          = format_byte_size(node[NodeKeys.NodesInfoKeys[9]])+ "/s"
+        self.connected_peers = str(node[NodeKeys.NodesInfoKeys[10]])
+        self.max_peers       = str(node[NodeKeys.NodesInfoKeys[11]])
+        self.protocol        = node[NodeKeys.NodesInfoKeys[13]]
+        self.version         = node[NodeKeys.NodesInfoKeys[14]]
+        self.handshake       = str(node[NodeKeys.NodesInfoKeys[12]])
+        self.health_check    = self.GetHealthCheck(node[NodeKeys.NodesInfoKeys[1]])
+        self.isp_type        = types[node[NodeKeys.NodesInfoKeys[1]]]
+        self.node_formula    = str(formula[node[NodeKeys.NodesInfoKeys[1]]]) if node[NodeKeys.NodesInfoKeys[1]] in formula else "NULL"
+        self.votes           = str(scores[node[NodeKeys.NodesInfoKeys[1]]][1]) if node[NodeKeys.NodesInfoKeys[1]] in scores else "0"
+        self.score           = str(scores[node[NodeKeys.NodesInfoKeys[1]]][0]) if node[NodeKeys.NodesInfoKeys[1]] in scores else "NULL"
+        self.location        = f"[b]Location:[/b] {node[NodeKeys.NodesInfoKeys[5]]},{node[NodeKeys.NodesInfoKeys[4]]}"
+        
+        try:
+            self.ids.mapview.center_on(float(node[NodeKeys.NodesInfoKeys[6]])-1,float(node[NodeKeys.NodesInfoKeys[7]]))
+        except Exception as e:
+            print(str(e))
+    
+    def GetHealthCheck(self, address):
+        Request = HTTPRequests.MakeRequest(TIMEOUT=2.3)
+        http = Request.hadapter()
+        r = http.get(HTTParams.HEALTH_CHECK % address)
+        health_check = r.json()
+        print(health_check)
+        if 'status' in health_check:
+            if health_check['status'] != 1:
+                return "Failed"
+        elif "info_fetch_error " in health_check:
+            return "Failed"
+        elif "config_exchange_error" in health_check:
+            return "Failed"
+        elif "location_fetch_error" in health_check:
+            return "Failed"
+        else:
+            return "Passed"
+        
+         
+    
+    def switch_carousel(self):
+        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
+        mw.carousel.remove_widget(self)
+        mw.carousel.load_slide(mw.NodeWidget)
+        
 '''
 Recycler of the node cards after clicking country
 '''
 class RecycleViewRow(MDCard,RectangularElevationBehavior,ThemableBehavior, HoverBehavior):
-    text = StringProperty()    
     dialog = None
+    node_data = ObjectProperty()
+    node_types = ObjectProperty()
+    node_scores = ObjectProperty()
+    node_formula = ObjectProperty()
     
     def get_font(self):
         Config = MeileGuiConfig()
@@ -648,6 +738,12 @@ Node Version: %s
         except Exception as e:
             print(str(e))
             self.dialog = None
+            
+    def switch_to_node_carousel(self, node_data, node_types, node_scores, node_formula):
+        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
+        NodeWidget = NodeCarousel(name=WindowNames.NODE_CAROUSEL, node=node_data, types=node_types, scores=node_scores, formula=node_formula)
+        mw.carousel.add_widget(NodeWidget)
+        mw.carousel.load_slide(NodeWidget)
      
 class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
     text = StringProperty()

@@ -9,6 +9,7 @@ class WindowNames():
     FIAT           = "fiatgateway"
     SUBSCRIPTIONS  = "subscriptions"
     SETTINGS       = "settings"
+    NODE_CAROUSEL  = "node_carousel"
     
     
 class CoinsList():

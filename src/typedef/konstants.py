@@ -40,10 +40,11 @@ class HTTParams():
                               'https://rpc.sentinel.quokkastake.io:443', 'https://rpc-sentinel.whispernode.com:443']
     GRPC                   = "grpc+http://aimokoivunen.mathnodes.com:9090/"
     #GRPC                   = "grpc+http://128.199.90.172:9090/"
-    HEALTH_CHECK           = "https://api.health.sentinel.co/v1/records"
+    HEALTH_CHECK           = "https://api.health.sentinel.co/v1/records/%s"
     NODE_SCORE_ENDPOINT    = "/api/nodescores"
     NODE_LOCATION_ENDPOINT = "/api/nodelocations"
     NODE_TYPE_ENDPOINT     = "/api/nodetypes"
+    NODE_FORMULA_ENDPOINT  = "/api/nodeformula"
     API_PING_ENDPOINT      = "/api/ping"
     API_RATING_ENDPOINT    = "/api/rating"
     SESSIONS_API_URL       = '/sentinel/accounts/%s/sessions'
@@ -90,6 +91,7 @@ class MeileColors():
     HEALTH_ICON              = "shield-plus"
     SICK_ICON                = "emoticon-sick"
     ARCGIS_MAP               = "https://server.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}.png"
+    ARCGIS_MAP2              = "https://server.arcgisonline.com/arcgis/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}.png"
     
 class NodeKeys():
     '''v1.8.0

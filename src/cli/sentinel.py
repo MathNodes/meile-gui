@@ -32,6 +32,7 @@ class NodeTreeData():
     NodeLocations = {}
     NodeTypes     = {}
     NodeHealth    = {}
+    NodeFormula   = {}
     
     def __init__(self, node_tree):
         if not node_tree:
@@ -122,6 +123,9 @@ class NodeTreeData():
         # Not loading all the data here is a 2x improvement on loadtime
         #self.GetHealthCheckData()
 
+        # Get MathNodes NodeFormula
+        self.GetNodeFormula()
+
     def GetHealthCheckData(self):
         Request = HTTPRequests.MakeRequest(TIMEOUT=4)
         http = Request.hadapter()
@@ -169,6 +173,20 @@ class NodeTreeData():
             for nlist in data['data']:
                 k=0
                 self.NodeLocations[nlist[k]] = nlist[k+1]
+            
+        except Exception as e:
+            print(str(e)) 
+    
+    def GetNodeFormula(self):
+        Request = HTTPRequests.MakeRequest(TIMEOUT=4)
+        http = Request.hadapter()
+        try:
+            r = http.get(HTTParams.SERVER_URL + HTTParams.NODE_FORMULA_ENDPOINT)
+            data = r.json()
+          
+            for nlist in data['data']:
+                #k=0
+                self.NodeFormula[nlist[0]] = nlist[6]
             
         except Exception as e:
             print(str(e)) 

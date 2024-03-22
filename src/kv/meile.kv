@@ -896,7 +896,238 @@ WindowManager:
     height: 50
     adaptive_height: True
 
+<NodeCarousel>:
+    name: "node_carousel"
+    MDBoxLayout:
+        orientation: "vertical"
+        MDGridLayout:
+            rows: 3
+            cols: 2
+            orientation: 'lr-tb'
+            size_hint_y: .15
+            MDLabel:
+                text: root.moniker
+                #size_hint_x: .9
+                theme_text_color: "Custom"
+                text_color: get_color_from_hex("#fcb711")
+                font_size: sp(25)
+                font_name: "../../src/fonts/arial-unicode-ms.ttf"
+            AnchorLayout:
+                anchor_x: "right"
+                TooltipMDIconButton:
+                    icon: "spider-web"
+                    tooltip_text: "Map"
+                    #size_hint_x: .01
+                    theme_text_color: "Custom"
+                    text_color: get_color_from_hex("#fcb711")
+                    on_press: root.switch_carousel()
+            HSeparator:
+            HSeparator:
+            MDLabel:
+                text: root.address
+                size_hint_x: .95
+                font_size: sp(11)
+        MDFloatLayout
+            size_hint_y: 1
 
+            MDBoxLayout:
+                orientation: "vertical"
+                size_hint_x: .6
+                size_hint_y: .95
+                spacing: 30             
+                MDBoxLayout:
+                    size_hint_y: .125
+                    MDGridLayout
+                        cols: 2
+                        
+                        MDLabel:
+                            text: "[b]Gigabyte Prices[/b]"
+                            halign: "center"
+                            markup: True
+                        
+                        MDLabel:
+                            text: "[b]Hourly Prices[/b]"
+                            halign: "center"
+                            markup: True
+                        
+                        MDLabel:
+                            text: root.gb_prices
+                            halign: "center"
+                            font_size: sp(12)
+                        
+                        MDLabel:
+                            text: root.hr_prices
+                            halign: "center"
+                            font_size: sp(12)
+                MDBoxLayout:
+                    size_hint_y: .03
+                    MDGridLayout
+                        cols: 2
+                        rows: 2
+                        MDLabel:
+                            text: "[b]Bandwidth Down[/b]"
+                            halign: "center"
+                            markup: True
+                        MDLabel:
+                            text: "[b]Bandwidth Up[/b]"
+                            halign: "center"
+                            markup: True
+                        MDLabel:
+                            text: root.download
+                            halign: "center"
+                            font_size: sp(12)
+                        MDLabel:
+                            text: root.upload
+                            halign: "center"
+                            font_size: sp(12)
+                MDBoxLayout:
+                    size_hint_y: .03
+                    MDGridLayout
+                        cols: 2
+                        rows: 2
+                        MDLabel:
+                            text: "[b]Connected Peers[/b]"
+                            halign: "center"
+                            markup: True
+                        MDLabel:
+                            text: "[b]Max Peers[/b]"
+                            halign: "center"
+                            markup: True
+                        MDLabel:
+                            text: root.connected_peers
+                            halign: "center"
+                            font_size: sp(12)
+                        MDLabel:
+                            text: root.max_peers
+                            halign: "center"
+                            font_size: sp(12)
+                MDBoxLayout:
+                    size_hint_y: .03
+                    MDGridLayout
+                        cols: 2
+                        rows: 2
+                        MDLabel:
+                            text: "[b]Protocol[/b]"
+                            halign: "center"
+                            markup: True
+                        MDLabel:
+                            text: "[b]Version[/b]"
+                            halign: "center"
+                            markup: True
+                        MDLabel:
+                            text: root.protocol
+                            halign: "center"
+                            font_size: sp(12)
+                        MDLabel:
+                            text: root.version
+                            halign: "center"
+                            font_size: sp(12)
+                MDBoxLayout:
+                    size_hint_y: .03
+                    MDGridLayout
+                        cols: 2
+                        rows: 2
+                        MDLabel:
+                            text: "[b]Handshake[/b]"
+                            halign: "center"
+                            markup: True
+                        MDLabel:
+                            text: "[b]Health Check[/b]"
+                            halign: "center"
+                            markup: True
+                        MDLabel:
+                            text: root.handshake
+                            halign: "center"
+                            font_size: sp(12)
+                        MDLabel:
+                            text: root.health_check
+                            halign: "center"
+                            font_size: sp(12)
+                MDBoxLayout:
+                    size_hint_y: .03
+                    MDGridLayout
+                        cols: 2
+                        rows: 2
+                        MDLabel:
+                            text: "[b]ISP Type[/b]"
+                            halign: "center"
+                            markup: True
+                        MDLabel:
+                            text: "[b]Formula[/b]"
+                            halign: "center"
+                            markup: True
+                        MDLabel:
+                            text: root.isp_type
+                            halign: "center"
+                            font_size: sp(12)
+                        MDLabel:
+                            text: root.node_formula
+                            halign: "center"
+                            font_size: sp(12)
+                MDBoxLayout:
+                    size_hint_y: .03
+                    MDGridLayout
+                        cols: 2
+                        rows: 2
+                        MDLabel:
+                            text: "[b]Votes[/b]"
+                            halign: "center"
+                            markup: True
+                        MDLabel:
+                            text: "[b]Score[/b]"
+                            halign: "center"
+                            markup: True
+                        MDLabel:
+                            text: root.votes
+                            halign: "center"
+                            font_size: sp(12)
+                        MDLabel:
+                            text: root.score
+                            halign: "center"
+                            font_size: sp(12)
+                MDBoxLayout:
+                    size_hint_y: .1
+                    
+            MapView:
+                id: mapview
+                lat: 48.849943
+                lon: 2.279793
+                zoom: 8
+                size_hint: .4, .6
+                pos_hint: {"x": .575, "y": .4}
+                
+            MDLabel:
+                text: root.location
+                pos_hint: {"x" : .7, "y": -.125}
+                markup: True
+                    
+            MDFlatButton:        
+                md_bg_color: get_color_from_hex("#121212")
+                pos_hint: {'x' : .67, 'y': .275}
+                Image:
+                    id: subscribe_button
+                    size_hint: 3,3
+                    source: "../../src/imgs/SubscribeButton.png"
+            
+            MDFlatButton:        
+                md_bg_color: get_color_from_hex("#121212")
+                pos_hint: {'x' : .87, 'y': .275}
+                Image:
+                    id: subscribe_button
+                    size_hint: 3,3
+                    source: "../../src/imgs/GetInfoButton.png"
+<Separator@Widget>:
+    canvas:
+        Color:
+            rgba: 1, 1, 1, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+<HSeparator@Separator>:
+    size_hint_y: None
+    height: dp(2)
+    
+    
 <RecycleViewRow>:
     size_hint_y: None
     #size: "180dp", "180dp"
@@ -925,8 +1156,12 @@ WindowManager:
     tooltip: ""
     healthcheck: ""
     healthchecktooltip: ""
+    node_data: ""
+    node_types: ""
+    node_scores: ""
     ripple_behavior: True
-    on_press: root.subscribe_to_node(root.price_text, root.hourly_price_text, root.address_text, root.moniker_text)
+    #on_press: root.subscribe_to_node(root.price_text, root.hourly_price_text, root.address_text, root.moniker_text)
+    on_press: root.switch_to_node_carousel(root.node_data, root.node_types, root.node_scores, root.node_formula)
     MDGridLayout:
         cols: 5
         
