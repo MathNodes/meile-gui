@@ -18,6 +18,8 @@ from adapters import HTTPRequests
 from cli.v2ray import V2RayHandler, V2RayConfiguration
 
 import base64
+import bcrypt
+from jwcrypto import jwe, jwk
 import uuid
 import configparser
 import socket
@@ -58,29 +60,105 @@ class HandleWalletFunctions():
         self.__migrate_wallets()
 
     def __migrate_wallets(self):
-        # https://github.com/MathNodes/meile-gui/blob/main/src/cli/wallet.py#L215-L230
-        # Before continue make sure that sentinelcli still exist
-        if path.isfile(sentinelcli):
-            CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
-            PASSWORD = CONFIG['wallet'].get('password', '')
-            KEYNAME = CONFIG['wallet'].get('keyname', '')
+        CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
+        PASSWORD = CONFIG['wallet'].get('password', '')
+        KEYNAME = CONFIG['wallet'].get('keyname', '')
 
-            kr = self.__keyring(PASSWORD)
-            if kr.get_password("meile-gui", KEYNAME) is None:  # TODO: very ungly
-                export_cmd = f"{sentinelcli} keys export {KEYNAME} --unsafe --unarmored-hex --keyring-backend file --keyring-dir {ConfParams.KEYRINGDIR}"
-                child = pexpect.spawn(export_cmd)
-                child.expect(".*")
-                child.sendline("y")
-                child.expect("Enter*")
-                child.sendline("carmelino")
+        kr = self.__keyring(PASSWORD)
+        if kr.get_password("meile-gui", KEYNAME) is not None:  # TODO: very ungly
+            # Wallet was already migrated because exist a valid keyname in our keyring
+            return
 
-                outputs = child.readlines()
-                private_key = outputs[-1].strip().decode("utf-8")
+        # For each key record, we actually write 2 items:
+        # - one with key `<uid>.info`, with Data = the serialized protobuf key
+        # - another with key `<addr_as_hex>.address`, with Data = the uid (i.e. the key name)
+        # https://github.com/cosmos/cosmos-sdk/blob/main/crypto/keyring/keyring.go
 
-                child.expect(pexpect.EOF)
+        # We have two way to export private key:
+        # 1. Decode `<uid>.info` and then, assuming the curve is secp256k1, .replace(b"\"\tsecp256k1", b"")[-32:]
+        # 2. Follow me.
 
-                kr = self.__keyring(PASSWORD)
-                kr.set_password("meile-gui", KEYNAME, private_key)
+        # First all check if the keyring has a valid key-hash file and if the hash can be compared with our password
+        keyhash_fpath = path.join(ConfParams.KEYRINGDIR, "keyring-file", "keyhash")
+        if path.isfile(keyhash_fpath):
+            keyhash = open(keyhash_fpath, "r").read()
+            if bcrypt.checkpw(PASSWORD.encode(), keyhash.strip().encode()) is True:
+                # Search for `<uid>.info` / keyname .info file
+                keyname_dotinfo = path.join(ConfParams.KEYRINGDIR, "keyring-file", f"{KEYNAME}.info")
+                if path.isfile(keyname_dotinfo) is True:
+                    encrypted_jwe = open(keyname_dotinfo).read()
+                    jwkey = {'kty': 'oct', 'k': base64.b64encode(PASSWORD.encode()).decode("utf-8")}
+                    jwetoken = jwe.JWE()
+                    jwetoken.deserialize(encrypted_jwe)
+                    jwetoken.decrypt(jwk.JWK(**jwkey))
+                    payload = json.loads(jwetoken.payload)
+                    # Double verify, we could also remove this assert
+                    assert payload.get('Key', None) == f"{KEYNAME}.info"
+                    data = payload["Data"]
+                    data = base64.b64decode(data)
+                    # First byte, padding
+                    data = data[1:]
+                    # Prefix keyname: \r\xad\x15=\n
+                    data = data.removeprefix(b"\r\xad\x15=\n")
+                    # Another, padding
+                    data = data[1:]
+                    # Key name until: \x12&\xebZ\xe9\x87!
+                    keyname = data[:(data.find(b"\x12&\xebZ\xe9\x87!"))]
+                    data = data.removeprefix(keyname + b"\x12&\xebZ\xe9\x87!")
+                    # Double verify, we could also remove this assert
+                    assert keyname == KEYNAME.encode()
+                    pubkey = data[:33]
+                    data = data.removeprefix(pubkey)
+                    # Padding privatekey \x1a%\xe1\xb0\xf7\x9b
+                    data = data.removeprefix(b"\x1a%\xe1\xb0\xf7\x9b ")
+                    privkey = data[:32]
+                    data = data.removeprefix(privkey)
+                    curve = data[2:].decode()
+
+                    s = hashlib.new("sha256", pubkey).digest()
+                    r = hashlib.new("ripemd160", s).digest()
+
+                    hex_address = r.hex()
+                    # Anothe double verification, let's find the `<addr_as_hex>.address` and verify if data match with our uuid
+                    hex_address_fpath = path.join(ConfParams.KEYRINGDIR, "keyring-file", f"{hex_address}.address")
+                    if path.isfile(hex_address_fpath) is True:
+                        encrypted_jwe = open(hex_address_fpath).read()
+                        jwkey = {'kty': 'oct', 'k': base64.b64encode(PASSWORD.encode()).decode("utf-8")}
+                        jwetoken = jwe.JWE()
+                        jwetoken.deserialize(encrypted_jwe)
+                        jwetoken.decrypt(jwk.JWK(**jwkey))
+                        payload = json.loads(jwetoken.payload)
+                        # Double verify, we could also remove this assert
+                        assert payload.get('Key', None) == f"{hex_address}.address"
+
+                        data = payload["Data"]
+                        data = base64.b64decode(data)
+                        # Double verify, we could also remove this assert
+                        assert data.decode() == f"{KEYNAME}.info"
+
+                        account_address = bech32.bech32_encode("sent", bech32.convertbits(r, 8, 5))
+
+                        pubkey = base64.b64encode(pubkey).decode()
+                        privkey = privkey.hex()
+                        keyname = keyname.decode()
+
+                        # TODO: just for debugging purpose
+                        print("keyname", keyname)
+                        print("pubkey", pubkey)
+                        print("hex_address", hex_address)
+                        print("account_address", account_address)
+                        # print("privkey", privkey)
+                        print("curve", curve)
+
+                        kr.set_password("meile-gui", KEYNAME, privkey)
+                    else:
+                        print(f"{hex_address}.address doesn't exist")
+                else:
+                    print(f"{KEYNAME}.info doesn't exist")
+            else:
+                print("bcrypt hash doesn't match")
+        else:
+            print(f"{keyhash_fpath} doesn't exist")
 
 
     def __keyring(self, keyring_passphrase: str):
