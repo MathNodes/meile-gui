@@ -59,6 +59,53 @@ class HandleWalletFunctions():
         # Migrate existing wallet to v2
         self.__migrate_wallets()
 
+    @staticmethod
+    def decode_jwt_file(fpath: str, password: str) -> dict:
+        encrypted_jwe = open(fpath).read()
+        jwkey = {'kty': 'oct', 'k': base64.b64encode(password.encode()).decode("utf-8")}
+        jwetoken = jwe.JWE()
+        jwetoken.deserialize(encrypted_jwe)
+        jwetoken.decrypt(jwk.JWK(**jwkey))
+        return json.loads(jwetoken.payload)
+
+    @staticmethod
+    def decode_wallet_record(data: bytes) -> dict:
+        # First byte, padding
+        data = data[1:]
+        # Prefix keyname: \r\xad\x15=\n
+        data = data.removeprefix(b"\r\xad\x15=\n")
+        # Another, padding
+        data = data[1:]
+        # Key name until: \x12&\xebZ\xe9\x87!
+        keyname = data[:(data.find(b"\x12&\xebZ\xe9\x87!"))]
+        data = data.removeprefix(keyname + b"\x12&\xebZ\xe9\x87!")
+        pubkey = data[:33]
+        data = data.removeprefix(pubkey)
+        # Padding privatekey \x1a%\xe1\xb0\xf7\x9b
+        data = data.removeprefix(b"\x1a%\xe1\xb0\xf7\x9b ")
+        privkey = data[:32]
+        data = data.removeprefix(privkey)
+        curve = data[2:].decode()
+
+        s = hashlib.new("sha256", pubkey).digest()
+        r = hashlib.new("ripemd160", s).digest()
+
+        hex_address = r.hex()
+        account_address = bech32.bech32_encode("sent", bech32.convertbits(r, 8, 5))
+
+        pubkey = base64.b64encode(pubkey).decode()
+        privkey = privkey.hex()
+        keyname = keyname.decode()
+
+        return {
+            "keyname": keyname,
+            "pubkey": pubkey,
+            "hex_address": hex_address,
+            "account_address": account_address,
+            "privkey": privkey,
+            "curve": curve,
+        }
+
     def __migrate_wallets(self):
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
@@ -86,48 +133,23 @@ class HandleWalletFunctions():
                 # Search for `<uid>.info` / keyname .info file
                 keyname_dotinfo = path.join(ConfParams.KEYRINGDIR, "keyring-file", f"{KEYNAME}.info")
                 if path.isfile(keyname_dotinfo) is True:
-                    encrypted_jwe = open(keyname_dotinfo).read()
-                    jwkey = {'kty': 'oct', 'k': base64.b64encode(PASSWORD.encode()).decode("utf-8")}
-                    jwetoken = jwe.JWE()
-                    jwetoken.deserialize(encrypted_jwe)
-                    jwetoken.decrypt(jwk.JWK(**jwkey))
-                    payload = json.loads(jwetoken.payload)
+                    payload = HandleWalletFunctions.decode_jwt_file(keyname_dotinfo, PASSWORD)
+
                     # Double verify, we could also remove this assert
                     assert payload.get('Key', None) == f"{KEYNAME}.info"
                     data = payload["Data"]
                     data = base64.b64decode(data)
-                    # First byte, padding
-                    data = data[1:]
-                    # Prefix keyname: \r\xad\x15=\n
-                    data = data.removeprefix(b"\r\xad\x15=\n")
-                    # Another, padding
-                    data = data[1:]
-                    # Key name until: \x12&\xebZ\xe9\x87!
-                    keyname = data[:(data.find(b"\x12&\xebZ\xe9\x87!"))]
-                    data = data.removeprefix(keyname + b"\x12&\xebZ\xe9\x87!")
+
+                    wallet_record = HandleWalletFunctions.decode_wallet_record(data)
                     # Double verify, we could also remove this assert
-                    assert keyname == KEYNAME.encode()
-                    pubkey = data[:33]
-                    data = data.removeprefix(pubkey)
-                    # Padding privatekey \x1a%\xe1\xb0\xf7\x9b
-                    data = data.removeprefix(b"\x1a%\xe1\xb0\xf7\x9b ")
-                    privkey = data[:32]
-                    data = data.removeprefix(privkey)
-                    curve = data[2:].decode()
+                    assert wallet_record["keyname"] == KEYNAME
 
-                    s = hashlib.new("sha256", pubkey).digest()
-                    r = hashlib.new("ripemd160", s).digest()
+                    hex_address = wallet_record["hex_address"]
 
-                    hex_address = r.hex()
                     # Anothe double verification, let's find the `<addr_as_hex>.address` and verify if data match with our uuid
                     hex_address_fpath = path.join(ConfParams.KEYRINGDIR, "keyring-file", f"{hex_address}.address")
                     if path.isfile(hex_address_fpath) is True:
-                        encrypted_jwe = open(hex_address_fpath).read()
-                        jwkey = {'kty': 'oct', 'k': base64.b64encode(PASSWORD.encode()).decode("utf-8")}
-                        jwetoken = jwe.JWE()
-                        jwetoken.deserialize(encrypted_jwe)
-                        jwetoken.decrypt(jwk.JWK(**jwkey))
-                        payload = json.loads(jwetoken.payload)
+                        payload = HandleWalletFunctions.decode_jwt_file(hex_address_fpath, PASSWORD)
                         # Double verify, we could also remove this assert
                         assert payload.get('Key', None) == f"{hex_address}.address"
 
@@ -136,19 +158,10 @@ class HandleWalletFunctions():
                         # Double verify, we could also remove this assert
                         assert data.decode() == f"{KEYNAME}.info"
 
-                        account_address = bech32.bech32_encode("sent", bech32.convertbits(r, 8, 5))
-
-                        pubkey = base64.b64encode(pubkey).decode()
-                        privkey = privkey.hex()
-                        keyname = keyname.decode()
-
                         # TODO: just for debugging purpose
-                        print("keyname", keyname)
-                        print("pubkey", pubkey)
-                        print("hex_address", hex_address)
-                        print("account_address", account_address)
-                        # print("privkey", privkey)
-                        print("curve", curve)
+                        privkey = wallet_record["privkey"]
+                        del wallet_record["privkey"]
+                        print(wallet_record)
 
                         kr.set_password("meile-gui", KEYNAME, privkey)
                     else:
@@ -164,9 +177,9 @@ class HandleWalletFunctions():
     def __keyring(self, keyring_passphrase: str):
         kr = CryptFileKeyring()
         kr.filename = "keyring.cfg"
-        print(ConfParams.KEYRINGDIR)
+        # print(ConfParams.KEYRINGDIR)
         kr.file_path = path.join(ConfParams.KEYRINGDIR, kr.filename)
-        print(kr.file_path)
+        # print(kr.file_path)
         kr.keyring_key = keyring_passphrase
         return kr
 
