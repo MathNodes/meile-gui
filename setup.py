@@ -60,7 +60,9 @@ setup(
         "mnemonic",
         "bech32",
         "pywgkey",
-        "sentinel-sdk"
+        "sentinel-sdk",
+        "bcrypt",
+        "jwcrypto"
     ],
     package_data={
         "conf": ["config/config.ini"],
