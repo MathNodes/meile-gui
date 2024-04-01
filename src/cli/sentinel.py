@@ -305,7 +305,7 @@ class NodeTreeData():
                                             NodeKeys.FinalSubsKeys[2] : SubsResult[NodeKeys.SubsInfoKeys[4]][k],
                                             NodeKeys.FinalSubsKeys[3] : SubsResult[NodeKeys.SubsInfoKeys[5]][k],
                                             NodeKeys.FinalSubsKeys[4] : SubsResult[NodeKeys.SubsInfoKeys[7]][k],
-                                            NodeKeys.FinalSubsKeys[5] : None,
+                                            NodeKeys.FinalSubsKeys[5] : "",
                                             NodeKeys.FinalSubsKeys[6] : "0.00GB",
                                             NodeKeys.FinalSubsKeys[7] : "0.00B",
                                             NodeKeys.FinalSubsKeys[8] : "None",
@@ -332,7 +332,7 @@ class NodeTreeData():
                                             NodeKeys.FinalSubsKeys[5] : NodeData[NodeKeys.NodesInfoKeys[4]],
                                             NodeKeys.FinalSubsKeys[6] : nodeQuota[0],
                                             NodeKeys.FinalSubsKeys[7] : nodeQuota[1],
-                                            NodeKeys.FinalSubsKeys[8] : NodeData[NodeKeys.NodesInfoKeys[9]],
+                                            NodeKeys.FinalSubsKeys[8] : NodeData[NodeKeys.NodesInfoKeys[13]],
                                             NodeKeys.FinalSubsKeys[9] : SubsResult[NodeKeys.SubsInfoKeys[2]][k],
                                             NodeKeys.FinalSubsKeys[10]: SubsResult[NodeKeys.SubsInfoKeys[6]][k]
                                             })

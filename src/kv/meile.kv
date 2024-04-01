@@ -243,6 +243,7 @@ WindowManager:
                         icon: "book-open-outline"
                         theme_text_color: "Custom"
                         text_color: get_color_from_hex("#fcb711")
+                        on_release: root.switch_to_sub_window()
                         
                     ToolTipMDIconButton:
                         tooltip_text: "Plans"
@@ -397,11 +398,11 @@ WindowManager:
                     with_previous: True
                     on_release: root.set_previous_screen() 
                                         
-<SubscriptionScreen>
+<SubscriptionScreen_OLD>
     name: "subscriptions"
     MDBoxLayout:
         orientation: "vertical"
-        NodeRV2:
+        NodeRVSub:
             id: rv
         ActionBar:
             background_normal: ''
@@ -690,7 +691,32 @@ WindowManager:
         height: self.minimum_height
         orientation: 'lr-tb' 
         spacing: 5
-        padding: 1,1,1,1    
+        padding: 1,1,1,1
+        
+<NodeRVSub>: 
+    md_bg_color: get_color_from_hex("#121212")    
+    size_hint: (1,1)       
+    #key_viewclass: "viewclass"
+    key_viewclass: "NodeAccordion"
+    bar_width: dp(12)
+    scroll_type: ["bars", "content"]
+    canvas.before:
+        Color:
+            rgba: get_color_from_hex("#212021")
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    #RecycleGridLayout:
+    #    id: grid
+    #    md_bg_color: get_color_from_hex("#121212")
+    #    cols:1
+    #    default_size: dp(200), dp(50)
+    #    default_size_hint: 1, None
+    #    size_hint_y: None
+    #    height: self.minimum_height
+    #    orientation: 'lr-tb' 
+    #    spacing: 5
+    #    padding: 1,1,1,1     
                        
 <RecycleViewCountryRow>:
     size_hint_y: 1
@@ -735,7 +761,65 @@ WindowManager:
                 text_color: get_color_from_hex("#ffffff")
                 pos_hint: {"x" : .125, "top" : .80}
                 #size_hint_x: None
-
+                
+<SubscriptionScreen>:
+    MDGridLayout:
+        rows: 2
+        size_hint_x: 1
+        MDGridLayout:
+            cols: 6
+            height: 25
+            adaptive_height: True
+            padding: [15, 25, 0, 25]
+    
+            MDLabel:
+                text: "Moniker"
+                bold: True
+                size_hint_x: 2.1
+                
+    
+            MDLabel:
+                text: "Location"
+                bold: True
+                size_hint_x: 1.5
+            
+            MDLabel:
+                text: "Protocol"
+                bold: True
+                size_hint_x: 1.2
+    
+            MDLabel:
+                text: "Type"
+                bold: True
+                size_hint_x: 1
+    
+            MDLabel:
+                text: "Expiration"
+                bold: True
+                size_hint_x: 2
+            
+            TooltipMDIconButton:
+                icon: "earth"
+                tooltip_text: "Map"
+                size_hint_x: .25
+                theme_text_color: "Custom"
+                text_color: app.theme_cls.primary_color
+                on_release: root.set_previous_screen()
+                #pos_hint: {"x" : .455, "top" : .40}
+        RecycleView:
+            do_scroll_y: True
+            size_hint_x: 1
+            MDBoxLayout:
+                size_hint_y: None
+                size_hint_x: 1
+                adaptive_height: True
+    
+                orientation: "vertical"
+                padding: [10, 10, 10, 50]
+                spacing: 10
+                id: rv
+   
+        
 <NodeScreen>:
     MDGridLayout:
         rows: 3
@@ -825,7 +909,7 @@ WindowManager:
         #        spacing: 10
         #        id: servers_list
 
-
+        
 <NodeRow>:
     cols: 7
     MDLabel:
@@ -833,32 +917,17 @@ WindowManager:
         text: root.moniker
         markup: True
         size_hint_x: 2
+        theme_text_color: "Custom"
+        font_style: "H6"
+        font_size: sp(14)
         font_name: "../../src/fonts/arial-unicode-ms.ttf"
+        text_color: get_color_from_hex("#fcb711")
 
     MDLabel:
         text: root.location
         markup: True
         size_hint_x: 1
         font_name: "../../src/fonts/arial-unicode-ms.ttf"
-
-    MDLabel:
-        text: root.speed
-        markup: True
-        size_hint_x: 2
-        font_name: "../../src/fonts/arial-unicode-ms.ttf"
-
-    # MDLabel:
-    #     text: root.status
-    #     markup: True
-    #     size_hint_x: 1
-        font_name: "../../src/fonts/arial-unicode-ms.ttf"
-
-    # MDLabel:
-    #     text: root.price
-    #     markup: True
-    #     size_hint_x: 2
-        font_name: "../../src/fonts/arial-unicode-ms.ttf"
-
     MDLabel:
         text: root.protocol
         markup: True
@@ -871,23 +940,62 @@ WindowManager:
         size_hint_x: 1
         font_name: "../../src/fonts/arial-unicode-ms.ttf"
 
+    MDLabel:
+        text: root.expires
+        markup: True
+        size_hint_x: 1
+        font_name: "../../src/fonts/arial-unicode-ms.ttf"
+
 
 <NodeDetails>:
+    rows: 2
+    cols: 7
     adaptive_height: True
-    orientation: 'horizontal'
-
-    TooltipMDIconButton:
-        icon: "shield-plus" if root.health_check is True else 'emoticon-sick'
-        icon_color: "green" if root.health_check is True else "red"
-
-        tooltip_text: "Passed Sentinel Health Check" if root.health_check is True else "Failed Sentinel Health Check"
-        pos_hint: {"center_x": .5, "center_y": .5}
+    #orientation: 'horizontal'
 
     MDLabel
-        text: root.price
+        text: "[b]ID[/b]"
         markup: True
-
-
+    MDLabel
+        text: "[b]Consumed[/b]"
+        markup: True
+    MDLabel
+        text: "[b]Allocated[/b]"
+        markup: True    
+    MDLabel
+        text: "[b]Deposit[/b]"
+        markup: True
+    MDLabel
+        text: "[b]Score[/b]"
+        markup: True
+    MDLabel
+        text: "[b]Votes[/b]"
+        markup: True
+    MDLabel
+        text: "[b]Formula[/b]"
+        markup: True
+    MDLabel
+        text: root.sub_id
+        markup: True
+    MDLabel
+        text: root.consumed
+        markup: True
+    MDLabel
+        text: root.allocated
+        markup: True
+    MDLabel
+        text: root.deposit
+        markup: True
+    MDLabel
+        text: root.score
+        markup: True
+    MDLabel
+        text: root.votes
+        markup: True
+    MDLabel
+        text: root.formula
+        markup: True
+            
 <NodeAccordion>:
     rows: 2
     md_bg_color: get_color_from_hex("#1C1D1B")
@@ -895,7 +1003,8 @@ WindowManager:
 
     height: 50
     adaptive_height: True
-
+    
+    
 <NodeCarousel>:
     name: "node_carousel"
     MDBoxLayout:

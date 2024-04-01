@@ -31,14 +31,14 @@ class HTTParams():
     APIURL                 = "https://api.sentinel.mathnodes.com"
     NODE_API               = "https://metabase.mathnodes.com/api/public/card/822823f7-9374-435d-b283-2cd3847c1668/query/json"
     #APIURL                 = "http://128.199.90.172:1317"
-    SERVER_URL             = "https://aimokoivunen.mathnodes.com:5000"
+    SERVER_URL             = "https://aimokoivunen.mathnodes.com"
     RPC                    = "https://rpc.mathnodes.com:443"
     # Note http://128.199.90.172:26657 is testnet ONLY!
     RPCS                   = ['https://rpc.mathnodes.com:443', 'https://rpc.dvpn.me:443', 'https://rpc.sentinel.co:443',
                               'https://rpc.sentinelgrowthdao.com:443', 'https://rpc.trinityvalidator.com.com:443',
                               'https://sentinel-rpc.badgerbite.io:443','https://sentinel-rpc2.badgerbite.io:443',
                               'https://rpc.sentinel.quokkastake.io:443', 'https://rpc-sentinel.whispernode.com:443']
-    GRPC                   = "grpc+http://aimokoivunen.mathnodes.com:9090/"
+    GRPC                   = "http://aimokoivunen.mathnodes.com:9090/"
     #GRPC                   = "grpc+http://128.199.90.172:9090/"
     HEALTH_CHECK           = "https://api.health.sentinel.co/v1/records/%s"
     NODE_SCORE_ENDPOINT    = "/api/nodescores"

@@ -323,6 +323,9 @@ class NodeRV(RecycleView):
 class NodeRV2(RecycleView):    
     pass
 
+class NodeRVSub(RecycleView):    
+    pass
+
 class OnHoverMDRaisedButton(MDFlatButton, HoverBehavior):
     def on_enter(self, *args):
         self.md_bg_color = get_color_from_hex("#fad783")
@@ -336,20 +339,24 @@ class OnHoverMDRaisedButton(MDFlatButton, HoverBehavior):
         Window.set_system_cursor('arrow')
 
 
-class NodeRow(RecycleGridLayout):
+class NodeRow(MDGridLayout):
     moniker = StringProperty()
     location = StringProperty()
-    speed = StringProperty()
-    status = StringProperty()
-    price = StringProperty()
     protocol = StringProperty()
     node_type = StringProperty()
+    expires = StringProperty()
+    
+class NodeDetails(MDGridLayout):
+    sub_id = StringProperty()
+    allocated = StringProperty()
+    consumed  = StringProperty()
+    deposit = StringProperty()
+    score = StringProperty()
+    votes = StringProperty()
+    formula = StringProperty()
+    node_address = StringProperty()
 
-class NodeDetails(MDBoxLayout):
-    health_check = BooleanProperty(False)
-    price = StringProperty()
-
-class NodeAccordion(ButtonBehavior, RecycleGridLayout):
+class NodeAccordion(ButtonBehavior, MDGridLayout):
     node = ObjectProperty()  # Main node info
 
     # https://github.com/kivymd/KivyMD/blob/master/kivymd/uix/expansionpanel/expansionpanel.py
@@ -409,6 +416,20 @@ class NodeAccordion(ButtonBehavior, RecycleGridLayout):
         self.add_widget(self.node)        
 
     def on_release(self):
+        '''TODO:
+        in first logic statement populate a MainScreen dictionary
+        with current node address and ID.
+        THis will be used when the user clicks on the subscription
+        which expands it's contents, the MainScreen dictionary
+        will be used to connect to subscription when the user
+        clicks "Connect"
+        Second logic statement (else) should reset the MainScreen
+        dictionary to prior state.
+        
+        Use:
+        content.node_address
+        content.sub_id
+        '''
         if len(self.children) == 1:
             self.add_widget(self.content)
             self.open_panel()
@@ -474,7 +495,7 @@ class NodeAccordion(ButtonBehavior, RecycleGridLayout):
 
     def _add_content(self, *args):
         if self.content:
-            self.content.y = dp(36)
+            self.content.y = dp(72)
             self.add_widget(self.content)
             
 class NodeCarousel(MDBoxLayout):

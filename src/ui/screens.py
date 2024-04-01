@@ -1221,12 +1221,18 @@ class SubscriptionScreen(MDBoxLayout):
 
     def add_sub_rv_data(self, node, flagloc):
 
-        if node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip() in self.NodeTree.NodeScores:
-            nscore = str(self.NodeTree.NodeScores[node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip()][0])
-            votes  = str(self.NodeTree.NodeScores[node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip()][1])
+        if node[NodeKeys.FinalSubsKeys[2]] in self.NodeTree.NodeScores:
+            nscore = str(self.NodeTree.NodeScores[node[NodeKeys.FinalSubsKeys[2]]][0])
+            votes  = str(self.NodeTree.NodeScores[node[NodeKeys.FinalSubsKeys[2]]][1])
         else:
             nscore = "null"
             votes  = "0"
+            
+        if node[NodeKeys.FinalSubsKeys[2]] in self.NodeTree.NodeFormula:
+            formula = str(self.NodeTree.NodeFormula[node[NodeKeys.FinalSubsKeys[2]]])
+        else:
+            formula = "NULL"
+        
         
         ''' Not pulling cities from API any more. It comes with node data. 
         if node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip() in self.NodeTree.NodeLocations:
@@ -1250,7 +1256,45 @@ class SubscriptionScreen(MDBoxLayout):
             expirary_date = datetime.strptime(expirary_date, '%Y-%m-%d %H:%M:%S').strftime('%b %d %Y, %I:%M %p')
         else:
             expirary_date = "Null"
-
+            
+        if node[NodeKeys.FinalSubsKeys[2]] in self.NodeTree.NodeTypes:
+            if self.NodeTree.NodeTypes[node[NodeKeys.FinalSubsKeys[2]]] == NodeKeys.Nodetypes[0]:
+                IconButton  = "alpha-r-circle"
+                NodeTypeText = "Residential"
+            elif self.NodeTree.NodeTypes[node[NodeKeys.FinalSubsKeys[2]]] == NodeKeys.Nodetypes[1]:
+                IconButton  = "alpha-b-circle"
+                NodeTypeText = "Business"
+            elif self.NodeTree.NodeTypes[node[NodeKeys.FinalSubsKeys[2]]] == NodeKeys.Nodetypes[3]:
+                IconButton  = "alpha-u-circle"
+                NodeTypeText = "University"
+            else:
+                IconButton  = "alpha-d-circle"
+                NodeTypeText = "Datacenter"
+        else:
+            IconButton  = "alpha-r-circle"
+            NodeTypeText = "Unknown"
+            
+        item = NodeAccordion(
+            node=NodeRow(
+                moniker=node[NodeKeys.FinalSubsKeys[1]],
+                location=node[NodeKeys.FinalSubsKeys[5]],
+                protocol=node[NodeKeys.FinalSubsKeys[8]],
+                node_type=NodeTypeText,
+                expires=expirary_date,
+            ),
+            content=NodeDetails(
+                sub_id=node[NodeKeys.FinalSubsKeys[0]],
+                allocated=node[NodeKeys.FinalSubsKeys[6]],
+                consumed=node[NodeKeys.FinalSubsKeys[7]],
+                deposit=price_text,
+                score=str(nscore),
+                votes=str(votes),
+                formula=str(formula),
+                node_address=node[NodeKeys.FinalSubsKeys[2]],
+            )
+        )
+        self.ids.rv.add_widget(item)
+        '''
         if node[NodeKeys.FinalSubsKeys[1]] == "Offline":
             self.ids.rv.data.append(
                  {
@@ -1297,7 +1341,7 @@ class SubscriptionScreen(MDBoxLayout):
             )
             print("%s" % node[NodeKeys.FinalSubsKeys[0]].lstrip().rstrip(),end=',')
             sys.stdout.flush()
-
+        '''
     def get_config(self, dt):
         self.MeileConfig = MeileGuiConfig()
         CONFIG = self.MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
