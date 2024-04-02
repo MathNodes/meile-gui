@@ -1276,7 +1276,7 @@ class SubscriptionScreen(MDBoxLayout):
             
         item = NodeAccordion(
             node=NodeRow(
-                moniker=node[NodeKeys.FinalSubsKeys[1]],
+                moniker="[b]" + node[NodeKeys.FinalSubsKeys[1]] + "[/b]",
                 location=node[NodeKeys.FinalSubsKeys[5]],
                 protocol=node[NodeKeys.FinalSubsKeys[8]],
                 node_type=NodeTypeText,
