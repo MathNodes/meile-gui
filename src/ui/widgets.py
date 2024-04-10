@@ -498,6 +498,163 @@ class NodeAccordion(ButtonBehavior, MDGridLayout):
             self.content.y = dp(72)
             self.add_widget(self.content)
             
+class PlanRow(MDGridLayout):
+    plan_name = StringProperty()
+    num_of_nodes = StringProperty()
+    num_of_countries = StringProperty()
+    cost = StringProperty()
+    logo_image = StringProperty()
+
+class PlanDetails(MDGridLayout):
+    uuid = StringProperty()
+    expires  = StringProperty()
+    deposit = StringProperty()
+    coin = StringProperty()
+    
+        
+class PlanAccordion(ButtonBehavior, MDGridLayout):
+    node = ObjectProperty()  # Main node info
+
+    # https://github.com/kivymd/KivyMD/blob/master/kivymd/uix/expansionpanel/expansionpanel.py
+    content = ObjectProperty()  # Node details....
+    """
+    Content of panel. Must be `Kivy` widget.
+
+    :attr:`content` is an :class:`~kivy.properties.ObjectProperty`
+    and defaults to `None`.
+    """
+
+    opening_transition = StringProperty("out_cubic")
+    """
+    The name of the animation transition type to use when animating to
+    the :attr:`state` `'open'`.
+
+    :attr:`opening_transition` is a :class:`~kivy.properties.StringProperty`
+    and defaults to `'out_cubic'`.
+    """
+
+    opening_time = NumericProperty(0.2)
+    """
+    The time taken for the panel to slide to the :attr:`state` `'open'`.
+
+    :attr:`opening_time` is a :class:`~kivy.properties.NumericProperty`
+    and defaults to `0.2`.
+    """
+
+    closing_transition = StringProperty("out_sine")
+    """
+    The name of the animation transition type to use when animating to
+    the :attr:`state` 'close'.
+
+    :attr:`closing_transition` is a :class:`~kivy.properties.StringProperty`
+    and defaults to `'out_sine'`.
+    """
+
+    closing_time = NumericProperty(0.2)
+    """
+    The time taken for the panel to slide to the :attr:`state` `'close'`.
+
+    :attr:`closing_time` is a :class:`~kivy.properties.NumericProperty`
+    and defaults to `0.2`.
+    """
+    
+    _state = StringProperty("close")
+    _anim_playing = False
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.register_event_type("on_open")
+        self.register_event_type("on_close")
+        
+        Clock.schedule_once(self.finish_init,0)
+
+    def finish_init(self, dt):    
+        self.add_widget(self.node)        
+
+    def on_release(self):
+        '''TODO:
+        in first logic statement populate a MainScreen dictionary
+        with current node address and ID.
+        THis will be used when the user clicks on the subscription
+        which expands it's contents, the MainScreen dictionary
+        will be used to connect to subscription when the user
+        clicks "Connect"
+        Second logic statement (else) should reset the MainScreen
+        dictionary to prior state.
+        
+        Use:
+        content.node_address
+        content.sub_id
+        '''
+        if len(self.children) == 1:
+            self.add_widget(self.content)
+            self.open_panel()
+            self.dispatch("on_open")
+        else:
+            self.remove_widget(self.children[0])
+            self.close_panel()
+            self.dispatch("on_close")
+
+    def on_open(self, *args):
+        """Called when a panel is opened."""
+
+    def on_close(self, *args):
+        """Called when a panel is closed."""
+
+    def close_panel(self) -> None:
+        """Method closes the panel."""
+
+        if self._anim_playing:
+            return
+
+        self._anim_playing = True
+        self._state = "close"
+
+        anim = Animation(
+            height=self.children[0].height,
+            d=self.closing_time,
+            t=self.closing_transition,
+        )
+        anim.bind(on_complete=self._disable_anim)
+        anim.start(self)
+
+    def open_panel(self, *args) -> None:
+        """Method opens a panel."""
+
+        if self._anim_playing:
+            return
+
+        self._anim_playing = True
+        self._state = "open"
+
+        anim = Animation(
+            height=self.content.height + self.height,
+            d=self.opening_time,
+            t=self.opening_transition,
+        )
+        # anim.bind(on_complete=self._add_content)
+        anim.bind(on_complete=self._disable_anim)
+        anim.start(self)
+
+    def get_state(self) -> str:
+        """Returns the state of panel. Can be `close` or `open` ."""
+
+        return self._state
+
+    def add_widget(self, widget, index=0, canvas=None):
+        if isinstance(widget, NodeDetails):
+            self.height = widget.height
+        return super().add_widget(widget)
+
+    def _disable_anim(self, *args):
+        self._anim_playing = False
+
+    def _add_content(self, *args):
+        if self.content:
+            self.content.y = dp(72)
+            self.add_widget(self.content)
+
+
 class NodeCarousel(MDBoxLayout):
     moniker         = StringProperty()
     address         = StringProperty()

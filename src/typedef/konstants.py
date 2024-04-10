@@ -30,6 +30,7 @@ class HTTParams():
     TIMEOUT                = 5
     APIURL                 = "https://api.sentinel.mathnodes.com"
     NODE_API               = "https://metabase.mathnodes.com/api/public/card/822823f7-9374-435d-b283-2cd3847c1668/query/json"
+    PLAN_API               = "https://api.meile.mathnodes.com:5000"
     #APIURL                 = "http://128.199.90.172:1317"
     SERVER_URL             = "https://aimokoivunen.mathnodes.com"
     RPC                    = "https://rpc.mathnodes.com:443"
@@ -47,6 +48,10 @@ class HTTParams():
     NODE_FORMULA_ENDPOINT  = "/api/nodeformula"
     API_PING_ENDPOINT      = "/api/ping"
     API_RATING_ENDPOINT    = "/api/rating"
+    API_PLANS              = "/v1/plans"
+    API_PLANS_SUBS         = "/v1/subscription/%s" # variable is Meile wallet address
+    API_PLANS_ADD          = "/v1/add"
+    API_PLANS_NODES        = "/v1/nodes/%s" # variable is plan uuid
     SESSIONS_API_URL       = '/sentinel/accounts/%s/sessions'
     BALANCES_ENDPOINT      = "/bank/balances/"
     ICANHAZURL             = "https://icanhazip.com"

@@ -5,7 +5,7 @@ from cli.sentinel import  NodeTreeData
 from typedef.konstants import NodeKeys, TextStrings, MeileColors, HTTParams, IBCTokens
 from cli.sentinel import disconnect as Disconnect
 import main.main as Meile
-from ui.widgets import WalletInfoContent, MDMapCountryButton, RatingContent, NodeRV, NodeRV2, NodeAccordion, NodeRow, NodeDetails
+from ui.widgets import WalletInfoContent, MDMapCountryButton, RatingContent, NodeRV, NodeRV2, NodeAccordion, NodeRow, NodeDetails, PlanAccordionm, PlanRow, PlanDetails
 from utils.qr import QRCode
 from cli.wallet import HandleWalletFunctions
 from conf.meile_config import MeileGuiConfig
@@ -14,6 +14,7 @@ from cli.warp import WarpHandler
 from adapters import HTTPRequests, DNSRequests
 from fiat import fiat_interface
 from cli.v2ray import V2RayHandler
+from fiat.stripe_pay import scrtsxx
 
 from kivy.properties import BooleanProperty, StringProperty, ColorProperty
 from kivy.uix.screenmanager import Screen, SlideTransition
@@ -39,6 +40,7 @@ from kivymd.uix.anchorlayout import MDAnchorLayout
 
 
 import requests
+from requests.auth import HTTPBasicAuth
 import sys
 import copy
 import re
@@ -1606,8 +1608,49 @@ class NodeScreen(MDBoxLayout):
         mw.carousel.remove_widget(mw.NodeWidget)
         mw.carousel.load_previous()
 
-
-
+class PlanScreen(MDBoxLayout):
+    def __init__(self, **kwargs):
+        self.mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
+        wallet = self.mw.address
+        Request = HTTPRequests.MakeRequest()
+        http = Request.hadapter()
+        req = http.get(HTTParams.PLAN_API + HTTParams.API_PLANS, auth=HTTPBasicAuth(scrtsxx.PLANUSERNAME, scrtsxx.PLANPASSWORD))
+        plan_data = req.json()
+        
+        req2 = http.get(HTTParams.PLAN_API + HTTParams.API_PLANS_SUMBS % wallet, auth=HTTPBasicAuth(scrtsxx.PLANUSERNAME, scrtsxx.PLANPASSWORD))
+        user_enrolled_plans = req2.json()
+        
+        for pd in plan_data:
+            self.build_plans(pd, user_enrolled_plans)
+        
+    def build_plans(self, data, plans):
+        
+        for p in plans:
+            if data['uuid'] == p['uuid']:
+                plan = p
+                break
+        
+        
+        # In the future cost should be both in dvpn and euro (fuck usd)
+        # Can use coin_api to get dvpn price and translate cost
+        item = PlanAccordion(
+            node=PlanRow(
+                plan_name=data['plan_name'],
+                num_of_nodes=45,
+                num_of_countries=30,
+                cost=str(float(data['plan_price'] / IBCTokens.SATOSHI)) + data['plan_denom'],
+                logo_image=data['logo'],
+            ),
+            content=PlanDetails(
+                uuid=data['uuid'],
+                expires=plan['expires'],
+                deposit=plan['amt_paid'],
+                coin=plan['amt_denom'],
+            )
+        )
+        
+        self.ids.rv.add_widget(item)
+        self.ids.rv.add_widget(item)
 '''
 This is the card class of the country cards on the left panel        
 '''
