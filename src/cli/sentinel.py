@@ -145,6 +145,8 @@ class NodeTreeData():
     #                   perfect_match = False, key = "Moniker", value = "Pinco" will match only Moniker like Pincopallo, Pizzapinco10, Pincopallino, Pinco1
 
     def search(self, key: str, value = None, between: tuple = (), from_backup: bool = True, perfect_match: bool = False, is_list: bool = False):
+        NodeAddressBool = False
+        
         if value is None and len(between) == 0:
             # at least one of value or between must be setted
             return
@@ -190,6 +192,12 @@ class NodeTreeData():
                     if value is not None:
                         if is_list:
                             for v in value:
+                                if v == str(identifier):
+                                    NodeAddressBool = True
+                                    break
+                                else:
+                                    NodeAddressBool = False
+                            if not NodeAddressBool:    
                                 if perfect_match is True:
                                     if v.lower().strip() != content.data[key].lower():
                                         filtered.remove_node(identifier)
