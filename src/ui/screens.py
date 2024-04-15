@@ -5,7 +5,7 @@ from cli.sentinel import  NodeTreeData
 from typedef.konstants import NodeKeys, TextStrings, MeileColors, HTTParams, IBCTokens
 from cli.sentinel import disconnect as Disconnect
 import main.main as Meile
-from ui.widgets import WalletInfoContent, MDMapCountryButton, RatingContent, NodeRV, NodeRV2, NodeAccordion, NodeRow, NodeDetails, PlanAccordionm, PlanRow, PlanDetails
+from ui.widgets import WalletInfoContent, MDMapCountryButton, RatingContent, NodeRV, NodeRV2, NodeAccordion, NodeRow, NodeDetails, PlanAccordion, PlanRow, PlanDetails
 from utils.qr import QRCode
 from cli.wallet import HandleWalletFunctions
 from conf.meile_config import MeileGuiConfig
@@ -377,25 +377,17 @@ class MainWindow(Screen):
         #)
         #self.menu.bind()
 
-    def build(self, dt):
-        '''
-        OurWorld.CONTINENTS.remove(OurWorld.CONTINENTS[1])
-        
-        
-        for name_tab in OurWorld.CONTINENTS:
-            tab = Tab(tab_label_text=name_tab)
-            self.ids.android_tabs.add_widget(tab)
-
-        self.on_tab_switch(
-            None,
-            None,
-            None,
-            self.ids.android_tabs.ids.layout.children[-1].text
-        )
-        '''
-        
+    def build(self, dt):        
         # Check to build Map
         self.build_meile_map()
+        
+        # Build alphabetical country recyclerview tree data
+        self.build_country_tree()
+        
+        # TODO: Would be good to process this in a background thread so as to not hang the UI
+        self.get_ip_address(None)
+        
+    def build_country_tree(self):
         
         CountryTree = []
         CountryTreeTags = []
@@ -410,9 +402,7 @@ class MainWindow(Screen):
             for ctree in CountryTree:
                 if tag == ctree.tag:
                     self.add_country_rv_data(self.build_node_data(ctree))
-        
-        # WOuld be good to process this in a background thread so as to not hang the UI
-        self.get_ip_address(None)
+
 
     def build_node_data(self, ncountry):
         floc = "../imgs/"
@@ -476,6 +466,11 @@ class MainWindow(Screen):
             },
         )
 
+    def refresh_country_recycler(self):
+        self.ids.rv.data = None
+        self.build_country_tree()
+        self.ids.rv.refresh_from_data()
+        
     def AddCountryNodePins(self, clear):
         Config = MeileGuiConfig()
         try:
@@ -958,6 +953,15 @@ class MainWindow(Screen):
         self.carousel.add_widget(self.NodeWidget)
         self.carousel.load_slide(self.NodeWidget)
 
+    def switch_to_plan_window(self):
+        try:
+            self.carousel.remove_widget(self.NodeWidget)
+        except Exception as e:
+            print(str(e))
+        self.NodeWidget = PlanScreen(name=WindowNames.PLAN)
+        self.carousel.add_widget(self.NodeWidget)
+        self.carousel.load_slide(self.NodeWidget)
+    
     def close_sub_window(self):
         self.carousel.remove_widget(self.NodeWidget)
         self.carousel.load_previous()
@@ -1556,22 +1560,7 @@ class NodeScreen(MDBoxLayout):
         else:
             HealthButton = MeileColors.SICK_ICON
             HealthToolTip = TextStrings.FailedHealthCheck
-        '''will use for Meile plans    
-        item = NodeAccordion(
-            node=NodeRow(
-                moniker=node[NodeKeys.NodesInfoKeys[0]],
-                location=node[NodeKeys.NodesInfoKeys[4]],
-                speed=speedText,
-                status="Status",
-                protocol=node[NodeKeys.NodesInfoKeys[13]],
-                node_type=ToolTipText,
-            ),
-            content=NodeDetails(
-                health_check=True if HealthToolTip == TextStrings.PassedHealthCheck else False,
-                price=node[NodeKeys.NodesInfoKeys[2]],
-            )
-        )
-        '''
+
         self.ids.rv.data.append(
             {
                 "viewclass"          : "RecycleViewRow",
@@ -1610,6 +1599,7 @@ class NodeScreen(MDBoxLayout):
 
 class PlanScreen(MDBoxLayout):
     def __init__(self, **kwargs):
+        super(PlanScreen, self).__init__()
         self.mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         wallet = self.mw.address
         Request = HTTPRequests.MakeRequest()
@@ -1617,11 +1607,11 @@ class PlanScreen(MDBoxLayout):
         req = http.get(HTTParams.PLAN_API + HTTParams.API_PLANS, auth=HTTPBasicAuth(scrtsxx.PLANUSERNAME, scrtsxx.PLANPASSWORD))
         plan_data = req.json()
         
-        req2 = http.get(HTTParams.PLAN_API + HTTParams.API_PLANS_SUMBS % wallet, auth=HTTPBasicAuth(scrtsxx.PLANUSERNAME, scrtsxx.PLANPASSWORD))
+        req2 = http.get(HTTParams.PLAN_API + HTTParams.API_PLANS_SUBS % wallet, auth=HTTPBasicAuth(scrtsxx.PLANUSERNAME, scrtsxx.PLANPASSWORD))
         user_enrolled_plans = req2.json()
         
         for pd in plan_data:
-            self.build_plans(pd, user_enrolled_plans)
+            self.build_plans( pd, user_enrolled_plans)
         
     def build_plans(self, data, plans):
         
@@ -1636,21 +1626,26 @@ class PlanScreen(MDBoxLayout):
         item = PlanAccordion(
             node=PlanRow(
                 plan_name=data['plan_name'],
-                num_of_nodes=45,
-                num_of_countries=30,
-                cost=str(float(data['plan_price'] / IBCTokens.SATOSHI)) + data['plan_denom'],
+                num_of_nodes=str(45),
+                num_of_countries=str(30),
+                cost=str(round(float(data['plan_price'] / IBCTokens.SATOSHI),2)) + data['plan_denom'],
                 logo_image=data['logo'],
             ),
             content=PlanDetails(
                 uuid=data['uuid'],
+                id=str(plan['subscription_id']),
                 expires=plan['expires'],
-                deposit=plan['amt_paid'],
+                deposit=str(round(float(plan['amt_paid']),2)),
                 coin=plan['amt_denom'],
             )
         )
         
         self.ids.rv.add_widget(item)
-        self.ids.rv.add_widget(item)
+        
+    def set_previous_screen(self):
+        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
+        mw.carousel.remove_widget(mw.NodeWidget)
+        mw.carousel.load_previous()
 '''
 This is the card class of the country cards on the left panel        
 '''

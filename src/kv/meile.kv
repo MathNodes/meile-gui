@@ -250,7 +250,8 @@ WindowManager:
                         icon: "animation-outline"
                         theme_text_color: "Custom"
                         text_color: get_color_from_hex("#fcb711")
-    
+                        on_release: root.switch_to_plan_window()
+                        
                     ToolTipMDIconButton:
                         tooltip_text: "Settings"
                         icon: "cog-outline"
@@ -831,13 +832,13 @@ WindowManager:
             MDLabel:
                 text: "Plan"
                 bold: True
-                size_hint_x: 2.5
+                size_hint_x: 2.9
                 
     
             MDLabel:
                 text: "Nodes"
                 bold: True
-                size_hint_x: 1.3
+                size_hint_x: 1.1
             
             MDLabel:
                 text: "Countries"
@@ -850,7 +851,7 @@ WindowManager:
                 size_hint_x: 1.4
     
             MDLabel:
-                text: "UUID"
+                text: 
                 bold: True
                 size_hint_x: 1
             
@@ -968,14 +969,14 @@ WindowManager:
     rows: 2
     cols: 6
     AsyncImage:
-        size_hint_x: .3
+        size_hint_x: .1
         width: 100
         source: root.logo_image
     MDLabel:
         padding: [10, 0, 0, 0]
         text: root.plan_name
         markup: True
-        size_hint_x: 2
+        size_hint_x: 2.5
         theme_text_color: "Custom"
         font_style: "H6"
         font_size: sp(16)
@@ -985,28 +986,29 @@ WindowManager:
     MDLabel:
         text: root.num_of_nodes
         markup: True
-        size_hint_x: 1
+        size_hint_x: 1.4
         font_name: "../../src/fonts/arial-unicode-ms.ttf"
     MDLabel:
         text: root.num_of_countries
         markup: True
-        size_hint_x: 1
+        size_hint_x: 1.4
         font_name: "../../src/fonts/arial-unicode-ms.ttf"
 
     MDLabel:
         text: root.cost
         markup: True
-        size_hint_x: 1
+        size_hint_x: 1.8
         font_name: "../../src/fonts/arial-unicode-ms.ttf"
 
-    MDRaisedButton:
-        id: plan_sub_button
-        text: "SUBSCRIBE"
-        font_size: dp(9)
-        pos_hint: {"center_x": .1, "center_y": .5}
-        on_press: root.copy_seed_phrase()
-        size_hint: None, None
-        size: 15,10
+    MDFlatButton:        
+        #md_bg_color: get_color_from_hex("#121212")
+        pos_hint: {'x' : .67, 'y': .275}
+        size_hint_x: .5
+        Image:
+            id: subscribe_button
+            size_hint: 1.5,1.5
+            source: "../../src/imgs/SubscribeButton.png"
+            
     HSeparator:
     HSeparator:
     HSeparator:
@@ -1057,35 +1059,71 @@ WindowManager:
     HSeparator:
             
 <PlanDetails>:
-    rows: 2
-    cols: 4
-    adaptive_height: True
+    rows: 3
+    cols: 6
+    #adaptive_height: True
+    height: 90
     #orientation: 'horizontal'
 
     MDLabel
         text: "[b]UUID[/b]"
         markup: True
+        size_hint_x: 2
+    MDLabel
+        text: "[b]ID[/b]"
+        markup: True
+        
+            
     MDLabel
         text: "[b]Expires[/b]"
         markup: True
+        size_hint_x: 1.3
+        
     MDLabel
         text: "[b]Deposit[/b]"
         markup: True    
+        
     MDLabel
         text: "[b]Coin[/b]"
         markup: True
+        
+    TooltipMDIconButton:
+        icon: "table-filter"
+        tooltip_text: "Filter Nodes"
+        size_hint_x: .25
+        theme_text_color: "Custom"
+        text_color: app.theme_cls.primary_color
+        on_release: root.filter_nodes()
+    
     MDLabel
         text: root.uuid
         markup: True
+        font_size: sp(10)
+        size_hint_x: 2
+    MDLabel
+        text: root.id
+        markup: True
+        font_size: sp(10)
     MDLabel
         text: root.expires
         markup: True
+        font_size: sp(11)
+        size_hint_x: 1.3
     MDLabel
         text: root.deposit
         markup: True
+        font_size: sp(11)
     MDLabel
         text: root.coin
         markup: True
+        font_size: sp(11)
+        
+    MDLabel
+    MDLabel
+    MDLabel
+    MDLabel
+    MDLabel
+    MDLabel
     
 <NodeDetails>:
     rows: 2

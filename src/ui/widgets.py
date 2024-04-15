@@ -35,7 +35,8 @@ import requests
 import re
 import psutil
 import time
-
+from requests.auth import HTTPBasicAuth
+import json
 
 from typedef.konstants import IBCTokens, HTTParams, MeileColors, NodeKeys
 from typedef.win import CoinsList, WindowNames
@@ -507,9 +508,24 @@ class PlanRow(MDGridLayout):
 
 class PlanDetails(MDGridLayout):
     uuid = StringProperty()
+    id = StringProperty()
     expires  = StringProperty()
     deposit = StringProperty()
     coin = StringProperty()
+    
+    def filter_nodes(self):
+        from fiat.stripe_pay import scrtsxx
+        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
+        
+        Request = HTTPRequests.MakeRequest()
+        http = Request.hadapter()
+        req = http.get(HTTParams.PLAN_API + HTTParams.API_PLANS_NODES % self.uuid, auth=HTTPBasicAuth(scrtsxx.PLANUSERNAME, scrtsxx.PLANPASSWORD))
+        
+        plan_nodes_data = json.loads(req.json())
+        
+        mw.NodeTree.search(key=NodeKeys.NodesInfoKeys[1], value=plan_nodes_data, perfect_match=True, is_list=True)
+        
+        mw.refresh_country_recycler()
     
         
 class PlanAccordion(ButtonBehavior, MDGridLayout):
