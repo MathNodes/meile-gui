@@ -43,6 +43,7 @@ from typedef.win import CoinsList, WindowNames
 from conf.meile_config import MeileGuiConfig
 from cli.wallet import HandleWalletFunctions
 from cli.sentinel import NodeTreeData
+from cli.btcpay import BTCPayDB
 import main.main as Meile
 from adapters import HTTPRequests
 from ui.interfaces import TXContent, ConnectionDialog
@@ -50,6 +51,7 @@ from coin_api.get_price import GetPriceAPI
 from adapters.ChangeDNS import ChangeDNS
 from kivy.uix.recyclegridlayout import RecycleGridLayout
 from helpers.helpers import format_byte_size
+from fiat.stripe_pay import scrtsxx
 
 class WalletInfoContent(BoxLayout):
     def __init__(self, seed_phrase, name, address, password, **kwargs):
@@ -667,6 +669,44 @@ class PlanRow(MDGridLayout):
 
     def pay_meile_plan_with_btcpay(self, usd):
         print(f"Method: 'pay_meile_plan_with_btcpay', usd: {usd}")
+        
+        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
+        
+        BTCPay = BTCPayDB()
+        
+        pickled_client_data = BTCPay.get_remote_btcpay_client()
+        
+        if pickled_client_data:
+            client = BTCPay.unpickle_btc_client(pickled_client_data)
+        else:
+            return (False, "No pickeled client data")
+            
+        buyer = {"name" : mw.address, "email" : "freqnik@mathnodes.com", "notify" : True}
+        
+        new_invoice = client.create_invoice({"price": usd,
+                                          "currency": "USD",
+                                          "token" : "XMR",
+                                          "merchantName" : "Meile dVPN",
+                                          "itemDesc" : "MathNodes Subscription Plan",
+                                          "notificationEmail" : scrtsxx.BTCPayEmail,
+                                          "transactionSpeed" : "high",
+                                          "buyer" : buyer})
+        
+        print(new_invoice)
+        print(new_invoice['url'])
+        btcpay_tx_id = new_invoice['id']
+        
+        
+        fetched_invoice = client.get_invoice(btcpay_tx_id)
+        
+        while fetched_invoice['status'] != "confirmed":
+            fetched_invoice = client.get_invoice(btcpay_tx_id)
+            print("invoice not yet confirmed....")
+            sleep(10)
+
+        # TODO: relay back to main thread invoice paid            
+        print("invoice paid!")
+        return (True, "Success")
 
     def pay_meile_plan_with_pirate(self, usd):
         print(f"Method: 'pay_meile_plan_with_pirate', usd: {usd}")
