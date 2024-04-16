@@ -296,7 +296,100 @@ class SubscribeContent(BoxLayout):
         self.ids.usd_price.text = '$' + str(round(float(self.price_cache[coin]["price"]) * float(amt),3))
 
         return True
+    
+class PlanSubscribeContent(BoxLayout):
 
+    price_text = StringProperty()
+    white_label = StringProperty()
+    nnodes = StringProperty()
+    logo_image = StringProperty()
+
+    menu = None
+    def __init__ (self, price, white_label, nnodes, logo_image):
+        super(SubscribeContent, self).__init__()
+
+        # Init the class
+        self.price_api = GetPriceAPI()
+        self.price_cache = {}
+
+        self.price_text = price
+        self.parse_coin_deposit("dvpn")
+
+        self.white_label = white_label
+        self.nnodes = str(nnodes)
+        self.logo_image = logo_image
+
+        self.pay_with = None
+
+        menu_items = [
+            {
+                "viewclass": "IconListItem",
+                "icon": "circle-multiple",
+                "text": f"{i}",
+                "height": dp(56),
+                "on_release": lambda x=f"{i}": self.set_item(x),
+            } for i in CoinsList.ibc_mu_coins
+        ]
+        self.menu = MDDropdownMenu(
+            caller=self.ids.drop_item,
+            items=menu_items,
+            position="center",
+            width_mult=4,
+        )
+        self.menu.bind()
+        self.ids.drop_item.current_item = CoinsList.ibc_mu_coins[0]
+        self.parse_coin_deposit(self.ids.drop_item.current_item)
+
+    def refresh_price(self, mu_coin: str = "dvpn", cache: int = 30):
+        # Need check on cache or trought GetPrice api
+        # We don't need to call the price api if the cache is younger that 30s
+
+        if mu_coin not in self.price_cache or time.time() - self.price_cache[mu_coin]["time"] > cache:
+            response = self.price_api.get_usd(mu_coin)
+            self.price_cache[mu_coin] = {
+                "price": float(response['price']),
+                "time": time.time()
+            }
+
+
+    def set_item(self, text_item):
+        self.ids.drop_item.set_item(text_item)
+        self.ids.deposit.text = self.parse_coin_deposit(text_item)
+        self.menu.dismiss()
+
+    def parse_coin_deposit(self, mu_coin):
+        # Save a copy, so we can edit the value without update the ui
+        price_text = self.price_text
+        # Parse all the coins without u-unit
+        if mu_coin.startswith("u"):
+            if mu_coin in price_text:
+                price_text = price_text.replace(mu_coin, mu_coin.lstrip('u'))
+            mu_coin = mu_coin.lstrip('u')
+
+        self.refresh_price("dvpn", cache=30)
+
+        if mu_coin != "dvpn":
+            self.refresh_price(mu_coin, cache=30)
+
+        month = int(self.ids.slider1.value) # Months
+        if mu_coin == "dvpn":
+            value = int(price_text.rstrip(mu_coin).strip())
+        else:
+            value = round(int(price_text.rstrip("dvpn").strip()) * self.price_cache["dvpn"]["price"] / self.price_cache[mu_coin]["price"], 5)
+
+        print(f"mu_coin={mu_coin}, month={month}, value={value}, price_cache={self.price_cache}")
+
+        self.ids.deposit.text = str(round(month * value, 5))
+        return self.ids.deposit.text
+
+
+    def return_deposit_text(self):
+        return (self.ids.deposit.text, self.nnodes)
+
+    def on_checkbox_active(self, pay_with: str, checkbox, value):
+        if value is True:
+            self.pay_with = pay_with
+            
 class ProcessingSubDialog(BoxLayout):
     moniker = StringProperty()
     naddress = StringProperty()
@@ -505,6 +598,93 @@ class PlanRow(MDGridLayout):
     num_of_countries = StringProperty()
     cost = StringProperty()
     logo_image = StringProperty()
+    
+    def open_subscribe(self):
+        
+        item =  { "price": self.cost, "white_label": self.plan_name, "nnodes": self.num_of_nodes, "logo_image": self.logo_image }
+        
+        subscribe_dialog = PlanSubscribeContent(**item)
+        if not self.dialog:
+            self.dialog = MDDialog(
+                    title="Subscription Plan",
+                    type="custom",
+                    content_cls=subscribe_dialog,
+                    buttons=[
+                        MDFlatButton(
+                            text="CANCEL",
+                            theme_text_color="Custom",
+                            text_color=self.theme_cls.primary_color,
+                            on_release=self.closeDialog
+                        ),
+                        MDFlatButton(
+                            text="SUBCRIBE",
+                            theme_text_color="Custom",
+                            text_color=self.theme_cls.primary_color,
+                            on_release=partial(self.subscribe, subscribe_dialog)
+                        ),
+                    ],
+                )
+            self.dialog.open()
+            
+    def subscribe(self, subscribe_dialog, *kwargs):
+
+        deposit = subscribe_dialog.ids.deposit.text
+        nnodes = subscribe_dialog.nnodes
+        mu_coin = subscribe_dialog.ids.drop_item.current_item
+
+        # Parse all the coins without u-unit
+        if mu_coin.startswith("u"):
+            mu_coin = mu_coin.lstrip('u')
+
+        # use the price caching directly from subscribe_dialog
+        usd = round(float(deposit) * subscribe_dialog.price_cache[mu_coin]["price"], 5)
+
+        print(f"Deposit {deposit} {mu_coin} for {nnodes} nodes. usd value is: {usd}")
+        # usd value must be multiplu for nnodes (?)
+
+        # sub_node = subscribe_dialog.return_deposit_text()
+        # deposit = self.reparse_coin_deposit(sub_node[0])
+
+        if subscribe_dialog.pay_with == "wallet":
+            self.pay_meile_plan_with_wallet(usd)
+        elif subscribe_dialog.pay_with == "btcpay":
+            self.pay_meile_plan_with_btcpay(usd)
+        elif subscribe_dialog.pay_with == "pirate":
+            self.pay_meile_plan_with_pirate(usd)
+        else:
+            MDDialog(text="[color=#FF0000]Please select a payment option[/color]").open()
+
+        # self.dialog.dismiss()
+        # self.dialog = None
+        # self.dialog = MDDialog(title="Subscribing...\n\n%s\n %s" %( deposit, sub_node[1]))
+        # self.dialog.open()
+
+        # Run Subscription method
+        # self.subscribe
+
+    def pay_meile_plan_with_wallet(self, usd):
+        print(f"Method: 'pay_meile_plan_with_wallet', usd: {usd}")
+
+    def pay_meile_plan_with_btcpay(self, usd):
+        print(f"Method: 'pay_meile_plan_with_btcpay', usd: {usd}")
+
+    def pay_meile_plan_with_pirate(self, usd):
+        print(f"Method: 'pay_meile_plan_with_pirate', usd: {usd}")
+
+    def reparse_coin_deposit(self, deposit):
+        for k,v in CoinsList.ibc_coins.items():
+            try:
+                coin = re.findall(k,deposit)[0]
+                deposit = deposit.replace(coin, v)
+                mu_deposit_amt = int(float(re.findall(r'[0-9]+\.[0-9]+', deposit)[0])*CoinsList.SATOSHI)
+                tru_mu_deposit = str(mu_deposit_amt) + v
+                return tru_mu_deposit
+            except:
+                pass
+
+    def closeDialog(self, inst):
+        self.dialog.dismiss()
+        self.dialog = None
 
 class PlanDetails(MDGridLayout):
     uuid = StringProperty()

@@ -1008,6 +1008,7 @@ WindowManager:
             id: subscribe_button
             size_hint: 1.5,1.5
             source: "../../src/imgs/SubscribeButton.png"
+        on_release: root.open_subscribe()
             
     HSeparator:
     HSeparator:
@@ -2123,6 +2124,119 @@ WindowManager:
             font_size: "14sp"
             font_name: root.get_font()
             text_color: get_color_from_hex("#fcb711")
+            
+<PlanSubscribeContent>
+    orientation: "vertical"
+    spacing: "1dp"
+    size_hint_y: None
+    height: "260dp"
+    price_text: ""
+
+    white_label: " "
+    nnodes: " "
+
+    GridLayout:
+        cols: 3
+        padding: 0
+        spacing: 10
+        rows: 1
+
+        AsyncImage:
+            size_hint_x: None
+            width: 100
+            source: root.logo_image
+
+        MDBoxLayout:
+            orientation: "vertical"
+            MDLabel:
+                id: white_label_text
+                text: root.white_label
+                font_size: 24
+            MDLabel:
+                id: nnodes_text
+                text: root.nnodes + " Nodes"
+
+        MDBoxLayout:
+            orientation: "vertical"
+
+            MDBoxLayout:
+                orientation: "horizontal"
+                Check:
+                    on_active: root.on_checkbox_active("wallet", *args)
+                MDLabel:
+                    text: "Wallet"
+                    size_hint: (None, 1.75)
+                TooltipMDIconButton:
+                    icon: "help-circle"
+                    tooltip_text: "Pay with Wallet in DVPN or IBC enabled coins"
+
+            MDBoxLayout:
+                orientation: "horizontal"
+                Check:
+                    on_active: root.on_checkbox_active("btcpay", *args)
+                MDLabel:
+                    text: "BTCPay"
+                    size_hint: (None, 1.75)
+                TooltipMDIconButton:
+                    icon: "help-circle"
+                    tooltip_text: "Pay an invoice in BTC, BTC (lightning), XMR, LTC, DASH, or DOGE"
+
+            MDBoxLayout:
+                orientation: "horizontal"
+                Check:
+                    on_active: root.on_checkbox_active("pirate", *args)
+                MDLabel:
+                    text: "Pirate Chain"
+                    size_hint: (None, 1.75)
+                TooltipMDIconButton:
+                    icon: "help-circle"
+                    tooltip_text: "Pay using Pirate chain. Note: processing for ARRR payments could take up to 72 hours"
+
+
+    MDBoxLayout:
+        orientation: "horizontal"
+        MDSlider:
+            id: slider1
+            min: 1
+            max: 12
+            value: 2
+            on_value: root.parse_coin_deposit(root.ids.drop_item.current_item)
+
+        MDLabel:
+            text: str(int(slider1.value)) + " Months"
+            size_hint_x: None
+            width: 90
+
+    MDBoxLayout:
+        orientation: "horizontal"
+        size_hint_x: .8
+        spacing: 20
+
+        MDTextField:
+            id: deposit
+            hint_text: "Deposit"
+            mode: "fill"
+            text: ""
+            size_hint_y: .65
+            width: "50dp"
+            height: "30dp"
+            readonly: True
+
+        MDTextField:
+            id: price
+            hint_text: "Price"
+            mode: "fill"
+            text: root.price_text
+            size_hint_y: .65
+            width: "50dp"
+            height: "30dp"
+            readonly: True
+
+        MDDropDownItem:
+            id: drop_item
+            pos_hint: {'center_x': .5, 'center_y': .5}
+            text: "udvpn"
+            on_release: root.menu.open()
                    
 <ProcessingSubDialog>
     orientation: "vertical"
@@ -2603,3 +2717,7 @@ WindowManager:
 
 <TooltipMDIconButton@MDIconButton+MDTooltip>
 
+<Check@MDCheckbox>:
+    group: 'group'
+    size_hint: None, None
+    size: dp(48), dp(48)
