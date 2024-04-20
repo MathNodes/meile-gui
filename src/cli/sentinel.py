@@ -9,6 +9,7 @@ from datetime import datetime,timedelta
 import time
 from urllib.parse import urlparse
 import copy
+import random
 
 from treelib import  Tree
 from treelib.exceptions import DuplicatedNodeIdError
@@ -54,7 +55,8 @@ class NodeTreeData():
         Request = HTTPRequests.MakeRequest(TIMEOUT=23) # long timeout in case there is heavy load
         http = Request.hadapter()
         try:
-            r = http.get(HTTParams.NODE_API) 
+            N = random.randint(0, len(HTTParams.NODE_API) -1)
+            r = http.get(HTTParams.NODE_API[N]) 
             data = r.json()
             #rint(data)
             for node in data:

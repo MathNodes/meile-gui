@@ -1630,9 +1630,12 @@ class PlanScreen(MDBoxLayout):
                 num_of_countries=str(30),
                 cost=str(round(float(data['plan_price'] / IBCTokens.SATOSHI),2)) + data['plan_denom'],
                 logo_image=data['logo'],
+                uuid=data['uuid'],
+                id=str(data['subscription_id']),
+                plan_id=str(data['plan_id'])
             ),
             content=PlanDetails(
-                uuid=data['uuid'],
+                uuid=plan['uuid'],
                 id=str(plan['subscription_id']),
                 expires=plan['expires'],
                 deposit=str(round(float(plan['amt_paid']),2)),

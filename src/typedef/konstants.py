@@ -29,7 +29,8 @@ class ConfParams():
 class HTTParams():
     TIMEOUT                = 5
     APIURL                 = "https://api.sentinel.mathnodes.com"
-    NODE_API               = "https://metabase.mathnodes.com/api/public/card/822823f7-9374-435d-b283-2cd3847c1668/query/json"
+    NODE_API               = ["https://metabase.mathnodes.com/api/public/card/822823f7-9374-435d-b283-2cd3847c1668/query/json",
+                              "https://metabase.bluefren.xyz/api/public/card/68fe67a6-6afa-45da-94ff-7e4e8443292f/query/json"]
     PLAN_API               = "https://api.meile.mathnodes.com:5000"
     #APIURL                 = "http://128.199.90.172:1317"
     SERVER_URL             = "https://aimokoivunen.mathnodes.com"
@@ -85,6 +86,8 @@ class TextStrings():
     FailedHealthCheck = "Failed Sentinel Health Check"
     
 class MeileColors():
+    BLACK                    = "#000000"
+    MEILE                    = "#fcb711"
     DIALOG_BG_COLOR          = "#121212"
     INACTIVE_DIALOG_BG_COLOR = "#50507c"
     ROW_HOVER                = "#39363c"

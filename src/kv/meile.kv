@@ -1004,11 +1004,12 @@ WindowManager:
         #md_bg_color: get_color_from_hex("#121212")
         pos_hint: {'x' : .67, 'y': .275}
         size_hint_x: .5
+        on_release: root.open_subscribe()
         Image:
             id: subscribe_button
             size_hint: 1.5,1.5
             source: "../../src/imgs/SubscribeButton.png"
-        on_release: root.open_subscribe()
+        
             
     HSeparator:
     HSeparator:
