@@ -10,6 +10,7 @@ class WindowNames():
     SUBSCRIPTIONS  = "subscriptions"
     SETTINGS       = "settings"
     NODE_CAROUSEL  = "node_carousel"
+    PLAN           = "plans" 
     
     
 class CoinsList():
