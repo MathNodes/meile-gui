@@ -287,6 +287,9 @@ class NodeTreeData():
         # Always override the 'renderized' one (maybe already filtered)
         self.NodeTree = filtered
         
+        # debug
+        self.NodeTree.show()
+        
         
     def GetHealthCheckData(self):
         Request = HTTPRequests.MakeRequest(TIMEOUT=4)

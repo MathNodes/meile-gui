@@ -467,7 +467,7 @@ class MainWindow(Screen):
         )
 
     def refresh_country_recycler(self):
-        self.ids.rv.data = None
+        self.ids.rv.data.clear()
         self.build_country_tree()
         self.ids.rv.refresh_from_data()
         
@@ -1614,7 +1614,7 @@ class PlanScreen(MDBoxLayout):
             self.build_plans( pd, user_enrolled_plans)
         
     def build_plans(self, data, plans):
-        
+        plan = None
         for p in plans:
             if data['uuid'] == p['uuid']:
                 plan = p
@@ -1635,11 +1635,11 @@ class PlanScreen(MDBoxLayout):
                 plan_id=str(data['plan_id'])
             ),
             content=PlanDetails(
-                uuid=plan['uuid'],
-                id=str(plan['subscription_id']),
-                expires=plan['expires'],
-                deposit=str(round(float(plan['amt_paid']),2)),
-                coin=plan['amt_denom'],
+                uuid=plan['uuid'] if plan else data['uuid'],
+                id=str(plan['subscription_id']) if plan else str(data['subscription_id']),
+                expires=plan['expires'] if plan else "NULL",
+                deposit=str(round(float(plan['amt_paid']),2)) if plan else "NULL",
+                coin=plan['amt_denom'] if plan else "NULL",
             )
         )
         

@@ -823,9 +823,9 @@ class PlanDetails(MDGridLayout):
         Request = HTTPRequests.MakeRequest()
         http = Request.hadapter()
         req = http.get(HTTParams.PLAN_API + HTTParams.API_PLANS_NODES % self.uuid, auth=HTTPBasicAuth(scrtsxx.PLANUSERNAME, scrtsxx.PLANPASSWORD))
-        
-        plan_nodes_data = json.loads(req.json())
-        
+    
+        plan_nodes_data = req.json()
+            
         mw.NodeTree.search(key=NodeKeys.NodesInfoKeys[1], value=plan_nodes_data, perfect_match=True, is_list=True)
         
         mw.refresh_country_recycler()
