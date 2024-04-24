@@ -237,6 +237,7 @@ WindowManager:
                         icon: "wallet-outline"
                         theme_text_color: "Custom"
                         text_color: get_color_from_hex("#fcb711")
+                        on_release: root.build_wallet_interface()
     
                     ToolTipMDIconButton:
                         tooltip_text: "Subscriptions"
@@ -257,12 +258,14 @@ WindowManager:
                         icon: "cog-outline"
                         theme_text_color: "Custom"
                         text_color: get_color_from_hex("#fcb711")
+                        on_release: root.build_settings_screen_interface()
     
                     ToolTipMDIconButton:
                         tooltip_text: "Help"
                         icon: "help-circle-outline"
                         theme_text_color: "Custom"
                         text_color: get_color_from_hex("#fcb711")
+                        on_release: root.build_help_screen_interface()
          
         #MDBottomNavigation:
         #    size_hint_y: 0.125

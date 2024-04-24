@@ -2,6 +2,7 @@ from subprocess import Popen
 import multiprocessing
 from multiprocessing import Process
 from time import sleep
+from dataclasses import dataclass
 import psutil
 
 from typedef.konstants import ConfParams 
