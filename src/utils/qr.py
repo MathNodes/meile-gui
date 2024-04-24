@@ -67,13 +67,8 @@ class QRCode():
     
         draw = ImageDraw.Draw(background)
         
-        # https://github.com/Tkd-Alex/meile-gui/commit/d68741f58b979f3b87503259e3853dc56d08695a
-        if "textsize" in dir(draw):
-            w,h  = draw.textsize(DepositAddress)
-            draw.text(((QRimg.size[0]+15 - w)/2,QRimg.size[1]-2),DepositAddress, (0,0,0), font=robotoFont)
-        elif "textlength" in dir(draw):
-            w = draw.textlength(DepositAddress, font=robotoFont)
-            draw.text(((QRimg.size[0]+15 - w)/2,QRimg.size[1]-2),DepositAddress, (0,0,0), font=robotoFont)
+        _, _, w, h = draw.textbbox((0, 0), text=str(DepositAddress))
+        draw.text(((QRimg.size[0]+15 - w)/2,QRimg.size[1]-2),DepositAddress, (0,0,0), font=robotoFont)
         
         background.paste(QRimg, (0,0))
         background.save(path.join(self.IMGDIR, DepositCoin + ".png"))
