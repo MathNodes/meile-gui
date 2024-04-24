@@ -190,7 +190,7 @@ class WalletRestore(Screen):
 
 class PreLoadWindow(Screen):
     StatusMessages = ["Calculating π...",
-                      "Squaring the Circle...", 
+                      "Squaring the Circle...",
                       "Solving the Riemann Hypothesis...",
                       "Computing the Monster group M...",
                       "Finding the Galois group of f(x)...",
@@ -215,8 +215,8 @@ class PreLoadWindow(Screen):
         chdir(MeileGuiConfig.BASEDIR)
 
         self.runNodeThread()
-        
-        
+
+
 
     @delayable
     def runNodeThread(self):
@@ -225,16 +225,16 @@ class PreLoadWindow(Screen):
         thread2.start()
         thread = Thread(target=lambda: self.NodeTree.get_nodes("13s"))
         thread.start()
-        
+
         Clock.schedule_interval(partial(self.update_status_text, thread), 1.6)
-        
+
     @delayable
     def progress_load(self):
         for k in range(1,666):
             yield 0.0375
             self.manager.get_screen(WindowNames.PRELOAD).ids.pb.value += 0.0015
 
-        
+
     def CopyBin(self):
         MeileConfig = MeileGuiConfig()
         MeileConfig.copy_bin_dir()
@@ -294,7 +294,7 @@ class PreLoadWindow(Screen):
         #    self.add_loading_popup("Please start Meile-GUI as root. i.e., sudo -E env PATH=$PATH ./meile-gui or similarly")
 
         yield 1.0
-        
+
         if not t.is_alive():
             self.manager.get_screen(WindowNames.PRELOAD).status_text = self.StatusMessages[6]
             self.manager.get_screen(WindowNames.PRELOAD).ids.pb.value = 1
@@ -302,7 +302,7 @@ class PreLoadWindow(Screen):
             go_button.disabled = False
 
             return
-            
+
         if self.k == 6:
             self.k = 0
         else:
@@ -346,7 +346,7 @@ class MainWindow(Screen):
     NodeWidget = None
     Markers = []
     LatLong = []
-    
+
 
 
     def __init__(self, node_tree, **kwargs):
@@ -377,25 +377,25 @@ class MainWindow(Screen):
         #)
         #self.menu.bind()
 
-    def build(self, dt):        
+    def build(self, dt):
         # Check to build Map
         self.build_meile_map()
-        
+
         # Build alphabetical country recyclerview tree data
         self.build_country_tree()
-        
+
         # TODO: Would be good to process this in a background thread so as to not hang the UI
         self.get_ip_address(None)
-        
+
     def build_country_tree(self):
-        
+
         CountryTree = []
         CountryTreeTags = []
         # Add counry cards
         for ncountry in self.NodeTree.NodeTree.children(TextStrings.RootTag.lower()):
             CountryTree.append(ncountry)
             CountryTreeTags.append(ncountry.tag)
-            
+
         CTTagsSorted = sorted(CountryTreeTags)
         #print(CTTagsSorted)
         for tag in CTTagsSorted:
@@ -418,32 +418,32 @@ class MainWindow(Screen):
         return NodeCountries
 
     def build_meile_map(self):
-        
-        if not self.MeileMapBuilt: 
+
+        if not self.MeileMapBuilt:
             self.MeileMap = MapView(zoom=2)
             source = MapSource(url=MeileColors.ARCGIS_MAP,
-                               cache_key="meile-map-canvas-dark-grey-base-2", 
+                               cache_key="meile-map-canvas-dark-grey-base-2",
                                tile_size=256,
                                image_ext="png",
                                attribution="@ Meile",
                                size_hint=(.7,1))
             #self.MeileMap.map_source = "osm"
             self.MeileMap.map_source = source
-            
+
             layout = FloatLayout(size_hint=(1,1))
             bw_label          = BandwidthLabel()
             self.quota        = BandwidthBar()
             self.quota_pct    = QuotaPct()
             self.map_widget_1 = IPAddressTextField()
             self.map_widget_2 = ConnectedNode()
-            
+
             layout.add_widget(self.MeileMap)
             layout.add_widget(self.map_widget_1)
             layout.add_widget(self.map_widget_2)
             layout.add_widget(bw_label)
             layout.add_widget(self.quota)
             layout.add_widget(self.quota_pct)
-            
+
             self.quota.value = 50
             self.quota_pct.text = "50%"
 
@@ -453,8 +453,8 @@ class MainWindow(Screen):
             self.carousel.add_widget(layout)
             self.AddCountryNodePins(False)
             self.MeileMapBuilt = True
-            
-            
+
+
 
     def add_country_rv_data(self, NodeCountries):
         self.ids.rv.data.append(
@@ -470,17 +470,17 @@ class MainWindow(Screen):
         self.ids.rv.data.clear()
         self.build_country_tree()
         self.ids.rv.refresh_from_data()
-        
+
     def AddCountryNodePins(self, clear):
         Config = MeileGuiConfig()
         try:
-            
-            if clear: 
+
+            if clear:
                 for m in self.Markers:
                     self.MeileMap.remove_marker(m)
                 self.Markers.clear()
-                
-            
+
+
             for ncountry in self.NodeTree.NodeTree.children(TextStrings.RootTag.lower()):
                 try:
                     loc = self.MeileLand.CountryLatLong[ncountry.tag]
@@ -491,7 +491,7 @@ class MainWindow(Screen):
                                                    text_color=(1,1,1,1),
                                                    on_release=partial(self.load_country_nodes, ncountry.tag)
                                                    ))
-                    
+
                     self.Markers.append(marker)
                     self.MeileMap.add_marker(marker)
                 except:
@@ -499,7 +499,7 @@ class MainWindow(Screen):
         except Exception as e:
             print(str(e))
             pass
-                
+
         #self.get_continent_coordinates(self.MeileLand.CONTINENTS[0])
 
     def set_item(self, text_item):
@@ -631,7 +631,7 @@ class MainWindow(Screen):
         return self.MeileConfig.resource_path(MeileColors.LOGO_TEXT)
 
     def get_ip_address(self, dt):
-        
+
         if self.dialog:
             self.dialog.dismiss()
 
@@ -791,7 +791,7 @@ class MainWindow(Screen):
         else:
             self.build_wallet_interface()
 
-    
+
 
     @mainthread
     def add_loading_popup(self, title_text):
@@ -848,7 +848,7 @@ class MainWindow(Screen):
             pool = l*100
             inc = float(1/pool)
             while t.is_alive():
-                yield 0.0365    
+                yield 0.0365
                 cd.ids.pb.value += inc
 
             cd.ids.pb.value = 1
@@ -871,7 +871,7 @@ class MainWindow(Screen):
 
         # Check to build Map
         self.build_meile_map()
-        
+
         self.get_ip_address(None)
 
         # use lambda in future
@@ -902,7 +902,7 @@ class MainWindow(Screen):
         # Search Criteria
         else:
             pass
-            
+
     '''
     def get_continent_coordinates(self, c):
         loc = self.MeileLand.ContinentLatLong[c]
@@ -912,7 +912,7 @@ class MainWindow(Screen):
     def get_font(self):
         Config = MeileGuiConfig()
         return Config.resource_path(MeileColors.FONT_FACE)
-    
+
     def wallet_restore(self, NewWallet, inst):
         if NewWallet:
             self.NewWallet = True
@@ -961,7 +961,7 @@ class MainWindow(Screen):
         self.NodeWidget = PlanScreen(name=WindowNames.PLAN)
         self.carousel.add_widget(self.NodeWidget)
         self.carousel.load_slide(self.NodeWidget)
-    
+
     def close_sub_window(self):
         self.carousel.remove_widget(self.NodeWidget)
         self.carousel.load_previous()
@@ -973,7 +973,7 @@ class MainWindow(Screen):
         except Exception as e:
             print(str(e))
             pass
-        
+
     def set_conn_dialog(self, cd, title):
         self.dialog = None
         self.dialog = MDDialog(
@@ -983,7 +983,7 @@ class MainWindow(Screen):
                         md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
                     )
         self.dialog.open()
-        
+
     def load_country_nodes(self, country, *kwargs):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         NodeTree = NodeTreeData(self.NodeTree.NodeTree)
@@ -992,7 +992,7 @@ class MainWindow(Screen):
         except Exception as e:
             print(str(e))
             pass
-        
+
         self.NodeWidget = NodeScreen(name="nodes",
                                      node_tree=NodeTree,
                                      country=country,
@@ -1002,9 +1002,9 @@ class MainWindow(Screen):
 
     def return_connect_button(self):
         MeileConfig = MeileGuiConfig()
-        
+
         button_path = "../imgs/ConnectButton.png"
-        
+
         return MeileConfig.resource_path(button_path)
 class WalletScreen(Screen):
     text = StringProperty()
@@ -1108,7 +1108,7 @@ class WalletScreen(Screen):
         Meile.app.root.add_widget(fiat_interface.FiatInterface(name=WindowNames.FIAT))
         Meile.app.root.transistion = SlideTransition(direction="right")
         Meile.app.root.current = WindowNames.FIAT
-        
+
     def return_coin_logo(self, coin):
         self.MeileConfig = MeileGuiConfig()
 
@@ -1233,20 +1233,20 @@ class SubscriptionScreen(MDBoxLayout):
         else:
             nscore = "null"
             votes  = "0"
-            
+
         if node[NodeKeys.FinalSubsKeys[2]] in self.NodeTree.NodeFormula:
             formula = str(self.NodeTree.NodeFormula[node[NodeKeys.FinalSubsKeys[2]]])
         else:
             formula = "NULL"
-        
-        
-        ''' Not pulling cities from API any more. It comes with node data. 
+
+
+        ''' Not pulling cities from API any more. It comes with node data.
         if node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip() in self.NodeTree.NodeLocations:
             city = self.NodeTree.NodeLocations[node[NodeKeys.FinalSubsKeys[2]].lstrip().rstrip()]
         else:
             city = " "
         '''
-            
+
         price = node[NodeKeys.FinalSubsKeys[4]].lstrip().rstrip()
         match = re.match(r"([0-9]+)([a-z]+)", price, re.I)
         if match:
@@ -1262,7 +1262,7 @@ class SubscriptionScreen(MDBoxLayout):
             expirary_date = datetime.strptime(expirary_date, '%Y-%m-%d %H:%M:%S').strftime('%b %d %Y, %I:%M %p')
         else:
             expirary_date = "Null"
-            
+
         if node[NodeKeys.FinalSubsKeys[2]] in self.NodeTree.NodeTypes:
             if self.NodeTree.NodeTypes[node[NodeKeys.FinalSubsKeys[2]]] == NodeKeys.Nodetypes[0]:
                 IconButton  = "alpha-r-circle"
@@ -1279,7 +1279,7 @@ class SubscriptionScreen(MDBoxLayout):
         else:
             IconButton  = "alpha-r-circle"
             NodeTypeText = "Unknown"
-            
+
         item = NodeAccordion(
             node=NodeRow(
                 moniker="[b]" + node[NodeKeys.FinalSubsKeys[1]] + "[/b]",
@@ -1391,7 +1391,7 @@ class SubscriptionScreen(MDBoxLayout):
 
 '''
 Main widget of country cards in carousel.
-Contains: widgets.RecyclerViewRow, RecyclerViewCountryRow        
+Contains: widgets.RecyclerViewRow, RecyclerViewCountryRow
 '''
 class NodeScreen(MDBoxLayout):
     NodeTree = None
@@ -1404,7 +1404,7 @@ class NodeScreen(MDBoxLayout):
 
 
         floc = "../imgs/"
-        
+
         try:
             CountryNodes = self.NodeTree.NodeTree.children(country)
         except NodeIDAbsentError as e:
@@ -1472,9 +1472,9 @@ class NodeScreen(MDBoxLayout):
             self.add_rv_data(node, flagloc)
 
     def compute_speed_rate(self, bandwidth):
-        
+
         speedRate = []
-        
+
         for b in bandwidth:
             speed = b
             if speed > 1000:
@@ -1484,7 +1484,7 @@ class NodeScreen(MDBoxLayout):
                     if speed > 1000:
                         speed = round(float(speed / 1024),3)
                         speedRate.append(str(speed) + "GB")
-                    else:    
+                    else:
                         speedRate.append(str(speed) + "MB")
                 else:
                     speedRate.append(str(speed) + "KB")
@@ -1493,16 +1493,16 @@ class NodeScreen(MDBoxLayout):
                 speedRate.append(str(speed) + "B")
             else:
                 speedRate.append(str(speed) + "B")
-                
+
         return speedRate
-        
-    
+
+
     def add_rv_data(self, node, flagloc):
         self.MeileConfig = MeileGuiConfig()
         speedRate = []
         bandwidth = []
         floc = "../imgs/"
-        
+
         bandwidth.append(int(node[NodeKeys.NodesInfoKeys[8]]))
         bandwidth.append(int(node[NodeKeys.NodesInfoKeys[9]]))
 
@@ -1519,7 +1519,7 @@ class NodeScreen(MDBoxLayout):
             speedimage = floc + "slowavg.png"
         else:
             speedimage = floc + "slow.png"
-        
+
         #speedText = str(speedRate[0]) + "↓," + str(speedRate[1]) + "↑"
         speedText = f"{speedRate[0]}[color=#00FF00]↓[/color], {speedRate[1]}[color=#f44336]↑[/color]"
         if "0B" in speedRate[0] or "0B" in speedRate[1]:
@@ -1531,7 +1531,7 @@ class NodeScreen(MDBoxLayout):
         else:
             nscore = "null"
             votes  = "0"
-        
+
         if node[NodeKeys.NodesInfoKeys[1]] in self.NodeTree.NodeTypes:
             if self.NodeTree.NodeTypes[node[NodeKeys.NodesInfoKeys[1]]] == NodeKeys.Nodetypes[0]:
                 IconButton  = "alpha-r-circle"
@@ -1548,7 +1548,7 @@ class NodeScreen(MDBoxLayout):
         else:
             IconButton  = "alpha-r-circle"
             ToolTipText = "Residential"
-            
+
         if node[NodeKeys.NodesInfoKeys[1]] in self.NodeTree.NodeHealth:
             if self.NodeTree.NodeHealth[node[NodeKeys.NodesInfoKeys[1]]]:
                 HealthButton = MeileColors.HEALTH_ICON
@@ -1588,10 +1588,10 @@ class NodeScreen(MDBoxLayout):
 
             },
         )
-        
-        
-        
-        
+
+
+
+
     def set_previous_screen(self):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         mw.carousel.remove_widget(mw.NodeWidget)
@@ -1604,23 +1604,29 @@ class PlanScreen(MDBoxLayout):
         wallet = self.mw.address
         Request = HTTPRequests.MakeRequest()
         http = Request.hadapter()
+
         req = http.get(HTTParams.PLAN_API + HTTParams.API_PLANS, auth=HTTPBasicAuth(scrtsxx.PLANUSERNAME, scrtsxx.PLANPASSWORD))
         plan_data = req.json()
-        
-        req2 = http.get(HTTParams.PLAN_API + HTTParams.API_PLANS_SUBS % wallet, auth=HTTPBasicAuth(scrtsxx.PLANUSERNAME, scrtsxx.PLANPASSWORD))
-        user_enrolled_plans = req2.json()
-        
+
+        # Prevent plan parsing when wallet is not initialized
+        user_enrolled_plans = []
+        if wallet not in [None, ""]:
+            req2 = http.get(HTTParams.PLAN_API + HTTParams.API_PLANS_SUBS % wallet, auth=HTTPBasicAuth(scrtsxx.PLANUSERNAME, scrtsxx.PLANPASSWORD))
+
+            # If the request failed please don't .json() or will raised a exception
+            user_enrolled_plans = req2.json() if req2.ok and req2.status_code != 404 else []
+
         for pd in plan_data:
             self.build_plans( pd, user_enrolled_plans)
-        
+
     def build_plans(self, data, plans):
         plan = None
         for p in plans:
             if data['uuid'] == p['uuid']:
                 plan = p
                 break
-        
-        
+
+
         # In the future cost should be both in dvpn and euro (fuck usd)
         # Can use coin_api to get dvpn price and translate cost
         item = PlanAccordion(
@@ -1642,15 +1648,15 @@ class PlanScreen(MDBoxLayout):
                 coin=plan['amt_denom'] if plan else "NULL",
             )
         )
-        
+
         self.ids.rv.add_widget(item)
-        
+
     def set_previous_screen(self):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         mw.carousel.remove_widget(mw.NodeWidget)
         mw.carousel.load_previous()
 '''
-This is the card class of the country cards on the left panel        
+This is the card class of the country cards on the left panel
 '''
 class RecycleViewCountryRow(MDCard,RectangularElevationBehavior,ThemableBehavior, HoverBehavior):
     text = StringProperty()
@@ -1667,14 +1673,14 @@ class RecycleViewCountryRow(MDCard,RectangularElevationBehavior,ThemableBehavior
         print(country)
         mw       = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         NodeTree = NodeTreeData(mw.NodeTree.NodeTree)
-        
-        
+
+
         try:
             mw.carousel.remove_widget(mw.NodeWidget)
         except Exception as e:
             print(str(e))
             pass
-        
+
         mw.NodeWidget = NodeScreen(name="nodes",
                                    node_tree=NodeTree,
                                    country=country,
