@@ -76,6 +76,7 @@ class WalletRestore(Screen):
         wallet_password = unidecode(self.ids.password.ids.wallet_password.text)
         wallet_name     = unidecode(self.ids.name.ids.wallet_name.text)
         seed_phrase     = unidecode(self.ids.seed.ids.seed_phrase.text)
+
         if not wallet_name and not wallet_password:
             self.ids.wallet_name_warning.opacity = 1
             self.ids.wallet_password_warning.opacity = 1
@@ -85,6 +86,9 @@ class WalletRestore(Screen):
             return
         elif not wallet_name:
             self.ids.wallet_name_warning.opacity = 1
+            return
+        elif re.match(r"^[A-Za-z0-9 ]*$", wallet_name) is None:
+            self.ids.wallet_name_charset_warning.opacity = 1
             return
         elif len(wallet_password) < 8:
             self.ids.wallet_password_warning.opacity = 1

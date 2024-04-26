@@ -623,6 +623,15 @@ WindowManager:
         text_color: get_color_from_hex("f42121")
         pos_hint: {"x": .47, "center_y": .61}
         font_size: "12dp"
+
+    MDLabel:
+        id: wallet_name_charset_warning
+        opacity: 0
+        text: "Sorry, your wallet name can contain only letters, digits and space"
+        theme_text_color: "Custom"
+        text_color: get_color_from_hex("f42121")
+        pos_hint: {"x": .47, "center_y": .61}
+        font_size: "12dp"
      
     ClickableTextFieldRoundPass:
         id: password
