@@ -37,8 +37,8 @@ import ecdsa
 import hashlib
 
 MeileConfig = MeileGuiConfig()
-sentinelcli = MeileConfig.resource_path("../bin/sentinelcli")
-v2ray_tun2routes_connect_bash = MeileConfig.resource_path("../bin/routes.sh")
+#sentinelcli = MeileConfig.resource_path("../bin/sentinelcli")
+v2ray_tun2routes_connect_bash = path.join(ConfParams.KEYRINGDIR, "/bin/routes.sh")
 
 
 class HandleWalletFunctions():

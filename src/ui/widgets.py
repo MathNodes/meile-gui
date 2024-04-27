@@ -148,18 +148,18 @@ class SubTypeDialog(BoxLayout):
                 title="Node:",
                 type="custom",
                 content_cls=subscribe_dialog,
-                md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
+                md_bg_color=get_color_from_hex(MeileColors.BLACK),
                 buttons=[
                     MDFlatButton(
                         text="CANCEL",
                         theme_text_color="Custom",
-                        text_color=self.rvclass.theme_cls.primary_color,
+                        text_color=Meile.app.theme_cls.primary_color,
                         on_release=self.rvclass.closeDialog
                     ),
                     MDRaisedButton(
                         text="SUBSCRIBE",
                         theme_text_color="Custom",
-                        text_color=get_color_from_hex("#000000"),
+                        text_color=get_color_from_hex(MeileColors.BLACK),
                         on_release=partial(self.rvclass.subscribe, subscribe_dialog)
                     ),
                 ],
@@ -197,7 +197,7 @@ class SubscribeContent(BoxLayout):
         ]
         self.menu = MDDropdownMenu(
             caller=self.ids.drop_item,
-            background_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
+            background_color=get_color_from_hex(MeileColors.BLACK),
             items=menu_items,
             position="center",
             width_mult=4,
@@ -992,6 +992,7 @@ class NodeCarousel(MDBoxLayout):
     votes           = StringProperty()
     score           = StringProperty()
     location        = StringProperty()
+    dialog          = None
     
     def __init__(self, node, types, scores, formula, **kwargs):
         super(NodeCarousel, self).__init__()
@@ -1002,14 +1003,23 @@ class NodeCarousel(MDBoxLayout):
         g = gbprices[0]
         self.gb_prices = deepcopy(g)
         
+        k=0
         for g in gbprices:
+            if k == 0:
+                k +=1
+                continue
             self.gb_prices = '\n'.join([self.gb_prices,g])
-        
+            
         h = hrprices[0]
         self.hr_prices = deepcopy(h)
         
+        k=0
         for h in hrprices:
+            if k == 0:
+                k +=1
+                continue
             self.hr_prices = '\n'.join([self.hr_prices,h])
+            
         
         self.moniker         = node[NodeKeys.NodesInfoKeys[0]]
         self.address         = node[NodeKeys.NodesInfoKeys[1]]
@@ -1052,12 +1062,86 @@ class NodeCarousel(MDBoxLayout):
         else:
             return "Passed"
         
-         
+    def subscribe_to_node(self, price, hourly_price, naddress, moniker):
+        subtype_dialog = SubTypeDialog(self,price,hourly_price,moniker, naddress)
+        
+        #subscribe_dialog = SubscribeContent(price, moniker , naddress )
+        if not self.dialog:
+            self.dialog = MDDialog(
+                    type="custom",
+                    content_cls=subtype_dialog,
+                    md_bg_color=get_color_from_hex(MeileColors.BLACK),
+                    )
+            self.dialog.open()
+
+    @delayable
+    def subscribe(self, subscribe_dialog, *kwargs):
+        sub_node = subscribe_dialog.return_deposit_text()
+        spdialog = ProcessingSubDialog(sub_node[2], sub_node[1], sub_node[0] )
+        deposit = self.reparse_coin_deposit(sub_node[0])
+        self.dialog.dismiss()
+        self.dialog = None
+        self.dialog = MDDialog(
+                title="Subscribing...",
+                type="custom",
+                content_cls=spdialog,
+                md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
+            )
+        self.dialog.open()
+        yield 0.6
+
+        CONFIG = MeileGuiConfig.read_configuration(MeileGuiConfig, MeileGuiConfig.CONFFILE)        
+        KEYNAME = CONFIG['wallet'].get('keyname', '')
+        
+        hwf = HandleWalletFunctions()
+        returncode = hwf.subscribe(KEYNAME, sub_node[1], deposit, sub_node[3], sub_node[4])
+        
+        if returncode[0]:
+            self.dialog.dismiss()
+            self.dialog = MDDialog(
+                title="Successful!",
+                md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
+                buttons=[
+                        MDFlatButton(
+                            text="OK",
+                            theme_text_color="Custom",
+                            text_color=Meile.app.theme_cls.primary_color,
+                            on_release=self.closeDialogReturnToSubscriptions
+                        ),])
+            self.dialog.open()
+
+        else:
+            self.dialog.dismiss()
+            self.dialog = MDDialog(
+            title="Error: %s" % "No wallet found!" if returncode[1] == 1337  else returncode[1],
+            md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
+            buttons=[
+                    MDFlatButton(
+                        text="OK",
+                        theme_text_color="Custom",
+                        text_color=self.theme_cls.primary_color,
+                        on_release=self.closeDialog
+                    ),])
+            self.dialog.open()     
     
     def switch_carousel(self):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         mw.carousel.remove_widget(self)
         mw.carousel.load_slide(mw.NodeWidget)
+        
+    def closeDialogReturnToSubscriptions(self,inst):
+        self.dialog.dismiss()
+        self.dialog = None
+        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
+        mw.SubResult = None
+    
+    def closeDialog(self, inst):
+        try:
+            self.dialog.dismiss()
+            self.dialog = None
+        except Exception as e:
+            print(str(e))
+            self.dialog = None
         
 '''
 Recycler of the node cards after clicking country
@@ -1126,7 +1210,7 @@ Node Version: %s
                 ],
             )
         self.dialog.open()
-        
+    '''    
     def subscribe_to_node(self, price, hourly_price, naddress, moniker):
         subtype_dialog = SubTypeDialog(self,price,hourly_price,moniker, naddress)
         
@@ -1189,7 +1273,7 @@ Node Version: %s
                     ),])
             self.dialog.open()
 
-    
+    '''
     def reparse_coin_deposit(self, deposit):
         
         for k,v in CoinsList.ibc_coins.items():

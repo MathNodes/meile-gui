@@ -29,8 +29,11 @@ class ConfParams():
 class HTTParams():
     TIMEOUT                = 5
     APIURL                 = "https://api.sentinel.mathnodes.com"
+    '''
     NODE_API               = ["https://metabase.mathnodes.com/api/public/card/822823f7-9374-435d-b283-2cd3847c1668/query/json",
                               "https://metabase.bluefren.xyz/api/public/card/68fe67a6-6afa-45da-94ff-7e4e8443292f/query/json"]
+    '''
+    NODE_API               = ["https://metabase.mathnodes.com/api/public/card/822823f7-9374-435d-b283-2cd3847c1668/query/json"]
     PLAN_API               = "https://api.meile.mathnodes.com:5000"
     #APIURL                 = "http://128.199.90.172:1317"
     SERVER_URL             = "https://aimokoivunen.mathnodes.com"
@@ -95,6 +98,7 @@ class MeileColors():
     QR_FONT_FACE             = "../fonts/Roboto-BoldItalic.ttf"
     MAP_MARKER               = "../imgs/location_pin.png"
     LOGO                     = "../imgs/logo.png"
+    LOGO_HD                  = "../imgs/logo_hd.png"
     LOGO_TEXT                = "../imgs/logo_text.png"
     HEALTH_ICON              = "shield-plus"
     SICK_ICON                = "emoticon-sick"

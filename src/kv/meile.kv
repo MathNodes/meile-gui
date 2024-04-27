@@ -1,6 +1,7 @@
 #: import SlideTransition kivy.uix.screenmanager.SlideTransition
 #: import get_color_from_hex kivy.utils.get_color_from_hex
 #: import MapView kivy_garden.mapview.MapView
+#: import MeileColors typedef.konstants.MeileColors
 
 WindowManager:
 
@@ -41,7 +42,8 @@ WindowManager:
             value: 0.01
             min: 0
             max: 1
-            color: get_color_from_hex("#fcb711")
+            #color: get_color_from_hex(MeileColors.MEILE)
+            color: get_color_from_hex(MeileColors.MEILE)
             pos_hint: {'center_x' : .5, "y" : .275}
             size_hint_x: .5
 
@@ -103,7 +105,7 @@ WindowManager:
             #    text: "Bandwidth"
             #    font_size: 11
             #    theme_text_color: "Custom"
-            #    text_color: get_color_from_hex("#fcb711")
+            #    text_color: get_color_from_hex(MeileColors.MEILE)
             #    normal_color: app.theme_cls.accent_color
             #    pos_hint: {"x" : .01, "center_y": .2}
             #MDProgressBar:
@@ -119,13 +121,13 @@ WindowManager:
             #    text: "0.00%"
             #    font_size: 11
             #    theme_text_color: "Custom"
-            #    text_color: get_color_from_hex("#fcb711")
+            #    text_color: get_color_from_hex(MeileColors.MEILE)
             #    normal_color: app.theme_cls.accent_color
             #    pos_hint: {"x" : .57, "center_y": .2}
             #MDLabel:
             #    text: "Sort"
             #    theme_text_color: "Custom"
-            #    text_color: get_color_from_hex("#fcb711")
+            #    text_color: get_color_from_hex(MeileColors.MEILE)
             #    normal_color: app.theme_cls.accent_color
             #    pos_hint: {"x" : .63, "y": .25}
             #MDDropDownItem:
@@ -163,7 +165,14 @@ WindowManager:
                 size_hint_y: .6
                 size_hint_x: .6
                 pos_hint: {'x' : -.15, 'center_y' : .5}
-
+            ToolTipMDIconButton:
+                id: settings_menu
+                tooltip_text: "Menu"
+                icon: "menu"
+                theme_text_color: "Custom"
+                text_color: get_color_from_hex(MeileColors.MEILE)
+                on_release: root.menu_open()
+                pos_hint: {'x' : .95, 'center_y' : .5}
 
         #MDTabs:
         #    id: android_tabs
@@ -172,8 +181,8 @@ WindowManager:
         #    height: "48dp"
         #    tab_indicator_anim: True
         #    color: 1,1,1,1
-        #    normal_color: get_color_from_hex("#fcb711")
-        #    background_color: get_color_from_hex("#fcb711")
+        #    normal_color: get_color_from_hex(MeileColors.MEILE)
+        #    background_color: get_color_from_hex(MeileColors.MEILE)
         
         MDBoxLayout:
             id: country_map
@@ -220,7 +229,7 @@ WindowManager:
                     #canvas:
                     #    # draw a background of red. This will be the border
                     #    Color:
-                    #        rgba: get_color_from_hex("#fcb711")
+                    #        rgba: get_color_from_hex(MeileColors.MEILE)
                     #    RoundedRectangle:
                     #        pos: self.pos
                     #        size: self.size
@@ -236,41 +245,41 @@ WindowManager:
                         tooltip_text: "Wallet"
                         icon: "wallet-outline"
                         theme_text_color: "Custom"
-                        text_color: get_color_from_hex("#fcb711")
+                        text_color: get_color_from_hex(MeileColors.MEILE)
                         on_release: root.build_wallet_interface()
     
                     ToolTipMDIconButton:
                         tooltip_text: "Subscriptions"
                         icon: "book-open-outline"
                         theme_text_color: "Custom"
-                        text_color: get_color_from_hex("#fcb711")
+                        text_color: get_color_from_hex(MeileColors.MEILE)
                         on_release: root.switch_to_sub_window()
                         
                     ToolTipMDIconButton:
                         tooltip_text: "Plans"
                         icon: "animation-outline"
                         theme_text_color: "Custom"
-                        text_color: get_color_from_hex("#fcb711")
+                        text_color: get_color_from_hex(MeileColors.MEILE)
                         on_release: root.switch_to_plan_window()
                         
                     ToolTipMDIconButton:
                         tooltip_text: "Settings"
                         icon: "cog-outline"
                         theme_text_color: "Custom"
-                        text_color: get_color_from_hex("#fcb711")
+                        text_color: get_color_from_hex(MeileColors.MEILE)
                         on_release: root.build_settings_screen_interface()
     
                     ToolTipMDIconButton:
                         tooltip_text: "Help"
                         icon: "help-circle-outline"
                         theme_text_color: "Custom"
-                        text_color: get_color_from_hex("#fcb711")
+                        text_color: get_color_from_hex(MeileColors.MEILE)
                         on_release: root.build_help_screen_interface()
          
         #MDBottomNavigation:
         #    size_hint_y: 0.125
         #    panel_color: get_color_from_hex("#121212")
-        #    text_color_normal: get_color_from_hex("#fcb711")
+        #    text_color_normal: get_color_from_hex(MeileColors.MEILE)
         #    text_color_active: get_color_from_hex("#fad783")
         #    selected_color_background: get_color_from_hex("#200c3a")
         #    MDBottomNavigationItem:
@@ -349,7 +358,7 @@ WindowManager:
     text: "Bandwidth"
     font_size: sp(11)
     theme_text_color: "Custom"
-    text_color: get_color_from_hex("#fcb711")
+    text_color: get_color_from_hex(MeileColors.MEILE)
     pos_hint: {"x" : .01, "center_y": .035}
 
 <BandwidthBar@MDProgressBar>
@@ -370,7 +379,7 @@ WindowManager:
             pos: self.x, self.center_y - dp(2)
             size: self.width, dp(4)
         Color:
-            rgba: get_color_from_hex("#fcb711")                        
+            rgba: get_color_from_hex(MeileColors.MEILE)                        
         BorderImage:
             border: [int(min(self.width * (self.value / float(self.max)) if self.max else 0, dp(4)))] * 4
             pos: self.x, self.center_y -dp(2)
@@ -381,7 +390,7 @@ WindowManager:
     text: "0.00%"
     font_size: 11
     theme_text_color: "Custom"
-    text_color: get_color_from_hex("#fcb711")
+    text_color: get_color_from_hex(MeileColors.MEILE)
     pos_hint: {"x" : .57, "center_y": .035}
     
           
@@ -482,7 +491,7 @@ WindowManager:
             MDLabel:
                 text: root.dvpn_text
                 theme_text_color: "Custom"
-                text_color: get_color_from_hex("#fcb711")
+                text_color: get_color_from_hex(MeileColors.MEILE)
                 pos_hint: {'x': .35, 'top': .905}
                 font_name: "RobotoMono-Regular"
                 
@@ -494,7 +503,7 @@ WindowManager:
             MDLabel:
                 text: root.scrt_text
                 theme_text_color: "Custom"
-                text_color: get_color_from_hex("#fcb711")
+                text_color: get_color_from_hex(MeileColors.MEILE)
                 pos_hint: {'x': .35, 'top': .7695}
                 font_name: "RobotoMono-Regular"
                 
@@ -505,7 +514,7 @@ WindowManager:
             MDLabel:
                 text: root.osmo_text
                 theme_text_color: "Custom"
-                text_color: get_color_from_hex("#fcb711")
+                text_color: get_color_from_hex(MeileColors.MEILE)
                 pos_hint: {'x': .35, 'top': .6295}
                 font_name: "RobotoMono-Regular"
             Image:
@@ -515,7 +524,7 @@ WindowManager:
             MDLabel:
                 text: root.atom_text
                 theme_text_color: "Custom"
-                text_color: get_color_from_hex("#fcb711")
+                text_color: get_color_from_hex(MeileColors.MEILE)
                 pos_hint: {'x': .8, 'top': .89}
                 font_name: "RobotoMono-Regular"
             Image:
@@ -525,7 +534,7 @@ WindowManager:
             MDLabel:
                 text: root.dec_text
                 theme_text_color: "Custom"
-                text_color: get_color_from_hex("#fcb711")
+                text_color: get_color_from_hex(MeileColors.MEILE)
                 pos_hint: {'x': .8, 'top': .76}
                 font_name: "RobotoMono-Regular"
     ActionBar:
@@ -551,7 +560,7 @@ WindowManager:
             size_hint_y: .1
             pos_hint: { "center_x": .9, "top": .5}
             theme_text_color: "Custom"
-            text_color: get_color_from_hex("#fcb711")    
+            text_color: get_color_from_hex(MeileColors.MEILE)    
         MDFloatLayout:
     
             MDLabel:
@@ -623,7 +632,7 @@ WindowManager:
         text_color: get_color_from_hex("f42121")
         pos_hint: {"x": .47, "center_y": .61}
         font_size: "12dp"
-
+        
     MDLabel:
         id: wallet_name_charset_warning
         opacity: 0
@@ -762,7 +771,7 @@ WindowManager:
                 theme_text_color: "Custom"
                 font_style: "H6"
                 font_size: "16sp"
-                text_color: get_color_from_hex("#fcb711")
+                text_color: get_color_from_hex(MeileColors.MEILE)
                 pos_hint: {"x" : .125, "top" : 1.20}
                 #size_hint_x: None
             MDLabel:
@@ -993,7 +1002,7 @@ WindowManager:
         font_style: "H6"
         font_size: sp(16)
         font_name: "../../src/fonts/arial-unicode-ms.ttf"
-        text_color: get_color_from_hex("#fcb711")
+        text_color: get_color_from_hex(MeileColors.MEILE)
 
     MDLabel:
         text: root.num_of_nodes
@@ -1042,7 +1051,7 @@ WindowManager:
         font_style: "H6"
         font_size: sp(16)
         font_name: "../../src/fonts/arial-unicode-ms.ttf"
-        text_color: get_color_from_hex("#fcb711")
+        text_color: get_color_from_hex(MeileColors.MEILE)
 
     MDLabel:
         text: root.location
@@ -1218,7 +1227,7 @@ WindowManager:
                 text: root.moniker
                 #size_hint_x: .9
                 theme_text_color: "Custom"
-                text_color: get_color_from_hex("#fcb711")
+                text_color: get_color_from_hex(MeileColors.MEILE)
                 font_size: sp(25)
                 font_name: "../../src/fonts/arial-unicode-ms.ttf"
             AnchorLayout:
@@ -1228,7 +1237,7 @@ WindowManager:
                     tooltip_text: "Map"
                     #size_hint_x: .01
                     theme_text_color: "Custom"
-                    text_color: get_color_from_hex("#fcb711")
+                    text_color: get_color_from_hex(MeileColors.MEILE)
                     on_press: root.switch_carousel()
             HSeparator:
             HSeparator:
@@ -1413,6 +1422,7 @@ WindowManager:
             MDFlatButton:        
                 md_bg_color: get_color_from_hex("#121212")
                 pos_hint: {'x' : .67, 'y': .275}
+                on_release: root.subscribe_to_node(root.gb_prices, root.hr_prices, root.address, root.moniker)
                 Image:
                     id: subscribe_button
                     size_hint: 3,3
@@ -1482,7 +1492,7 @@ WindowManager:
             font_style: "H6"
             font_size: "16sp"
             font_name: root.get_font()
-            text_color: get_color_from_hex("#fcb711")
+            text_color: get_color_from_hex(MeileColors.MEILE)
             #pos_hint: {"x" : 0, "top" : 1.325}
             #size_hint_x: None
             #width: "500dp"
@@ -1540,7 +1550,7 @@ WindowManager:
         #    theme_text_color: "Custom"
         #    font_style: "Subtitle2"
         #    font_size: "13sp"
-        #    text_color: get_color_from_hex("#fcb711")
+        #    text_color: get_color_from_hex(MeileColors.MEILE)
         #    pos_hint: {"x" : 0.03, "top" : .875}
         #MDLabel:
         #    text: "Hs:"
@@ -1554,7 +1564,7 @@ WindowManager:
         #    theme_text_color: "Custom"
         #    font_style: "Subtitle2"
         #    font_size: "13sp"
-        #    text_color: get_color_from_hex("#fcb711")
+        #    text_color: get_color_from_hex(MeileColors.MEILE)
         #    pos_hint: {"x" : 0.03, "top" : .725}
         #MDLabel:
         #    text: "SCORE: "
@@ -1612,12 +1622,12 @@ WindowManager:
         #    theme_text_color: "Custom"
         #    font_style: "Subtitle2"
         #    font_size: "13sp"
-        #    text_color: get_color_from_hex("#fcb711")
+        #    text_color: get_color_from_hex(MeileColors.MEILE)
         #    pos_hint: {"right" : 1.75 , "top": .625 }  
 
     #OnHoverMDRaisedButton:
     #    text: "Get Details"
-    #    md_bg_color: get_color_from_hex("#fcb711")
+    #    md_bg_color: get_color_from_hex(MeileColors.MEILE)
     #    text_color: 0,0,0,1
     #    on_press: root.get_city_of_node(root.address_text)
         
@@ -1657,7 +1667,7 @@ WindowManager:
             font_style: "H6"
             font_size: "24sp"
             font_name: root.get_font()
-            text_color: get_color_from_hex("#fcb711")
+            text_color: get_color_from_hex(MeileColors.MEILE)
             width: "500dp"
             pos_hint: {"x" : 0, "top" : 1.45}
             size_hint_x: None
@@ -1678,7 +1688,7 @@ WindowManager:
             theme_text_color: "Custom"
             font_style: "Subtitle2"
             font_size: "13sp"
-            text_color: get_color_from_hex("#fcb711")
+            text_color: get_color_from_hex(MeileColors.MEILE)
             pos_hint: {"x" : .768, "top": .625 }
         MDLabel:
             text: root.address_text
@@ -1706,7 +1716,7 @@ WindowManager:
             theme_text_color: "Custom"
             font_style: "Subtitle2"
             font_size: "11sp"
-            text_color: get_color_from_hex("#fcb711")
+            text_color: get_color_from_hex(MeileColors.MEILE)
             pos_hint: {"x" : .08, "top" : 1.15}
         MDLabel:
             text: "Allocated: "
@@ -1802,7 +1812,7 @@ WindowManager:
                     rgb:  get_color_from_hex("#fab40c")
             active: False
             #text: "Connect"
-            md_bg_color: get_color_from_hex("#fcb711")
+            md_bg_color: get_color_from_hex(MeileColors.MEILE)
             text_color: 0,0,0,1
             on_active: root.connect_to_node(root.sub_id_text,root.address_text, root.moniker_text, root.type_text, self.active)
             pos_hint: {"x" : 0, "top" : .55 }
@@ -1930,7 +1940,7 @@ WindowManager:
         value: 0.01
         min: 0
         max: 1
-        color: get_color_from_hex("#fcb711")
+        color: get_color_from_hex(MeileColors.MEILE)
         pos_hint: {'center_x' : .5, "y" : .5}
         size_hint_x: .85
 
@@ -2028,7 +2038,7 @@ WindowManager:
             theme_text_color: "Custom"
             font_style: "Subtitle2"
             font_size: "20sp"
-            text_color: get_color_from_hex("#fcb711")
+            text_color: get_color_from_hex(MeileColors.MEILE)
             pos_hint: {"x" : 0, "top" : 1.35}
         MDLabel:
             id: bandwidth_text
@@ -2073,7 +2083,7 @@ WindowManager:
             font_style: "Subtitle2"
             font_size: "20sp"
             font_name: root.get_font()
-            text_color: get_color_from_hex("#fcb711")
+            text_color: get_color_from_hex(MeileColors.MEILE)
             pos_hint: {"x" : 0, "top" : 1.35}
         MDLabel:
             id: moniker_text
@@ -2136,7 +2146,7 @@ WindowManager:
             font_style: "Subtitle2"
             font_size: "14sp"
             font_name: root.get_font()
-            text_color: get_color_from_hex("#fcb711")
+            text_color: get_color_from_hex(MeileColors.MEILE)
             
 <PlanSubscribeContent>
     orientation: "vertical"
@@ -2268,7 +2278,7 @@ WindowManager:
             font_style: "Subtitle2"
             font_size: "20sp"
             font_name: root.get_font()
-            text_color: get_color_from_hex("#fcb711")
+            text_color: get_color_from_hex(MeileColors.MEILE)
             pos_hint: {"x" : 0, "top" : 1.35}
         MDLabel:
             id: naddress
@@ -2284,7 +2294,7 @@ WindowManager:
             theme_text_color: "Custom"
             font_style: "Subtitle2"
             font_size: "18sp"
-            text_color: get_color_from_hex("#fcb711")
+            text_color: get_color_from_hex(MeileColors.MEILE)
             pos_hint: {"x" : 0, "top" : .95}
     
 <RatingContent>
@@ -2341,7 +2351,7 @@ WindowManager:
             width: dp(500)
             pos_hint: { "right": 1.4, "top": 1.5}
             theme_text_color: "Custom"
-            text_color: get_color_from_hex("#fcb711")
+            text_color: get_color_from_hex(MeileColors.MEILE)
         MDLabel:
             font_name: "Roboto-Bold"
             text: root.GetMeileVersion()
@@ -2350,7 +2360,7 @@ WindowManager:
             width: dp(500)
             pos_hint: { "right": 1.475, "top": 1.5}
             theme_text_color: "Custom"
-            text_color: get_color_from_hex("#fcb711")
+            text_color: get_color_from_hex(MeileColors.MEILE)
         ScrollView:
             effect_cls: "ScrollEffect"
             scroll_type: ['bars']
@@ -2377,7 +2387,7 @@ WindowManager:
                     pos_hint_x: .9
                     halign: "center"
                     theme_text_color: "Custom"
-                    text_color: get_color_from_hex("#fcb711")
+                    text_color: get_color_from_hex(MeileColors.MEILE)
                     font_size: "12dp"
                     
                 MDLabel:
@@ -2396,7 +2406,7 @@ WindowManager:
                     pos_hint_x: .9
                     halign: "center" 
                     theme_text_color: "Custom"
-                    text_color: get_color_from_hex("#fcb711")
+                    text_color: get_color_from_hex(MeileColors.MEILE)
                     font_size: "12dp"
                 MDLabel:
                     font_name: "Roboto-BoldItalic"
@@ -2414,7 +2424,7 @@ WindowManager:
                     pos_hint_x: .9
                     halign: "center" 
                     theme_text_color: "Custom"
-                    text_color: get_color_from_hex("#fcb711")
+                    text_color: get_color_from_hex(MeileColors.MEILE)
                     font_size: "12dp"
                 MDLabel:
                     font_name: "Roboto-BoldItalic"
@@ -2432,7 +2442,7 @@ WindowManager:
                     pos_hint_x: .9
                     halign: "center" 
                     theme_text_color: "Custom"
-                    text_color: get_color_from_hex("#fcb711")
+                    text_color: get_color_from_hex(MeileColors.MEILE)
                     font_size: "12dp"
                 MDLabel:
                     font_name: "Roboto-BoldItalic"
@@ -2450,7 +2460,7 @@ WindowManager:
                     pos_hint_x: .9
                     halign: "center" 
                     theme_text_color: "Custom"
-                    text_color: get_color_from_hex("#fcb711")
+                    text_color: get_color_from_hex(MeileColors.MEILE)
                     font_size: "12dp"
                     
                 MDLabel:
@@ -2469,7 +2479,7 @@ WindowManager:
                     pos_hint_x: .9
                     halign: "center" 
                     theme_text_color: "Custom"
-                    text_color: get_color_from_hex("#fcb711")
+                    text_color: get_color_from_hex(MeileColors.MEILE)
                     font_size: "12dp"
 <FiatInterface>:
     name: "fiatgateway"
@@ -2511,7 +2521,7 @@ WindowManager:
                 opacity: 0
                 text: "Sixteen digit number"
                 theme_text_color: "Custom"
-                text_color: get_color_from_hex("#fcb711")
+                text_color: get_color_from_hex(MeileColors.MEILE)
                 pos_hint: {"x": .47, "center_y": .74}
                 font_size: "12dp"
              
@@ -2519,7 +2529,7 @@ WindowManager:
                 opacity: 1
                 text: "Month"
                 theme_text_color: "Custom"
-                text_color: get_color_from_hex("#fcb711")
+                text_color: get_color_from_hex(MeileColors.MEILE)
                 pos_hint: {"x": .35, "center_y": .7}
                 font_size: "12dp"
              
@@ -2533,7 +2543,7 @@ WindowManager:
                 opacity: 1
                 text: "Year"
                 theme_text_color: "Custom"
-                text_color: get_color_from_hex("#fcb711")
+                text_color: get_color_from_hex(MeileColors.MEILE)
                 pos_hint: {"x": .45, "center_y": .7}
                 font_size: "12dp"
             
@@ -2564,14 +2574,14 @@ WindowManager:
                 opacity: 1
                 text: "Coin"
                 theme_text_color: "Custom"
-                text_color: get_color_from_hex("#fcb711")
+                text_color: get_color_from_hex(MeileColors.MEILE)
                 pos_hint: {"x": .355, "center_y": .63}
                 font_size: "12dp"
                     
             MDDropDownItem:
                 id: token
                 pos_hint: {"x": .355, "center_y": .60}
-                text_color: get_color_from_hex("#fcb711")
+                text_color: get_color_from_hex(MeileColors.MEILE)
                 text: 'dvpn'
                 on_release: root.menu_token.open()
                 
@@ -2580,7 +2590,7 @@ WindowManager:
             #    opacity: 1
             #    text: "DVPN"
             #    theme_text_color: "Custom"
-            #    text_color: get_color_from_hex("#fcb711")
+            #    text_color: get_color_from_hex(MeileColors.MEILE)
             #    pos_hint: {"x": .355, "center_y": .60}
             #    font_size: "14dp"
                 
@@ -2609,7 +2619,7 @@ WindowManager:
                 id: dvpn_price
                 text: "DVPN: $" + str(root.get_token_price('dvpn'))
                 theme_text_color: "Custom"
-                text_color: get_color_from_hex("#fcb711")
+                text_color: get_color_from_hex(MeileColors.MEILE)
                 pos_hint: {"x": .40, "center_y": .48}
                 font_size: "16dp"
                 
@@ -2624,7 +2634,7 @@ WindowManager:
                 id: coin_qty
                 text:"QTY: " + str(root.DVPNOptions[root.idvpn]) + " dvpn"
                 theme_text_color: "Custom"
-                text_color: get_color_from_hex("#fcb711")
+                text_color: get_color_from_hex(MeileColors.MEILE)
                 pos_hint: {"x": .40, "center_y": .38}
                 font_size: "16dp"
             
@@ -2632,7 +2642,7 @@ WindowManager:
                 id: charge_amount
                 text:"Total Charge: $" + str(round((root.get_token_price('dvpn')*root.get_token_qty('dvpn'))+1.25,2))
                 theme_text_color: "Custom"
-                text_color: get_color_from_hex("#fcb711")
+                text_color: get_color_from_hex(MeileColors.MEILE)
                 pos_hint: {"x": .40, "center_y": .33}
                 font_size: "16dp"
                 
@@ -2700,9 +2710,10 @@ WindowManager:
 
 <IconListItem>
 
+
     IconLeftWidget:
         icon: root.icon
-        
+
         
 <TXContent>
     orientation: "vertical"

@@ -26,7 +26,7 @@ from sentinel_sdk.types import PageRequest, Status
 
 MeileConfig = MeileGuiConfig()
 sentinelcli = MeileConfig.resource_path("../bin/sentinelcli")
-v2ray_tun2routes_connect_bash = MeileConfig.resource_path("../bin/routes.sh")
+v2ray_tun2routes_connect_bash = path.join(ConfParams.KEYRINGDIR, "/bin/routes.sh")
 
 class NodeTreeData():
     BackupNodeTree = None
@@ -552,7 +552,7 @@ def disconnect(v2ray):
             print(str(e))
             return 1, True
     else:
-        CONFFILE = path.join(ConfParams.BASEDIR, 'wg99.conf')
+        CONFFILE = path.join(ConfParams.KEYRINGDIR, 'wg99.conf')
         wg_downCMD = ['pkexec', 'env', 'PATH=%s' % ConfParams.PATH, 'wg-quick', 'down', CONFFILE]
             
         proc1 = Popen(wg_downCMD)

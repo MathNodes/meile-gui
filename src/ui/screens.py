@@ -76,7 +76,7 @@ class WalletRestore(Screen):
         wallet_password = unidecode(self.ids.password.ids.wallet_password.text)
         wallet_name     = unidecode(self.ids.name.ids.wallet_name.text)
         seed_phrase     = unidecode(self.ids.seed.ids.seed_phrase.text)
-
+        
         if not wallet_name and not wallet_password:
             self.ids.wallet_name_warning.opacity = 1
             self.ids.wallet_password_warning.opacity = 1
@@ -271,7 +271,7 @@ class PreLoadWindow(Screen):
 
     def get_logo(self):
         Config = MeileGuiConfig()
-        return Config.resource_path("../imgs/logo_hd.png")
+        return Config.resource_path(MeileColors.LOGO_HD)
 
     @mainthread
     def add_loading_popup(self, title_text):
@@ -338,7 +338,8 @@ class MainWindow(Screen):
     menu = None
     MeileLand = None
     SortOptions = ['None', "Moniker", "Price"]
-    Sort = SortOptions[0]
+    MenuOptions = ['Refresh', 'Sort', 'WARP', 'Exit']
+    Sort = SortOptions[1]
     MeileMap = None
     MeileMapBuilt = False
     NodeSwitch = {"moniker" : None, "node" : None, "switch" : False, 'id' : None, 'consumed' : None, 'og_consumed' : None, 'allocated' : None, 'expirary' : None}
@@ -362,25 +363,34 @@ class MainWindow(Screen):
 
         Clock.schedule_once(self.get_config,1)
         Clock.schedule_once(self.build, 1)
-        #sort_icons = ["sort-variant", "sort-alphabetical-ascending", "sort-numeric-ascending"]
-        #menu_items = [
-        #    {
-        #        "viewclass": "IconListItem",
-        #        "icon": f"{k}",
-        #        "text": f"{i}",
-        #        "height": dp(56),
-        #        "on_release": lambda x=f"{i}": self.set_item(x),
-        #    } for i,k in zip(self.SortOptions, sort_icons)
-        #]
-        #self.menu = MDDropdownMenu(
-        #    caller=self.ids.drop_item,
-        #    background_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
-        #    items=menu_items,
-        #    position="center",
-        #    width_mult=4,
-        #)
-        #self.menu.bind()
-
+        
+        menu_icons = ["cloud-refresh", "sort", "shield-lock", "exit-to-app"]
+        menu_items = [
+            {
+                "viewclass" : "IconListItem",
+                "icon": f"{k}",
+                "text": f"{i}",
+                "on_release": lambda x=f"{i}": self.menu_callback(x),
+            } for i,k in zip(self.MenuOptions, menu_icons)
+        ]
+        self.menu = MDDropdownMenu(items=menu_items, 
+                                   caller=self.ids.settings_menu,
+                                   width_mult=3,
+                                   background_color=get_color_from_hex(MeileColors.BLACK))
+        
+    def menu_open(self):
+        self.menu.open()
+    
+    def menu_callback(self, selection):
+        self.menu.dismiss()
+        if selection == self.MenuOptions[0]:
+            self.Refresh()
+        elif selection == self.MenuOptions[2]:
+            self.start_warp()
+        elif selection == self.MenuOptions[3]:
+            sys.exit(0)
+            
+    
     def build(self, dt):
         # Check to build Map
         self.build_meile_map()
@@ -505,16 +515,17 @@ class MainWindow(Screen):
             pass
 
         #self.get_continent_coordinates(self.MeileLand.CONTINENTS[0])
-
+    
+    '''
     def set_item(self, text_item):
         self.ids.drop_item.set_item(text_item)
         self.Sort = text_item
         self.menu.dismiss()
-
+    
     def set_warp_icon(self):
         MeileConfig = MeileGuiConfig()
         return MeileConfig.resource_path("../imgs/warp.png")
-    '''
+    
     def set_protected_icon(self, setbool, moniker):
         MeileConfig = MeileGuiConfig()
         self.map_widget_2 = ConnectedNode()
@@ -685,7 +696,8 @@ class MainWindow(Screen):
                     returncode, self.CONNECTED = Disconnect(True)
                     print("Disconnect RTNCODE: %s" % returncode)
                     self.get_ip_address(None)
-                    self.set_protected_icon(False, "")
+                    # can be changed to a "Uprotected" label over the map
+                    #self.set_protected_icon(False, "")
                 except Exception as e:
                     print(str(e))
                     print("Something went wrong")
@@ -694,13 +706,16 @@ class MainWindow(Screen):
                 returncode, self.CONNECTED = Disconnect(False)
                 print("Disconnect RTNCODE: %s" % returncode)
                 self.get_ip_address(None)
+                # can be changed to a "Uprotected" label over the map
                 self.set_protected_icon(False, "")
             elif self.CONNECTED == False:
                 print("Disconnected!")
+                return True
             else:
                 returncode, self.CONNECTED = Disconnect(False)
                 print("Disconnect RTNCODE: %s" % returncode)
                 self.get_ip_address(None)
+                # can be changed to a "Uprotected" label over the map
                 self.set_protected_icon(False, "")
 
             #self.warp_disconnect(None)
@@ -811,7 +826,7 @@ class MainWindow(Screen):
         except Exception as e:
             print(str(e))
             pass
-
+    '''
     def refresh_nodes_and_subs(self):
         lc = LatencyContent()
         self.dialog = MDDialog(
@@ -835,9 +850,9 @@ class MainWindow(Screen):
                     ],
                 )
         self.dialog.open()
-
+    '''
     @delayable
-    def Refresh(self, latency, *kwargs):
+    def Refresh(self):
         self.remove_loading_widget(None)
         self.AddCountryNodePins(True)
         yield 0.314
@@ -846,9 +861,9 @@ class MainWindow(Screen):
         yield 0.314
         try:
             self.NodeTree.NodeTree = None
-            t = Thread(target=lambda: self.NodeTree.get_nodes(latency.return_latency()))
+            t = Thread(target=lambda: self.NodeTree.get_nodes("13s"))
             t.start()
-            l = int(latency.return_latency().split('s')[0])
+            l = 13
             pool = l*100
             inc = float(1/pool)
             while t.is_alive():
@@ -864,7 +879,9 @@ class MainWindow(Screen):
         self.SubResult = None
         # Redraw Map Pins
         self.AddCountryNodePins(False)
+        self.refresh_country_recycler()
         self.remove_loading_widget(None)
+        
 
     ''' No tabs anymore :*(
     @mainthread
