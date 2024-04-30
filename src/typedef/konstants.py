@@ -27,19 +27,20 @@ class ConfParams():
     
 
 class HTTParams():
+    # Note http://128.199.90.172:26657 is testnet ONLY!
     TIMEOUT                = 5
     APIURL                 = "https://api.sentinel.mathnodes.com"
-    '''
+    
     NODE_API               = ["https://metabase.mathnodes.com/api/public/card/822823f7-9374-435d-b283-2cd3847c1668/query/json",
-                              "https://metabase.bluefren.xyz/api/public/card/68fe67a6-6afa-45da-94ff-7e4e8443292f/query/json"]
-    '''
-    NODE_API               = ["https://metabase.mathnodes.com/api/public/card/822823f7-9374-435d-b283-2cd3847c1668/query/json",
+                              "https://metabase.bluefren.xyz/api/public/card/68fe67a6-6afa-45da-94ff-7e4e8443292f/query/json",
                               "https://metabase.jp.bluefren.xyz/api/public/card/2710bd6b-61bc-4bbd-96f2-9d22fd408627/query/json"]
+    
+    
     PLAN_API               = "https://api.meile.mathnodes.com:5000"
     #APIURL                 = "http://128.199.90.172:1317"
     SERVER_URL             = "https://aimokoivunen.mathnodes.com"
     RPC                    = "https://rpc.mathnodes.com:443"
-    # Note http://128.199.90.172:26657 is testnet ONLY!
+    
     RPCS                   = ['https://rpc.mathnodes.com:443', 'https://rpc.dvpn.me:443', 'https://rpc.sentinel.co:443',
                               'https://rpc.sentinelgrowthdao.com:443', 'https://rpc.trinityvalidator.com.com:443',
                               'https://sentinel-rpc.badgerbite.io:443','https://sentinel-rpc2.badgerbite.io:443',
@@ -51,6 +52,7 @@ class HTTParams():
     NODE_LOCATION_ENDPOINT = "/api/nodelocations"
     NODE_TYPE_ENDPOINT     = "/api/nodetypes"
     NODE_FORMULA_ENDPOINT  = "/api/nodeformula"
+    CACHE_ENDPOINT         = "/api/cachelist"
     API_PING_ENDPOINT      = "/api/ping"
     API_RATING_ENDPOINT    = "/api/rating"
     API_PLANS              = "/v1/plans"
@@ -63,6 +65,7 @@ class HTTParams():
     ICANHAZDNS             = "icanhazip.com"
     IFCONFIGDNS            = "ifconfig.co"
     IFCONFIGURL            = "https://ifconfig.co/json"
+    IPAPI                  = "http://ip-api.com/json"
     
     
 class IBCTokens():

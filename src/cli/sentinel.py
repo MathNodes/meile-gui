@@ -46,17 +46,53 @@ class NodeTreeData():
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
         
+    def get_api_server(self):
+        Request = HTTPRequests.MakeRequest(TIMEOUT=23) # long timeout in case there is heavy load
+        http = Request.hadapter()
+        
+        try:
+            resp = http.get(HTTParams.IPAPI)
+            ipapi_json = resp.json()
+        except Exception as e:
+            print(str(e))
+            return HTTParams.NODE_API[random.randint(0, len(HTTParams.NODE_API) -1)]
+        
+        
+        client_country = ipapi_json['country']
+        client_continent = OurWorld.our_world.get_country_continent_code(client_country.lower())
+        
+        try:
+            resp = http.get(HTTParams.SERVER_URL + CACHE_ENDPOINT)
+            cache_json = resp.json()
+            
+        except Exception as e:
+            print(str(e))
+            return HTTParams.NODE_API[random.randint(0, len(HTTParams.NODE_API) -1)]
+        
+        cache_urls = []
+        for server in cache_json:
+            if client_country.lower() == server['country'].lower():
+                return server['url']
+            elif client_continent == server['continent']:
+                cache_urls.append(server['url'])
+                
+        if len(cache_urls) == 1:
+            return cache_urls[0]
+        else:
+            return cache_urls[random.randint(0, len(cache_urls) -1)]
+
+        
     def get_nodes(self, latency, *kwargs):
         AllNodesInfo = []
         ninfos       = []
         
-        
+        CACHE_SERVER = self.get_api_server()
         # Use Cache Server for faster loading.  
         Request = HTTPRequests.MakeRequest(TIMEOUT=23) # long timeout in case there is heavy load
         http = Request.hadapter()
         try:
-            N = random.randint(0, len(HTTParams.NODE_API) -1)
-            r = http.get(HTTParams.NODE_API[N]) 
+            #N = random.randint(0, len(HTTParams.NODE_API) -1)
+            r = http.get(CACHE_SERVER) 
             data = r.json()
             #rint(data)
             for node in data:
