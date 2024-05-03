@@ -81,8 +81,6 @@ class NodeTreeData():
                 cache_urls.append(server['url'])
             elif client_continent == "af" and server['continent'] == 'eu':
                 cache_urls.append(server['url'])
-            else:
-                cache_urls.append(server['url'])
                 
         if len(cache_urls) == 1:
             return cache_urls[0]
