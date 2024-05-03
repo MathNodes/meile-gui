@@ -360,6 +360,7 @@ class MainWindow(Screen):
 
         self.NodeTree = node_tree
         self.MeileLand = OurWorld()
+        self.MeileConfig = MeileGuiConfig()
 
         Clock.schedule_once(self.get_config,1)
         Clock.schedule_once(self.build, 1)
@@ -947,7 +948,8 @@ class MainWindow(Screen):
         Meile.app.root.current = WindowNames.WALLET_RESTORE
 
     def build_wallet_interface(self):
-        Meile.app.root.add_widget(WalletScreen(name=WindowNames.WALLET, ADDRESS=self.address))
+        CONFIG = self.MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
+        Meile.app.root.add_widget(WalletScreen(name=WindowNames.WALLET, ADDRESS=CONFIG['wallet'].get('address', '')))
         Meile.app.root.transition = SlideTransition(direction = "up")
         Meile.app.root.current = WindowNames.WALLET
 
