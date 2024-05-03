@@ -1593,10 +1593,10 @@ class NodeScreen(MDBoxLayout):
                 "protocol_text"      : node[NodeKeys.NodesInfoKeys[13]],
                 "speed_text"         : speedText,
                 "isp_type_text"      : ToolTipText,
-                "node_data"          : node,
-                "node_types"         : self.NodeTree.NodeTypes,
-                "node_scores"        : self.NodeTree.NodeScores,
-                "node_formula"       : self.NodeTree.NodeFormula
+                "node_data"          : node
+                #"node_types"         : self.NodeTree.NodeTypes,
+                #"node_scores"        : self.NodeTree.NodeScores,
+                #"node_formula"       : self.NodeTree.NodeFormula
                 #"node_score"         : nscore,
                 #"votes"              : votes,
                 #"city"               : city,

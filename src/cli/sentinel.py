@@ -60,9 +60,9 @@ class NodeTreeData():
         
         client_country = ipapi_json['country']
         client_continent = OurWorld.our_world.get_country_continent_code(client_country.lower())
-        
+        print(f"IP-API: {client_country},{client_continent}")
         try:
-            resp = http.get(HTTParams.SERVER_URL + CACHE_ENDPOINT)
+            resp = http.get(HTTParams.SERVER_URL + HTTParams.CACHE_ENDPOINT)
             cache_json = resp.json()
             
         except Exception as e:
@@ -74,6 +74,14 @@ class NodeTreeData():
             if client_country.lower() == server['country'].lower():
                 return server['url']
             elif client_continent == server['continent']:
+                cache_urls.append(server['url'])
+            elif client_continent == "oc" and server['continent'] == "as":
+                cache_urls.append(server['url'])
+            elif client_continent == "sa" and server['continent'] == "na":
+                cache_urls.append(server['url'])
+            elif client_continent == "af" and server['continent'] == 'eu':
+                cache_urls.append(server['url'])
+            else:
                 cache_urls.append(server['url'])
                 
         if len(cache_urls) == 1:
@@ -96,25 +104,29 @@ class NodeTreeData():
             data = r.json()
             #rint(data)
             for node in data:
-                ninfos.append(node['Moniker'])
-                ninfos.append(node['Node Address'])
-                ninfos.append(node['Gigabyte Prices'])
-                ninfos.append(node['Hourly Prices'])
-                if "The Netherlands" in node['Country']:
-                    node['Country'] = "Netherlands"
-                elif "Czech Republic" in node['Country']:
-                    node['Country'] = "Czechia"
-                ninfos.append(node['Country'])
-                ninfos.append(node['City'])
-                ninfos.append(node['Latitude'])
-                ninfos.append(node['Longitude'])
-                ninfos.append(node['Bandwidth Down'])
-                ninfos.append(node['Bandwidth Up'])
-                ninfos.append(node['Connected Peers'])
-                ninfos.append(node['Max Peers'])
-                ninfos.append(node['Handshake'])
-                ninfos.append("WireGuard" if node['Node Type'] == 1 else "V2Ray")
-                ninfos.append(node['Node Version'])
+                ninfos.append(node['moniker'])
+                ninfos.append(node['node_address'])
+                ninfos.append(node['gigabyte_prices'])
+                ninfos.append(node['hourly_prices'])
+                if "The Netherlands" in node['country']:
+                    node['country'] = "Netherlands"
+                elif "Czech Republic" in node['country']:
+                    node['country'] = "Czechia"
+                ninfos.append(node['country'])
+                ninfos.append(node['city'])
+                ninfos.append(node['latitude'])
+                ninfos.append(node['longitude'])
+                ninfos.append(node['bandwidth_down'])
+                ninfos.append(node['bandwidth_up'])
+                ninfos.append(node['connected_peers'])
+                ninfos.append(node['max_peers'])
+                ninfos.append(node['handshake'])
+                ninfos.append("WireGuard" if node['node_type'] == 1 else "V2Ray")
+                ninfos.append(node['node_version'])
+                ninfos.append(node['isp_type'])
+                ninfos.append(node['score'])
+                ninfos.append(node['votes'])
+                ninfos.append(node['formula'])
                 AllNodesInfo.append(dict(zip(NodeKeys.NodesInfoKeys, ninfos)))
                 ninfos.clear()
                 
@@ -158,16 +170,16 @@ class NodeTreeData():
         # For pretty output. Unicode is used in treelib > 1.6.1     
         self.NodeTree.show()
         # User-submitted Ratings
-        self.GetNodeScores()
+        #self.GetNodeScores()
         # Hosting, Residential, etc
-        self.GetNodeTypes()
+        #self.GetNodeTypes()
         # Sentinel Health Check Results
         # Will process Health Check on-the-fly in NodeScreen. 
         # Not loading all the data here is a 2x improvement on loadtime
         #self.GetHealthCheckData()
 
         # Get MathNodes NodeFormula
-        self.GetNodeFormula()
+        #self.GetNodeFormula()
         
         
         
@@ -413,12 +425,12 @@ class NodeTreeData():
         NodeTreeBase.create_node(RootTag, RootIdentifier)
         
         for node in data:
-            if "The Netherlands" in node['Country']:
-                node['Country'] = "Netherlands"
-            elif "Czech Republic" in node['Country']:
-                node['Country'] = "Czechia"
+            if "The Netherlands" in node['country']:
+                node['country'] = "Netherlands"
+            elif "Czech Republic" in node['country']:
+                node['country'] = "Czechia"
             
-            c = node['Country']
+            c = node['country']
             try:
                 if NodeTreeBase.contains(c):
                     continue

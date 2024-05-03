@@ -994,7 +994,7 @@ class NodeCarousel(MDBoxLayout):
     location        = StringProperty()
     dialog          = None
     
-    def __init__(self, node, types, scores, formula, **kwargs):
+    def __init__(self, node, **kwargs):
         super(NodeCarousel, self).__init__()
         
         gbprices = node[NodeKeys.NodesInfoKeys[2]].split(',')
@@ -1033,11 +1033,11 @@ class NodeCarousel(MDBoxLayout):
         self.version         = node[NodeKeys.NodesInfoKeys[14]]
         self.handshake       = str(node[NodeKeys.NodesInfoKeys[12]])
         self.health_check    = self.GetHealthCheck(node[NodeKeys.NodesInfoKeys[1]])
-        self.isp_type        = types[node[NodeKeys.NodesInfoKeys[1]]]
-        self.node_formula    = str(formula[node[NodeKeys.NodesInfoKeys[1]]]) if node[NodeKeys.NodesInfoKeys[1]] in formula else "NULL"
-        self.votes           = str(scores[node[NodeKeys.NodesInfoKeys[1]]][1]) if node[NodeKeys.NodesInfoKeys[1]] in scores else "0"
-        self.score           = str(scores[node[NodeKeys.NodesInfoKeys[1]]][0]) if node[NodeKeys.NodesInfoKeys[1]] in scores else "NULL"
-        self.location        = f"[b]Location:[/b] {node[NodeKeys.NodesInfoKeys[5]]},{node[NodeKeys.NodesInfoKeys[4]]}"
+        self.isp_type        = node[NodeKeys.NodesInfoKeys[15]]
+        self.node_formula    = str(node[NodeKeys.NodesInfoKeys[18]]) if node[NodeKeys.NodesInfoKeys[18]] else "NULL"
+        self.votes           = str(node[NodeKeys.NodesInfoKeys[17]]) if node[NodeKeys.NodesInfoKeys[17]] else "0"
+        self.score           = str(node[NodeKeys.NodesInfoKeys[16]]) if node[NodeKeys.NodesInfoKeys[16]] else "NULL"
+        self.location        = f"[b]Location:[/b] {node[NodeKeys.NodesInfoKeys[5]]}, {node[NodeKeys.NodesInfoKeys[4]]}"
         
         try:
             self.ids.mapview.center_on(float(node[NodeKeys.NodesInfoKeys[6]])-1,float(node[NodeKeys.NodesInfoKeys[7]]))
@@ -1149,9 +1149,9 @@ Recycler of the node cards after clicking country
 class RecycleViewRow(MDCard,RectangularElevationBehavior,ThemableBehavior, HoverBehavior):
     dialog = None
     node_data = ObjectProperty()
-    node_types = ObjectProperty()
-    node_scores = ObjectProperty()
-    node_formula = ObjectProperty()
+    #node_types = ObjectProperty()
+    #node_scores = ObjectProperty()
+    #node_formula = ObjectProperty()
     
     def get_font(self):
         Config = MeileGuiConfig()
@@ -1320,9 +1320,9 @@ Node Version: %s
             print(str(e))
             self.dialog = None
             
-    def switch_to_node_carousel(self, node_data, node_types, node_scores, node_formula):
+    def switch_to_node_carousel(self, node_data):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
-        NodeWidget = NodeCarousel(name=WindowNames.NODE_CAROUSEL, node=node_data, types=node_types, scores=node_scores, formula=node_formula)
+        NodeWidget = NodeCarousel(name=WindowNames.NODE_CAROUSEL, node=node_data)
         mw.carousel.add_widget(NodeWidget)
         mw.carousel.load_slide(NodeWidget)
      
