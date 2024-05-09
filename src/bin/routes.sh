@@ -19,6 +19,7 @@ if [[ ${STATE} = "up" ]]; then
 	echo ${PRIMARY_IFACE} > /home/${USER}/.meile-gui/iface
 
         # start v2ray
+        echo "Running v2ray: /home/${USER}/.meile-gui/bin/v2ray run -c /home/${USER}/.sentinelcli/v2ray_config.json &"
         /home/${USER}/.meile-gui/bin/v2ray run -c /home/${USER}/.sentinelcli/v2ray_config.json &
         sleep 3
         
@@ -32,14 +33,22 @@ if [[ ${STATE} = "up" ]]; then
         TUNID=${RANDOM} 
         TUNIFACE="tun"${TUNID}
         echo ${TUNIFACE} > /home/${USER}/.meile-gui/tuniface
+        echo "Adding tun interface..."
+        echo "ip tuntap add mode tun dev ${TUNIFACE}"
         ip tuntap add mode tun dev ${TUNIFACE}
+        echo "ip addr add 10.10.10.10/24 dev ${TUNIFACE}"
         ip addr add 10.10.10.10/24 dev ${TUNIFACE}
+        echo "ip link set dev ${TUNIFACE} up"
         ip link set dev ${TUNIFACE} up
 
         # add default route for tun
+        echo "Adding default route for tun..."
+        echo "ip route add default via 10.10.10.10 dev ${TUNIFACE} metric 1"
         ip route add default via 10.10.10.10 dev ${TUNIFACE} metric 1
 
         # add normal route for proxy IP
+        echo "Add normal route for proxy..."
+        echo "ip route add ${PROXY_IP} via ${GATEWAY}"
         ip route add ${PROXY_IP} via ${GATEWAY}
 
         #sysctl net.ipv4.conf.all.rp_filter=0
@@ -49,6 +58,7 @@ if [[ ${STATE} = "up" ]]; then
 	#sysctl net.ipv4.conf.${PRIMARY_IFACE}.forwarding=1
 	
 	# start tun2socks 
+	echo "Starting tun2socks..."
         /home/${USER}/.meile-gui/bin/tun2socks -device tun://${TUNIFACE} -proxy socks5://127.0.0.1:1080 -interface ${PRIMARY_IFACE} -mtu 1500 -tcp-sndbuf 1024k -tcp-rcvbuf 1024k -tcp-auto-tuning
 
         #tun2socks -device tun0 -proxy socks5://127.0.0.1:1080 -interface ${PRIMARY_IFACE} -loglevel debug &
