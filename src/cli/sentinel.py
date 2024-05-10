@@ -1,4 +1,3 @@
-from subprocess import Popen, PIPE, STDOUT
 import collections
 from os import path
 import re
@@ -25,7 +24,6 @@ from sentinel_sdk.sdk import SDKInstance
 from sentinel_sdk.types import PageRequest, Status
 
 MeileConfig = MeileGuiConfig()
-sentinelcli = MeileConfig.resource_path("../bin/sentinelcli")
 v2ray_tun2routes_connect_bash = path.join(ConfParams.KEYRINGDIR, "/bin/routes.sh")
 
 class NodeTreeData():
@@ -130,7 +128,7 @@ class NodeTreeData():
                 
         except Exception as e:
             print(str(e))
-            pass
+            data = []
         
         AllNodesInfoSorted = sorted(AllNodesInfo, key=lambda d: d[NodeKeys.NodesInfoKeys[4]])
         

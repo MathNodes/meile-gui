@@ -196,10 +196,22 @@ WindowManager:
                         tooltip_text: "Connect to Node"
                         md_bg_color: get_color_from_hex("#121212")
                         pos_hint: {'x' : .3, 'y': .6}
+                        on_release: root.connect_routine()
+                        opacity: 1
                         Image:
                             id: connect_button
                             size_hint: 3,3
-                            source: root.return_connect_button()
+                            source: root.return_connect_button("c")
+                    TooltipMDFlatButton:
+                        tooltip_text: "Disconnect from Node"
+                        #md_bg_color: get_color_from_hex("#121212")
+                        pos_hint: {'x' : .3, 'y': .6}
+                        on_release: root.connect_routine()
+                        opacity: 0
+                        Image:
+                            id: disconnect_button
+                            size_hint: 3,3
+                            source: root.return_connect_button("d")
                             
                             
                     MDTextField:
@@ -317,6 +329,19 @@ WindowManager:
 <TooltipMDRaisedButton@MDRaisedButton+MDTooltip>
 <TooltipMDFlatButton@MDFlatButton+MDTooltip>
 <ToolTipMDIconButton@MDIconButton+MDTooltip>
+
+<ProtectedLabel@MDLabel>
+    id: protected
+    font_size: sp(26)
+    pos_hint: {"x" : .4, "center_y": .975}                
+    opacity: .75
+    font_style: "H6"
+    text: "UNPROTECTED"
+    theme_text_color: "Custom"
+    text_color: get_color_from_hex(MeileColors.MEILE)
+    font_name: root.get_font()
+    
+    
 
 <IPAddressTextField@MDTextField>
     id: new_ip
@@ -770,7 +795,7 @@ WindowManager:
                 id: country
                 theme_text_color: "Custom"
                 font_style: "H6"
-                font_size: "16sp"
+                font_size: sp(16)
                 text_color: get_color_from_hex(MeileColors.MEILE)
                 pos_hint: {"x" : .125, "top" : 1.20}
                 #size_hint_x: None
@@ -1001,25 +1026,25 @@ WindowManager:
         theme_text_color: "Custom"
         font_style: "H6"
         font_size: sp(16)
-        font_name: "../../src/fonts/arial-unicode-ms.ttf"
+        font_name: root.get_font()
         text_color: get_color_from_hex(MeileColors.MEILE)
 
     MDLabel:
         text: root.num_of_nodes
         markup: True
         size_hint_x: 1.4
-        font_name: "../../src/fonts/arial-unicode-ms.ttf"
+        font_name: root.get_font()
     MDLabel:
         text: root.num_of_countries
         markup: True
         size_hint_x: 1.4
-        font_name: "../../src/fonts/arial-unicode-ms.ttf"
+        font_name: root.get_font()
 
     MDLabel:
         text: root.cost
         markup: True
         size_hint_x: 1.8
-        font_name: "../../src/fonts/arial-unicode-ms.ttf"
+        font_name: root.get_font()
 
     MDFlatButton:        
         #md_bg_color: get_color_from_hex("#121212")
@@ -1029,7 +1054,7 @@ WindowManager:
         Image:
             id: subscribe_button
             size_hint: 1.5,1.5
-            source: "../../src/imgs/SubscribeButton.png"
+            source: root.get_button("subscribe")
         
             
     HSeparator:
@@ -1050,31 +1075,31 @@ WindowManager:
         theme_text_color: "Custom"
         font_style: "H6"
         font_size: sp(16)
-        font_name: "../../src/fonts/arial-unicode-ms.ttf"
+        font_name: root.get_font()
         text_color: get_color_from_hex(MeileColors.MEILE)
 
     MDLabel:
         text: root.location
         markup: True
         size_hint_x: 1
-        font_name: "../../src/fonts/arial-unicode-ms.ttf"
+        font_name: root.get_font()
     MDLabel:
         text: root.protocol
         markup: True
         size_hint_x: 1
-        font_name: "../../src/fonts/arial-unicode-ms.ttf"
+        font_name: root.get_font()
 
     MDLabel:
         text: root.node_type
         markup: True
         size_hint_x: 1
-        font_name: "../../src/fonts/arial-unicode-ms.ttf"
+        font_name: root.get_font()
 
     MDLabel:
         text: root.expires
         markup: True
         size_hint_x: 1
-        font_name: "../../src/fonts/arial-unicode-ms.ttf"
+        font_name: root.get_font()
     HSeparator:
     HSeparator:
     HSeparator:
@@ -1229,7 +1254,7 @@ WindowManager:
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex(MeileColors.MEILE)
                 font_size: sp(25)
-                font_name: "../../src/fonts/arial-unicode-ms.ttf"
+                font_name: root.get_font()
             AnchorLayout:
                 anchor_x: "right"
                 TooltipMDIconButton:
@@ -1426,7 +1451,7 @@ WindowManager:
                 Image:
                     id: subscribe_button
                     size_hint: 3,3
-                    source: "../../src/imgs/SubscribeButton.png"
+                    source: root.get_button("subscribe")
             
             MDFlatButton:        
                 md_bg_color: get_color_from_hex("#121212")
@@ -1434,7 +1459,7 @@ WindowManager:
                 Image:
                     id: subscribe_button
                     size_hint: 3,3
-                    source: "../../src/imgs/GetInfoButton.png"
+                    source: root.get_button("info")
 <Separator@Widget>:
     canvas:
         Color:

@@ -1,5 +1,5 @@
 from geography.continents import OurWorld
-from ui.interfaces import Tab, LatencyContent, TooltipMDIconButton, ConnectionDialog, IPAddressTextField, ConnectedNode, QuotaPct,BandwidthBar,BandwidthLabel
+from ui.interfaces import Tab, LatencyContent, TooltipMDIconButton, ConnectionDialog, ProtectedLabel, IPAddressTextField, ConnectedNode, QuotaPct,BandwidthBar,BandwidthLabel
 from typedef.win import WindowNames
 from cli.sentinel import  NodeTreeData
 from typedef.konstants import NodeKeys, TextStrings, MeileColors, HTTParams, IBCTokens
@@ -15,6 +15,8 @@ from adapters import HTTPRequests, DNSRequests
 from fiat import fiat_interface
 from cli.v2ray import V2RayHandler
 from fiat.stripe_pay import scrtsxx
+from adapters.ChangeDNS import ChangeDNS
+
 
 from kivy.properties import BooleanProperty, StringProperty, ColorProperty
 from kivy.uix.screenmanager import Screen, SlideTransition
@@ -43,6 +45,7 @@ import requests
 from requests.auth import HTTPBasicAuth
 import sys
 import copy
+from copy import deepcopy
 import re
 from shutil import rmtree
 from time import sleep
@@ -351,6 +354,13 @@ class MainWindow(Screen):
     NodeWidget = None
     Markers = []
     LatLong = []
+    SelectedSubscription = {"id" : None,
+                            "address" : None,
+                            "protocol" : None,
+                            "moniker" : None,
+                            "allocated" : None,
+                            "consumed" : None,
+                            "expires" : None}
 
 
 
@@ -378,7 +388,123 @@ class MainWindow(Screen):
                                    caller=self.ids.settings_menu,
                                    width_mult=3,
                                    background_color=get_color_from_hex(MeileColors.BLACK))
+    def ping(self):
+        UUID = Meile.app.root.get_screen(WindowNames.PRELOAD).UUID
+        try:
+            uuid_dict = {'uuid' : "%s" % UUID, 'os' : "l"}
+            Request = HTTPRequests.MakeRequest(TIMEOUT=3)
+            http = Request.hadapter()
+            ping = http.post(HTTParams.SERVER_URL + HTTParams.API_PING_ENDPOINT, json=uuid_dict)
+            if ping.status_code == 200:
+                print('ping')
+            else:
+                print("noping")
+        except Exception as e:
+            print(str(e))
+            pass
+            
+    @delayable
+    def connect_routine(self):
+        print(f"Selected Subscription: {self.SelectedSubscription}")
         
+        if self.SelectedSubscription['id'] and self.SelectedSubscription['address'] and self.SelectedSubscription['protocol']:
+            ID = self.SelectedSubscription['id']
+            naddress = self.SelectedSubscription['address']
+            type = self.SelectedSubscription['protocol']
+            
+            cd = ConnectionDialog()
+            self.set_conn_dialog(cd, "Connecting...")
+            yield 0.3
+            
+            hwf = HandleWalletFunctions()
+            thread = Thread(target=lambda: self.ping())
+            thread.start()
+            t = Thread(target=lambda: hwf.connect(ID, naddress, type))
+            t.start()
+    
+            while t.is_alive():
+                yield 0.0365
+                if "WireGuard" not in type:
+                    cd.ids.pb.value += 0.001
+                else:
+                    cd.ids.pb.value += 0.00175
+    
+            cd.ids.pb.value = 1
+            
+            self.ConnectedDict = deepcopy(hwf.connected)
+            yield 0.420
+            try: 
+                if hwf.connected['result']:
+                    print("CONNECTED!!!")
+                    self.CONNECTED = True
+                    self.NodeSwitch['moniker']      = self.SelectedSubscription['moniker']
+                    self.NodeSwitch['node']         = self.SelectedSubscription['address']
+                    self.NodeSwitch['switch']       = True
+                    self.NodeSwitch['id']           = self.SelectedSubscription['id']
+                    self.NodeSwitch['allocated']    = self.SelectedSubscription['allocated']
+                    self.NodeSwitch['consumed']     = self.SelectedSubscription['consumed']
+                    self.NodeSwitch['og_consumed']  = self.SelectedSubscription['consumed'] 
+                    self.NodeSwitch['expirary']     = self.SelectedSubscription['expires']
+                    
+                    # TODO: Add Quota routines 
+                    
+                    self.remove_loading_widget2()
+                    print("REmove loading Widget")
+                    self.dialog = MDDialog(
+                        title="Connected!",
+                        md_bg_color=get_color_from_hex(MeileColors.BLACK),
+                        buttons=[
+                                MDFlatButton(
+                                    text="OK",
+                                    theme_text_color="Custom",
+                                    text_color=get_color_from_hex(MeileColors.MEILE),
+                                    on_release=partial(self.call_ip_get,
+                                                       True,
+                                                       self.SelectedSubscription['moniker']
+                                                       )
+                                ),])
+                    self.dialog.open()
+                    
+                else:
+                    self.remove_loading_widget2()
+                    if not hwf.connected['status']['success']:
+                        
+                        error = hwf.connected['status']['error']
+                        if "invalid signature" in error['message']:
+                            status = "Invalid Signature. Please try connecting again."
+                        else:
+                            status = "Code: " + str(error['code'])
+                            
+                    self.dialog = MDDialog(
+                        title="Something went wrong. Not connected: %s" % hwf.connected['status'],
+                        md_bg_color=get_color_from_hex(MeileColors.BLACK),
+                        buttons=[
+                                MDFlatButton(
+                                    text="OK",
+                                    theme_text_color="Custom",
+                                    text_color=get_color_from_hex(MeileColors.MEILE),
+                                    on_release=partial(self.call_ip_get, False, "")
+                                ),])
+                    self.dialog.open()
+                    
+            except (TypeError, KeyError) as e:
+                print(str(e))
+                self.remove_loading_widget2()
+                self.dialog = MDDialog(
+                    title="Something went wrong. Not connected: User cancelled",
+                    md_bg_color=get_color_from_hex(MeileColors.BLACK),
+                    buttons=[
+                            MDFlatButton(
+                                text="OK",
+                                theme_text_color="Custom",
+                                text_color=get_color_from_hex(MeileColors.MEILE),
+                                on_release=partial(self.call_ip_get, False, "")
+                            ),])
+                self.dialog.open()
+        else:
+            # TODO
+            print("Something went wrong")
+                    
     def menu_open(self):
         self.menu.open()
     
@@ -400,7 +526,9 @@ class MainWindow(Screen):
         self.build_country_tree()
 
         # TODO: Would be good to process this in a background thread so as to not hang the UI
-        self.get_ip_address(None)
+        thread = Thread(target=lambda: self.get_ip_address(None))
+        thread.start()
+        
 
     def build_country_tree(self):
 
@@ -451,10 +579,12 @@ class MainWindow(Screen):
             self.quota_pct    = QuotaPct()
             self.map_widget_1 = IPAddressTextField()
             self.map_widget_2 = ConnectedNode()
+            self.map_widget_3 = ProtectedLabel()
 
             layout.add_widget(self.MeileMap)
             layout.add_widget(self.map_widget_1)
             layout.add_widget(self.map_widget_2)
+            layout.add_widget(self.map_widget_3)
             layout.add_widget(bw_label)
             layout.add_widget(self.quota)
             layout.add_widget(self.quota_pct)
@@ -517,27 +647,6 @@ class MainWindow(Screen):
 
         #self.get_continent_coordinates(self.MeileLand.CONTINENTS[0])
     
-    '''
-    def set_item(self, text_item):
-        self.ids.drop_item.set_item(text_item)
-        self.Sort = text_item
-        self.menu.dismiss()
-    
-    def set_warp_icon(self):
-        MeileConfig = MeileGuiConfig()
-        return MeileConfig.resource_path("../imgs/warp.png")
-    
-    def set_protected_icon(self, setbool, moniker):
-        MeileConfig = MeileGuiConfig()
-        self.map_widget_2 = ConnectedNode()
-        if setbool:
-            self.ids.protected.opacity = 1
-            self.map_widget_2.text = moniker
-        else:
-            self.ids.protected.opacity = 0
-            self.map_widget_2.text = moniker
-        return MeileConfig.resource_path("../imgs/protected.png")
-    '''
     def get_config(self, dt):
         MeileConfig = MeileGuiConfig()
         CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
@@ -651,7 +760,7 @@ class MainWindow(Screen):
         if self.dialog:
             self.dialog.dismiss()
 
-        self.old_ip = self.ip
+        #self.old_ip = self.ip
         try:
             resolver = DNSRequests.MakeDNSRequest(domain=HTTParams.IFCONFIGDNS, timeout=3.5, lifetime=3.5)
             ifconfig = resolver.DNSRequest()
@@ -683,12 +792,26 @@ class MainWindow(Screen):
                 return True
                 #self.manager.get_screen(WindowNames.MAIN_WINDOW).ids.old_ip.text = "Old IP: " + self.old_ip
             else:
-                print("Error resolving ICANHAZIP... defaulting...")
+                print("Error resolving IFCONFIG.CO... defaulting...")
                 return False
         except Exception as e:
             print(str(e))
             return False
+        
+    @delayable        
+    def change_dns(self):
+        yield 0.6
+        if self.dialog:
+            self.dialog.dismiss()
+        self.add_loading_popup("DNS Resolver error... Switching to Cloudflare")
+        yield 0.314
+        
+        ChangeDNS(dns="1.1.1.1").change_dns()
 
+        yield 1.2
+        self.get_ip_address(None)
+        self.remove_loading_widget(None)
+        
     @mainthread
     def disconnect_from_node(self):
         try:
@@ -819,39 +942,6 @@ class MainWindow(Screen):
         self.dialog = MDDialog(title=title_text,md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR))
         self.dialog.open()
 
-    @mainthread
-    def remove_loading_widget(self, dt):
-        try:
-            self.dialog.dismiss()
-            self.dialog = None
-        except Exception as e:
-            print(str(e))
-            pass
-    '''
-    def refresh_nodes_and_subs(self):
-        lc = LatencyContent()
-        self.dialog = MDDialog(
-                    title="Latency:",
-                    type="custom",
-                    content_cls=lc,
-                    md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
-                    buttons=[
-                        MDFlatButton(
-                            text="CANCEL",
-                            theme_text_color="Custom",
-                            text_color=Meile.app.theme_cls.primary_color,
-                            on_release=self.remove_loading_widget
-                        ),
-                        MDRaisedButton(
-                            text="REFRESH",
-                            theme_text_color="Custom",
-                            text_color=get_color_from_hex("#000000"),
-                            on_release=partial(self.Refresh, lc)
-                        ),
-                    ],
-                )
-        self.dialog.open()
-    '''
     @delayable
     def Refresh(self):
         self.remove_loading_widget(None)
@@ -883,49 +973,6 @@ class MainWindow(Screen):
         self.refresh_country_recycler()
         self.remove_loading_widget(None)
         
-
-    ''' No tabs anymore :*(
-    @mainthread
-    def on_tab_switch(self, instance_tabs, instance_tab, instance_tabs_label, tab_text):
-        self.ids.rv.data = []
-        if not tab_text:
-            tab_text = OurWorld.CONTINENTS[0]
-
-        # Check to build Map
-        self.build_meile_map()
-
-        self.get_ip_address(None)
-
-        # use lambda in future
-        if tab_text == OurWorld.CONTINENTS[0]:
-            for ncountry in self.NodeTree.NodeTree.children(OurWorld.CONTINENTS[0]):
-                self.add_country_rv_data(self.build_node_data(ncountry))
-                self.get_continent_coordinates(OurWorld.CONTINENTS[0])
-        elif tab_text == OurWorld.CONTINENTS[1]:
-            for ncountry in self.NodeTree.NodeTree.children(OurWorld.CONTINENTS[1]):
-                self.add_country_rv_data(self.build_node_data(ncountry))
-                self.get_continent_coordinates(OurWorld.CONTINENTS[1])
-        elif tab_text == OurWorld.CONTINENTS[2]:
-            for ncountry in self.NodeTree.NodeTree.children(OurWorld.CONTINENTS[2]):
-                self.add_country_rv_data(self.build_node_data(ncountry))
-                self.get_continent_coordinates(OurWorld.CONTINENTS[2])
-        elif tab_text == OurWorld.CONTINENTS[3]:
-            for ncountry in self.NodeTree.NodeTree.children(OurWorld.CONTINENTS[3]):
-                self.add_country_rv_data(self.build_node_data(ncountry))
-                self.get_continent_coordinates(OurWorld.CONTINENTS[3])
-        elif tab_text == OurWorld.CONTINENTS[4]:
-            for ncountry in self.NodeTree.NodeTree.children(OurWorld.CONTINENTS[4]):
-                self.add_country_rv_data(self.build_node_data(ncountry))
-                self.get_continent_coordinates(OurWorld.CONTINENTS[4])
-        elif tab_text == OurWorld.CONTINENTS[5]:
-            for ncountry in self.NodeTree.NodeTree.children(OurWorld.CONTINENTS[5]):
-                self.add_country_rv_data(self.build_node_data(ncountry))
-                self.get_continent_coordinates(OurWorld.CONTINENTS[5])
-        # Search Criteria
-        else:
-            pass
-
-    '''
     def get_continent_coordinates(self, c):
         loc = self.MeileLand.ContinentLatLong[c]
         self.MeileMap.zoom = 4
@@ -1003,7 +1050,7 @@ class MainWindow(Screen):
                         title=title,
                         type="custom",
                         content_cls=cd,
-                        md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
+                        md_bg_color=get_color_from_hex(MeileColors.BLACK),
                     )
         self.dialog.open()
 
@@ -1022,13 +1069,64 @@ class MainWindow(Screen):
                                      sort=self.Sort)
         self.carousel.add_widget(self.NodeWidget)
         self.carousel.load_slide(self.NodeWidget)
-
-    def return_connect_button(self):
+    
+    def call_ip_get(self,result, moniker,  *kwargs):
+        if result:
+            self.CONNECTED = True
+            # Here change the Connection button to a "Disconnect" button
+            self.set_protected_icon(True, moniker)
+        else:
+            self.CONNECTED = False
+            
+        if not self.get_ip_address(None):
+            self.remove_loading_widget(None)
+            self.change_dns()
+            self.close_sub_window()
+            self.zoom_country_map()
+        else:
+            self.remove_loading_widget(None)
+            self.close_sub_window()
+            self.zoom_country_map()
+            
+    def set_protected_icon(self, setbool, moniker):
+        
+        if setbool:
+            self.ids.connect_button.opacity = 0
+            self.ids.disconnect_button.opacity = 1
+            self.map_widget_2.text = moniker
+            self.map_widget_3.text = "PROTECTED"
+        else:
+            self.ids.disconnect_button.opacity = 0
+            self.ids.connect_button.opacity = 1
+            self.map_widget_2.text = moniker
+            self.map_widget_3.text = "UNPROTECTED"
+            
+    @mainthread
+    def remove_loading_widget(self, dt):
+        try:
+            self.dialog.dismiss()
+            self.dialog = None
+        except Exception as e:
+            print(str(e))
+            pass
+    
+    def remove_loading_widget2(self):
+        try:
+            self.dialog.dismiss()
+            self.dialog = None
+        except Exception as e:
+            print(str(e))
+            pass
+    
+    
+    def return_connect_button(self, text):
         MeileConfig = MeileGuiConfig()
-
-        button_path = "../imgs/ConnectButton.png"
-
-        return MeileConfig.resource_path(button_path)
+        if text == "c":
+            button_path = "../imgs/ConnectButton.png"
+            return MeileConfig.resource_path(button_path)
+        else:
+            button_path = "../imgs/DisconnectButton.png"
+            return MeileConfig.resource_path(button_path)
 class WalletScreen(Screen):
     text = StringProperty()
     ADDRESS = None
@@ -1305,7 +1403,7 @@ class SubscriptionScreen(MDBoxLayout):
 
         item = NodeAccordion(
             node=NodeRow(
-                moniker="[b]" + node[NodeKeys.FinalSubsKeys[1]] + "[/b]",
+                moniker=node[NodeKeys.FinalSubsKeys[1]],
                 location=node[NodeKeys.FinalSubsKeys[5]],
                 protocol=node[NodeKeys.FinalSubsKeys[8]],
                 node_type=NodeTypeText,
@@ -1630,6 +1728,7 @@ class PlanScreen(MDBoxLayout):
 
         req = http.get(HTTParams.PLAN_API + HTTParams.API_PLANS, auth=HTTPBasicAuth(scrtsxx.PLANUSERNAME, scrtsxx.PLANPASSWORD))
         plan_data = req.json()
+        print(plan_data)
 
         # Prevent plan parsing when wallet is not initialized
         user_enrolled_plans = []

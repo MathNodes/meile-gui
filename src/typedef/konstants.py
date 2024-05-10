@@ -1,5 +1,6 @@
 from os import path, environ
 
+MEILE_PLAN_WALLET = "sent1tdgva8fhl9rgawrj2am9sv8prw2h44mc8g3qch"
 
 class Arch():
     LINUX   = "Linux"
@@ -87,7 +88,7 @@ class IBCTokens():
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
-    VERSION = "v1.8.0"
+    VERSION = "v2.0.0-alpha1"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"
     FailedHealthCheck = "Failed Sentinel Health Check"
@@ -99,11 +100,14 @@ class MeileColors():
     INACTIVE_DIALOG_BG_COLOR = "#50507c"
     ROW_HOVER                = "#39363c"
     FONT_FACE                = "../fonts/mplus-2c-bold.ttf"
+    FONT_FACE_ARIAL          = "../fonts/arial-unicode-ms.ttf"
     QR_FONT_FACE             = "../fonts/Roboto-BoldItalic.ttf"
     MAP_MARKER               = "../imgs/location_pin.png"
     LOGO                     = "../imgs/logo.png"
     LOGO_HD                  = "../imgs/logo_hd.png"
     LOGO_TEXT                = "../imgs/logo_text.png"
+    SUBSCRIBE_BUTTON         = "../imgs/SubscribeButton.png"
+    GETINFO_BUTTON           = "../imgs/GetInfoButton.png"
     HEALTH_ICON              = "shield-plus"
     SICK_ICON                = "emoticon-sick"
     ARCGIS_MAP               = "https://server.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}.png"

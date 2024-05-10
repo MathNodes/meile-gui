@@ -378,7 +378,7 @@ class PlanSubscribeContent(BoxLayout):
         if mu_coin == "dvpn":
             value = float(price_text.rstrip(mu_coin).strip())
         else:
-            value = round(int(price_text.rstrip("dvpn").strip()) * self.price_cache["dvpn"]["price"] / self.price_cache[mu_coin]["price"], 5)
+            value = round(float(price_text.rstrip("dvpn").strip()) * self.price_cache["dvpn"]["price"] / self.price_cache[mu_coin]["price"], 5)
 
         print(f"mu_coin={mu_coin}, month={month}, value={value}, price_cache={self.price_cache}")
 
@@ -443,6 +443,10 @@ class NodeRow(MDGridLayout):
     node_type = StringProperty()
     expires = StringProperty()
     
+    def get_font(self):
+        Config = MeileGuiConfig()
+        return Config.resource_path(MeileColors.FONT_FACE_ARIAL)
+    
 class NodeDetails(MDGridLayout):
     sub_id = StringProperty()
     allocated = StringProperty()
@@ -504,6 +508,7 @@ class NodeAccordion(ButtonBehavior, MDGridLayout):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         self.register_event_type("on_open")
         self.register_event_type("on_close")
         
@@ -538,9 +543,29 @@ class NodeAccordion(ButtonBehavior, MDGridLayout):
 
     def on_open(self, *args):
         """Called when a panel is opened."""
+        
+        # Register the subscription for the connect button
+        self.mw.SelectedSubscription['id']         = self.content.sub_id
+        self.mw.SelectedSubscription['address']    = self.content.node_address
+        self.mw.SelectedSubscription['protocol']   = self.node.protocol
+        self.mw.SelectedSubscription['moniker']    = self.node.moniker
+        self.mw.SelectedSubscription['allocated']  = self.content.allocated
+        self.mw.SelectedSubscription['consumed']   = self.content.consumed
+        self.mw.SelectedSubscription['expires']    = self.node.expires
+        
+        
 
     def on_close(self, *args):
         """Called when a panel is closed."""
+        
+        # Unregister the subscription for the connect button
+        self.mw.SelectedSubscription['id']          = None
+        self.mw.SelectedSubscription['address']     = None
+        self.mw.SelectedSubscription['protocol']    = None
+        self.mw.SelectedSubscription['moniker']     = None
+        self.mw.SelectedSubscription['allocated']   = None
+        self.mw.SelectedSubscription['consumed']    = None
+        self.mw.SelectedSubscription['expires']     = None
 
     def close_panel(self) -> None:
         """Method closes the panel."""
@@ -606,6 +631,17 @@ class PlanRow(MDGridLayout):
     plan_id = StringProperty()
     dialog = None
     
+    def get_font(self):
+        Config = MeileGuiConfig()
+        return Config.resource_path(MeileColors.FONT_FACE_ARIAL)
+    
+    def get_button(self, text):
+        Config = MeileGuiConfig()
+        if text == "info":
+            return Config.resource_path(MeileColors.GETINFO_BUTTON)
+        elif text == "subscribe":
+            return Config.resource_path(MeileColors.SUBSCRIBE_BUTTON)
+    
     def open_subscribe(self):
         
         item =  { "price": self.cost, "white_label": self.plan_name, "nnodes": self.num_of_nodes, "logo_image": self.logo_image }
@@ -632,10 +668,64 @@ class PlanRow(MDGridLayout):
                     ],
                 )
             self.dialog.open()
+            
+    @delayable
+    def add_wallet_2plan(self, wallet, plan_id, duration, sub_id, uuid, amt, denom):
+        Request = HTTPRequests.MakeRequest()
+        http = Request.hadapter()
+        plan_details = {"data": {"wallet" : wallet, "plan_id" : plan_id, "duration" : duration, "sub_id" : sub_id, "uuid" : uuid, "amt" : amt, "denom" : denom}}
+        print(plan_details)
+        SERVER_ADDRESS = scrtsxx.MEILE_PLAN_API
+        API            = scrtsxx.MEILE_PLAN_ADD
+        USERNAME       = scrtsxx.PLANUSERNAME
+        PASSWORD       = scrtsxx.PLANPASSWORD
+        Request = HTTPRequests.MakeRequest()
+        http = Request.hadapter()
+        try:
+            print("Sending plan add request...")
+            tx = http.post(SERVER_ADDRESS + API, json=plan_details, auth=HTTPBasicAuth(USERNAME, PASSWORD))
+            txJSON = tx.json()
+            if txJSON['status']:
+                self.dialog.dismiss()
+                self.dialog = None
+                self.dialog = MDDialog(
+                        title=f"{wallet} added to plan: {plan_id}",
+                        buttons=[
+                            MDRaisedButton(
+                                text="CLOSE",
+                                theme_text_color="Custom",
+                                text_color=MeileColors.BLACK,
+                                on_release=self.closeDialog
+                            ),
+                        ],
+                    )
+                self.dialog.open()
+                yield 0.6
+            else:
+                self.dialog.dismiss()
+                self.dialog = None
+                self.dialog = MDDialog(
+                        title=f"Error processing adding wallet to plan. If the invoice was paid, please email support@mathnodes.com to gain assistance",
+                        buttons=[
+                            MDRaisedButton(
+                                text="CLOSE",
+                                theme_text_color="Custom",
+                                text_color=MeileColors.BLACK,
+                                on_release=self.closeDialog
+                            ),
+                        ],
+                    )
+                self.dialog.open()
+                yield 0.6
+        except Exception as e:
+            print(str(e))
+            self.dialog.dismiss()
+            self.dialog = None
+
     @delayable
     def subscribe(self, subscribe_dialog, *kwargs):
-        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW) 
-        
+        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
+
         deposit = subscribe_dialog.ids.deposit.text
         nnodes = subscribe_dialog.nnodes
         mu_coin = subscribe_dialog.ids.drop_item.current_item
@@ -653,14 +743,27 @@ class PlanRow(MDGridLayout):
         # sub_node = subscribe_dialog.return_deposit_text()
         # deposit = self.reparse_coin_deposit(sub_node[0])
 
+        # Declare method here so we can pass it as callback variable to methods
+        def on_success_subscription():
+            self.add_wallet_2plan(
+                wallet=mw.address,
+                plan_id=self.plan_id,
+                duration=subscribe_dialog.ids.slider1.value,
+                sub_id=self.id,
+                uuid=self.uuid,
+                amt=int(float(deposit) * IBCTokens.SATOSHI),
+                denom=mu_coin
+            )
+
         if subscribe_dialog.pay_with == "wallet":
-            self.pay_meile_plan_with_wallet(usd)
+            self.pay_meile_plan_with_wallet(deposit, mu_coin, usd, on_success_subscription)
         elif subscribe_dialog.pay_with == "btcpay":
-            self.dialog.dismiss()
+            if self.dialog:
+                self.dialog.dismiss()
             self.dialog = None
             self.dialog = MDDialog(
                     title="Waiting for invoice to be paid...",
-                    
+
                 )
             self.dialog.open()
             yield 0.6
@@ -673,67 +776,18 @@ class PlanRow(MDGridLayout):
                     )
                 self.dialog.open()
                 yield 0.6
-                duration = subscribe_dialog.ids.slider1.value
-                
-                Request = HTTPRequests.MakeRequest()
-                http = Request.hadapter()
-                plan_details = {"data": {"wallet" : mw.address,
-                                         "plan_id" : self.plan_id,
-                                         "duration" : duration,
-                                         "sub_id" : self.id,
-                                         "uuid" : self.uuid,
-                                         "amt" : int(float(deposit) * IBCTokens.SATOSHI),
-                                         "denom" : mu_coin
-                                         }
-                                 }
-                print(plan_details)
-                SERVER_ADDRESS = scrtsxx.MEILE_PLAN_API
-                API            = scrtsxx.MEILE_PLAN_ADD
-                USERNAME       = scrtsxx.PLANUSERNAME
-                PASSWORD       = scrtsxx.PLANPASSWORD
-                Request = HTTPRequests.MakeRequest()
-                http = Request.hadapter()
-                try:
-                    print("Sending plan add request...")
-                    tx = http.post(SERVER_ADDRESS + API, json=plan_details, auth=HTTPBasicAuth(USERNAME, PASSWORD))
-                    txJSON = tx.json()
-                    if txJSON['status']:
-                        self.dialog.dismiss()
-                        self.dialog = None
-                        self.dialog = MDDialog(
-                                title=f"{mw.address} added to plan: {self.plan_id}",
-                                buttons=[
-                                    MDRaisedButton(
-                                        text="CLOSE",
-                                        theme_text_color="Custom",
-                                        text_color=MeileColors.BLACK,
-                                        on_release=self.closeDialog
-                                    ),
-                                ],
-                            )
-                        self.dialog.open()
-                        yield 0.6
-                    else:
-                        self.dialog.dismiss()
-                        self.dialog = None
-                        self.dialog = MDDialog(
-                                title=f"Error processing adding wallet to plan. If the invoice was paid, please email support@mathnodes.com to gain assistance",
-                                buttons=[
-                                    MDRaisedButton(
-                                        text="CLOSE",
-                                        theme_text_color="Custom",
-                                        text_color=MeileColors.BLACK,
-                                        on_release=self.closeDialog
-                                    ),
-                                ],
-                            )
-                        self.dialog.open()
-                        yield 0.6
-                except Exception as e:
-                    print(str(e))
-                    self.dialog.dismiss()
-                    self.dialog = None
-                    pass
+
+                on_success_subscription()
+
+                # self.add_wallet_2plan(
+                #     wallet= mw.address,
+                #     plan_id= self.plan_id,
+                #     duration= subscribe_dialog.ids.slider1.value,
+                #     sub_id= self.id,
+                #     uuid= self.uuid,
+                #     amt= int(float(deposit) * IBCTokens.SATOSHI),
+                #     denom= mu_coin
+                # )
         elif subscribe_dialog.pay_with == "pirate":
             self.pay_meile_plan_with_pirate(usd)
         else:
@@ -747,8 +801,56 @@ class PlanRow(MDGridLayout):
         # Run Subscription method
         # self.subscribe
 
-    def pay_meile_plan_with_wallet(self, usd):
-        print(f"Method: 'pay_meile_plan_with_wallet', usd: {usd}")
+    @delayable
+    def pay_meile_plan_with_wallet(self, deposit, mu_coin, usd, on_success: callable):
+        print(f"Method: 'pay_meile_plan_with_wallet', usd: {usd}, {deposit} {mu_coin}")
+
+        # moniker, naddress, deposit
+        # spdialog = ProcessingSubDialog(sub_node[2], sub_node[1], f"{deposit}{mu_coin}" )
+        self.dialog.dismiss()
+        self.dialog = None
+        self.dialog = MDDialog(
+                title="Subscribing...",
+                type="custom",
+                # content_cls=spdialog,
+                md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
+            )
+        self.dialog.open()
+        yield 0.6
+
+        CONFIG = MeileGuiConfig.read_configuration(MeileGuiConfig, MeileGuiConfig.CONFFILE)
+        KEYNAME = CONFIG['wallet'].get('keyname', '')
+
+        hwf = HandleWalletFunctions()
+        result, output = hwf.send_2plan_wallet(KEYNAME, self.plan_id, mu_coin, deposit)
+        print("result", result)
+        print("output", output)
+
+        if result is True:
+            if self.dialog:
+                self.dialog.dismiss()
+            self.dialog = None
+            self.dialog = MDDialog(title=output["message"] + " Finishing up...",)
+            self.dialog.open()
+            yield 0.6
+            on_success()
+        else:
+            if self.dialog:
+                self.dialog.dismiss()
+
+            self.dialog = MDDialog(
+                title = ("Success" if output["success"] else "Failed") if isinstance(output, dict) else ("Error: %s" % "No wallet found!" if output == 1337 else output),
+                md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
+                buttons=[
+                        MDFlatButton(
+                            text="OK",
+                            theme_text_color="Custom",
+                            text_color=self.theme_cls.primary_color,
+                            on_release=self.closeDialog
+                        ),])
+            if isinstance(output, dict) is True:
+                self.dialog.text = output["message"]
+            self.dialog.open()
 
     def pay_meile_plan_with_btcpay(self, usd):
         print(f"Method: 'pay_meile_plan_with_btcpay', usd: {usd}")
@@ -1043,6 +1145,17 @@ class NodeCarousel(MDBoxLayout):
             self.ids.mapview.center_on(float(node[NodeKeys.NodesInfoKeys[6]])-1,float(node[NodeKeys.NodesInfoKeys[7]]))
         except Exception as e:
             print(str(e))
+    def get_font(self):
+        Config = MeileGuiConfig()
+        return Config.resource_path(MeileColors.FONT_FACE_ARIAL)
+    
+    def get_button(self, text):
+        Config = MeileGuiConfig()
+        if text == "info":
+            return Config.resource_path(MeileColors.GETINFO_BUTTON)
+        elif text == "subscribe":
+            return Config.resource_path(MeileColors.SUBSCRIBE_BUTTON)
+            
     
     def GetHealthCheck(self, address):
         Request = HTTPRequests.MakeRequest(TIMEOUT=2.3)
