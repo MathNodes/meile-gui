@@ -20,6 +20,9 @@ from kivymd.uix.textfield.textfield import MDTextField
 from kivymd.uix.label.label import MDLabel
 from kivymd.uix.progressbar.progressbar import MDProgressBar
 
+from conf.meile_config import MeileGuiConfig
+from typedef.konstants import MeileColors
+
 class Tab(MDBoxLayout, MDTabsBase):
     pass
 
@@ -30,6 +33,10 @@ class SubscribeContent(BoxLayout):
     def __init_ (self, price):
         self.price_text = price
 '''
+class ProtectedLabel(MDLabel):
+    def get_font(self):
+        Config = MeileGuiConfig()
+        return Config.resource_path(MeileColors.QR_FONT_FACE)
 
 class ToolTipMDIconButton(MDIconButton, MDTooltip):
     pass

@@ -66,6 +66,7 @@ class HTTParams():
     ICANHAZDNS             = "icanhazip.com"
     IFCONFIGDNS            = "ifconfig.co"
     IFCONFIGURL            = "https://ifconfig.co/json"
+    IPAPIDNS               = "ip-api.com"
     IPAPI                  = "http://ip-api.com/json"
     
     
