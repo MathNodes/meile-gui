@@ -1446,8 +1446,9 @@ WindowManager:
             MDFlatButton:        
                 md_bg_color: get_color_from_hex("#121212")
                 pos_hint: {'x' : .87, 'y': .275}
+                on_release: root.get_realtime_of_node(root.address)
                 Image:
-                    id: subscribe_button
+                    id: realtime_button
                     size_hint: 3,3
                     source: root.get_button("info")
 <Separator@Widget>:

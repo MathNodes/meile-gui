@@ -4,7 +4,7 @@ from kivy.core.window import Window
 from kivy.metrics import dp
 from kivy.core.clipboard import Clipboard
 from kivy.animation import Animation
-from kivy.clock import Clock
+from kivy.clock import Clock, mainthread
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.recycleview import RecycleView
 from kivy.uix.boxlayout import BoxLayout
@@ -133,13 +133,13 @@ class SubTypeDialog(BoxLayout):
         self.rvclass.closeDialog(None)
         
         if type == "gb":
-            print("You have selected bandwidth (GB)")
-            print(f"{self.price}\n{self.moniker}\n{self.naddress}")
+            #print("You have selected bandwidth (GB)")
+            #print(f"{self.price}\n{self.moniker}\n{self.naddress}")
             subscribe_dialog = SubscribeContent(self.price, self.moniker, self.naddress, False)
             
         else:
-            print("You have selected hourly (days)")
-            print(f"{self.hourly_price}\n{self.moniker}\n{self.naddress}")
+            #print("You have selected hourly (days)")
+            #print(f"{self.hourly_price}\n{self.moniker}\n{self.naddress}")
             subscribe_dialog = SubscribeContent(self.hourly_price, self.moniker, self.naddress, True)
             
         
@@ -813,7 +813,7 @@ class PlanRow(MDGridLayout):
                 title="Subscribing...",
                 type="custom",
                 # content_cls=spdialog,
-                md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
+                md_bg_color=get_color_from_hex(MeileColors.BLACK),
             )
         self.dialog.open()
         yield 0.6
@@ -830,7 +830,9 @@ class PlanRow(MDGridLayout):
             if self.dialog:
                 self.dialog.dismiss()
             self.dialog = None
-            self.dialog = MDDialog(title=output["message"] + " Finishing up...",)
+            self.dialog = MDDialog(title=output["message"] + " Finishing up...",
+                                   md_bg_color=get_color_from_hex(MeileColors.BLACK)
+                                   )
             self.dialog.open()
             yield 0.6
             on_success()
@@ -840,7 +842,7 @@ class PlanRow(MDGridLayout):
 
             self.dialog = MDDialog(
                 title = ("Success" if output["success"] else "Failed") if isinstance(output, dict) else ("Error: %s" % "No wallet found!" if output == 1337 else output),
-                md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
+                md_bg_color=get_color_from_hex(MeileColors.BLACK),
                 buttons=[
                         MDFlatButton(
                             text="OK",
@@ -1099,52 +1101,59 @@ class NodeCarousel(MDBoxLayout):
     def __init__(self, node, **kwargs):
         super(NodeCarousel, self).__init__()
         
-        gbprices = node[NodeKeys.NodesInfoKeys[2]].split(',')
-        hrprices = node[NodeKeys.NodesInfoKeys[3]].split(',')
-        
-        g = gbprices[0]
-        self.gb_prices = deepcopy(g)
-        
-        k=0
-        for g in gbprices:
-            if k == 0:
-                k +=1
-                continue
-            self.gb_prices = '\n'.join([self.gb_prices,g])
+        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
+        if node:
+            mw.NodeCarouselData = {"moniker" : node[NodeKeys.NodesInfoKeys[0]],
+                                   "address" : node[NodeKeys.NodesInfoKeys[1]],
+                                   "gb_prices" : node[NodeKeys.NodesInfoKeys[2]],
+                                   "hr_prices" : node[NodeKeys.NodesInfoKeys[3]]}
             
-        h = hrprices[0]
-        self.hr_prices = deepcopy(h)
-        
-        k=0
-        for h in hrprices:
-            if k == 0:
-                k +=1
-                continue
-            self.hr_prices = '\n'.join([self.hr_prices,h])
+            gbprices = node[NodeKeys.NodesInfoKeys[2]].split(',')
+            hrprices = node[NodeKeys.NodesInfoKeys[3]].split(',')
             
-        
-        self.moniker         = node[NodeKeys.NodesInfoKeys[0]]
-        self.address         = node[NodeKeys.NodesInfoKeys[1]]
-        #self.gb_prices       = node[NodeKeys.NodesInfoKeys[2]]
-        #self.hr_prices       = node[NodeKeys.NodesInfoKeys[3]]
-        self.download        = format_byte_size(node[NodeKeys.NodesInfoKeys[8]])+ "/s"
-        self.upload          = format_byte_size(node[NodeKeys.NodesInfoKeys[9]])+ "/s"
-        self.connected_peers = str(node[NodeKeys.NodesInfoKeys[10]])
-        self.max_peers       = str(node[NodeKeys.NodesInfoKeys[11]])
-        self.protocol        = node[NodeKeys.NodesInfoKeys[13]]
-        self.version         = node[NodeKeys.NodesInfoKeys[14]]
-        self.handshake       = str(node[NodeKeys.NodesInfoKeys[12]])
-        self.health_check    = self.GetHealthCheck(node[NodeKeys.NodesInfoKeys[1]])
-        self.isp_type        = node[NodeKeys.NodesInfoKeys[15]]
-        self.node_formula    = str(node[NodeKeys.NodesInfoKeys[18]]) if node[NodeKeys.NodesInfoKeys[18]] else "NULL"
-        self.votes           = str(node[NodeKeys.NodesInfoKeys[17]]) if node[NodeKeys.NodesInfoKeys[17]] else "0"
-        self.score           = str(node[NodeKeys.NodesInfoKeys[16]]) if node[NodeKeys.NodesInfoKeys[16]] else "NULL"
-        self.location        = f"[b]Location:[/b] {node[NodeKeys.NodesInfoKeys[5]]}, {node[NodeKeys.NodesInfoKeys[4]]}"
-        
-        try:
-            self.ids.mapview.center_on(float(node[NodeKeys.NodesInfoKeys[6]])-1,float(node[NodeKeys.NodesInfoKeys[7]]))
-        except Exception as e:
-            print(str(e))
+            g = gbprices[0]
+            self.gb_prices = deepcopy(g)
+            
+            k=0
+            for g in gbprices:
+                if k == 0:
+                    k +=1
+                    continue
+                self.gb_prices = '\n'.join([self.gb_prices,g])
+                
+            h = hrprices[0]
+            self.hr_prices = deepcopy(h)
+            
+            k=0
+            for h in hrprices:
+                if k == 0:
+                    k +=1
+                    continue
+                self.hr_prices = '\n'.join([self.hr_prices,h])
+                
+            
+            self.moniker         = node[NodeKeys.NodesInfoKeys[0]]
+            self.address         = node[NodeKeys.NodesInfoKeys[1]]
+            #self.gb_prices       = node[NodeKeys.NodesInfoKeys[2]]
+            #self.hr_prices       = node[NodeKeys.NodesInfoKeys[3]]
+            self.download        = format_byte_size(node[NodeKeys.NodesInfoKeys[8]])+ "/s"
+            self.upload          = format_byte_size(node[NodeKeys.NodesInfoKeys[9]])+ "/s"
+            self.connected_peers = str(node[NodeKeys.NodesInfoKeys[10]])
+            self.max_peers       = str(node[NodeKeys.NodesInfoKeys[11]])
+            self.protocol        = node[NodeKeys.NodesInfoKeys[13]]
+            self.version         = node[NodeKeys.NodesInfoKeys[14]]
+            self.handshake       = str(node[NodeKeys.NodesInfoKeys[12]])
+            self.health_check    = self.GetHealthCheck(node[NodeKeys.NodesInfoKeys[1]])
+            self.isp_type        = node[NodeKeys.NodesInfoKeys[15]]
+            self.node_formula    = str(node[NodeKeys.NodesInfoKeys[18]]) if node[NodeKeys.NodesInfoKeys[18]] else "NULL"
+            self.votes           = str(node[NodeKeys.NodesInfoKeys[17]]) if node[NodeKeys.NodesInfoKeys[17]] else "0"
+            self.score           = str(node[NodeKeys.NodesInfoKeys[16]]) if node[NodeKeys.NodesInfoKeys[16]] else "NULL"
+            self.location        = f"[b]Location:[/b] {node[NodeKeys.NodesInfoKeys[5]]}, {node[NodeKeys.NodesInfoKeys[4]]}"
+            
+            try:
+                self.ids.mapview.center_on(float(node[NodeKeys.NodesInfoKeys[6]])-1,float(node[NodeKeys.NodesInfoKeys[7]]))
+            except Exception as e:
+                print(str(e))
     def get_font(self):
         Config = MeileGuiConfig()
         return Config.resource_path(MeileColors.FONT_FACE_ARIAL)
@@ -1158,24 +1167,78 @@ class NodeCarousel(MDBoxLayout):
             
     
     def GetHealthCheck(self, address):
+        try:
+            Request = HTTPRequests.MakeRequest(TIMEOUT=2.3)
+            http = Request.hadapter()
+            r = http.get(HTTParams.HEALTH_CHECK % address)
+            health_check = r.json()['result']
+            print(health_check)
+            if 'status' in health_check:
+                if health_check['status'] != 1:
+                    return "Failed"
+            if "info_fetch_error" in health_check:
+                return "Failed"
+            elif "config_exchange_error" in health_check:
+                return "Failed"
+            elif "location_fetch_error" in health_check:
+                return "Failed"
+            else:
+                return "Passed"
+        except:
+            return "Error"    
+        
+    def get_realtime_of_node(self, naddress):   
+        
         Request = HTTPRequests.MakeRequest(TIMEOUT=2.3)
         http = Request.hadapter()
-        r = http.get(HTTParams.HEALTH_CHECK % address)
-        health_check = r.json()
-        print(health_check)
-        if 'status' in health_check:
-            if health_check['status'] != 1:
-                return "Failed"
-        elif "info_fetch_error " in health_check:
-            return "Failed"
-        elif "config_exchange_error" in health_check:
-            return "Failed"
-        elif "location_fetch_error" in health_check:
-            return "Failed"
-        else:
-            return "Passed"
+        endpoint = "/sentinel/nodes/" + naddress.lstrip().rstrip()
+        try:
+            '''
+            Add get from config.ini for API when settings is  merged. 
+            '''
+            requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
+            r = http.get(HTTParams.APIURL + endpoint)
+            remote_url = r.json()['node']['remote_url']
+            r = http.get(remote_url + "/status", verify=False)
+            print(remote_url)
+    
+            NodeInfoJSON = r.json()
+            NodeInfoDict = {}
+            
+            NodeInfoDict['connected_peers'] = NodeInfoJSON['result']['peers']
+            NodeInfoDict['max_peers']       = NodeInfoJSON['result']['qos']['max_peers']
+            NodeInfoDict['version']         = NodeInfoJSON['result']['version']
+            NodeInfoDict['city']            = NodeInfoJSON['result']['location']['city']
+
+        except Exception as e:
+            print(str(e))
+            return None
+
+
+        if not self.dialog:
+            self.dialog = MDDialog(
+                md_bg_color=get_color_from_hex(MeileColors.BLACK),
+                text='''
+City: %s
+Connected Peers:  %s  
+Max Peers: %s  
+Node Version: %s 
+                    ''' % (NodeInfoDict['city'], NodeInfoDict['connected_peers'],NodeInfoDict['max_peers'],NodeInfoDict['version']),
+  
+                buttons=[
+                    MDRaisedButton(
+                        text="OKAY",
+                        theme_text_color="Custom",
+                        text_color=(1,1,1,1),
+                        on_release= self.closeDialog,
+                    )
+                ],
+            )
+        self.dialog.open()
         
+    @mainthread
     def subscribe_to_node(self, price, hourly_price, naddress, moniker):
+        print("Running NodeCarousel.subscribe_to_node()...")
         subtype_dialog = SubTypeDialog(self,price,hourly_price,moniker, naddress)
         
         #subscribe_dialog = SubscribeContent(price, moniker , naddress )
@@ -1198,7 +1261,7 @@ class NodeCarousel(MDBoxLayout):
                 title="Subscribing...",
                 type="custom",
                 content_cls=spdialog,
-                md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
+                md_bg_color=get_color_from_hex(MeileColors.BLACK),
             )
         self.dialog.open()
         yield 0.6
@@ -1213,7 +1276,7 @@ class NodeCarousel(MDBoxLayout):
             self.dialog.dismiss()
             self.dialog = MDDialog(
                 title="Successful!",
-                md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
+                md_bg_color=get_color_from_hex(MeileColors.BLACK),
                 buttons=[
                         MDFlatButton(
                             text="OK",
@@ -1227,7 +1290,7 @@ class NodeCarousel(MDBoxLayout):
             self.dialog.dismiss()
             self.dialog = MDDialog(
             title="Error: %s" % "No wallet found!" if returncode[1] == 1337  else returncode[1],
-            md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
+            md_bg_color=get_color_from_hex(MeileColors.BLACK),
             buttons=[
                     MDFlatButton(
                         text="OK",
@@ -1235,10 +1298,44 @@ class NodeCarousel(MDBoxLayout):
                         text_color=self.theme_cls.primary_color,
                         on_release=self.closeDialog
                     ),])
-            self.dialog.open()     
+            self.dialog.open()
+            
+    def reparse_coin_deposit(self, deposit):
+        
+        for k,v in CoinsList.ibc_coins.items():
+            try: 
+                coin = re.findall(k,deposit)[0]
+                #print(coin)
+                deposit = deposit.replace(coin, v)
+                #print(deposit)
+                mu_deposit_amt = int(float(re.findall(r'[0-9]+\.[0-9]+', deposit)[0])*CoinsList.SATOSHI)
+                #print(mu_deposit_amt)
+                tru_mu_deposit = str(mu_deposit_amt) + v
+                #print(tru_mu_deposit)
+                tru_mu_ibc_deposit = self.check_ibc_denom(tru_mu_deposit)
+                #print(tru_mu_ibc_deposit)
+                return tru_mu_ibc_deposit
+            except:
+                pass
+            
+    def check_ibc_denom(self, tru_mu_deposit):
+        for ibc_coin in IBCTokens.IBCCOINS:
+            k = ibc_coin.keys()
+            v = ibc_coin.values()
+            for coin,ibc in zip(k,v):
+                print(coin)
+                print(ibc)
+                if coin in tru_mu_deposit:
+                    tru_mu_deposit = tru_mu_deposit.replace(coin, ibc)
+                    print(tru_mu_deposit)
+        return tru_mu_deposit     
     
     def switch_carousel(self):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
+        mw.NodeCarouselData = {"moniker" : None,
+                               "address" : None,
+                               "gb_prices" : None,
+                               "hr_prices" : None}
         mw.carousel.remove_widget(self)
         mw.carousel.load_slide(mw.NodeWidget)
         
@@ -1247,7 +1344,15 @@ class NodeCarousel(MDBoxLayout):
         self.dialog = None
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         mw.SubResult = None
-    
+        
+        if mw.SubCaller:
+            mw.switch_to_sub_window()
+                
+        else:
+            mw.NodeCarouselData = {"moniker" : None,
+                               "address" : None,
+                               "gb_prices" : None,
+                               "hr_prices" : None}
     def closeDialog(self, inst):
         try:
             self.dialog.dismiss()
@@ -1278,51 +1383,7 @@ class RecycleViewRow(MDCard,RectangularElevationBehavior,ThemableBehavior, Hover
         self.md_bg_color = get_color_from_hex(MeileColors.DIALOG_BG_COLOR)
         Window.set_system_cursor('arrow')
         
-    def get_city_of_node(self, naddress):   
-        
-        Request = HTTPRequests.MakeRequest(TIMEOUT=2.3)
-        http = Request.hadapter()
-        endpoint = "/sentinel/nodes/" + naddress.lstrip().rstrip()
-        try:
-            requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
-            r = http.get(HTTParams.APIURL + endpoint)
-            remote_url = r.json()['node']['remote_url']
-            r = http.get(remote_url + "/status", verify=False)
-            print(remote_url)
     
-            NodeInfoJSON = r.json()
-            NodeInfoDict = {}
-            
-            NodeInfoDict['connected_peers'] = NodeInfoJSON['result']['peers']
-            NodeInfoDict['max_peers']       = NodeInfoJSON['result']['qos']['max_peers']
-            NodeInfoDict['version']         = NodeInfoJSON['result']['version']
-            NodeInfoDict['city']            = NodeInfoJSON['result']['location']['city']
-
-        except Exception as e:
-            print(str(e))
-            return None
-
-
-        if not self.dialog:
-            self.dialog = MDDialog(
-                md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
-                text='''
-City: %s
-Connected Peers:  %s  
-Max Peers: %s  
-Node Version: %s 
-                    ''' % (NodeInfoDict['city'], NodeInfoDict['connected_peers'],NodeInfoDict['max_peers'],NodeInfoDict['version']),
-  
-                buttons=[
-                    MDRaisedButton(
-                        text="OKAY",
-                        theme_text_color="Custom",
-                        text_color=(1,1,1,1),
-                        on_release= self.closeDialog,
-                    )
-                ],
-            )
-        self.dialog.open()
     '''    
     def subscribe_to_node(self, price, hourly_price, naddress, moniker):
         subtype_dialog = SubTypeDialog(self,price,hourly_price,moniker, naddress)
@@ -1549,7 +1610,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
         if not self.dialog:
             self.dialog = MDDialog(
                     title="Unsubscribe from ID: %s?" % subId,
-                    md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
+                    md_bg_color=get_color_from_hex(MeileColors.BLACK),
                     buttons=[
                         MDFlatButton(
                             text="CANCEL",
@@ -1593,7 +1654,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
                     title="Unsub Details",
                     type="custom",
                     content_cls=TXDialog,
-                    md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
+                    md_bg_color=get_color_from_hex(MeileColors.BLACK),
                     buttons=[
                         MDFlatButton(
                             text="OKAY",

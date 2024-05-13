@@ -5,7 +5,7 @@ from cli.sentinel import  NodeTreeData
 from typedef.konstants import NodeKeys, TextStrings, MeileColors, HTTParams, IBCTokens
 from cli.sentinel import disconnect as Disconnect
 import main.main as Meile
-from ui.widgets import WalletInfoContent, MDMapCountryButton, RatingContent, NodeRV, NodeRV2, NodeAccordion, NodeRow, NodeDetails, PlanAccordion, PlanRow, PlanDetails
+from ui.widgets import WalletInfoContent, MDMapCountryButton, RatingContent, NodeRV, NodeRV2, NodeAccordion, NodeRow, NodeDetails, PlanAccordion, PlanRow, PlanDetails, NodeCarousel, SubTypeDialog, SubscribeContent
 from utils.qr import QRCode
 from cli.wallet import HandleWalletFunctions
 from conf.meile_config import MeileGuiConfig
@@ -362,6 +362,13 @@ class MainWindow(Screen):
                             "allocated" : None,
                             "consumed" : None,
                             "expires" : None}
+    
+    NodeCarouselData = {"moniker" : None,
+                        "address" : None,
+                        "gb_prices" : None,
+                        "hr_prices" : None}
+    
+    SubCaller = False
 
 
 
@@ -408,7 +415,16 @@ class MainWindow(Screen):
     def connect_routine(self):
         print(f"Selected Subscription: {self.SelectedSubscription}")
         
-        if self.ids.connect_button.source == self.return_connect_button("c"):    
+        if self.ids.connect_button.source == self.return_connect_button("c"):
+            print(self.NodeCarouselData)
+            if self.NodeCarouselData['moniker']:
+                self.SubCaller = True
+                nc = NodeCarousel(node=None)
+                nc.subscribe_to_node(self.NodeCarouselData['gb_prices'],
+                                     self.NodeCarouselData['hr_prices'],
+                                     self.NodeCarouselData['address'],
+                                     self.NodeCarouselData['moniker'])
+                
             if self.SelectedSubscription['id'] and self.SelectedSubscription['address'] and self.SelectedSubscription['protocol']:
                 ID = self.SelectedSubscription['id']
                 naddress = self.SelectedSubscription['address']
@@ -1001,17 +1017,32 @@ class MainWindow(Screen):
         Meile.app.root.current = WindowNames.WALLET_RESTORE
 
     def build_wallet_interface(self):
+        # Clear out any previous Carousel Data
+        self.NodeCarouselData = {"moniker" : None,
+                                "address" : None,
+                                "gb_prices" : None,
+                                "hr_prices" : None}
         CONFIG = self.MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
         Meile.app.root.add_widget(WalletScreen(name=WindowNames.WALLET, ADDRESS=CONFIG['wallet'].get('address', '')))
         Meile.app.root.transition = SlideTransition(direction = "up")
         Meile.app.root.current = WindowNames.WALLET
 
     def build_help_screen_interface(self):
+        # Clear out any previous Carousel Data
+        self.NodeCarouselData = {"moniker" : None,
+                                "address" : None,
+                                "gb_prices" : None,
+                                "hr_prices" : None}
         Meile.app.root.add_widget(HelpScreen(name=WindowNames.HELP))
         Meile.app.root.transition = SlideTransition(direction = "left")
         Meile.app.root.current = WindowNames.HELP
 
     def build_settings_screen_interface(self):
+        # Clear out any previous Carousel Data
+        self.NodeCarouselData = {"moniker" : None,
+                                "address" : None,
+                                "gb_prices" : None,
+                                "hr_prices" : None}
         Meile.app.root.add_widget(SettingsScreen(name=WindowNames.SETTINGS))
         Meile.app.root.transition = SlideTransition(direction = "down")
         Meile.app.root.current = WindowNames.SETTINGS
@@ -1030,6 +1061,11 @@ class MainWindow(Screen):
         self.carousel.load_slide(self.NodeWidget)
 
     def switch_to_plan_window(self):
+        # Clear out any previous Carousel Data
+        self.NodeCarouselData = {"moniker" : None,
+                                "address" : None,
+                                "gb_prices" : None,
+                                "hr_prices" : None}
         try:
             self.carousel.remove_widget(self.NodeWidget)
         except Exception as e:
@@ -1348,17 +1384,31 @@ class SubscriptionScreen(MDBoxLayout):
             self.GetSubscriptions()
 
         for sub in mw.SubResult:
-            if sub[NodeKeys.FinalSubsKeys[5]] == "Czechia":
-                sub[NodeKeys.FinalSubsKeys[5]] = "Czech Republic"
-            try:
-                iso2 = OurWorld.our_world.get_country_ISO2(sub[NodeKeys.FinalSubsKeys[5]].lstrip().rstrip()).lower()
-            except:
-                iso2 = "sc"
-            flagloc = floc + iso2 + ".png"
-            self.add_sub_rv_data(sub, flagloc)
+            self.add_sub_rv_data(sub)
+            
         self.remove_loading_widget(None)
+        
+        for sub in mw.SubResult:
+            #print(sub)
+            #print(f"nc:{mw.NodeCarouselData['address']}, sub:{sub[NodeKeys.FinalSubsKeys[2]]}")
+            if mw.NodeCarouselData['address'] == sub[NodeKeys.FinalSubsKeys[2]]:
+                mw.SelectedSubscription['id']        = sub[NodeKeys.FinalSubsKeys[0]]
+                mw.SelectedSubscription['address']   = sub[NodeKeys.FinalSubsKeys[2]]
+                mw.SelectedSubscription['protocol']  =  sub[NodeKeys.FinalSubsKeys[8]]
+                mw.SelectedSubscription['moniker']   = sub[NodeKeys.FinalSubsKeys[1]]
+                mw.SelectedSubscription['allocated'] = sub[NodeKeys.FinalSubsKeys[6]]
+                mw.SelectedSubscription['consumed']  = sub[NodeKeys.FinalSubsKeys[7]]
+                mw.SelectedSubscription['expires']   = sub[NodeKeys.FinalSubsKeys[9]]
+                
+        if mw.SubCaller:
+            mw.NodeCarouselData = {"moniker" : None,
+                                   "address" : None,
+                                   "gb_prices" : None,
+                                   "hr_prices" : None}
+            mw.SubCaller = False
+            mw.connect_routine()
 
-    def add_sub_rv_data(self, node, flagloc):
+    def add_sub_rv_data(self, node):
         nscore = "NULL"
         votes = 0
         formula = "NULL"
@@ -1469,7 +1519,12 @@ class NodeScreen(MDBoxLayout):
 
         self.NodeTree = node_tree
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
-
+        
+        # Clear out any previous Carousel Data
+        mw.NodeCarouselData = {"moniker" : None,
+                                "address" : None,
+                                "gb_prices" : None,
+                                "hr_prices" : None}
         #floc = "../imgs/"
 
         try:
@@ -1645,7 +1700,7 @@ class RecycleViewCountryRow(MDCard,RectangularElevationBehavior,ThemableBehavior
         Window.set_system_cursor('hand')
 
     def on_leave(self, *args):
-        self.md_bg_color = get_color_from_hex(MeileColors.BLACK)
+        self.md_bg_color = get_color_from_hex(MeileColors.DIALOG_BG_COLOR)
         Window.set_system_cursor('arrow')
 
     def switch_window(self, country):
