@@ -571,7 +571,10 @@ class MainWindow(Screen):
         floc = "../imgs/"
         NodeCountries = {}
 
-        iso2 = OurWorld.our_world.get_country_ISO2(ncountry.tag.lstrip().rstrip()).lower()
+        try:
+            iso2 = OurWorld.our_world.get_country_ISO2(ncountry.tag).lower()
+        except:
+            iso2 = OurWorld.our_world.get_country_ISO2("Seychelles").lower()
         flagloc = floc + iso2 + ".png"
 
         NodeCountries['number']  = len(self.NodeTree.NodeTree.children(ncountry.tag))

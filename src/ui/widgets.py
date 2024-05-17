@@ -456,7 +456,81 @@ class NodeDetails(MDGridLayout):
     votes = StringProperty()
     formula = StringProperty()
     node_address = StringProperty()
+    dialog = None
 
+    def unsubscribe_from_node(self, subId):
+
+        self.dialog = MDDialog(
+                title="Unsubscribe from ID: %s?" % subId,
+                md_bg_color=get_color_from_hex(MeileColors.BLACK),
+                buttons=[
+                    MDFlatButton(
+                        text="CANCEL",
+                        theme_text_color="Custom",
+                        text_color=get_color_from_hex(MeileColors.MEILE),
+                        on_release=self.closeDialog
+                    ),
+                    MDRaisedButton(
+                        text="UNSUBSCRIBE",
+                        theme_text_color="Custom",
+                        text_color=get_color_from_hex(MeileColors.BLACK),
+                        on_release=partial(self.unsubscribe, subId)
+                    ),
+                ],
+            )
+        self.dialog.open()
+
+    @delayable        
+    def unsubscribe(self, subId, *kwargs):
+
+        yield 0.3
+        self.closeDialog(None)
+        yield 0.6
+        self.add_loading_popup("Unsubscribing to subscription id: %s" % subId)
+        yield 0.6
+        sleep(1)
+
+        Wallet = HandleWalletFunctions()
+        unsub_value = Wallet.unsubscribe(int(subId))
+
+        self.closeDialog(None)
+
+        TXDialog = TXContent()
+
+        TXDialog.ids.message.text = unsub_value['message']
+        TXDialog.ids.txhash.text  = unsub_value['hash']
+
+        yield 0.3
+        if not self.dialog:
+            self.dialog = MDDialog(
+                    title="Unsub Details",
+                    type="custom",
+                    content_cls=TXDialog,
+                    md_bg_color=get_color_from_hex(MeileColors.BLACK),
+                    buttons=[
+                        MDRaisedButton(
+                            text="OKAY",
+                            theme_text_color="Custom",
+                            text_color=get_color_from_hex(MeileColors.BLACK),
+                            on_release=self.closeDialog
+                        ),
+                    ],
+                )
+            self.dialog.open()
+            
+    def add_loading_popup(self, title_text):
+        self.dialog = None
+        self.dialog = MDDialog(title=title_text,md_bg_color=get_color_from_hex(MeileColors.BLACK))
+        self.dialog.open()
+                
+    def closeDialog(self, dt):
+        try:
+            self.dialog.dismiss()
+            self.dialog = None
+        except Exception as e:
+            print(str(e))
+            self.dialog = None
+        
 class NodeAccordion(ButtonBehavior, MDGridLayout):
     node = ObjectProperty()  # Main node info
 
@@ -1604,7 +1678,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
         except Exception as e:
             print(str(e))
             self.dialog = None
-            
+    '''        
     def unsubscribe_to_node(self, subId):
 
         if not self.dialog:
@@ -1665,7 +1739,8 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
                     ],
                 )
             self.dialog.open()
-            
+    
+                    
     def ping(self):
         UUID = Meile.app.root.get_screen(WindowNames.PRELOAD).UUID
         try:
@@ -1680,7 +1755,8 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
         except Exception as e:
             print(str(e))
             pass
-        
+    '''
+                
     @delayable
     def connect_to_node(self, ID, naddress, moniker, type, switchValue, **kwargs):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)

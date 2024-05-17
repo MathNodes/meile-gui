@@ -1165,8 +1165,9 @@ WindowManager:
     
 <NodeDetails>:
     rows: 2
-    cols: 7
-    adaptive_height: True
+    cols: 8
+    height: 90
+    #adaptive_height: True
     #orientation: 'horizontal'
 
     MDLabel
@@ -1190,6 +1191,13 @@ WindowManager:
     MDLabel
         text: "[b]Formula[/b]"
         markup: True
+    TooltipMDIconButton:
+        icon: "arrow-u-left-top-bold"
+        tooltip_text: "Unsubscribe"
+        size_hint_x: .25
+        theme_text_color: "Custom"
+        text_color: app.theme_cls.primary_color
+        on_release: root.unsubscribe_from_node(root.sub_id)
     MDLabel
         text: root.sub_id
         markup: True
