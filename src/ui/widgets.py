@@ -1302,7 +1302,7 @@ Node Version: %s
                     MDRaisedButton(
                         text="OKAY",
                         theme_text_color="Custom",
-                        text_color=(1,1,1,1),
+                        text_color=get_color_from_hex(MeileColors.BLACK),
                         on_release= self.closeDialog,
                     )
                 ],
@@ -1315,13 +1315,13 @@ Node Version: %s
         subtype_dialog = SubTypeDialog(self,price,hourly_price,moniker, naddress)
         
         #subscribe_dialog = SubscribeContent(price, moniker , naddress )
-        if not self.dialog:
-            self.dialog = MDDialog(
-                    type="custom",
-                    content_cls=subtype_dialog,
-                    md_bg_color=get_color_from_hex(MeileColors.BLACK),
-                    )
-            self.dialog.open()
+        self.dialog = None
+        self.dialog = MDDialog(
+                type="custom",
+                content_cls=subtype_dialog,
+                md_bg_color=get_color_from_hex(MeileColors.BLACK),
+                )
+        self.dialog.open()
 
     @delayable
     def subscribe(self, subscribe_dialog, *kwargs):
