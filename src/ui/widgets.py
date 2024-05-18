@@ -445,7 +445,7 @@ class NodeRow(MDGridLayout):
     
     def get_font(self):
         Config = MeileGuiConfig()
-        return Config.resource_path(MeileColors.FONT_FACE_ARIAL)
+        return Config.resource_path(MeileColors.FONT_FACE)
     
 class NodeDetails(MDGridLayout):
     sub_id = StringProperty()
@@ -706,7 +706,7 @@ class PlanRow(MDGridLayout):
     
     def get_font(self):
         Config = MeileGuiConfig()
-        return Config.resource_path(MeileColors.FONT_FACE_ARIAL)
+        return Config.resource_path(MeileColors.FONT_FACE)
     
     def get_button(self, text):
         Config = MeileGuiConfig()
@@ -1229,7 +1229,7 @@ class NodeCarousel(MDBoxLayout):
                 print(str(e))
     def get_font(self):
         Config = MeileGuiConfig()
-        return Config.resource_path(MeileColors.FONT_FACE_ARIAL)
+        return Config.resource_path(MeileColors.FONT_FACE)
     
     def get_button(self, text):
         Config = MeileGuiConfig()
