@@ -778,6 +778,11 @@ class MainWindow(Screen):
         self.MeileConfig = MeileGuiConfig()
         return self.MeileConfig.resource_path(MeileColors.LOGO_TEXT)
 
+
+    @mainthread
+    def set_ip(self):
+        self.map_widget_1.text = self.ip
+        
     def get_ip_address(self, dt):
 
         if self.dialog:
@@ -795,7 +800,7 @@ class MainWindow(Screen):
                 ifJSON = req.json()
                 print(ifJSON)
                 self.ip = str(ifJSON['query'])
-                self.map_widget_1.text = self.ip
+                self.set_ip()
                 self.LatLong.clear()
                 try:
                     self.LatLong.append(ifJSON['lat'])

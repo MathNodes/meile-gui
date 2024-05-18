@@ -477,18 +477,18 @@ class HandleWalletFunctions():
 
             search = f"invalid status inactive_pending for subscription {subId}"
             if re.search(search, details, re.IGNORECASE):
-                message = "Cannot unsubscribe. Pending session still on blockchain. Try your request again later."
+                message = "Cannot unsubscribe. Pending session or unsubscribe still on blockchain. If you unsubscribed already, please wait for it to be flushed on chain. If you are connected to a node, please disconnect and try again."
             else:
                 message = "Error connecting to gRPC server. Try your request again later."
 
-            return {'hash' : None, 'success' : False, 'message' : message}
+            return {'hash' : "0x0", 'success' : False, 'message' : message}
 
         if tx.get("log", None) is None:
             tx_response = sdk.plans.wait_for_tx(tx["hash"])
             tx_height = tx_response.get("txResponse", {}).get("height", 0) if isinstance(tx_response, dict) else tx_response.tx_response.height
 
         message = f"Unsubscribe from Subscription ID: {subId}, was successful at Height: {tx_height}" if tx.get("log", None) is None else tx["log"]
-        return {'hash' : tx.get("hash", None), 'success' : tx.get("log", None) is None, 'message' : message}
+        return {'hash' : tx.get("hash", "0x0"), 'success' : tx.get("log", None) is None, 'message' : message}
     
             
     

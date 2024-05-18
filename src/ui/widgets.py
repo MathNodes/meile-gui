@@ -496,10 +496,9 @@ class NodeDetails(MDGridLayout):
         self.closeDialog(None)
 
         TXDialog = TXContent()
-
         TXDialog.ids.message.text = unsub_value['message']
         TXDialog.ids.txhash.text  = unsub_value['hash']
-
+        
         yield 0.3
         if not self.dialog:
             self.dialog = MDDialog(
