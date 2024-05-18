@@ -194,7 +194,7 @@ WindowManager:
                     size_hint: None,.175
                     TooltipMDFlatButton:
                         #tooltip_text: "Connect to Node"
-                        md_bg_color: get_color_from_hex("#121212")
+                        #md_bg_color: get_color_from_hex("#121212")
                         pos_hint: {'x' : .4, 'y': .6}
                         on_release: root.connect_routine()
                         opacity: 1
@@ -206,14 +206,22 @@ WindowManager:
                             
                     MDTextField:
                         opacity: 1
-                        hint_text: "Search"
+                        id: search_box
+                        hint_text: "key: , value:"
                         icon_right: "magnify"
                         pos_hint: {'x' : .1, 'y': 0}
-                        size_hint_x: 1.5
+                        size_hint_x: 1.9
                         size_hint_y: .6
                         font_size: sp(12)
+                        on_text_validate: root.on_enter_search()
                                         
-                            
+                    ToolTipMDIconButton:
+                        tooltip_text: "Clear Results"
+                        pos_hint: {'x' : 1.9, 'y': .15}
+                        on_release: root.restore_results()
+                        icon: "restore"
+                        theme_text_color: "Custom"
+                        text_color: get_color_from_hex(MeileColors.MEILE)
                 NodeRV:
                     md_bg_color: get_color_from_hex("#121212")    
                     id: rv
@@ -1222,7 +1230,7 @@ WindowManager:
             
 <NodeAccordion>:
     rows: 2
-    md_bg_color: get_color_from_hex("#1C1D1B")
+    md_bg_color: get_color_from_hex(MeileColors.DIALOG_BG_COLOR2)
     radius: [5, 5, 5, 5]
 
     height: 50
@@ -1230,7 +1238,8 @@ WindowManager:
 
 <PlanAccordion>:
     rows: 2
-    md_bg_color: get_color_from_hex("#1C1D1B")
+    #md_bg_color: get_color_from_hex("#1C1D1B")
+    md_bg_color: get_color_from_hex(MeileColors.DIALOG_BG_COLOR2)
     radius: [5, 5, 5, 5]
 
     height: 50
@@ -1257,7 +1266,7 @@ WindowManager:
                 anchor_x: "right"
                 TooltipMDIconButton:
                     icon: "spider-web"
-                    tooltip_text: "Map"
+                    #tooltip_text: "Map"
                     #size_hint_x: .01
                     theme_text_color: "Custom"
                     text_color: get_color_from_hex(MeileColors.MEILE)
@@ -2200,7 +2209,10 @@ WindowManager:
             MDLabel:
                 id: white_label_text
                 text: root.white_label
-                font_size: 24
+                theme_text_color: "Custom"
+                font_style: "Subtitle2"
+                font_size: sp(20)
+                text_color: get_color_from_hex(MeileColors.MEILE)
             MDLabel:
                 id: nnodes_text
                 text: root.nnodes + " Nodes"
@@ -2239,7 +2251,8 @@ WindowManager:
                     size_hint: (None, 1.75)
                 TooltipMDIconButton:
                     icon: "help-circle"
-                    tooltip_text: "Pay using Pirate chain. Note: processing for ARRR payments could take up to 72 hours"
+                    #tooltip_text: "Pay using Pirate chain. Note: processing for ARRR payments could take up to 72 hours"
+                    tooltip_text: "Not currently available. We are working on it... Stay tuned..."
 
 
     MDBoxLayout:

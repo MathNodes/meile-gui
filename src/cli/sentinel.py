@@ -22,6 +22,7 @@ from helpers import helpers
 
 from sentinel_sdk.sdk import SDKInstance
 from sentinel_sdk.types import PageRequest, Status
+from builtins import AttributeError
 
 MeileConfig = MeileGuiConfig()
 v2ray_tun2routes_connect_bash = path.join(ConfParams.KEYRINGDIR, "/bin/routes.sh")
@@ -94,41 +95,47 @@ class NodeTreeData():
         # Use Cache Server for faster loading.  
         Request = HTTPRequests.MakeRequest(TIMEOUT=23) # long timeout in case there is heavy load
         http = Request.hadapter()
-        try:
-            #N = random.randint(0, len(HTTParams.NODE_API) -1)
-            r = http.get(CACHE_SERVER) 
-            data = r.json()
-            #rint(data)
-            for node in data:
-                ninfos.append(node['moniker'])
-                ninfos.append(node['node_address'])
-                ninfos.append(node['gigabyte_prices'])
-                ninfos.append(node['hourly_prices'])
-                if "The Netherlands" in node['country']:
-                    node['country'] = "Netherlands"
-                elif "Czech Republic" in node['country']:
-                    node['country'] = "Czechia"
-                ninfos.append(node['country'])
-                ninfos.append(node['city'])
-                ninfos.append(node['latitude'])
-                ninfos.append(node['longitude'])
-                ninfos.append(node['bandwidth_down'])
-                ninfos.append(node['bandwidth_up'])
-                ninfos.append(node['connected_peers'])
-                ninfos.append(node['max_peers'])
-                ninfos.append(node['handshake'])
-                ninfos.append("WireGuard" if node['node_type'] == 1 else "V2Ray")
-                ninfos.append(node['node_version'])
-                ninfos.append(node['isp_type'])
-                ninfos.append(node['score'])
-                ninfos.append(node['votes'])
-                ninfos.append(node['formula'])
-                AllNodesInfo.append(dict(zip(NodeKeys.NodesInfoKeys, ninfos)))
-                ninfos.clear()
-                
-        except Exception as e:
-            print(str(e))
-            data = []
+        retries = 0
+        while True and retries < 5:
+            try:
+                #N = random.randint(0, len(HTTParams.NODE_API) -1)
+                r = http.get(CACHE_SERVER) 
+                data = r.json()
+                if not data:
+                    retries += 1
+                    continue
+                #rint(data)
+                for node in data:
+                    ninfos.append(node['moniker'])
+                    ninfos.append(node['node_address'])
+                    ninfos.append(node['gigabyte_prices'])
+                    ninfos.append(node['hourly_prices'])
+                    if "The Netherlands" in node['country']:
+                        node['country'] = "Netherlands"
+                    elif "Czech Republic" in node['country']:
+                        node['country'] = "Czechia"
+                    ninfos.append(node['country'])
+                    ninfos.append(node['city'])
+                    ninfos.append(node['latitude'])
+                    ninfos.append(node['longitude'])
+                    ninfos.append(node['bandwidth_down'])
+                    ninfos.append(node['bandwidth_up'])
+                    ninfos.append(node['connected_peers'])
+                    ninfos.append(node['max_peers'])
+                    ninfos.append(node['handshake'])
+                    ninfos.append("WireGuard" if node['node_type'] == 1 else "V2Ray")
+                    ninfos.append(node['node_version'])
+                    ninfos.append(node['isp_type'])
+                    ninfos.append(node['score'])
+                    ninfos.append(node['votes'])
+                    ninfos.append(node['formula'])
+                    AllNodesInfo.append(dict(zip(NodeKeys.NodesInfoKeys, ninfos)))
+                    ninfos.clear()
+                break
+            except Exception as e:
+                print(str(e))
+                data = []
+                break
         
         AllNodesInfoSorted = sorted(AllNodesInfo, key=lambda d: d[NodeKeys.NodesInfoKeys[4]])
         
@@ -190,6 +197,10 @@ class NodeTreeData():
     #                   perfect_match = True, key = "Moniker", value = "Pinco" will match only Moniker === Pinco
     #                   perfect_match = False, key = "Moniker", value = "Pinco" will match only Moniker like Pincopallo, Pizzapinco10, Pincopallino, Pinco1
 
+
+    def restore_tree(self):
+        self.NodeTree = copy.deepcopy(self.BackupNodeTree)
+        
     def search(self, key: str, value = None, between: tuple = (), from_backup: bool = True, perfect_match: bool = False, is_list: bool = False):
         NodeAddressBool = False
         
@@ -198,7 +209,7 @@ class NodeTreeData():
             return
 
         amount_rx = r'^(\.\d|\d+\.\d+|\d+)'
-        key = key.title()
+        #key = key.title()
 
         # Prepare the "between" values out of iteration
         if value is None and len(between) == 2:
@@ -233,9 +244,13 @@ class NodeTreeData():
         # Iteration via the original data, in order to prevent "RuntimeError: dictionary changed size during iteration"
         for identifier, content in (self.BackupNodeTree if from_backup is True else self.NodeTree).nodes.items():
             if identifier.startswith("sentnode"):
+                print(content.data)
+                print(key)
                 if key in content.data:
+                    print(f"Key in data: {key}")
                     # use in... / wherlike / contains
-                    if value is not None:
+                    if value:
+                        print(f"Value: {value}")
                         if is_list:
                             for v in value:
                                 if v == str(identifier):
@@ -251,12 +266,16 @@ class NodeTreeData():
                                     # use in... / wherlike / contains
                                     filtered.remove_node(identifier)
                         else:
-                            if perfect_match is True:
-                                if value.lower().strip() != content.data[key].lower():
+                            try: 
+                                if perfect_match is True:
+                                    if value.lower().strip() != content.data[key].lower():
+                                        filtered.remove_node(identifier)
+                                elif value.lower().strip() not in content.data[key].lower():
+                                    # use in... / wherlike / contains
+                                    print(f"Revmoving: {identifier}")
                                     filtered.remove_node(identifier)
-                            elif value.lower().strip() not in content.data[key].lower():
-                                # use in... / wherlike / contains
-                                filtered.remove_node(identifier)
+                            except AttributeError:
+                                continue
                     elif len(between) == 2:
 
                         # ups, following this: https://github.com/MathNodes/meile-gui/commit/622e501d332f0a34009b77548c4672e0ae32577b#diff-3729b5451a4398b2a4fd75a4bf0062d9bd5040677dd766ade023084aa9c03379R87
@@ -301,6 +320,8 @@ class NodeTreeData():
 
                 # Type: wireguard / v2ray
                 # Type: residential / hosting .... (uhmm) - ConnectionType
+                # unnecessary since all data is pulled from one query from cache server
+                '''
                 elif key == "ConnectionType":
                     if identifier not in self.NodeTypes:
                         filtered.remove_node(identifier)
@@ -327,7 +348,7 @@ class NodeTreeData():
                             _max = max(a, b)
                             if rating > _max or rating < _min:
                                 filtered.remove_node(identifier)
-
+                '''
         # Always override the 'renderized' one (maybe already filtered)
         self.NodeTree = filtered
         

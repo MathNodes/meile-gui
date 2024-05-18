@@ -98,6 +98,7 @@ class MeileColors():
     BLACK                    = "#000000"
     MEILE                    = "#fcb711"
     DIALOG_BG_COLOR          = "#121212"
+    DIALOG_BG_COLOR2         = "#181818"
     INACTIVE_DIALOG_BG_COLOR = "#50507c"
     ROW_HOVER                = "#39363c"
     FONT_FACE                = "../fonts/mplus-2c-bold.ttf"

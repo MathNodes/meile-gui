@@ -720,27 +720,28 @@ class PlanRow(MDGridLayout):
         item =  { "price": self.cost, "white_label": self.plan_name, "nnodes": self.num_of_nodes, "logo_image": self.logo_image }
         
         subscribe_dialog = PlanSubscribeContent(**item)
-        if not self.dialog:
-            self.dialog = MDDialog(
-                    title="Subscription Plan",
-                    type="custom",
-                    content_cls=subscribe_dialog,
-                    buttons=[
-                        MDFlatButton(
-                            text="CANCEL",
-                            theme_text_color="Custom",
-                            text_color=MeileColors.MEILE,
-                            on_release=self.closeDialog
-                        ),
-                        MDRaisedButton(
-                            text="SUBCRIBE",
-                            theme_text_color="Custom",
-                            text_color=MeileColors.BLACK,
-                            on_release=partial(self.subscribe, subscribe_dialog)
-                        ),
-                    ],
-                )
-            self.dialog.open()
+        self.dialog = None
+        self.dialog = MDDialog(
+                title="Subscription Plan",
+                type="custom",
+                content_cls=subscribe_dialog,
+                md_bg_color=get_color_from_hex(MeileColors.BLACK),
+                buttons=[
+                    MDFlatButton(
+                        text="CANCEL",
+                        theme_text_color="Custom",
+                        text_color=MeileColors.MEILE,
+                        on_release=self.closeDialog
+                    ),
+                    MDRaisedButton(
+                        text="SUBCRIBE",
+                        theme_text_color="Custom",
+                        text_color=MeileColors.BLACK,
+                        on_release=partial(self.subscribe, subscribe_dialog)
+                    ),
+                ],
+            )
+        self.dialog.open()
             
     @delayable
     def add_wallet_2plan(self, wallet, plan_id, duration, sub_id, uuid, amt, denom):

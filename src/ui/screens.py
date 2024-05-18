@@ -124,7 +124,7 @@ class WalletRestore(Screen):
                         MDRaisedButton(
                             text=button_text,
                             theme_text_color="Custom",
-                            text_color=(1,1,1,1),
+                            text_color=get_color_from_hex(MeileColors.BLACK),
                             on_release=self.wallet_restore
                         ),
                     ],
@@ -674,6 +674,21 @@ class MainWindow(Screen):
         MeileConfig = MeileGuiConfig()
         CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
         self.address = CONFIG['wallet'].get("address")
+        
+    def on_enter_search(self):
+        search_string = self.ids.search_box.text
+        
+        key_string, value_string = search_string.split(',')
+        key_string = key_string.split(':')[-1].lstrip().rstrip()
+        value_string = value_string.split(':')[-1].lstrip().rstrip()
+        
+        print(f"key: {key_string}, value: {value_string}")
+        self.NodeTree.search(key=key_string,value=value_string)
+        self.refresh_country_recycler()
+
+    def restore_results(self):
+        self.NodeTree.restore_tree()
+        self.refresh_country_recycler()
 
     @mainthread
     def display_warp_success(self):
