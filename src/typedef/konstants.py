@@ -21,10 +21,11 @@ class ConfParams():
     WIREGUARD_STATUS = path.join(BASEDIR, "status.json")
     CHAINID          = 'sentinelhub-2'
     #CHAINID          = 'testnet'
-    GASPRICE         = "0.2udvpn"
+    GASPRICE         = "0.314159udvpn"
     #GASPRICE         = "0.2tsent"
     GASADJUSTMENT    = 1.15
     GAS              = 500000
+    FEE              = 314159
     
 
 class HTTParams():

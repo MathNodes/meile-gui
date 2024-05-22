@@ -25,7 +25,7 @@ from sentinel_sdk.types import PageRequest, Status
 from builtins import AttributeError
 
 MeileConfig = MeileGuiConfig()
-v2ray_tun2routes_connect_bash = path.join(ConfParams.KEYRINGDIR, "/bin/routes.sh")
+v2ray_tun2routes_connect_bash = path.join(ConfParams.KEYRINGDIR, "bin/routes.sh")
 
 class NodeTreeData():
     BackupNodeTree = None

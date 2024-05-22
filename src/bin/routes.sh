@@ -19,8 +19,8 @@ if [[ ${STATE} = "up" ]]; then
 	echo ${PRIMARY_IFACE} > /home/${USER}/.meile-gui/iface
 
         # start v2ray
-        echo "Running v2ray: /home/${USER}/.meile-gui/bin/v2ray run -c /home/${USER}/.sentinelcli/v2ray_config.json &"
-        /home/${USER}/.meile-gui/bin/v2ray run -c /home/${USER}/.sentinelcli/v2ray_config.json &
+        echo "Running v2ray: /home/${USER}/.meile-gui/bin/v2ray run -c /home/${USER}/.meile-gui/v2ray_config.json &"
+        /home/${USER}/.meile-gui/bin/v2ray run -c /home/${USER}/.meile-gui/v2ray_config.json &
         sleep 3
         
         # get v2ray proxy IP
@@ -54,17 +54,17 @@ if [[ ${STATE} = "up" ]]; then
         #sysctl net.ipv4.conf.all.rp_filter=0
         #sysctl net.ipv4.conf.${PRIMARY_IFACE}.rp_filter=0
         #sysctl net.ipv4.conf.tun0.rp_filter=2
-	#sysctl net.ipv4.conf.tun0.forwarding=1
-	#sysctl net.ipv4.conf.${PRIMARY_IFACE}.forwarding=1
-	
-	# start tun2socks 
-	echo "Starting tun2socks..."
+    	#sysctl net.ipv4.conf.tun0.forwarding=1
+    	#sysctl net.ipv4.conf.${PRIMARY_IFACE}.forwarding=1
+    	
+    	# start tun2socks 
+    	echo "Starting tun2socks..."
         /home/${USER}/.meile-gui/bin/tun2socks -device tun://${TUNIFACE} -proxy socks5://127.0.0.1:1080 -interface ${PRIMARY_IFACE} -mtu 1500 -tcp-sndbuf 1024k -tcp-rcvbuf 1024k -tcp-auto-tuning
 
         #tun2socks -device tun0 -proxy socks5://127.0.0.1:1080 -interface ${PRIMARY_IFACE} -loglevel debug &
         # sanity check
         sleep 3
-	echo "-----------------------_CURLING_---------------------------"
+	   echo "-----------------------_CURLING_---------------------------"
         curl https://icanhazip.com
 else
 

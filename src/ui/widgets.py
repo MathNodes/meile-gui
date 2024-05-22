@@ -1218,7 +1218,7 @@ class NodeCarousel(MDBoxLayout):
             self.version         = node[NodeKeys.NodesInfoKeys[14]]
             self.handshake       = str(node[NodeKeys.NodesInfoKeys[12]])
             self.health_check    = self.GetHealthCheck(node[NodeKeys.NodesInfoKeys[1]])
-            self.isp_type        = node[NodeKeys.NodesInfoKeys[15]]
+            self.isp_type        = node[NodeKeys.NodesInfoKeys[15]] if node[NodeKeys.NodesInfoKeys[15]] else "Unknown" 
             self.node_formula    = str(node[NodeKeys.NodesInfoKeys[18]]) if node[NodeKeys.NodesInfoKeys[18]] else "NULL"
             self.votes           = str(node[NodeKeys.NodesInfoKeys[17]]) if node[NodeKeys.NodesInfoKeys[17]] else "0"
             self.score           = str(node[NodeKeys.NodesInfoKeys[16]]) if node[NodeKeys.NodesInfoKeys[16]] else "NULL"

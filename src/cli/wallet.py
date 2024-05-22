@@ -39,7 +39,7 @@ import ecdsa
 import hashlib
 
 MeileConfig = MeileGuiConfig()
-v2ray_tun2routes_connect_bash = path.join(ConfParams.KEYRINGDIR, "/bin/routes.sh")
+v2ray_tun2routes_connect_bash = path.join(ConfParams.KEYRINGDIR, "bin/routes.sh")
 
 
 class HandleWalletFunctions():
@@ -316,8 +316,9 @@ class HandleWalletFunctions():
         tx_params = TxParams(
             # denom="udvpn",  # TODO: from ConfParams
             # fee_amount=20000,  # TODO: from ConfParams
-            # gas=ConfParams.GAS,
-            gas_multiplier=ConfParams.GASADJUSTMENT
+            gas=ConfParams.GAS,
+            gas_multiplier=ConfParams.GASADJUSTMENT,
+            fee_amount=ConfParams.FEE
         )
 
         tx = Transaction(
@@ -411,8 +412,9 @@ class HandleWalletFunctions():
         tx_params = TxParams(
             # denom="udvpn",  # TODO: from ConfParams
             # fee_amount=20000,  # TODO: from ConfParams
-            # gas=ConfParams.GAS,
-            gas_multiplier=ConfParams.GASADJUSTMENT
+            gas=ConfParams.GAS,
+            gas_multiplier=ConfParams.GASADJUSTMENT,
+            fee_amount=ConfParams.FEE
         )
         
         tx = sdk.nodes.SubscribeToNode(
@@ -463,7 +465,9 @@ class HandleWalletFunctions():
         sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key)
 
         tx_params = TxParams(
-            gas_multiplier=ConfParams.GASADJUSTMENT
+            gas=ConfParams.GAS,
+            gas_multiplier=ConfParams.GASADJUSTMENT,
+            fee_amount=ConfParams.FEE
         )
         tx_height = 0
 
@@ -509,7 +513,9 @@ class HandleWalletFunctions():
         sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key)
         
         tx_params = TxParams(
-            gas_multiplier=ConfParams.GASADJUSTMENT
+            gas=ConfParams.GAS,
+            gas_multiplier=ConfParams.GASADJUSTMENT,
+            fee_amount=ConfParams.FEE
         )
         
         # End active sessions if any. INACTIVE_PENDING is moot
@@ -519,7 +525,7 @@ class HandleWalletFunctions():
                 tx = sdk.sessions.EndSession(session_id=session.id, rating=0, tx_params=tx_params)
                 print(sdk.sessions.wait_for_tx(tx["hash"]))
         
-        tx = sdk.sessions.StartSession(subscription_id=int(ID), address=address)
+        tx = sdk.sessions.StartSession(subscription_id=int(ID), address=address, tx_params=tx_params)
         # Will need to handle log responses with friendly UI response in case of session create error
         if tx.get("log", None) is not None:
             self.connected = {"v2ray_pid" : None,  "result": False, "status" : tx["log"]}
