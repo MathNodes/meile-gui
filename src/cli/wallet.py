@@ -426,6 +426,7 @@ class HandleWalletFunctions():
         )
         
         if tx.get("log", None) is not None:
+            print(tx["log"])
             return(False, tx["log"])
 
         if tx.get("hash", None) is not None:
@@ -559,11 +560,15 @@ class HandleWalletFunctions():
             key = wgkey.pubkey
         else:  # NodeType.V2RAY
             # [from golang] uid, err = uuid.GenerateRandomBytes(16)
-            uid_16b = uuid.uuid4()
+            uid_16 = uuid.uuid4()
+            uid_bytes = uid_16.bytes
+            uid_16b = bytearray([0x01]) + uid_bytes
+            
+            # Creates a bytearray not a byte string
             # [from golang] key = base64.StdEncoding.EncodeToString(append([]byte{0x01}, uid...))
             # data length must be 17 bytes...
-            key = base64.b64encode(bytes(0x01) + uid_16b.bytes).decode("utf-8")
-            
+            #key = base64.b64encode(bytes(0x01) + uid_16b.bytes).decode("utf-8")
+            key = base64.b64encode(uid_16b).decode('utf-8')
          # Sometime we get a random "code":4,"message":"invalid signature ...``
         for _ in range(0, 10):  # bumped as 3 wasn't enough
             sk = ecdsa.SigningKey.from_string(sdk._account.private_key, curve=ecdsa.SECP256k1, hashfunc=hashlib.sha256)
@@ -688,14 +693,14 @@ class HandleWalletFunctions():
                 print("api_port", api_port)
                 print("vmess_port", vmess_port)
                 print("vmess_address", vmess_address)
-                print("vmess_uid", f"{uid_16b}")
+                print("vmess_uid", f"{uid_16}")
                 print("vmess_transport", vmess_transports[decode[-1]])
 
                 v2ray_config = V2RayConfiguration(
                     api_port=api_port,
                     vmess_port=vmess_port,
                     vmess_address=vmess_address,
-                    vmess_uid=f"{uid_16b}",
+                    vmess_uid=f"{uid_16}",
                     vmess_transport=vmess_transports[decode[-1]],
                     proxy_port=1080
                 )
