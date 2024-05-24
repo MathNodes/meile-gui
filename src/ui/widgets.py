@@ -1369,7 +1369,7 @@ Node Version: %s
                     MDFlatButton(
                         text="OK",
                         theme_text_color="Custom",
-                        text_color=self.theme_cls.primary_color,
+                        text_color=Meile.app.theme_cls.primary_color,
                         on_release=self.closeDialog
                     ),])
             self.dialog.open()
@@ -1406,10 +1406,7 @@ Node Version: %s
     
     def switch_carousel(self):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
-        mw.NodeCarouselData = {"moniker" : None,
-                               "address" : None,
-                               "gb_prices" : None,
-                               "hr_prices" : None}
+        mw.clear_node_carousel()
         mw.carousel.remove_widget(self)
         mw.carousel.load_slide(mw.NodeWidget)
         
@@ -1423,10 +1420,8 @@ Node Version: %s
             mw.switch_to_sub_window()
                 
         else:
-            mw.NodeCarouselData = {"moniker" : None,
-                               "address" : None,
-                               "gb_prices" : None,
-                               "hr_prices" : None}
+            mw.clear_node_carousel()
+            
     def closeDialog(self, inst):
         try:
             self.dialog.dismiss()

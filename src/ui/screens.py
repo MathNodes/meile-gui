@@ -416,7 +416,7 @@ class MainWindow(Screen):
         print(f"Selected Subscription: {self.SelectedSubscription}")
         
         if self.ids.connect_button.source == self.return_connect_button("c"):
-            print(self.NodeCarouselData)
+            #print(self.NodeCarouselData)
             if self.NodeCarouselData['moniker']:
                 self.SubCaller = True
                 nc = NodeCarousel(node=None)
@@ -1039,12 +1039,16 @@ class MainWindow(Screen):
         Meile.app.root.transition = SlideTransition(direction = "right")
         Meile.app.root.current = WindowNames.WALLET_RESTORE
 
-    def build_wallet_interface(self):
-        # Clear out any previous Carousel Data
+
+    def clear_node_carousel(self):
         self.NodeCarouselData = {"moniker" : None,
                                 "address" : None,
                                 "gb_prices" : None,
                                 "hr_prices" : None}
+        
+    def build_wallet_interface(self):
+        # Clear out any previous Carousel Data
+        self.clear_node_carousel()
         CONFIG = self.MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
         Meile.app.root.add_widget(WalletScreen(name=WindowNames.WALLET, ADDRESS=CONFIG['wallet'].get('address', '')))
         Meile.app.root.transition = SlideTransition(direction = "up")
@@ -1052,31 +1056,36 @@ class MainWindow(Screen):
 
     def build_help_screen_interface(self):
         # Clear out any previous Carousel Data
-        self.NodeCarouselData = {"moniker" : None,
-                                "address" : None,
-                                "gb_prices" : None,
-                                "hr_prices" : None}
+        self.clear_node_carousel()
         Meile.app.root.add_widget(HelpScreen(name=WindowNames.HELP))
         Meile.app.root.transition = SlideTransition(direction = "left")
         Meile.app.root.current = WindowNames.HELP
 
     def build_settings_screen_interface(self):
         # Clear out any previous Carousel Data
-        self.NodeCarouselData = {"moniker" : None,
-                                "address" : None,
-                                "gb_prices" : None,
-                                "hr_prices" : None}
+        self.clear_node_carousel()
         Meile.app.root.add_widget(SettingsScreen(name=WindowNames.SETTINGS))
         Meile.app.root.transition = SlideTransition(direction = "down")
         Meile.app.root.current = WindowNames.SETTINGS
 
     def switch_window(self, window):
+        # Clear out any previous Carousel Data
+        self.clear_node_carousel()
         Meile.app.root.transition = SlideTransition(direction = "up")
         Meile.app.root.current = window
 
     def switch_to_sub_window(self):
+        # Clear out any previous Carousel Data
+        # Check if we are subscribing from Carousel. If yes, don't clear the data. 
+        if not self.SubCaller:
+            self.clear_node_carousel()
         try:
-            self.carousel.remove_widget(self.NodeWidget)
+            if self.SubCaller:
+                if len(self.carousel.slides) >= 3:
+                    self.carousel.remove_widget(self.carousel.slides[-1])
+                    self.carousel.remove_widget(self.carousel.slides[-1])
+            else:        
+                self.carousel.remove_widget(self.NodeWidget)
         except Exception as e:
             print(str(e))
         self.NodeWidget = SubscriptionScreen(name=WindowNames.SUBSCRIPTIONS, node_tree=self.NodeTree)
@@ -1085,10 +1094,7 @@ class MainWindow(Screen):
 
     def switch_to_plan_window(self):
         # Clear out any previous Carousel Data
-        self.NodeCarouselData = {"moniker" : None,
-                                "address" : None,
-                                "gb_prices" : None,
-                                "hr_prices" : None}
+        self.clear_node_carousel()
         try:
             self.carousel.remove_widget(self.NodeWidget)
         except Exception as e:
@@ -1410,24 +1416,21 @@ class SubscriptionScreen(MDBoxLayout):
             self.add_sub_rv_data(sub)
             
         self.remove_loading_widget(None)
-        
-        for sub in mw.SubResult:
-            #print(sub)
-            #print(f"nc:{mw.NodeCarouselData['address']}, sub:{sub[NodeKeys.FinalSubsKeys[2]]}")
-            if mw.NodeCarouselData['address'] == sub[NodeKeys.FinalSubsKeys[2]]:
-                mw.SelectedSubscription['id']        = sub[NodeKeys.FinalSubsKeys[0]]
-                mw.SelectedSubscription['address']   = sub[NodeKeys.FinalSubsKeys[2]]
-                mw.SelectedSubscription['protocol']  =  sub[NodeKeys.FinalSubsKeys[8]]
-                mw.SelectedSubscription['moniker']   = sub[NodeKeys.FinalSubsKeys[1]]
-                mw.SelectedSubscription['allocated'] = sub[NodeKeys.FinalSubsKeys[6]]
-                mw.SelectedSubscription['consumed']  = sub[NodeKeys.FinalSubsKeys[7]]
-                mw.SelectedSubscription['expires']   = sub[NodeKeys.FinalSubsKeys[9]]
-                
-        if mw.SubCaller:
-            mw.NodeCarouselData = {"moniker" : None,
-                                   "address" : None,
-                                   "gb_prices" : None,
-                                   "hr_prices" : None}
+               
+        # Auto-connect from NodeCarousel if sub found
+        if mw.SubCaller: 
+            for sub in mw.SubResult:
+                print(sub)
+                if mw.NodeCarouselData['address'] == sub[NodeKeys.FinalSubsKeys[2]]:
+                    mw.SelectedSubscription['id']        = sub[NodeKeys.FinalSubsKeys[0]]
+                    mw.SelectedSubscription['address']   = sub[NodeKeys.FinalSubsKeys[2]]
+                    mw.SelectedSubscription['protocol']  = sub[NodeKeys.FinalSubsKeys[8]]
+                    mw.SelectedSubscription['moniker']   = sub[NodeKeys.FinalSubsKeys[1]]
+                    mw.SelectedSubscription['allocated'] = sub[NodeKeys.FinalSubsKeys[6]]
+                    mw.SelectedSubscription['consumed']  = sub[NodeKeys.FinalSubsKeys[7]]
+                    mw.SelectedSubscription['expires']   = sub[NodeKeys.FinalSubsKeys[9]]
+             
+            mw.clear_node_carousel()
             mw.SubCaller = False
             mw.connect_routine()
 
