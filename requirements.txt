@@ -83,7 +83,7 @@ safe-pysha3==1.0.4
 save-thread-result==0.0.9
 screeninfo==0.8.1
 SecretStorage==3.3.3
-sentinel-sdk==0.0.1
+sentinel-sdk==0.0.4
 sentinel_protobuf==0.3.3
 six==1.16.0
 sniffio==1.3.1
