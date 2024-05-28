@@ -1,3 +1,5 @@
+
+
 def format_byte_size(size, decimals=2, binary_system=True):
     if binary_system:
         units = ["B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB"]
@@ -12,3 +14,7 @@ def format_byte_size(size, decimals=2, binary_system=True):
             return ("%." + str(decimals) + "f %s") % (size, unit)
         size /= step
     return ("%." + str(decimals) + "f %s") % (size, largest_unit)
+
+
+
+ 

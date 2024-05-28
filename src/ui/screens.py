@@ -17,7 +17,7 @@ from cli.v2ray import V2RayHandler
 from fiat.stripe_pay import scrtsxx
 from adapters.ChangeDNS import ChangeDNS
 from helpers.helpers import format_byte_size
-
+from helpers.bandwidth import compute_consumed_data, compute_consumed_hours, init_GetConsumedWhileConnected, GetConsumedWhileConnected
 
 from kivy.properties import BooleanProperty, StringProperty, ColorProperty
 from kivy.uix.screenmanager import Screen, SlideTransition
@@ -346,7 +346,14 @@ class MainWindow(Screen):
     Sort = SortOptions[1]
     MeileMap = None
     MeileMapBuilt = False
-    NodeSwitch = {"moniker" : None, "node" : None, "switch" : False, 'id' : None, 'consumed' : None, 'og_consumed' : None, 'allocated' : None, 'expirary' : None}
+    NodeSwitch = {"moniker" : None, 
+                  "node" : None, 
+                  "switch" : False, 
+                  'id' : None, 
+                  'consumed' : None, 
+                  'og_consumed' : None, 
+                  'allocated' : None, 
+                  'expirary' : None}
     NewWallet = False
     box_color = ColorProperty('#fcb711')
     clock = None
@@ -465,9 +472,22 @@ class MainWindow(Screen):
                         self.NodeSwitch['expirary']     = self.SelectedSubscription['expires']
                         
                         # TODO: Add Quota routines 
+                        # Determine if node has been connected to and if so report last data usage stats
+                        # otherwise start a fresh count
+                        if not ID in self.PersistentBandwidth:
+                            self.PersistentBandwidth[ID] = self.NodeSwitch
+                        else:
+                            self.PersistentBandwidth[ID]['og_consumed'] = deepcopy(self.PersistentBandwidth[ID]['consumed'])
                         
+                        # Check if subscription is hourly
+                        if "hrs" in self.SelectedSubscription['allocated']:
+                            print("Hourly sub")
+                            self.setQuotaClock(ID, naddress, True)
+                        else:
+                            self.setQuotaClock(ID, naddress, False)
+    
                         self.remove_loading_widget2()
-                        print("REmove loading Widget")
+                        #print("REmove loading Widget")
                         self.dialog = MDDialog(
                             title="Connected!",
                             md_bg_color=get_color_from_hex(MeileColors.BLACK),
@@ -524,7 +544,85 @@ class MainWindow(Screen):
                 print("Something went wrong")
         else:
             self.disconnect_from_node()
-                            
+            self.clock.cancel()
+            self.clock = None
+            
+       
+         
+    def setQuotaClock(self,ID, naddress, hourly):
+        if hourly:
+            # Need first call to report initial values to update UI, then set clock to reoccur. 
+            self.connected_quota(self.PersistentBandwidth[ID]['allocated'],
+                                 self.PersistentBandwidth[ID]['consumed'],
+                                 None)
+            
+            self.clock = Clock.create_trigger(partial(self.connected_quota,
+                                                    self.PersistentBandwidth[ID]['allocated'],
+                                                    self.PersistentBandwidth[ID]['consumed']),120)
+            self.clock()
+            return True
+        
+        BytesDict = init_GetConsumedWhileConnected()
+        print(BytesDict)
+        self.UpdateQuotaForNode(self.NodeSwitch['id'],
+                                self.NodeSwitch['node'],
+                                BytesDict,
+                                None)
+        
+        self.clock = Clock.create_trigger(partial(self.UpdateQuotaForNode,
+                                                  self.NodeSwitch['id'],
+                                                  self.NodeSwitch['node'],
+                                                  BytesDict),120)
+
+        self.clock()
+        
+    def connected_quota(self, allocated, consumed, dt):
+              
+        if self.CONNECTED:
+            #allocated = float(allocated.replace('GB',''))
+            if "hrs" in allocated:
+                allocated_str         = deepcopy(allocated)
+                allocated             = float(allocated.split('hrs')[0].rstrip().lstrip())
+                consumed              = compute_consumed_hours(allocated_str,self.NodeSwitch['expirary'])
+                self.quota_pct.text   = str(round(float(float(consumed/allocated)*100),2)) + "%"
+                self.quota.value      = round(float(float(consumed/allocated)*100),2)
+                try: 
+                    self.clock()
+                except Exception as e:
+                    print("Error running clock()")
+                    return False 
+            else:
+                allocated = compute_consumed_data(allocated)
+                consumed  = compute_consumed_data(consumed)
+                self.quota_pct.text = str(round(float(float(consumed/allocated)*100),2)) + "%"
+                return round(float(float(consumed/allocated)*100),3)
+        else:
+            self.quota_pct.text = "0.00%"
+            self.quota.value    = 0
+            return float(0)
+        
+    # Used solely for data subscriptions    
+    def UpdateQuotaForNode(self, ID, naddress, BytesDict, dt):
+        try:
+            print("%s: Getting Quota: " % ID, end= ' ')
+            startConsumption = self.PersistentBandwidth[ID]['og_consumed']
+            self.PersistentBandwidth[ID]['consumed'] = GetConsumedWhileConnected(compute_consumed_data(startConsumption),BytesDict)
+            
+            self.quota.value = self.connected_quota(self.PersistentBandwidth[ID]['allocated'],
+                                                    self.PersistentBandwidth[ID]['consumed'],
+                                                    None)
+            print("%s,%s - %s%%" % (self.PersistentBandwidth[ID]['consumed'],
+                                  startConsumption,
+                                  self.quota.value))
+        except Exception as e:
+            print("Error getting bandwidth!")
+            
+        try: 
+            self.clock()
+        except Exception as e:
+            print("Error running clock()")
+            pass
+                                      
     def menu_open(self):
         self.menu.open()
     
@@ -612,8 +710,8 @@ class MainWindow(Screen):
             layout.add_widget(self.quota)
             layout.add_widget(self.quota_pct)
 
-            self.quota.value = 50
-            self.quota_pct.text = "50%"
+            self.quota.value = 0
+            self.quota_pct.text = "0%"
 
             self.carousel = Carousel(direction='right')
             self.ids.country_map.add_widget(self.carousel)
