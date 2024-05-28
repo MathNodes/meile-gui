@@ -17,7 +17,6 @@ charset-normalizer==2.1.1
 click==8.1.7
 coincurve==17.0.0
 cosmospy_protobuf==0.4.0
-cosmpy==0.8.0
 crcmod==1.7
 cryptography==42.0.5
 dnspython==2.3.0
