@@ -59,6 +59,7 @@ setup(
         "keyrings.cryptfile",
         "mnemonic",
         "bech32",
+        "pywgkey",
         "sentinel_sdk @ git+https://github.com/MathNodes/sentinel-python-sdk@transactor_new",
     ],
     package_data={
