@@ -60,7 +60,9 @@ setup(
         "mnemonic",
         "bech32",
         "pywgkey",
-        "sentinel_sdk @ git+https://github.com/MathNodes/sentinel-python-sdk@transactor_new",
+        "sentinel-sdk",
+        "bcrypt",
+        "jwcrypto"
     ],
     package_data={
         "conf": ["config/config.ini"],
