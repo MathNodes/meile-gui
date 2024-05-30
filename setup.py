@@ -48,8 +48,18 @@ setup(
         "unidecode",
         "dnspython",
         "bip_utils",
-        "cosmpy",
-        "sentinel_protobuf==0.3.1",
+
+        # "cosmpy",  # Replaced by sentinel-python-sdk + mospy
+
+        # "sentinel_protobuf==0.3.1",
+        # The conflict is caused by:
+        #     meile-gui 0.13.3.0 depends on sentinel_protobuf==0.3.1
+        #     sentinel-sdk 0.0.1 depends on sentinel-protobuf==0.3.3
+
+        "keyrings.cryptfile",
+        "mnemonic",
+        "bech32",
+        "sentinel_sdk @ git+https://github.com/MathNodes/sentinel-python-sdk@transactor_new",
     ],
     package_data={
         "conf": ["config/config.ini"],
