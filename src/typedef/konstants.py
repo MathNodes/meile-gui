@@ -24,30 +24,71 @@ class ConfParams():
     GASPRICE         = "0.314159udvpn"
     #GASPRICE         = "0.2tsent"
     GASADJUSTMENT    = 1.15
-    GAS              = 500000
-    FEE              = 314159
+    GAS              = 314159
+    FEE              = 31416
     
 
 class HTTParams():
     # Note http://128.199.90.172:26657 is testnet ONLY!
     TIMEOUT                = 5
     APIURL                 = "https://api.sentinel.mathnodes.com"
-    
-    NODE_API               = ["https://metabase.mathnodes.com/api/public/card/822823f7-9374-435d-b283-2cd3847c1668/query/json",
-                              "https://metabase.bluefren.xyz/api/public/card/68fe67a6-6afa-45da-94ff-7e4e8443292f/query/json",
-                              "https://metabase.jp.bluefren.xyz/api/public/card/2710bd6b-61bc-4bbd-96f2-9d22fd408627/query/json"]
+    APIS_URL = [APIURL] + [
+        "https://api-sentinel-ia.cosmosia.notional.ventures",
+        "https://lcd-sentinel.whispernode.com:443",
+        "https://api.sentinel.quokkastake.io",
+        "https://api.dvpn.roomit.xyz",
+        "https://sentinel-rest.publicnode.com",
+        "https://sentinel-api.validatornode.com",
+        "https://api.trinityvalidator.com",
+        "https://api.sentinelgrowthdao.com",
+    ]
+    MNAPI = "https://aimokoivunen.mathnodes.com"
+    MNAPIS = [MNAPI] + []
+    RPC = "https://rpc.mathnodes.com:443"
+    # Note http://128.199.90.172:26657 is testnet ONLY!
+    RPCS = [RPC] + [
+        "https://rpc.sentinel.co:443",
+        "https://rpc.dvpn.me443",
+        "https://rpc.noncompliant.network:443",
+        "https://rpc.ro.mathnodes.com:443",
+        "https://rpc-sentinel.whispernode.com:443",
+        "https://rpc.sentinel.chaintools.tech:443",
+        "https://rpc.sentinel.quokkastake.io:443",
+        "https://rpc.dvpn.roomit.xyz:443",
+        "https://sentinel-rpc.badgerbite.io:443",
+        "https://sentinel-rpc.publicnode.com:443",
+        "https://sentinel-rpc.validatornode.com:443",
+        "https://rpc.trinityvalidator.com:443",
+        "https://rpc.sentinelgrowthdao.com:443",
+        "https://sentinel-rpc.polkachu.com:443",
+        "https://rpc-sentinel.busurnode.com:443"
+    ]
+    GRPC = "aimokoivunen.mathnodes.com:9090"
+    GRPCS = [GRPC] + [
+        "grc.mathnodes.com:443",
+        "sentinel.grpc.nodeshub.online:443",
+        "grpc.dvpn.me:443",
+        "grpc.noncompliant.network:443",
+        "sentinel-rpc.publicnode.com:443",
+        "sentinel.grpcui.chaintools.host:443",
+        "sentinel-mainnet-grpc.autostake.com:443",
+        "grpc.dvpn.roomit.xyz:8443",
+        "grpc.dvpn.me:9090",
+        "grc.mathnodes.com:9000",
+        "grpc.noncompliant.network:9090",
+        "sentinel.declab.pro:9019",
+    ]
+    NODE_API               = ["https://metabase.mathnodes.com/api/public/card/bdff9cda-e0b8-417e-afd0-a8736a329914/query/json",
+                              "https://metabase.bluefren.xyz/api/public/card/4a891454-51da-462a-a5df-e85ca17c05d5/query/json",
+                              "https://metabase.jp.bluefren.xyz/api/public/card/feed7c25-410a-4e3a-bfe1-8a701defdc38/query/json",
+                              "https://metabase.ro.mathnodes.com/api/public/card/6fd7194d-f025-4766-ba3c-3635ba6a6c00/query/json",
+                              "https://noncompliant.network/api/public/card/bc75f719-db4a-44b8-9688-f5793742a203/query/json"
+                              ]
     
     
     PLAN_API               = "https://api.meile.mathnodes.com:5000"
     #APIURL                 = "http://128.199.90.172:1317"
     SERVER_URL             = "https://aimokoivunen.mathnodes.com"
-    RPC                    = "https://rpc.mathnodes.com:443"
-    
-    RPCS                   = ['https://rpc.mathnodes.com:443', 'https://rpc.dvpn.me:443', 'https://rpc.sentinel.co:443',
-                              'https://rpc.sentinelgrowthdao.com:443', 'https://rpc.trinityvalidator.com.com:443',
-                              'https://sentinel-rpc.badgerbite.io:443','https://sentinel-rpc2.badgerbite.io:443',
-                              'https://rpc.sentinel.quokkastake.io:443', 'https://rpc-sentinel.whispernode.com:443']
-    GRPC                   = "http://aimokoivunen.mathnodes.com:9090/"
     #GRPC                   = "grpc+http://128.199.90.172:9090/"
     HEALTH_CHECK           = "https://api.health.sentinel.co/v1/records/%s"
     NODE_SCORE_ENDPOINT    = "/api/nodescores"

@@ -2,6 +2,7 @@ import collections
 from os import path
 import re
 import requests
+from requests.exceptions import ReadTimeout, ConnectionError, HTTPError
 from urllib3.exceptions import InsecureRequestWarning
 from subprocess import Popen, PIPE, STDOUT
 from datetime import datetime,timedelta
@@ -90,6 +91,7 @@ class NodeTreeData():
     def get_nodes(self, latency, *kwargs):
         AllNodesInfo = []
         ninfos       = []
+        data = []
         
         CACHE_SERVER = self.get_api_server()
         # Use Cache Server for faster loading.  
@@ -99,10 +101,17 @@ class NodeTreeData():
         while True and retries < 5:
             try:
                 #N = random.randint(0, len(HTTParams.NODE_API) -1)
-                r = http.get(CACHE_SERVER) 
+                try: 
+                    r = http.get(CACHE_SERVER)
+                except (ReadTimeout, ConnectionError, HTTPError):
+                    print(f"Read timed out for {CACHE_SERVER}. Switching to backup server.")
+                    CACHE_SERVER = HTTParams.NODE_API[random.randint(0, len(HTTParams.NODE_API)-1)] 
+                    continue
                 data = r.json()
                 if not data:
                     retries += 1
+                    if retries >= 2:
+                        CACHE_SERVER = HTTParams.NODE_API[random.randint(0, len(HTTParams.NODE_API)-1)]
                     continue
                 #rint(data)
                 for node in data:

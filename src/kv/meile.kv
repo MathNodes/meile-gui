@@ -572,41 +572,153 @@ WindowManager:
                 on_release: root.set_previous_screen() 
 
 
+#<SettingsScreen>
+#    name: "settings"
+#    MDBoxLayout:
+#        orientation: "vertical"
+#        MDLabel:
+#            font_name: "Roboto-Bold"
+#            text: "SETTINGS"
+#            font_size: "30sp"
+#            size_hint_y: .1
+#            pos_hint: { "center_x": .9, "top": .5}
+#            theme_text_color: "Custom"
+#            text_color: get_color_from_hex(MeileColors.MEILE)    
+#        MDFloatLayout:
+#    
+#            MDLabel:
+#                font_name: "Roboto-Bold"
+#                text: "RPC"
+#                font_size: "15sp"
+#                size_hint_y: .1
+#                size_hint_x: .2
+#                width: dp(500)
+#                pos_hint: { "x": .05, "top": 1}
+#                    
+#            MDDropDownItem:
+#                id: drop_item
+#                size_hint_x: .5
+#                pos_hint: {'x': .5, 'top': 1}
+#                text: root.get_rpc_config()
+#                on_release: root.menu.open()
+#                
+#            MDRaisedButton:
+#                text: "SAVE"
+#                on_release: root.SaveOptions()
+
 <SettingsScreen>
     name: "settings"
     MDBoxLayout:
         orientation: "vertical"
+        padding: 50
+        spacing: 10
+
         MDLabel:
+            padding: 50
             font_name: "Roboto-Bold"
             text: "SETTINGS"
             font_size: "30sp"
             size_hint_y: .1
-            pos_hint: { "center_x": .9, "top": .5}
+            pos_hint: { "center_x": .9, "top": .3}
             theme_text_color: "Custom"
-            text_color: get_color_from_hex(MeileColors.MEILE)    
-        MDFloatLayout:
-    
+            text_color: get_color_from_hex("#fcb711")
+
+        GridLayout:
+            padding: 1
+            cols: 2
+            row_force_default: True
+            row_default_height: 5
+
             MDLabel:
                 font_name: "Roboto-Bold"
                 text: "RPC"
-                font_size: "15sp"
-                size_hint_y: .1
-                size_hint_x: .2
-                width: dp(500)
-                pos_hint: { "x": .05, "top": 1}
-                    
-            MDDropDownItem:
-                id: drop_item
-                size_hint_x: .5
-                pos_hint: {'x': .5, 'top': 1}
-                text: root.get_rpc_config()
-                on_release: root.menu.open()
-                
-            MDRaisedButton:
-                text: "SAVE"
-                on_release: root.SaveOptions()
+                font_size: "20sp"
+                size_hint_x: None
+                width: dp(250)
 
-    
+            MDDropDownItem:
+                id: rpc_drop_item
+                text: root.get_config('rpc')
+                on_release: root.rpc_menu.open()
+
+        GridLayout:
+            padding: 1
+            cols: 2
+            row_force_default: True
+            row_default_height: 5
+
+            MDLabel:
+                font_name: "Roboto-Bold"
+                text: "GRPC"
+                font_size: "20sp"
+                size_hint_x: None
+                width: dp(250)
+
+            MDDropDownItem:
+                id: grpc_drop_item
+                text: root.get_config('grpc')
+                on_release: root.grpc_menu.open()
+
+        GridLayout:
+            padding: 1
+            cols: 2
+            row_force_default: True
+            row_default_height: 5
+
+            MDLabel:
+                font_name: "Roboto-Bold"
+                text: "API"
+                font_size: "20sp"
+                size_hint_x: None
+                width: dp(250)
+
+            MDDropDownItem:
+                id: api_drop_item
+                text: root.get_config('api')
+                on_release: root.api_menu.open()
+
+        GridLayout:
+            padding: 1
+            cols: 2
+            row_force_default: True
+            row_default_height: 5
+
+            MDLabel:
+                font_name: "Roboto-Bold"
+                text: "MathNodes API"
+                font_size: "20sp"
+                size_hint_x: None
+                width: dp(250)
+
+            MDDropDownItem:
+                id: mnapi_drop_item
+                text: root.get_config('mnapi')
+                on_release: root.mnapi_menu.open()
+        
+        GridLayout:
+            padding: 1
+            cols: 2
+            row_force_default: True
+            row_default_height: 5
+
+            MDLabel:
+                font_name: "Roboto-Bold"
+                text: "Cache Server"
+                font_size: "20sp"
+                size_hint_x: None
+                width: dp(250)
+
+            MDDropDownItem:
+                id: cache_drop_item
+                text: root.get_config('cache')
+                on_release: root.cache_menu.open()
+        
+        
+        MDRaisedButton:
+            text: "SAVE"
+            font_size: "18sp"
+            pos_hint: { "center_x": .9, "top": .5}
+            on_release: root.SaveOptions()    
 
 <WalletRestore>:
     name: "walletrestore"

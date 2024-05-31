@@ -615,6 +615,7 @@ class MainWindow(Screen):
                                   startConsumption,
                                   self.quota.value))
         except Exception as e:
+            print(str(e))
             print("Error getting bandwidth!")
             
         try: 
@@ -1863,7 +1864,134 @@ class HelpScreen(Screen):
         Meile.app.root.transistion = SlideTransition(direction="right")
         Meile.app.root.current = WindowNames.MAIN_WINDOW
 
+class SettingsScreen(Screen):
+    MeileConfig = MeileGuiConfig()
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        params = HTTParams()
+        # Load default values
+        self.RPC = params.RPC
+        self.GRPC = params.GRPC
+        self.API = params.APIURL
+        self.MNAPI = params.MNAPI
+        self.CACHE = params.NODE_API
+
+        self.MeileConfig = MeileGuiConfig()
+
+        # I've tried to write a single code with the iteration of 'what' [grpc, rpc]
+        # But doesn't work because the code at runtime will pass the loop value and not a copy one
+
+        self.rpc_menu = MDDropdownMenu(
+            caller=self.ids.rpc_drop_item,
+            items=[
+                {
+                    "viewclass": "IconListItem",
+                    "icon": "server-security",
+                    "text": f"{i}",
+                    "height": dp(56),
+                    "on_release": lambda x=f"{i}": self.set_item(x, "rpc"),
+                } for i in params.RPCS
+            ],
+            position="center",
+            width_mult=50,
+        )
+        self.rpc_menu.bind()
+
+        self.grpc_menu = MDDropdownMenu(
+            caller=self.ids.grpc_drop_item,
+            items=[
+                {
+                    "viewclass": "IconListItem",
+                    "icon": "server-security",
+                    "text": f"{i}",
+                    "height": dp(56),
+                    "on_release": lambda x=f"{i}": self.set_item(x, "grpc"),
+                } for i in params.GRPCS
+            ],
+            position="center",
+            width_mult=50,
+        )
+        self.grpc_menu.bind()
+
+        self.api_menu = MDDropdownMenu(
+            caller=self.ids.api_drop_item,
+            items=[
+                {
+                    "viewclass": "IconListItem",
+                    "icon": "server-security",
+                    "text": f"{i}",
+                    "height": dp(56),
+                    "on_release": lambda x=f"{i}": self.set_item(x, "api"),
+                } for i in params.APIS_URL
+            ],
+            position="center",
+            width_mult=50,
+        )
+        self.api_menu.bind()
+
+        self.mnapi_menu = MDDropdownMenu(
+            caller=self.ids.mnapi_drop_item,
+            items=[
+                {
+                    "viewclass": "IconListItem",
+                    "icon": "server-security",
+                    "text": f"{i}",
+                    "height": dp(56),
+                    "on_release": lambda x=f"{i}": self.set_item(x, "mnapi"),
+                } for i in params.MNAPIS
+            ],
+            position="center",
+            width_mult=50,
+        )
+        self.mnapi_menu.bind()
+        
+        self.cache_menu = MDDropdownMenu(
+            caller=self.ids.cache_drop_item,
+            items=[
+                {
+                    "viewclass": "IconListItem",
+                    "icon": "server-security",
+                    "text": f"{i}",
+                    "height": dp(56),
+                    "on_release": lambda x=f"{i}": self.set_item(x, "cache"),
+                } for i in params.NODE_API
+            ],
+            position="center",
+            width_mult=50,
+        )
+        self.cache_menu.bind()
+
+    def get_config(self, what: str = "rpc"):
+        config = self.MeileConfig.read_configuration(self.MeileConfig.CONFFILE)
+        getattr(self.ids, f"{what}_drop_item").set_item(config['network'][what])
+        return config['network'][what]
+
+    def set_item(self, text_item, what: str = "rpc"):
+        getattr(self.ids, f"{what.lower()}_drop_item").set_item(text_item)
+        setattr(self, what.upper(), text_item)
+        getattr(self, f"{what.lower()}_menu").dismiss()
+
+    def build(self):
+        return self.screen
+
+    def SaveOptions(self):
+        config = self.MeileConfig.read_configuration(self.MeileConfig.CONFFILE)
+        for what in ["rpc", "grpc", "api", "mnapi", "cache"]:
+            config.set('network', what, getattr(self, what.upper()))
+
+        with open(self.MeileConfig.CONFFILE, 'w', encoding="utf-8") as f:
+            config.write(f)
+
+        self.set_previous_screen()
+
+    def set_previous_screen(self):
+        Meile.app.root.remove_widget(self)
+        Meile.app.root.transistion = SlideTransition(direction="up")
+        Meile.app.root.current = WindowNames.MAIN_WINDOW
+
+'''
 class SettingsScreen(Screen):
     MeileConfig = MeileGuiConfig()
 
@@ -1921,3 +2049,4 @@ class SettingsScreen(Screen):
         Meile.app.root.remove_widget(self)
         Meile.app.root.transistion = SlideTransition(direction="up")
         Meile.app.root.current = WindowNames.MAIN_WINDOW
+'''

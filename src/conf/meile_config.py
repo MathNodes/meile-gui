@@ -51,6 +51,15 @@ class MeileGuiConfig():
             self.CONFIG.set('network', 'rpc', 'https://rpc.mathnodes.com:443')
             FILE = open(self.CONFFILE, 'w')    
             self.CONFIG.write(FILE)
-            
-        
+        else:
+            if not self.CONFIG.has_option('network', 'grpc'):
+                self.CONFIG.set('network', 'grpc', 'grpc.mathnodes.com:443')
+            if not self.CONFIG.has_option('network', 'api'):
+                self.CONFIG.set('network', 'api', 'https://api.sentinel.mathnodes.com:443')
+            if not self.CONFIG.has_option('network', 'mnapi'):
+                self.CONFIG.set('network', 'mnapi', 'https://aimokoivunen.mathnodes.com')
+            if not self.CONFIG.has_option('network', 'cache'):
+                self.CONFIG.set('network', 'cache', 'https://metabase.bluefren.xyz/api/public/card/4a891454-51da-462a-a5df-e85ca17c05d5/query/json')
+            FILE = open(self.CONFFILE, 'w')    
+            self.CONFIG.write(FILE)    
         return self.CONFIG
