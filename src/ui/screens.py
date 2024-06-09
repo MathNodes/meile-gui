@@ -644,7 +644,6 @@ class MainWindow(Screen):
         # Build alphabetical country recyclerview tree data
         self.build_country_tree()
 
-        # TODO: Would be good to process this in a background thread so as to not hang the UI
         thread = Thread(target=lambda: self.get_ip_address(None))
         thread.start()
         
@@ -674,7 +673,6 @@ class MainWindow(Screen):
             iso2 = OurWorld.our_world.get_country_ISO2(ncountry.tag).lower()
         except:
             iso2 = OurWorld.our_world.get_country_ISO2("Seychelles").lower()
-
         flagloc = path.join(floc, "flags", f"{iso2}.png")
 
         NodeCountries['number']  = len(self.NodeTree.NodeTree.children(ncountry.tag))
@@ -1505,7 +1503,6 @@ class SubscriptionScreen(MDBoxLayout):
 
     @delayable
     def subs_callback(self, dt):
-        floc = "../imgs/"
         yield 0.314
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
 
@@ -1656,7 +1653,6 @@ class NodeScreen(MDBoxLayout):
                                 "address" : None,
                                 "gb_prices" : None,
                                 "hr_prices" : None}
-        #floc = "../imgs/"
 
         try:
             CountryNodes = self.NodeTree.NodeTree.children(country)
@@ -1671,10 +1667,6 @@ class NodeScreen(MDBoxLayout):
         else:
             for node_child in CountryNodes:
                 node = node_child.data
-                '''
-                iso2 = OurWorld.our_world.get_country_ISO2(node[NodeKeys.NodesInfoKeys[4]].lstrip().rstrip()).lower()
-                flagloc = floc + iso2 + ".png"
-                '''
                 self.add_rv_data(node)
 
     def SortNodesByPrice(self, CountryNodes):
@@ -1719,14 +1711,8 @@ class NodeScreen(MDBoxLayout):
         self.meta_add_rv_data(NodeDataSorted)
 
     def meta_add_rv_data(self, NodeDataSorted):
-        floc = "../imgs/"
 
         for node in NodeDataSorted:
-            # May revist flags later on cards. ?
-            '''
-            iso2 = OurWorld.our_world.get_country_ISO2(node[NodeKeys.NodesInfoKeys[4]].lstrip().rstrip()).lower()
-            flagloc = floc + iso2 + ".png"
-            '''
             self.add_rv_data(node)
 
     def add_rv_data(self, node):

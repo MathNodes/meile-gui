@@ -30,7 +30,7 @@ from copy import deepcopy
 from datetime import datetime, timedelta
 from os import path
 from time import sleep 
-from threading import Thread
+from threading import Thread, Event
 import requests
 import re
 import psutil
@@ -694,6 +694,7 @@ class NodeAccordion(ButtonBehavior, MDGridLayout):
             self.add_widget(self.content)
             
 class PlanRow(MDGridLayout):
+    
     plan_name = StringProperty()
     num_of_nodes = StringProperty()
     num_of_countries = StringProperty()
@@ -702,8 +703,29 @@ class PlanRow(MDGridLayout):
     uuid = StringProperty()
     id = StringProperty()
     plan_id = StringProperty()
+    
     dialog = None
     
+    def __init__(self, plan_name,
+                       num_of_nodes,
+                       num_of_countries,
+                       cost,
+                       logo_image,
+                       uuid,
+                       id,
+                       plan_id):
+        super(PlanRow, self).__init__()
+        self.stop_event =Event()
+        self.plan_name = plan_name
+        self.num_of_nodes = num_of_nodes
+        self.num_of_countries = num_of_countries
+        self.cost = cost
+        self.logo_image = logo_image
+        self.uuid = uuid
+        self.id = id
+        self.plan_id = plan_id
+    
+        self.invoice_result = {"success" : False, "id": None }
     def get_font(self):
         Config = MeileGuiConfig()
         return Config.resource_path(MeileColors.FONT_FACE)
@@ -742,7 +764,8 @@ class PlanRow(MDGridLayout):
                 ],
             )
         self.dialog.open()
-            
+        
+    
     @delayable
     def add_wallet_2plan(self, wallet, plan_id, duration, sub_id, uuid, amt, denom):
         Request = HTTPRequests.MakeRequest()
@@ -796,6 +819,7 @@ class PlanRow(MDGridLayout):
             self.dialog.dismiss()
             self.dialog = None
 
+    
     @delayable
     def subscribe(self, subscribe_dialog, *kwargs):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
@@ -818,35 +842,42 @@ class PlanRow(MDGridLayout):
         # deposit = self.reparse_coin_deposit(sub_node[0])
 
         # Declare method here so we can pass it as callback variable to methods
-        def on_success_subscription():
-            self.add_wallet_2plan(
-                wallet=mw.address,
-                plan_id=self.plan_id,
-                duration=subscribe_dialog.ids.slider1.value,
-                sub_id=self.id,
-                uuid=self.uuid,
-                amt=int(float(deposit) * IBCTokens.SATOSHI),
-                denom=mu_coin
-            )
+        self.on_success_subscription = lambda: self.add_wallet_2plan(
+                                                                    wallet=mw.address,
+                                                                    plan_id=self.plan_id,
+                                                                    duration=subscribe_dialog.ids.slider1.value,
+                                                                    sub_id=self.id,
+                                                                    uuid=self.uuid,
+                                                                    amt=int(float(deposit) * IBCTokens.SATOSHI),
+                                                                    denom=mu_coin
+                                                                )
 
         if subscribe_dialog.pay_with == "wallet":
-            self.pay_meile_plan_with_wallet(deposit, mu_coin, usd, on_success_subscription)
+            self.pay_meile_plan_with_wallet(deposit, mu_coin, usd, self.on_success_subscription)
         elif subscribe_dialog.pay_with == "btcpay":
             if self.dialog:
                 self.dialog.dismiss()
             self.dialog = None
             self.dialog = MDDialog(
                     title="Waiting for invoice to be paid...",
-
+                    buttons=[
+                        MDFlatButton(
+                            text="CANCEL",
+                            theme_text_color="Custom",
+                            text_color=get_color_from_hex(MeileColors.MEILE),
+                            on_release=self.cancel_payment
+                        ),
+                    ]
                 )
             self.dialog.open()
             yield 0.6
-            invoice_result = self.pay_meile_plan_with_btcpay(usd)
-            if invoice_result['success']:
+            self.start_payment_thread(usd)
+            
+            if self.invoice_result['success']:
                 self.dialog.dismiss()
                 self.dialog = None
                 self.dialog = MDDialog(
-                        title=f"Invoice {invoice_result['id']} has been marked as paid! Finishing up...",
+                        title=f"Invoice {self.invoice_result['id']} has been marked as paid! Finishing up...",
                     )
                 self.dialog.open()
                 yield 0.6
@@ -938,13 +969,13 @@ class PlanRow(MDGridLayout):
         pickled_client_data = BTCPay.get_remote_btcpay_client()
         
         if pickled_client_data:
-            client = BTCPay.unpickle_btc_client(pickled_client_data)
+            self.client = BTCPay.unpickle_btc_client(pickled_client_data)
         else:
             return (False, "No pickeled client data")
             
         buyer = {"name" : mw.address, "email" : "freqnik@mathnodes.com", "notify" : True}
         
-        new_invoice = client.create_invoice({"price": usd,
+        self.new_invoice = self.client.create_invoice({"price": usd,
                                           "currency": "USD",
                                           "token" : "XMR",
                                           "merchantName" : "Meile dVPN",
@@ -953,22 +984,70 @@ class PlanRow(MDGridLayout):
                                           "transactionSpeed" : "high",
                                           "buyer" : buyer})
         
-        print(new_invoice)
-        print(new_invoice['url'])
-        btcpay_tx_id = new_invoice['id']
+        print(self.new_invoice)
+        print(self.new_invoice['url'])
+        self.btcpay_tx_id = self.new_invoice['id']
         
-        webbrowser.open(new_invoice['url'])
-        fetched_invoice = client.get_invoice(btcpay_tx_id)
+        webbrowser.open(self.new_invoice['url'])
+        self.fetched_invoice = self.client.get_invoice(self.btcpay_tx_id)
         
-        while fetched_invoice['status'] != "confirmed":
-            fetched_invoice = client.get_invoice(btcpay_tx_id)
-            print("invoice not yet confirmed....")
+        while not self.stop_event.is_set():
             sleep(10)
+            self.check_invoice_status()
+            
+            if self.invoice_result['success']:
+                self.stop_event.set()
+                Clock.schedule_once(lambda dt: self.update_ui_after_payment(False), 0)
+                return
+        
+        if self.stop_event.is_set() and self.invoice_result['success']:
+            print("Invoice has been paid.")
+            Clock.schedule_once(lambda dt: self.update_ui_after_payment(False), 0)
+        elif self.stop_event.is_set():
+            print("Payment process was canceled.")
+            Clock.schedule_once(lambda dt: self.update_ui_after_payment(True), 0)
+        
+        
+    def start_payment_thread(self, usd):
+        self.stop_event.clear()
+        self.invoice_thread = Thread(target=lambda: self.pay_meile_plan_with_btcpay(usd))
+        self.invoice_thread.start()
+        Clock.schedule_interval(self.check_thread_status, 0.1)
+        
+    def check_thread_status(self, dt):
+        if self.stop_event.is_set() and not self.invoice_thread.is_alive():
+            return False  # Stop checking once the thread has finished
+        
+    def check_invoice_status(self):
+        print("Checking if invoice is paid...")
+        if self.fetched_invoice['status'] != "confirmed":
+            print("invoice not yet confirmed....")
+            self.fetched_invoice = self.client.get_invoice(self.btcpay_tx_id)
+        else:
+            self.invoice_result = {"success" : True, "id": self.new_invoice['id'] }
+        
+            
+    def update_ui_after_payment(self, canceled):
+        if canceled:
+            if self.dialog:
+                self.dialog.title = "Payment was canceled."
+                self.dialog.buttons[0].text = "OK"
+        else:
+            if self.dialog:
+                self.dialog.dismiss()
+                self.dialog = None
+            self.dialog = MDDialog(
+                title=f"Invoice {self.invoice_result['id']} has been marked as paid! Finishing up...",
+            )
+            self.dialog.open()
 
-        # TODO: relay back to main thread invoice paid            
-        print("invoice paid!")
-        return {"success" : True, "id": new_invoice['id'] }
-
+            # Simulate some delay before calling on_success_subscription
+            Clock.schedule_once(self.call_on_success_subscription, 0.6)
+            
+    def call_on_success_subscription(self, dt):
+        if self.on_success_subscription:
+            self.on_success_subscription()
+        
     def pay_meile_plan_with_pirate(self, usd):
         print(f"Method: 'pay_meile_plan_with_pirate', usd: {usd}")
 
@@ -986,6 +1065,15 @@ class PlanRow(MDGridLayout):
     def closeDialog(self, inst):
         self.dialog.dismiss()
         self.dialog = None
+        
+    def cancel_payment(self, *args):
+        self.stop_event.set()
+        if self.invoice_thread:
+            self.invoice_thread.join()  # Wait for the thread to finish
+
+        # Close the dialog if needed
+        if self.dialog:
+            self.dialog.dismiss()
 
 class PlanDetails(MDGridLayout):
     uuid = StringProperty()
@@ -1568,7 +1656,8 @@ class RecycleViewRow(MDCard,RectangularElevationBehavior,ThemableBehavior, Hover
         NodeWidget = NodeCarousel(name=WindowNames.NODE_CAROUSEL, node=node_data)
         mw.carousel.add_widget(NodeWidget)
         mw.carousel.load_slide(NodeWidget)
-     
+
+''' 
 class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
     text = StringProperty()
     dialog = None
@@ -1580,10 +1669,6 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
     def get_data_used(self, allocated, consumed, node_address, expirary_date):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         try:
-            ''' Since this function is called when opening the Subscription tab,
-                we need to do a little house keeping for the card switches and the
-                data consumed
-            '''         
             if mw.NodeSwitch['node'] == node_address:
                 self.ids.node_switch.active = True
             else:
@@ -1634,7 +1719,7 @@ class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
         except Exception as e:
             print(str(e))
             self.dialog = None
-   
+'''   
         
 class MDMapCountryButton(MDFillRoundFlatButton,ThemableBehavior, HoverBehavior):
     def on_enter(self, *args):
@@ -1645,6 +1730,6 @@ class MDMapCountryButton(MDFillRoundFlatButton,ThemableBehavior, HoverBehavior):
         '''The method will be called when the mouse cursor goes beyond
         the borders of the current widget.'''
 
-        self.md_bg_color = get_color_from_hex(MeileColors.DIALOG_BG_COLOR)
+        self.md_bg_color = get_color_from_hex(MeileColors.BLACK)
         Window.set_system_cursor('arrow')
             

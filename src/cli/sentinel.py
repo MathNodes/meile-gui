@@ -181,19 +181,6 @@ class NodeTreeData():
         
         # For pretty output. Unicode is used in treelib > 1.6.1     
         self.NodeTree.show()
-        # User-submitted Ratings
-        #self.GetNodeScores()
-        # Hosting, Residential, etc
-        #self.GetNodeTypes()
-        # Sentinel Health Check Results
-        # Will process Health Check on-the-fly in NodeScreen. 
-        # Not loading all the data here is a 2x improvement on loadtime
-        #self.GetHealthCheckData()
-
-        # Get MathNodes NodeFormula
-        #self.GetNodeFormula()
-        
-        
         
     # Filter nodetree.
     # key;              what we want to filter, for example: Moniker, Type, Health
@@ -364,86 +351,6 @@ class NodeTreeData():
         # debug
         self.NodeTree.show()
         
-        
-    def GetHealthCheckData(self):
-        Request = HTTPRequests.MakeRequest(TIMEOUT=4)
-        http = Request.hadapter()
-        try:
-            r = http.get(HTTParams.HEALTH_CHECK) #specify a constant in konstants.py
-            data = r.json()
-
-            for nodehealthdata in data['result']:
-                # integrity check
-                if nodehealthdata['status'] != 1:
-                    self.NodeHealth[nodehealthdata['addr']] = False
-                elif "info_fetch_error " in nodehealthdata:
-                    self.NodeHealth[nodehealthdata['addr']] = False
-                elif "config_exchange_error" in nodehealthdata:
-                    self.NodeHealth[nodehealthdata['addr']] = False
-                elif "location_fetch_error" in nodehealthdata:
-                    self.NodeHealth[nodehealthdata['addr']] = False
-                else:
-                    self.NodeHealth[nodehealthdata['addr']] = True
-
-
-        except Exception as e:
-            print(str(e))
-        
-    def GetNodeScores(self):
-        Request = HTTPRequests.MakeRequest(TIMEOUT=4)
-        http = Request.hadapter()
-        try:
-            r = http.get(HTTParams.SERVER_URL + HTTParams.NODE_SCORE_ENDPOINT)
-            data = r.json()
-          
-            for nlist in data['data']:
-                k=0
-                self.NodeScores[nlist[k]] = [nlist[k+1], nlist[k+2]]
-        except Exception as e:
-            print(str(e)) 
-            
-    def GetNodeLocations(self):
-        Request = HTTPRequests.MakeRequest(TIMEOUT=4)
-        http = Request.hadapter()
-        try:
-            r = http.get(HTTParams.SERVER_URL + HTTParams.NODE_LOCATION_ENDPOINT)
-            data = r.json()
-          
-            for nlist in data['data']:
-                k=0
-                self.NodeLocations[nlist[k]] = nlist[k+1]
-            
-        except Exception as e:
-            print(str(e)) 
-    
-    def GetNodeFormula(self):
-        Request = HTTPRequests.MakeRequest(TIMEOUT=4)
-        http = Request.hadapter()
-        try:
-            r = http.get(HTTParams.SERVER_URL + HTTParams.NODE_FORMULA_ENDPOINT)
-            data = r.json()
-          
-            for nlist in data['data']:
-                #k=0
-                self.NodeFormula[nlist[0]] = nlist[6]
-            
-        except Exception as e:
-            print(str(e)) 
-            
-    def GetNodeTypes(self):
-        Request = HTTPRequests.MakeRequest(TIMEOUT=2)
-        http = Request.hadapter()
-        try:
-            r = http.get(HTTParams.SERVER_URL + HTTParams.NODE_TYPE_ENDPOINT)
-            data = r.json()
-
-            for nlist in data['data']:
-                k=0
-                self.NodeTypes[nlist[k]] = nlist[k+3]
-
-        except Exception as e:
-            print(str(e))
-    
     def CreateNodeTreeStructure(self, data, **kwargs):
         NodeTreeBase = Tree()
         RootTag = "SENTINEL"

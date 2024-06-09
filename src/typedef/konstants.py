@@ -63,20 +63,19 @@ class HTTParams():
         "https://sentinel-rpc.polkachu.com:443",
         "https://rpc-sentinel.busurnode.com:443"
     ]
-    GRPC = "aimokoivunen.mathnodes.com:9090"
+    GRPC = "grpc.ungovernable.dev:443"
     GRPCS = [GRPC] + [
         "grc.mathnodes.com:443",
-        "sentinel.grpc.nodeshub.online:443",
         "grpc.dvpn.me:443",
         "grpc.noncompliant.network:443",
+        "grpc.ungovernable.dev:443",
+        "grpc.bluefren.xyz:443",
+        "sentinel.grpc.nodeshub.online:443",
         "sentinel-rpc.publicnode.com:443",
         "sentinel.grpcui.chaintools.host:443",
         "sentinel-mainnet-grpc.autostake.com:443",
         "grpc.dvpn.roomit.xyz:8443",
-        "grpc.dvpn.me:9090",
-        "grc.mathnodes.com:9000",
-        "grpc.noncompliant.network:9090",
-        "sentinel.declab.pro:9019",
+        "aimokoivunen.mathnodes.com:9090",
     ]
     NODE_API               = ["https://metabase.mathnodes.com/api/public/card/bdff9cda-e0b8-417e-afd0-a8736a329914/query/json",
                               "https://metabase.bluefren.xyz/api/public/card/4a891454-51da-462a-a5df-e85ca17c05d5/query/json",
