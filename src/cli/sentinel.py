@@ -407,13 +407,13 @@ class NodeTreeData():
         SubsNodesInfo = []
         SubsFinalResult    = []
         print("Geting Subscriptions... %s" % ADDRESS)
+        
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
-
         self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
+        grpcaddr, grpcport = self.GRPC.split(":")
         
-        grpcaddr, grpcport = urlparse(self.GRPC).netloc.split(":")
-        sdk = SDKInstance(grpcaddr, int(grpcport))
+        sdk = SDKInstance(grpcaddr, int(grpcport), ssl=True)
         subscriptions = sdk.subscriptions.QuerySubscriptionsForAccount(ADDRESS, pagination=PageRequest(limit=1000))
 
         # TODO: Casting all to str is required?
@@ -489,11 +489,11 @@ class NodeTreeData():
 
     def GetQuota(self, id):
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
-
+        self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
         self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
+        grpcaddr, grpcport = self.GRPC.split(":")
         
-        grpcaddr, grpcport = urlparse(self.GRPC).netloc.split(":")
-        sdk = SDKInstance(grpcaddr, int(grpcport))
+        sdk = SDKInstance(grpcaddr, int(grpcport), ssl=True)
         allocations = sdk.subscriptions.QueryAllocations(subscription_id=int(id))
 
         for allocation in allocations:

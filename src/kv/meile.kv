@@ -571,41 +571,6 @@ WindowManager:
                 with_previous: True
                 on_release: root.set_previous_screen() 
 
-
-#<SettingsScreen>
-#    name: "settings"
-#    MDBoxLayout:
-#        orientation: "vertical"
-#        MDLabel:
-#            font_name: "Roboto-Bold"
-#            text: "SETTINGS"
-#            font_size: "30sp"
-#            size_hint_y: .1
-#            pos_hint: { "center_x": .9, "top": .5}
-#            theme_text_color: "Custom"
-#            text_color: get_color_from_hex(MeileColors.MEILE)    
-#        MDFloatLayout:
-#    
-#            MDLabel:
-#                font_name: "Roboto-Bold"
-#                text: "RPC"
-#                font_size: "15sp"
-#                size_hint_y: .1
-#                size_hint_x: .2
-#                width: dp(500)
-#                pos_hint: { "x": .05, "top": 1}
-#                    
-#            MDDropDownItem:
-#                id: drop_item
-#                size_hint_x: .5
-#                pos_hint: {'x': .5, 'top': 1}
-#                text: root.get_rpc_config()
-#                on_release: root.menu.open()
-#                
-#            MDRaisedButton:
-#                text: "SAVE"
-#                on_release: root.SaveOptions()
-
 <SettingsScreen>
     name: "settings"
     MDBoxLayout:

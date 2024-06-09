@@ -49,7 +49,7 @@ class HandleWalletFunctions():
         super().__init__(**kwargs)
         
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
-        self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
+        self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
         
         # Migrate existing wallet to v2
         self.__migrate_wallets()
@@ -281,16 +281,14 @@ class HandleWalletFunctions():
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
 
-        # self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
-        # self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
-        # grpcaddr, grpcport = urlparse(self.GRPC).netloc.split(":")
-        grpcaddr = "grpc.sentinel.co"
-        grpcport = "9090"
+        self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
+        self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
+        grpcaddr, grpcport = self.GRPC.split(":")
 
         kr = self.__keyring(PASSWORD)
         private_key = kr.get_password("meile-gui", KEYNAME)
 
-        sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key)
+        sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key, ssl=True)
 
         balance = self.get_balance(sdk._account.address)
         print(balance)
@@ -388,16 +386,14 @@ class HandleWalletFunctions():
         
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
-        
-        #self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
+        self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
         self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
+        grpcaddr, grpcport = self.GRPC.split(":")
         
-        grpcaddr, grpcport = urlparse(self.GRPC).netloc.split(":")
-
         kr = self.__keyring(PASSWORD)
         private_key = kr.get_password("meile-gui", KEYNAME)
         
-        sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key)
+        sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key, ssl=True)
     
         balance = self.get_balance(sdk._account.address)
         
@@ -448,22 +444,21 @@ class HandleWalletFunctions():
             
     
     def unsubscribe(self, subId):
-        CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
         KEYNAME = CONFIG['wallet'].get('keyname', '')
 
         if not KEYNAME:
             return {'hash' : "0x0", 'success' : False, 'message' : "ERROR Retrieving Keyname"}
-
         
+        CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
+        self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
         self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
-
-        grpcaddr, grpcport = urlparse(self.GRPC).netloc.split(":")
+        grpcaddr, grpcport = self.GRPC.split(":")
 
         kr = self.__keyring(PASSWORD)
         private_key = kr.get_password("meile-gui", KEYNAME) 
 
-        sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key)
+        sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key, ssl=True)
 
         tx_params = TxParams(
             gas=ConfParams.GAS,
@@ -498,20 +493,19 @@ class HandleWalletFunctions():
             
     
     def connect(self, ID, address, type):
-
-        CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
        
         PASSWORD = CONFIG['wallet'].get('password', '')
         KEYNAME = CONFIG['wallet'].get('keyname', '')
        
-        self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)   
-        
-        grpcaddr, grpcport = urlparse(self.GRPC).netloc.split(":")
+        CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
+        self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
+        self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
+        grpcaddr, grpcport = self.GRPC.split(":")
 
         kr = self.__keyring(PASSWORD)
         private_key = kr.get_password("meile-gui", KEYNAME)
         
-        sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key)
+        sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key, ssl=True)
         
         tx_params = TxParams(
             gas=ConfParams.GAS,
@@ -750,9 +744,10 @@ class HandleWalletFunctions():
         endpoint = HTTParams.BALANCES_ENDPOINT + address
         CoinDict = {'dvpn' : 0, 'scrt' : 0, 'dec'  : 0, 'atom' : 0, 'osmo' : 0}
         #CoinDict = {'tsent' : 0, 'scrt' : 0, 'dec'  : 0, 'atom' : 0, 'osmo' : 0}
-        
+        CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
+        self.API = CONFIG['network'].get('api', HTTParams.APIURL)
         try:
-            r = http.get(HTTParams.APIURL + endpoint)
+            r = http.get(self.API + endpoint)
             coinJSON = r.json()
         except:
             return None

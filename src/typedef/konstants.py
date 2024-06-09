@@ -33,7 +33,9 @@ class HTTParams():
     TIMEOUT                = 5
     APIURL                 = "https://api.sentinel.mathnodes.com"
     APIS_URL = [APIURL] + [
-        "https://api-sentinel-ia.cosmosia.notional.ventures",
+        "https://api.ungovernable.dev",
+        "https://api.noncompliant.network",
+        "https://api.ro.mathnodes.com",
         "https://lcd-sentinel.whispernode.com:443",
         "https://api.sentinel.quokkastake.io",
         "https://api.dvpn.roomit.xyz",
@@ -77,11 +79,13 @@ class HTTParams():
         "grpc.dvpn.roomit.xyz:8443",
         "aimokoivunen.mathnodes.com:9090",
     ]
-    NODE_API               = ["https://metabase.mathnodes.com/api/public/card/bdff9cda-e0b8-417e-afd0-a8736a329914/query/json",
+    NODE_API = "https://ungovernable.dev/api/public/card/1643a397-ddbd-48b1-89f7-396d16606eb5/query/json"
+    NODE_APIS = [NODE_API] +  [
+                              "https://metabase.mathnodes.com/api/public/card/bdff9cda-e0b8-417e-afd0-a8736a329914/query/json",
                               "https://metabase.bluefren.xyz/api/public/card/4a891454-51da-462a-a5df-e85ca17c05d5/query/json",
                               "https://metabase.jp.bluefren.xyz/api/public/card/feed7c25-410a-4e3a-bfe1-8a701defdc38/query/json",
                               "https://metabase.ro.mathnodes.com/api/public/card/6fd7194d-f025-4766-ba3c-3635ba6a6c00/query/json",
-                              "https://noncompliant.network/api/public/card/bc75f719-db4a-44b8-9688-f5793742a203/query/json"
+                              "https://noncompliant.network/api/public/card/bc75f719-db4a-44b8-9688-f5793742a203/query/json",
                               ]
     
     

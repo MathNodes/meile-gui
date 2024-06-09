@@ -1943,7 +1943,7 @@ class SettingsScreen(Screen):
                     "text": f"{i}",
                     "height": dp(56),
                     "on_release": lambda x=f"{i}": self.set_item(x, "cache"),
-                } for i in params.NODE_API
+                } for i in params.NODE_APIS
             ],
             position="center",
             width_mult=50,
@@ -1977,63 +1977,3 @@ class SettingsScreen(Screen):
         Meile.app.root.remove_widget(self)
         Meile.app.root.transistion = SlideTransition(direction="up")
         Meile.app.root.current = WindowNames.MAIN_WINDOW
-
-'''
-class SettingsScreen(Screen):
-    MeileConfig = MeileGuiConfig()
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-        params = HTTParams()
-        self.RPC = params.RPC
-
-        self.MeileConfig = MeileGuiConfig()
-
-        menu_items = [
-            {
-                "viewclass": "IconListItem",
-                "icon": "server-security",
-                "text": f"{i}",
-                "height": dp(56),
-                "on_release": lambda x=f"{i}": self.set_item(x),
-            } for i in params.RPCS
-        ]
-        self.menu = MDDropdownMenu(
-            caller=self.ids.drop_item,
-            items=menu_items,
-            position="center",
-            width_mult=50,
-        )
-        self.menu.bind()
-
-    def get_rpc_config(self):
-        CONFIG = self.MeileConfig.read_configuration(self.MeileConfig.CONFFILE)
-
-        self.ids.drop_item.set_item(CONFIG['network']['rpc'])
-        return CONFIG['network']['rpc']
-
-    def set_item(self, text_item):
-        self.ids.drop_item.set_item(text_item)
-        self.RPC = text_item
-        self.menu.dismiss()
-
-    def build(self):
-        return self.screen
-
-    def SaveOptions(self):
-
-        CONFIG = self.MeileConfig.read_configuration(self.MeileConfig.CONFFILE)
-        CONFIG.set('network', 'rpc', self.RPC)
-
-        FILE = open(self.MeileConfig.CONFFILE, 'w')
-        CONFIG.write(FILE)
-
-        self.set_previous_screen()
-
-    def set_previous_screen(self):
-
-        Meile.app.root.remove_widget(self)
-        Meile.app.root.transistion = SlideTransition(direction="up")
-        Meile.app.root.current = WindowNames.MAIN_WINDOW
-'''
