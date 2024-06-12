@@ -667,7 +667,7 @@ class MainWindow(Screen):
         # Build alphabetical country recyclerview tree data
         self.build_country_tree()
         
-        thread = Thread(target=lambda: self.nonblock_get_ip_address(self.get_ip_address))
+        thread = Thread(target=lambda: self.nonblock_get_ip_address(self.get_ip_address, True))
         thread.start() 
 
     def build_country_tree(self):
@@ -920,7 +920,7 @@ class MainWindow(Screen):
     def set_ip(self):
         self.map_widget_1.text = self.ip
     
-    def nonblock_get_ip_address(self, callback):
+    def nonblock_get_ip_address(self, callback, start: bool = False):
         try:
             resolver = DNSRequests.MakeDNSRequest(domain=HTTParams.IPAPIDNS, timeout=5, lifetime=6.5)
             ifconfig = resolver.DNSRequest()
@@ -933,7 +933,7 @@ class MainWindow(Screen):
                 print(ifJSON)
                 with open(path.join(ConfParams.KEYRINGDIR, 'ip-api.json'), 'w') as f:
                     f.write(json.dumps(ifJSON))
-                callback(None)
+                callback(None, start)
                 return True
                 
             else:
@@ -947,7 +947,7 @@ class MainWindow(Screen):
                 f.write(json.dumps('{}'))
             return False
         
-    def get_ip_address(self, dt):
+    def get_ip_address(self, dt, startup: bool = False):
         #self.old_ip = self.ip
         try:
             with open(path.join(ConfParams.KEYRINGDIR, 'ip-api.json'), 'r') as f:
@@ -975,8 +975,8 @@ class MainWindow(Screen):
                     loc = self.MeileLand.CountryLatLong["Seychelles"]
                     self.LatLong.append(loc[0])
                     self.LatLong.append(loc[1])
-                    
-            self.zoom_country_map()
+            if not startup:        
+                self.zoom_country_map()
             return True
         except Exception as e:
             print(str(e))
@@ -1249,8 +1249,10 @@ class MainWindow(Screen):
         self.carousel.load_slide(self.NodeWidget)
 
     def close_sub_window(self):
-        self.carousel.remove_widget(self.NodeWidget)
-        self.carousel.load_previous()
+        while len(self.carousel.slides) > 1:
+            self.carousel.remove_widget(self.carousel.slides[-1])
+            
+        self.carousel.load_slide(self.carousel.slides[0])
 
     def zoom_country_map(self):
         try:
@@ -1274,7 +1276,8 @@ class MainWindow(Screen):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         NodeTree = NodeTreeData(self.NodeTree.NodeTree)
         try:
-            mw.carousel.remove_widget(self.NodeWidget)
+            while len(mw.carousel.slides) > 1:
+                mw.carousel.remove_widget(mw.carousel.slides[-1])
         except Exception as e:
             print(str(e))
             pass
@@ -1697,7 +1700,10 @@ class NodeScreen(MDBoxLayout):
         mw.NodeCarouselData = {"moniker" : None,
                                 "address" : None,
                                 "gb_prices" : None,
-                                "hr_prices" : None}
+                                "hr_prices" : None,
+                                "protocol" : None}
+        
+        
 
         try:
             CountryNodes = self.NodeTree.NodeTree.children(country)
