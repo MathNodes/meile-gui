@@ -1,7 +1,7 @@
 #!/bin/bash
 
 STATE="$1"
-GATEWAY=`route -n | grep 'UG[ \t]' | awk '{print $2}'`
+GATEWAY=`route -n | grep 'UG[ \t]' | awk '{print $2}' | tr -d '\n'`
 PRIMARY_IFACE=`route | grep '^default' | grep -o '[^ ]*$'`
 
 if test -z "$SUDO_USER"
@@ -15,8 +15,8 @@ fi
 if [[ ${STATE} = "up" ]]; then
 
         # save default route iface and gw ip
-	echo ${GATEWAY} > /home/${USER}/.meile-gui/gateway
-	echo ${PRIMARY_IFACE} > /home/${USER}/.meile-gui/iface
+	   echo ${GATEWAY} > /home/${USER}/.meile-gui/gateway
+	   echo ${PRIMARY_IFACE} > /home/${USER}/.meile-gui/iface
 
         # start v2ray
         echo "Running v2ray: /home/${USER}/.meile-gui/bin/v2ray run -c /home/${USER}/.meile-gui/v2ray_config.json &"
@@ -69,15 +69,15 @@ if [[ ${STATE} = "up" ]]; then
 else
 
         # get config
-	GATEWAY=`cat /home/${USER}/.meile-gui/gateway | cut -d " " -f 1`
-	PRIMARY_IFACE=`cat /home/${USER}/.meile-gui/iface | cut -d " " -f 1`
-	TUNIFACE=`cat /home/${USER}/.meile-gui/tuniface | cut -d " " -f 1`
+	    GATEWAY=`cat /home/${USER}/.meile-gui/gateway | cut -d " " -f 1`
+	    PRIMARY_IFACE=`cat /home/${USER}/.meile-gui/iface | cut -d " " -f 1`
+	    TUNIFACE=`cat /home/${USER}/.meile-gui/tuniface | cut -d " " -f 1`
         PROXY_IP=`cat /home/${USER}/.meile-gui/v2ray.proxy`
         
         # terminate the v2ray setup
         pkill -11 tun2socks
         pkill -11 v2ray
-	sleep 5
+	    sleep 5
 
         # bring down tun interface
         ip addr del 10.10.10.10/24 dev ${TUNIFACE}
@@ -96,5 +96,5 @@ else
         #sysctl net.ipv4.conf.${PRIMARY_IFACE}.rp_filter=1
 
         # sanity check
-	curl https://icanhazip.com
+	    curl https://icanhazip.com
 fi

@@ -103,6 +103,10 @@ class NodeTreeData():
                 #N = random.randint(0, len(HTTParams.NODE_API) -1)
                 try: 
                     r = http.get(CACHE_SERVER)
+                    if r.status_code == 502:
+                        print(f"Reponse 502 from {CACHE_SERVER}. Switching to backup server.")
+                        CACHE_SERVER = HTTParams.NODE_API[random.randint(0, len(HTTParams.NODE_API)-1)] 
+                        continue
                 except (ReadTimeout, ConnectionError, HTTPError):
                     print(f"Read timed out for {CACHE_SERVER}. Switching to backup server.")
                     CACHE_SERVER = HTTParams.NODE_API[random.randint(0, len(HTTParams.NODE_API)-1)] 
@@ -240,13 +244,13 @@ class NodeTreeData():
         # Iteration via the original data, in order to prevent "RuntimeError: dictionary changed size during iteration"
         for identifier, content in (self.BackupNodeTree if from_backup is True else self.NodeTree).nodes.items():
             if identifier.startswith("sentnode"):
-                print(content.data)
-                print(key)
+                #print(content.data)
+                #print(key)
                 if key in content.data:
-                    print(f"Key in data: {key}")
+                    #print(f"Key in data: {key}")
                     # use in... / wherlike / contains
                     if value:
-                        print(f"Value: {value}")
+                        #print(f"Value: {value}")
                         if is_list:
                             for v in value:
                                 if v == str(identifier):
@@ -268,7 +272,7 @@ class NodeTreeData():
                                         filtered.remove_node(identifier)
                                 elif value.lower().strip() not in content.data[key].lower():
                                     # use in... / wherlike / contains
-                                    print(f"Revmoving: {identifier}")
+                                    #print(f"Revmoving: {identifier}")
                                     filtered.remove_node(identifier)
                             except AttributeError:
                                 continue

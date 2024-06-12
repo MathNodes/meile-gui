@@ -14,7 +14,7 @@ from json.decoder import JSONDecodeError
 
 from conf.meile_config import MeileGuiConfig
 from typedef.konstants import IBCTokens, ConfParams, HTTParams, MEILE_PLAN_WALLET
-from adapters import HTTPRequests
+from adapters import HTTPRequests, DNSRequests
 from cli.v2ray import V2RayHandler, V2RayConfiguration
 
 import base64
@@ -494,10 +494,11 @@ class HandleWalletFunctions():
     
     def connect(self, ID, address, type):
        
+        CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
         KEYNAME = CONFIG['wallet'].get('keyname', '')
        
-        CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
+        
         self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
         self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
         grpcaddr, grpcport = self.GRPC.split(":")
@@ -657,6 +658,7 @@ class HandleWalletFunctions():
 
                 if psutil.net_if_addrs().get(iface):
                     self.connected = {"v2ray_pid" : None,  "result": True, "status" : iface}
+                    self.get_ip_address()
                     return
             else:  # v2ray
                 if len(decode) != 7:
@@ -722,6 +724,7 @@ class HandleWalletFunctions():
                 if tuniface is True:
                     self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid, "result": True, "status" : tuniface}
                     print(self.connected)
+                    self.get_ip_address()
                     return
                 else:
                     try:
@@ -772,7 +775,31 @@ class HandleWalletFunctions():
             return None
         return CoinDict
     
-
+    def get_ip_address(self):
+        try:
+            resolver = DNSRequests.MakeDNSRequest(domain=HTTParams.IPAPIDNS, timeout=5, lifetime=6.5)
+            ifconfig = resolver.DNSRequest()
+            if ifconfig:
+                print("%s:%s" % (HTTParams.IPAPIDNS, ifconfig))
+                Request = HTTPRequests.MakeRequest()
+                http = Request.hadapter()
+                req = http.get(HTTParams.IPAPI)
+                ifJSON = req.json()
+                print(ifJSON)
+                with open(path.join(ConfParams.KEYRINGDIR, 'ip-api.json'), 'w') as f:
+                    f.write(json.dumps(ifJSON))
+                return True
+                
+            else:
+                print("Error resolving ip-api.com... defaulting...")
+                with open(path.join(ConfParams.KEYRINGDIR, 'ip-api.json'), 'w') as f:
+                    f.write(json.dumps('{}'))
+                return False
+        except Exception as e:
+            print(str(e))
+            with open(path.join(ConfParams.KEYRINGDIR, 'ip-api.json'), 'w') as f:
+                f.write(json.dumps('{}'))
+            return False
                 
     
         

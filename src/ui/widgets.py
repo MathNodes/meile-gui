@@ -1148,6 +1148,7 @@ class PlanAccordion(ButtonBehavior, MDGridLayout):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         self.register_event_type("on_open")
         self.register_event_type("on_close")
         
@@ -1182,9 +1183,11 @@ class PlanAccordion(ButtonBehavior, MDGridLayout):
 
     def on_open(self, *args):
         """Called when a panel is opened."""
+        self.mw.PlanID = self.content.id
 
     def on_close(self, *args):
         """Called when a panel is closed."""
+        self.mw.PlanID = None
 
     def close_panel(self) -> None:
         """Method closes the panel."""
@@ -1265,10 +1268,11 @@ class NodeCarousel(MDBoxLayout):
         
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         if node:
-            mw.NodeCarouselData = {"moniker" : node[NodeKeys.NodesInfoKeys[0]],
-                                   "address" : node[NodeKeys.NodesInfoKeys[1]],
+            mw.NodeCarouselData = {"moniker"   : node[NodeKeys.NodesInfoKeys[0]],
+                                   "address"   : node[NodeKeys.NodesInfoKeys[1]],
                                    "gb_prices" : node[NodeKeys.NodesInfoKeys[2]],
-                                   "hr_prices" : node[NodeKeys.NodesInfoKeys[3]]}
+                                   "hr_prices" : node[NodeKeys.NodesInfoKeys[3]],
+                                   "protocol"  : node[NodeKeys.NodesInfoKeys[13]]}
             
             gbprices = node[NodeKeys.NodesInfoKeys[2]].split(',')
             hrprices = node[NodeKeys.NodesInfoKeys[3]].split(',')
