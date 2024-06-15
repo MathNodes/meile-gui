@@ -189,7 +189,7 @@ class WalletRestore(Screen):
                     MDRaisedButton(
                         text="I saved this",
                         theme_text_color="Custom",
-                        text_color=(1,1,1,1),
+                        text_color=get_color_from_hex(MeileColors.BLACK),
                         on_release=self.switch_window
                     ),
                 ],
@@ -1362,6 +1362,8 @@ class WalletScreen(Screen):
 
     def __init__(self, ADDRESS,  **kwargs):
         super(WalletScreen, self).__init__()
+        #self.qr_address = self.get_qr_code_address()
+        #self.ids.qr.source = self.get_qr_code_address()
         self.ADDRESS = ADDRESS
         print("WalletScreen, ADDRESS: %s" % self.ADDRESS)
         self.wallet_address = self.ADDRESS
@@ -1504,12 +1506,13 @@ class WalletScreen(Screen):
         conf = CONFIG.read_configuration(MeileGuiConfig.CONFFILE)
         self.ADDRESS = conf['wallet'].get("address")
         QRcode = QRCode()
-        if not path.isfile(path.join(MeileGuiConfig.BASEDIR, "img", "dvpn.png")):
+        if not path.isfile(path.join(MeileGuiConfig.BASEDIR, "img", f"{self.ADDRESS}.png")):
             print("Generating QR Code....")
             QRcode.generate_qr_code(self.ADDRESS)
-
-        print(f'{path.join(MeileGuiConfig.BASEDIR, "img", "dvpn.png")}')
-        return path.join(MeileGuiConfig.BASEDIR, "img", "dvpn.png")
+        
+        img_path = path.join(MeileGuiConfig.BASEDIR, "img", f"{self.ADDRESS}.png")
+        print(img_path)
+        return path.join(MeileGuiConfig.BASEDIR, "img", f"{self.ADDRESS}.png")
 
     def SetBalances(self, CoinDict):
         if CoinDict:

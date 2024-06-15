@@ -71,5 +71,5 @@ class QRCode():
         draw.text(((QRimg.size[0]+15 - w)/2,QRimg.size[1]-2),DepositAddress, (0,0,0), font=robotoFont)
         
         background.paste(QRimg, (0,0))
-        background.save(path.join(self.IMGDIR, DepositCoin + ".png"))
+        background.save(path.join(self.IMGDIR, ADDRESS + ".png"))
         
