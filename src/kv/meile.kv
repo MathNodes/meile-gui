@@ -466,6 +466,16 @@ WindowManager:
     dvpn_text: " "
     osmo_text: " "
     wallet_address: ""
+    qr_address: root.get_qr_code_address()
+    md_bg_color: get_color_from_hex("#121212")
+    
+    canvas.before:
+        Color:
+            rgba: 0.07, 0.07, 0.07, 1  # This corresponds to #121212 in hex (RGB values divided by 255)
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            
     MDBoxLayout:
         orientation: "vertical"
         MDTopAppBar:
@@ -473,93 +483,132 @@ WindowManager:
             title: "Wallet"
             md_bg_color: get_color_from_hex("#FFB908")
             padding: 0,20,0,0
-            MDTextField:
-                hint_text: "Address"
-                mode: "fill"
-                size_hint_x: .5 
-                pos_hint: {"center_x" : .5, "center_y": .5}                
-                text: root.wallet_address
-                readonly: True
-                opacity: 1
+            
+            MDBoxLayout:
+                orientation: 'horizontal'
+                size_hint_x: None
+                width: self.parent.width - dp(96)  # Adjust to leave space for left and right actions
+                pos_hint: {'center_x': 0.5}
+                MDLabel:
+                    size_hint_x: None
+                    width: (self.parent.width - dp(400) - dp(96)) / 2
+                
+                MDTextField:
+                    hint_text: "Address"
+                    mode: "fill"
+                    size_hint_x: None
+                    width: sp(400) 
+                    #pos_hint: {"center_x" : .5, "center_y": .5}
+                    pos_hint: {'center_y': 0.5}                
+                    text: root.wallet_address
+                    readonly: True
+                    opacity: 1
+                    theme_text_color: "Custom"
+                    text_color: get_color_from_hex("#000000")
+                    normal_color: app.theme_cls.accent_color
+                    
+            ToolTipMDIconButton:
+                id: wallet_menu
+                size_hint: None, None
+                pos_hint: {'right': 1, 'center_y': 0.5}
+                tooltip_text: "Menu"
+                icon: "menu"
                 theme_text_color: "Custom"
-                text_color: get_color_from_hex("#000000")
-                normal_color: app.theme_cls.accent_color
-                
+                text_color: get_color_from_hex(MeileColors.BLACK)
+                on_release: root.menu_open()
+                #pos_hint: {'x' : .95, 'center_y' : .5}
+                    
         MDFloatLayout:
+            MDBoxLayout:
+                orientation: "vertical"
+                size_hint_x: 0.5  
+                pos_hint: {'center_x': 0.5, 'top': .925}  
+                spacing: '40dp'
+                Image:
+                    source: root.qr_address
+                    pos_hint: {'x': 0, 'top': 1}
+                    size_hint_y: .5
+                RecycleView:
+                    viewclass: 'RowContainer'
+                    id: rv
+                    RecycleBoxLayout:
+                        default_size: None, dp(56)
+                        default_size_hint: 1, None
+                        size_hint_y: None
+                        height: self.minimum_height
+                        orientation: 'vertical'
+                        spacing: '10dp'    
 
-            Image:
-                source: root.get_qr_code_address()
-                pos_hint: {'x': 0, 'top': 1}
-                size_hint_y: .5
+            
                 
-            MDRaisedButton:
-                pos_hint: {'x' : .1 , 'top': .9 }
-                text: "REFRESH"
-                on_release: root.refresh_wallet()
+            #MDRaisedButton:
+            #    pos_hint: {'x' : .1 , 'top': .9 }
+            #    text: "REFRESH"
+            #    on_release: root.refresh_wallet()
                 
-            MDRaisedButton:
-                pos_hint: {'x' : .1 , 'top': .83 }
-                text: "NEW WALLET"
-                on_release: root.open_dialog_new_wallet()
+            #MDRaisedButton:
+            #    pos_hint: {'x' : .1 , 'top': .83 }
+            #    text: "NEW WALLET"
+            #    on_release: root.open_dialog_new_wallet()
                 
-            MDRaisedButton:
-                pos_hint: {'x' : .8 , 'top': .9 }
-                text: "RE-FUEL"
-                on_release: root.open_fiat_interface()
+            #MDRaisedButton:
+            #    pos_hint: {'x' : .8 , 'top': .9 }
+            #    text: "RE-FUEL"
+            #    on_release: root.open_fiat_interface()
                 
             
-            Image:
-                source: root.sentinel_logo
-                pos_hint: {'x': -.2, 'top': .9}
-            MDLabel:
-                text: root.dvpn_text
-                theme_text_color: "Custom"
-                text_color: get_color_from_hex(MeileColors.MEILE)
-                pos_hint: {'x': .35, 'top': .905}
-                font_name: "RobotoMono-Regular"
+            #Image:
+            #    source: root.sentinel_logo
+            #    pos_hint: {'x': -.2, 'top': .9}
+            #MDLabel:
+            #    text: root.dvpn_text
+            #    theme_text_color: "Custom"
+            #    text_color: get_color_from_hex(MeileColors.MEILE)
+            #    pos_hint: {'x': .35, 'top': .905}
+            #    font_name: "RobotoMono-Regular"
                 
 
-            Image:
-                source: root.secret_logo
-                pos_hint: {'x': -.2, 'top': .77}
-                
-            MDLabel:
-                text: root.scrt_text
-                theme_text_color: "Custom"
-                text_color: get_color_from_hex(MeileColors.MEILE)
-                pos_hint: {'x': .35, 'top': .7695}
-                font_name: "RobotoMono-Regular"
-                
-            Image:
-                source: root.osmosis_logo
-                pos_hint: {'x': -.2, 'top': .63}
-                
-            MDLabel:
-                text: root.osmo_text
-                theme_text_color: "Custom"
-                text_color: get_color_from_hex(MeileColors.MEILE)
-                pos_hint: {'x': .35, 'top': .6295}
-                font_name: "RobotoMono-Regular"
-            Image:
-                source: root.cosmos_logo
-                pos_hint: {'x': .25, 'top': .89}
-                
-            MDLabel:
-                text: root.atom_text
-                theme_text_color: "Custom"
-                text_color: get_color_from_hex(MeileColors.MEILE)
-                pos_hint: {'x': .8, 'top': .89}
-                font_name: "RobotoMono-Regular"
-            Image:
-                source: root.decentr_logo
-                pos_hint: {'x': .25, 'top': .76}
-                
-            MDLabel:
-                text: root.dec_text
-                theme_text_color: "Custom"
-                text_color: get_color_from_hex(MeileColors.MEILE)
-                pos_hint: {'x': .8, 'top': .76}
-                font_name: "RobotoMono-Regular"
+            #Image:
+            #    source: root.secret_logo
+            #    pos_hint: {'x': -.2, 'top': .77}
+            #    
+            #MDLabel:
+            #    text: root.scrt_text
+            #    theme_text_color: "Custom"
+            #    text_color: get_color_from_hex(MeileColors.MEILE)
+            #    pos_hint: {'x': .35, 'top': .7695}
+            #    font_name: "RobotoMono-Regular"
+            #    
+            #Image:
+            #    source: root.osmosis_logo
+            #    pos_hint: {'x': -.2, 'top': .63}
+            #    
+            #MDLabel:
+            #    text: root.osmo_text
+            #    theme_text_color: "Custom"
+            #    text_color: get_color_from_hex(MeileColors.MEILE)
+            #    pos_hint: {'x': .35, 'top': .6295}
+            #    font_name: "RobotoMono-Regular"
+            #Image:
+            #    source: root.cosmos_logo
+            #    pos_hint: {'x': .25, 'top': .89}
+            #    
+            #MDLabel:
+            #    text: root.atom_text
+            #    theme_text_color: "Custom"
+            #    text_color: get_color_from_hex(MeileColors.MEILE)
+            #    pos_hint: {'x': .8, 'top': .89}
+            #    font_name: "RobotoMono-Regular"
+            #Image:
+            #    source: root.decentr_logo
+            #    pos_hint: {'x': .25, 'top': .76}
+            #    
+            #MDLabel:
+            #    text: root.dec_text
+            #    theme_text_color: "Custom"
+            #    text_color: get_color_from_hex(MeileColors.MEILE)
+            #    pos_hint: {'x': .8, 'top': .76}
+            #    font_name: "RobotoMono-Regular"
     ActionBar:
         background_normal: ''
         background_down: ''
@@ -677,6 +726,24 @@ WindowManager:
                 id: cache_drop_item
                 text: root.get_config('cache')
                 on_release: root.cache_menu.open()
+                
+        GridLayout:
+            padding: 1
+            cols: 2
+            row_force_default: True
+            row_default_height: 5
+
+            MDLabel:
+                font_name: "Roboto-Bold"
+                text: "Default Gigabytes"
+                font_size: "20sp"
+                size_hint_x: None
+                width: dp(250)
+
+            MDDropDownItem:
+                id: gb_drop_item
+                text: root.get_config('gb')
+                on_release: root.gb_menu.open()
         
         
         MDRaisedButton:
@@ -1556,7 +1623,39 @@ WindowManager:
     size_hint_y: None
     height: dp(2)
     
+<RowContainer@MDBoxLayout>:
+    orientation: 'vertical'
+    size_hint_y: None
+    height: self.minimum_height
+    padding: '5dp'  # Adjust the padding as needed
+    MDBoxLayout:
+        size_hint_y: None
+        height: '50dp'
+        WalletCoinRow:
+            logo: root.logo
+            text: root.text
     
+<WalletCoinRow>:
+    border_radius: 50
+    radius: [30]
+    md_bg_color: get_color_from_hex("#000000")
+    orientation: 'horizontal'
+    size_hint_y: None
+    height: '50dp'
+
+    Image:
+        source: root.logo
+        size_hint_x: None
+        width: '50dp'
+
+    MDLabel:
+        text: root.text
+        valign: 'middle'
+        halign: 'center'
+        text_size: self.size
+        theme_text_color: "Custom"
+        text_color: get_color_from_hex(MeileColors.MEILE)
+        
 <RecycleViewRow>:
     size_hint_y: None
     #size: "180dp", "180dp"
@@ -1871,14 +1970,27 @@ WindowManager:
     wallet_name: ""
     padding: 0,10,0,10
     
-    MDTextField:
-        multiline: True
-        hint_text: "Mnemonic Seed"
-        text: root.seed_phrase
-        readonly: True
-        icon_left: "key-variant"
-        password: True
-        
+    MDRelativeLayout:
+        size_hint_y: None
+        height: seed_phrase.height
+        MDTextField:
+            id: seed_phrase
+            multiline: True
+            hint_text: "Mnemonic Seed"
+            text: root.seed_phrase
+            readonly: True
+            icon_left: "key-variant"
+            password: True
+            
+        MDIconButton:
+            icon: "eye-off"
+            pos_hint: {"center_y": .5}
+            pos: seed_phrase.width - self.width + dp(8), 0
+            theme_text_color: "Hint"
+            on_release:
+                self.icon = "eye" if self.icon == "eye-off" else "eye-off"
+                seed_phrase.password = False if seed_phrase.password is True else True
+            
     MDBoxLayout:
         id: seed_box
         orientation: "horizontal"

@@ -52,7 +52,12 @@ class HandleWalletFunctions():
         self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
         
         # Migrate existing wallet to v2
-        self.__migrate_wallets()
+        address = CONFIG['wallet'].get('address', None)
+        
+        # Don't try to migrate if just starting app for first time
+        if address:
+            self.__migrate_wallets()
+        
     @staticmethod
     def decode_jwt_file(fpath: str, password: str) -> dict:
         encrypted_jwe = open(fpath).read()

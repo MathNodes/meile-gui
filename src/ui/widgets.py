@@ -1417,12 +1417,18 @@ Node Version: %s
         self.dialog.open()
 
     @delayable
-    def subscribe(self, subscribe_dialog, *kwargs):
+    def subscribe(self, subscribe_dialog, **kwargs):
         sub_node = subscribe_dialog.return_deposit_text()
         spdialog = ProcessingSubDialog(sub_node[2], sub_node[1], sub_node[0] )
         deposit = self.reparse_coin_deposit(sub_node[0])
-        self.dialog.dismiss()
-        self.dialog = None
+        try:
+            self.dialog.dismiss()
+            self.dialog = None
+        except:
+            mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
+            self.mw.dialog.dismiss()
+            self.mw.dialog = None
+            
         self.dialog = MDDialog(
                 title="Subscribing...",
                 type="custom",
@@ -1521,6 +1527,14 @@ Node Version: %s
         except Exception as e:
             print(str(e))
             self.dialog = None
+
+class WalletCoinRow(MDCard,RectangularElevationBehavior,ThemableBehavior, HoverBehavior):
+    logo = StringProperty('')
+    text = StringProperty('')
+    
+class RowContainer(MDBoxLayout):
+    logo = StringProperty('')
+    text = StringProperty('')
         
 '''
 Recycler of the node cards after clicking country
@@ -1543,102 +1557,7 @@ class RecycleViewRow(MDCard,RectangularElevationBehavior,ThemableBehavior, Hover
     def on_leave(self, *args):
         self.md_bg_color = get_color_from_hex(MeileColors.DIALOG_BG_COLOR)
         Window.set_system_cursor('arrow')
-        
-    
-    '''    
-    def subscribe_to_node(self, price, hourly_price, naddress, moniker):
-        subtype_dialog = SubTypeDialog(self,price,hourly_price,moniker, naddress)
-        
-        #subscribe_dialog = SubscribeContent(price, moniker , naddress )
-        if not self.dialog:
-            self.dialog = MDDialog(
-                    type="custom",
-                    content_cls=subtype_dialog,
-                    md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
-                    )
-            self.dialog.open()
-
-    @delayable
-    def subscribe(self, subscribe_dialog, *kwargs):
-        sub_node = subscribe_dialog.return_deposit_text()
-        spdialog = ProcessingSubDialog(sub_node[2], sub_node[1], sub_node[0] )
-        deposit = self.reparse_coin_deposit(sub_node[0])
-        self.dialog.dismiss()
-        self.dialog = None
-        self.dialog = MDDialog(
-                title="Subscribing...",
-                type="custom",
-                content_cls=spdialog,
-                md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
-            )
-        self.dialog.open()
-        yield 0.6
-
-        CONFIG = MeileGuiConfig.read_configuration(MeileGuiConfig, MeileGuiConfig.CONFFILE)        
-        KEYNAME = CONFIG['wallet'].get('keyname', '')
-        
-        hwf = HandleWalletFunctions()
-        returncode = hwf.subscribe(KEYNAME, sub_node[1], deposit, sub_node[3], sub_node[4])
-        
-        if returncode[0]:
-            self.dialog.dismiss()
-            self.dialog = MDDialog(
-                title="Successful!",
-                md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
-                buttons=[
-                        MDFlatButton(
-                            text="OK",
-                            theme_text_color="Custom",
-                            text_color=self.theme_cls.primary_color,
-                            on_release=self.closeDialogReturnToSubscriptions
-                        ),])
-            self.dialog.open()
-
-        else:
-            self.dialog.dismiss()
-            self.dialog = MDDialog(
-            title="Error: %s" % "No wallet found!" if returncode[1] == 1337  else returncode[1],
-            md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR),
-            buttons=[
-                    MDFlatButton(
-                        text="OK",
-                        theme_text_color="Custom",
-                        text_color=self.theme_cls.primary_color,
-                        on_release=self.closeDialog
-                    ),])
-            self.dialog.open()
-
-    '''
-    def reparse_coin_deposit(self, deposit):
-        
-        for k,v in CoinsList.ibc_coins.items():
-            try: 
-                coin = re.findall(k,deposit)[0]
-                #print(coin)
-                deposit = deposit.replace(coin, v)
-                #print(deposit)
-                mu_deposit_amt = int(float(re.findall(r'[0-9]+\.[0-9]+', deposit)[0])*CoinsList.SATOSHI)
-                #print(mu_deposit_amt)
-                tru_mu_deposit = str(mu_deposit_amt) + v
-                #print(tru_mu_deposit)
-                tru_mu_ibc_deposit = self.check_ibc_denom(tru_mu_deposit)
-                #print(tru_mu_ibc_deposit)
-                return tru_mu_ibc_deposit
-            except:
-                pass
-            
-    def check_ibc_denom(self, tru_mu_deposit):
-        for ibc_coin in IBCTokens.IBCCOINS:
-            k = ibc_coin.keys()
-            v = ibc_coin.values()
-            for coin,ibc in zip(k,v):
-                print(coin)
-                print(ibc)
-                if coin in tru_mu_deposit:
-                    tru_mu_deposit = tru_mu_deposit.replace(coin, ibc)
-                    print(tru_mu_deposit)
-        return tru_mu_deposit
-    
+ 
     def closeDialogReturnToSubscriptions(self,inst):
         self.dialog.dismiss()
         self.dialog = None
@@ -1661,70 +1580,6 @@ class RecycleViewRow(MDCard,RectangularElevationBehavior,ThemableBehavior, Hover
         mw.carousel.add_widget(NodeWidget)
         mw.carousel.load_slide(NodeWidget)
 
-''' 
-class RecycleViewSubRow(MDCard,RectangularElevationBehavior):
-    text = StringProperty()
-    dialog = None
-    
-    def get_font(self):
-        Config = MeileGuiConfig()
-        return Config.resource_path(MeileColors.FONT_FACE)
-        
-    def get_data_used(self, allocated, consumed, node_address, expirary_date):
-        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
-        try:
-            if mw.NodeSwitch['node'] == node_address:
-                self.ids.node_switch.active = True
-            else:
-                self.ids.node_switch.active = False
-            
-            if not mw.clock and mw.NodeSwitch['id']:
-                print("Not clock()")
-                self.setQuotaClock(mw.NodeSwitch['id'],
-                                   mw.NodeSwitch['node'])
-            
-            #End house keeping
-            
-            if "hrs" in allocated:
-                allocated = int(allocated.split('hrs')[0].rstrip().lstrip())
-                consumed  = float(consumed.split('hrs')[0].rstrip().lstrip())
-                #consumed  = self.compute_consumed_hours(allocated, expirary_date)
-            else:
-                allocated = self.compute_consumed_data(allocated)
-                consumed  = self.compute_consumed_data(consumed)
-            
-            if allocated == 0:
-                self.ids.consumed_data.text = "0%"
-                return 0
-            
-            self.ids.consumed_data.text = str(round(float(float(consumed/allocated)*100),2)) + "%"
-            return round(float(float(consumed/allocated)*100),3)
-        except Exception as e:
-            print(str(e))
-            return float(50)
-    
-    def add_loading_popup(self, title_text):
-        self.dialog = None
-        self.dialog = MDDialog(title=title_text,md_bg_color=get_color_from_hex(MeileColors.DIALOG_BG_COLOR))
-        self.dialog.open()
-        
-    def remove_loading_widget(self):
-        try:
-            self.dialog.dismiss()
-            self.dialog = None
-        except Exception as e:
-            print(str(e))
-            self.dialog = None
-
-    def closeDialog(self, dt):
-        try:
-            self.dialog.dismiss()
-            self.dialog = None
-        except Exception as e:
-            print(str(e))
-            self.dialog = None
-'''   
-        
 class MDMapCountryButton(MDFillRoundFlatButton,ThemableBehavior, HoverBehavior):
     def on_enter(self, *args):
         self.md_bg_color = get_color_from_hex("#fcb711")

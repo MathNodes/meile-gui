@@ -48,10 +48,10 @@ import sys
 import copy
 from copy import deepcopy
 import re
-from shutil import rmtree
 from time import sleep
 from functools import partial
-from os import path,geteuid, chdir
+from shutil import rmtree
+from os import path,geteuid, chdir, remove
 from save_thread_result import ThreadWithResult
 from threading import Thread
 from unidecode import unidecode
@@ -658,6 +658,7 @@ class MainWindow(Screen):
         elif selection == self.MenuOptions[2]:
             self.start_warp()
         elif selection == self.MenuOptions[3]:
+            self.disconnect_from_node()
             sys.exit(0)
 
     def build(self, dt):
@@ -1195,9 +1196,16 @@ class MainWindow(Screen):
         # Clear out any previous Carousel Data
         self.clear_node_carousel()
         CONFIG = self.MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
-        Meile.app.root.add_widget(WalletScreen(name=WindowNames.WALLET, ADDRESS=CONFIG['wallet'].get('address', '')))
-        Meile.app.root.transition = SlideTransition(direction = "up")
-        Meile.app.root.current = WindowNames.WALLET
+        address = CONFIG['wallet'].get('address', None)
+        if not address: 
+            print("Prompting to create wallet")
+            self.wallet_dialog()
+            
+        else:
+            print("Wallet already exists...")
+            Meile.app.root.add_widget(WalletScreen(name=WindowNames.WALLET, ADDRESS=CONFIG['wallet'].get('address', '')))
+            Meile.app.root.transition = SlideTransition(direction = "up")
+            Meile.app.root.current = WindowNames.WALLET
 
     def build_help_screen_interface(self):
         # Clear out any previous Carousel Data
@@ -1349,6 +1357,8 @@ class WalletScreen(Screen):
     ADDRESS = None
     MeileConfig = None
     dialog = None
+    qr_address = StringProperty()
+    MenuOptions = ["Refresh", "New Wallet", "Re-Fuel"]
 
     def __init__(self, ADDRESS,  **kwargs):
         super(WalletScreen, self).__init__()
@@ -1356,6 +1366,19 @@ class WalletScreen(Screen):
         print("WalletScreen, ADDRESS: %s" % self.ADDRESS)
         self.wallet_address = self.ADDRESS
 
+        menu_icons = ["refresh-circle", "wallet-plus", "cash-multiple"]
+        menu_items = [
+            {
+                "viewclass" : "IconListItem",
+                "icon": f"{k}",
+                "text": f"{i}",
+                "on_release": lambda x=f"{i}": self.menu_callback(x),
+            } for i,k in zip(self.MenuOptions, menu_icons)
+        ]
+        self.menu = MDDropdownMenu(items=menu_items, 
+                                   caller=self.ids.wallet_menu,
+                                   width_mult=3,
+                                   background_color=get_color_from_hex(MeileColors.BLACK))
         Clock.schedule_once(self.build)
 
     def build(self, dt):
@@ -1365,6 +1388,18 @@ class WalletScreen(Screen):
     def refresh_wallet(self):
         self.build(None)
 
+    def menu_open(self):
+        self.menu.open()
+        
+    def menu_callback(self, selection):
+        self.menu.dismiss()
+        if selection == self.MenuOptions[0]:
+            self.refresh_wallet()
+        elif selection == self.MenuOptions[1]:
+            self.open_dialog_new_wallet()
+        elif selection == self.MenuOptions[2]:
+            self.open_fiat_interface()
+        
     def open_dialog_new_wallet(self):
         self.dialog = MDDialog(
             text="Warning, if you continue your current wallet will be deleted",
@@ -1387,12 +1422,17 @@ class WalletScreen(Screen):
         self.dialog.open()
 
     def destroy_wallet_open_wallet_dialog(self, _):
-        keyring_fpath = path.join(MeileGuiConfig.BASEDIR, "keyring-file")
+        keyring_fpath = path.join(MeileGuiConfig.BASEDIR, "keyring.cfg")
         img_fpath = path.join(MeileGuiConfig.BASEDIR, "img")
 
-        for folder_path in [keyring_fpath, img_fpath]:
-            if path.exists(folder_path):
-                rmtree(folder_path)
+        
+        if path.exists(img_fpath):
+            print(f"Removing: {img_fpath}")
+            rmtree(img_fpath)
+            
+        if path.isfile(keyring_fpath):
+            print(f"Removing: {keyring_fpath}")
+            remove(keyring_fpath)
 
         # Remove also the [wallet] section in config.ini
         # So, if the keyring-file is deleted and the use close accidentaly the application
@@ -1464,10 +1504,12 @@ class WalletScreen(Screen):
         conf = CONFIG.read_configuration(MeileGuiConfig.CONFFILE)
         self.ADDRESS = conf['wallet'].get("address")
         QRcode = QRCode()
-        if not path.isfile(path.join(CONFIG.IMGDIR, "dvpn.png")):
+        if not path.isfile(path.join(MeileGuiConfig.BASEDIR, "img", "dvpn.png")):
+            print("Generating QR Code....")
             QRcode.generate_qr_code(self.ADDRESS)
 
-        return path.join(CONFIG.IMGDIR, "dvpn.png")
+        print(f'{path.join(MeileGuiConfig.BASEDIR, "img", "dvpn.png")}')
+        return path.join(MeileGuiConfig.BASEDIR, "img", "dvpn.png")
 
     def SetBalances(self, CoinDict):
         if CoinDict:
@@ -1477,6 +1519,16 @@ class WalletScreen(Screen):
             self.osmo_text = str(CoinDict['osmo']) + " osmo"
             self.dvpn_text = str(CoinDict['dvpn']) + " dvpn"
             #self.dvpn_text = str(CoinDict['tsent']) + " tsent"
+            data = [ 
+                { "logo" : self.return_coin_logo("dvpn"), "text" : self.dvpn_text },
+                { "logo" : self.return_coin_logo("scrt"), "text" : self.scrt_text },
+                { "logo" : self.return_coin_logo("atom"), "text" : self.atom_text },
+                { "logo" : self.return_coin_logo("osmo"), "text" : self.osmo_text },
+                { "logo" : self.return_coin_logo("dec"), "text" : self.dec_text }
+                ]
+
+            recycle_view = self.ids.rv
+            recycle_view.data = [{'logo': item['logo'], 'text': item['text']} for item in data]
         else:
             self.dec_text  = str("0.0") + " dec"
             self.scrt_text = str("0.0") + " scrt"
@@ -1484,7 +1536,8 @@ class WalletScreen(Screen):
             self.osmo_text = str("0.0") + " osmo"
             self.dvpn_text = str("0.0") + " dvpn"
             #self.dvpn_text = str("0.0") + " tsent"
-
+            
+            
             self.dialog = MDDialog(
                 text="Error Loading Wallet Balance. Please try again later.",
                 md_bg_color=get_color_from_hex(MeileColors.BLACK),
@@ -1909,13 +1962,15 @@ class SettingsScreen(Screen):
         super().__init__(**kwargs)
 
         params = HTTParams()
+        cparams = ConfParams()
         # Load default values
-        self.RPC = params.RPC
-        self.GRPC = params.GRPC
-        self.API = params.APIURL
+        self.RPC   = params.RPC
+        self.GRPC  = params.GRPC
+        self.API   = params.APIURL
         self.MNAPI = params.MNAPI
         self.CACHE = params.NODE_API
-
+        self.GB    = cparams.DEFAULT_SUB
+        
         self.MeileConfig = MeileGuiConfig()
 
         # I've tried to write a single code with the iteration of 'what' [grpc, rpc]
@@ -2000,11 +2055,32 @@ class SettingsScreen(Screen):
             width_mult=50,
         )
         self.cache_menu.bind()
+        
+        self.gb_menu = MDDropdownMenu(
+            caller=self.ids.gb_drop_item,
+            items=[
+                {
+                    "viewclass": "IconListItem",
+                    "icon": "server-security",
+                    "text": f"{i}",
+                    "height": dp(56),
+                    "on_release": lambda x=f"{i}": self.set_item(x, "gb"),
+                } for i in cparams.DEFAULT_SUBS
+            ],
+            position="center",
+            width_mult=50,
+        )
+        self.gb_menu.bind()
 
     def get_config(self, what: str = "rpc"):
         config = self.MeileConfig.read_configuration(self.MeileConfig.CONFFILE)
-        getattr(self.ids, f"{what}_drop_item").set_item(config['network'][what])
-        return config['network'][what]
+        if what in ['cache', 'mnapi', 'api', 'grpc', 'rpc']:
+            getattr(self.ids, f"{what}_drop_item").set_item(config['network'][what])
+            return config['network'][what]
+        else:
+            getattr(self.ids, f"{what}_drop_item").set_item(config['subscription'][what])
+            return config['subscription'][what]
+            
 
     def set_item(self, text_item, what: str = "rpc"):
         getattr(self.ids, f"{what.lower()}_drop_item").set_item(text_item)
@@ -2018,7 +2094,10 @@ class SettingsScreen(Screen):
         config = self.MeileConfig.read_configuration(self.MeileConfig.CONFFILE)
         for what in ["rpc", "grpc", "api", "mnapi", "cache"]:
             config.set('network', what, getattr(self, what.upper()))
-
+        
+        what = "gb"
+        config.set('subscription', what, getattr(self, what.upper()))
+        
         with open(self.MeileConfig.CONFFILE, 'w', encoding="utf-8") as f:
             config.write(f)
 
