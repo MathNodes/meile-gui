@@ -2099,7 +2099,7 @@ class SettingsScreen(Screen):
             config.set('network', what, getattr(self, what.upper()))
         
         what = "gb"
-        config.set('subscription', what, getattr(self, what.upper()))
+        config.set('subscription', what, str(getattr(self, what.upper())))
         
         with open(self.MeileConfig.CONFFILE, 'w', encoding="utf-8") as f:
             config.write(f)

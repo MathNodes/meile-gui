@@ -7,16 +7,11 @@ DEFAULT_TIMEOUT = 5 # seconds
 
 class TimeoutHTTPAdapter(HTTPAdapter):
     def __init__(self, *args, **kwargs):
-        self.timeout = DEFAULT_TIMEOUT
-        if "timeout" in kwargs:
-            self.timeout = kwargs["timeout"]
-            del kwargs["timeout"]
+        self.timeout = kwargs.pop("timeout", DEFAULT_TIMEOUT)
         super().__init__(*args, **kwargs)
 
     def send(self, request, **kwargs):
-        timeout = kwargs.get("timeout")
-        if timeout is None:
-            kwargs["timeout"] = self.timeout
+        kwargs["timeout"] = kwargs.get("timeout", self.timeout)
         return super().send(request, **kwargs)
 
 
@@ -49,7 +44,7 @@ class MakeRequest():
         # adapter = HTTPAdapter(max_retries=retries)
         requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
         http = requests.Session()
-        http.headers = self.headers
+        http.headers.update(self.headers or {})
         http.mount("http://", TimeoutHTTPAdapter(max_retries=retries, timeout=self.timeout))
         http.mount("https://", TimeoutHTTPAdapter(max_retries=retries, timeout=self.timeout))
         return http

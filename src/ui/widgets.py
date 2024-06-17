@@ -768,7 +768,7 @@ class PlanRow(MDGridLayout):
     
     @delayable
     def add_wallet_2plan(self, wallet, plan_id, duration, sub_id, uuid, amt, denom):
-        Request = HTTPRequests.MakeRequest()
+        Request = HTTPRequests.MakeRequest(TIMEOUT=120)
         http = Request.hadapter()
         plan_details = {"data": {"wallet" : wallet, "plan_id" : plan_id, "duration" : duration, "sub_id" : sub_id, "uuid" : uuid, "amt" : amt, "denom" : denom}}
         print(plan_details)
@@ -787,6 +787,7 @@ class PlanRow(MDGridLayout):
                 self.dialog = None
                 self.dialog = MDDialog(
                         title=f"{wallet} added to plan: {plan_id}",
+                        md_bg_color=get_color_from_hex(MeileColors.BLACK),
                         buttons=[
                             MDRaisedButton(
                                 text="CLOSE",
@@ -823,6 +824,13 @@ class PlanRow(MDGridLayout):
     @delayable
     def subscribe(self, subscribe_dialog, *kwargs):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
+        
+        CONFIG = MeileGuiConfig()
+        conf = CONFIG.read_configuration(MeileGuiConfig.CONFFILE)
+        self.ADDRESS = conf['wallet'].get("address")
+        
+        if not self.ADDRESS:
+            return
 
         deposit = subscribe_dialog.ids.deposit.text
         nnodes = subscribe_dialog.nnodes
@@ -843,7 +851,7 @@ class PlanRow(MDGridLayout):
 
         # Declare method here so we can pass it as callback variable to methods
         self.on_success_subscription = lambda: self.add_wallet_2plan(
-                                                                    wallet=mw.address,
+                                                                    wallet=self.ADDRESS,
                                                                     plan_id=self.plan_id,
                                                                     duration=subscribe_dialog.ids.slider1.value,
                                                                     sub_id=self.id,
@@ -860,6 +868,7 @@ class PlanRow(MDGridLayout):
             self.dialog = None
             self.dialog = MDDialog(
                     title="Waiting for invoice to be paid...",
+                    md_bg_color=get_color_from_hex(MeileColors.BLACK),
                     buttons=[
                         MDFlatButton(
                             text="CANCEL",
@@ -878,6 +887,7 @@ class PlanRow(MDGridLayout):
                 self.dialog = None
                 self.dialog = MDDialog(
                         title=f"Invoice {self.invoice_result['id']} has been marked as paid! Finishing up...",
+                        md_bg_color=get_color_from_hex(MeileColors.BLACK),
                     )
                 self.dialog.open()
                 yield 0.6
@@ -998,6 +1008,7 @@ class PlanRow(MDGridLayout):
             if self.invoice_result['success']:
                 self.stop_event.set()
                 Clock.schedule_once(lambda dt: self.update_ui_after_payment(False), 0)
+                print(self.invoice_result)
                 return
         
         if self.stop_event.is_set() and self.invoice_result['success']:
@@ -1334,7 +1345,7 @@ class NodeCarousel(MDBoxLayout):
     
     def GetHealthCheck(self, address):
         try:
-            Request = HTTPRequests.MakeRequest(TIMEOUT=2.3)
+            Request = HTTPRequests.MakeRequest(TIMEOUT=2.7)
             http = Request.hadapter()
             r = http.get(HTTParams.HEALTH_CHECK % address)
             health_check = r.json()['result']
@@ -1355,7 +1366,7 @@ class NodeCarousel(MDBoxLayout):
         
     def get_realtime_of_node(self, naddress):   
         
-        Request = HTTPRequests.MakeRequest(TIMEOUT=2.3)
+        Request = HTTPRequests.MakeRequest(TIMEOUT=2.7)
         http = Request.hadapter()
         endpoint = "/sentinel/nodes/" + naddress.lstrip().rstrip()
         try:

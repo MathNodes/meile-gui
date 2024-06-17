@@ -47,7 +47,7 @@ class NodeTreeData():
         self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
         
     def get_api_server(self):
-        Request = HTTPRequests.MakeRequest(TIMEOUT=23) # long timeout in case there is heavy load
+        Request = HTTPRequests.MakeRequest(TIMEOUT=25) # long timeout in case there is heavy load
         http = Request.hadapter()
         
         try:
