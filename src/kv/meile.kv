@@ -525,6 +525,7 @@ WindowManager:
                 pos_hint: {'center_x': 0.5, 'top': .925}  
                 spacing: '40dp'
                 Image:
+                    id: qr
                     source: root.qr_address
                     pos_hint: {'x': 0, 'top': 1}
                     size_hint_y: .5
@@ -1948,16 +1949,31 @@ WindowManager:
 
 <ConnectionDialog>
     size_hint_y: None
-    height: "7dp"
-
-    MDProgressBar:
-        id: pb
-        value: 0.01
-        min: 0
-        max: 1
-        color: get_color_from_hex(MeileColors.MEILE)
-        pos_hint: {'center_x' : .5, "y" : .5}
-        size_hint_x: .85
+    orientation: "vertical"
+    height: "30dp"  # Adjusted height for visibility
+    padding: "10dp"
+    spacing: "10dp"
+    MDBoxLayout:
+        orientation: "vertical"
+        size_hint_y: None
+        height: self.minimum_height
+        MDLabel:
+            id: status
+            text: "Connecting..."
+            halign: "center"  # Center align the text for better visibility
+            size_hint_y: None
+            height: self.texture_size[1] + dp(10)  # Ensure the label has a height
+            
+        MDProgressBar:
+            id: pb
+            value: 0.01
+            min: 0
+            max: 1
+            color: get_color_from_hex(MeileColors.MEILE)
+            size_hint_y: None
+            height: "10dp"  # Set explicit height for the progress bar
+            size_hint_x: .85
+            pos_hint: {'center_x': .5}
 
 <WalletInfoContent>
     orientation: "vertical"

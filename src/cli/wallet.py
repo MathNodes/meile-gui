@@ -502,6 +502,10 @@ class HandleWalletFunctions():
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
         KEYNAME = CONFIG['wallet'].get('keyname', '')
+        
+        confile = path.join(ConfParams.KEYRINGDIR, "connect.log")
+        conndesc = open(confile, 'w')
+        
        
         
         self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
@@ -523,10 +527,14 @@ class HandleWalletFunctions():
         sessions = sdk.sessions.QuerySessionsForSubscription(int(ID))
         for session in sessions:
             if session.status == Status.ACTIVE.value:
+                conndesc.write("Terminating any active session on chain...\n")
+                conndesc.flush()
                 tx = sdk.sessions.EndSession(session_id=session.id, rating=0, tx_params=tx_params)
                 print(sdk.sessions.wait_for_tx(tx["hash"]))
         
         tx = sdk.sessions.StartSession(subscription_id=int(ID), address=address, tx_params=tx_params)
+        conndesc.write("Creating new session...\n")
+        conndesc.flush()
         # Will need to handle log responses with friendly UI response in case of session create error
         if tx.get("log", None) is not None:
             self.connected = {"v2ray_pid" : None,  "result": False, "status" : tx["log"]}
@@ -582,6 +590,8 @@ class HandleWalletFunctions():
                 "signature": base64.b64encode(signature).decode("utf-8"),
             }
             print(payload)
+            conndesc.write("Fetching credentials from node...\n")
+            conndesc.flush()
             response = requests.post(
                 f"{node.remote_url}/accounts/{sdk._account.address}/sessions/{session_id}",
                 json=payload,
@@ -612,7 +622,8 @@ class HandleWalletFunctions():
                     self.connected = {"v2ray_pid" : None,  "result": False, "status" : f"Incorrect result size: {len(decode)}"}
                     print(self.connected)
                     return
-
+                conndesc.write("Bringing up dVPN tunnel...\n")
+                conndesc.flush()
                 ipv4_address = socket.inet_ntoa(decode[0:4]) + "/32"
                 ipv6_address = socket.inet_ntop(socket.AF_INET6, decode[4:20]) + "/128"
                 host = socket.inet_ntoa(decode[20:24])
@@ -663,9 +674,14 @@ class HandleWalletFunctions():
 
                 if psutil.net_if_addrs().get(iface):
                     self.connected = {"v2ray_pid" : None,  "result": True, "status" : iface}
+                    conndesc.write("Checking network connection...\n")
+                    conndesc.flush()
                     self.get_ip_address()
+                    conndesc.close()
                     return
             else:  # v2ray
+                conndesc.write("Bringing up V2Ray socks tunnel...\n")
+                conndesc.flush()
                 if len(decode) != 7:
                     self.connected = {"v2ray_pid" : None,  "result": False, "status" : f"Incorrect result size: {len(decode)}"}
                     print(self.connected)
@@ -729,12 +745,18 @@ class HandleWalletFunctions():
                 if tuniface is True:
                     self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid, "result": True, "status" : tuniface}
                     print(self.connected)
+                    conndesc.write("Checking network connection...\n")
+                    conndesc.flush()
                     self.get_ip_address()
+                    conndesc.close()
                     return
                 else:
                     try:
+                        conndesc.write("Error connecting to V2Ray node...\n")
+                        conndesc.flush()
                         v2ray_handler.v2ray_script = f"{v2ray_tun2routes_connect_bash} down"
                         v2ray_handler.kill_daemon()
+                        conndesc.close()
                     except Exception as e:
                         print(str(e))
 

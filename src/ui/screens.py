@@ -392,7 +392,7 @@ class MainWindow(Screen):
 
         Clock.schedule_once(self.get_config,1)
         Clock.schedule_once(self.build, 1)
-        
+        Clock.schedule_interval(self.update_wallet, 60)
         menu_icons = ["cloud-refresh", "sort", "shield-lock", "exit-to-app"]
         menu_items = [
             {
@@ -406,6 +406,12 @@ class MainWindow(Screen):
                                    caller=self.ids.settings_menu,
                                    width_mult=3,
                                    background_color=get_color_from_hex(MeileColors.BLACK))
+        
+    def update_wallet(self, dt):
+        MeileConfig = MeileGuiConfig()
+        CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
+        
+        self.address = CONFIG['wallet'].get('address', None)
     def ping(self):
         UUID = Meile.app.root.get_screen(WindowNames.PRELOAD).UUID
         try:
@@ -427,24 +433,45 @@ class MainWindow(Screen):
         
         @delayable
         def connect():
-            cd = ConnectionDialog()
-            self.set_conn_dialog(cd, "Connecting...")
+            CONNFILE_OPENED = False            
+            self.cd = ConnectionDialog()
+            self.set_conn_dialog(self.cd, " ")
             yield 0.3
+            
+            confile = path.join(ConfParams.KEYRINGDIR, "connect.log")
+            if path.isfile(confile):
+                remove(confile)
+                
+            with open(confile, 'a'):
+                pass
+            
             
             hwf = HandleWalletFunctions()
             thread = Thread(target=lambda: self.ping())
             thread.start()
             t = Thread(target=lambda: hwf.connect(ID, naddress, type))
             t.start()
-    
+            
             while t.is_alive():
-                yield 0.0365
-                if "WireGuard" not in type:
-                    cd.ids.pb.value += 0.001
-                else:
-                    cd.ids.pb.value += 0.00175
-    
-            cd.ids.pb.value = 1
+                yield 0.0314
+                self.cd.ids.pb.value += 0.00085
+                
+                #if "WireGuard" not in type:
+                #    self.cd.ids.pb.value += 0.001
+                #else:
+                #    self.cd.ids.pb.value += 0.001
+                try:
+                    if path.isfile(confile) and not CONNFILE_OPENED:
+                        conndesc = open(confile, 'r')
+                        CONNFILE_OPENED = True
+                    elif path.isfile(confile):
+                        self.update_conn_dialog_title(conndesc.readlines()[-1])
+                except IndexError:
+                    pass
+                    
+                
+            #conndesc.close()
+            self.cd.ids.pb.value = 1
             
             self.ConnectedDict = deepcopy(hwf.connected)
             yield 0.420
@@ -1279,6 +1306,11 @@ class MainWindow(Screen):
                         md_bg_color=get_color_from_hex(MeileColors.BLACK),
                     )
         self.dialog.open()
+        
+    def update_conn_dialog_title(self, new_title):
+        if self.dialog:
+            self.cd.ids.status.text = new_title
+            
 
     def load_country_nodes(self, country, *kwargs):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
@@ -1858,7 +1890,9 @@ class PlanScreen(MDBoxLayout):
     def __init__(self, **kwargs):
         super(PlanScreen, self).__init__()
         self.mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
-        wallet = self.mw.address
+        MeileConfig = MeileGuiConfig()
+        CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
+        wallet = CONFIG['wallet'].get('address', None)
         Request = HTTPRequests.MakeRequest()
         http = Request.hadapter()
 

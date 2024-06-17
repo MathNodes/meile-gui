@@ -112,7 +112,7 @@ class ClickableTextFieldRoundCVV(MDRelativeLayout):
 class TXContent(BoxLayout):
     pass
 
-class ConnectionDialog(MDFloatLayout):
+class ConnectionDialog(MDBoxLayout):
     pass
 
 
