@@ -24,9 +24,10 @@ class ConfParams():
     GASPRICE         = "0.314159udvpn"
     #GASPRICE         = "0.2tsent"
     GASADJUSTMENT    = 1.15
-    GAS              = 314159
+    GAS              = 175000
     FEE              = 31416
-    
+    DEFAULT_SUB      = 5
+    DEFAULT_SUBS     = [5 * i for i in range(1, 6)]
 
 class HTTParams():
     # Note http://128.199.90.172:26657 is testnet ONLY!
@@ -89,7 +90,7 @@ class HTTParams():
                               ]
     
     
-    PLAN_API               = "https://api.meile.mathnodes.com:5000"
+    PLAN_API               = "https://api.meile.mathnodes.com:10000"
     #APIURL                 = "http://128.199.90.172:1317"
     SERVER_URL             = "https://aimokoivunen.mathnodes.com"
     #GRPC                   = "grpc+http://128.199.90.172:9090/"

@@ -1035,6 +1035,7 @@ class PlanRow(MDGridLayout):
             print("invoice not yet confirmed....")
             self.fetched_invoice = self.client.get_invoice(self.btcpay_tx_id)
         else:
+            print(self.fetched_invoice)
             self.invoice_result = {"success" : True, "id": self.new_invoice['id'] }
         
             
@@ -1428,7 +1429,7 @@ Node Version: %s
         self.dialog.open()
 
     @delayable
-    def subscribe(self, subscribe_dialog, **kwargs):
+    def subscribe(self, subscribe_dialog, *kwargs):
         sub_node = subscribe_dialog.return_deposit_text()
         spdialog = ProcessingSubDialog(sub_node[2], sub_node[1], sub_node[0] )
         deposit = self.reparse_coin_deposit(sub_node[0])

@@ -825,15 +825,26 @@ class MainWindow(Screen):
         
     def on_enter_search(self):
         search_string = self.ids.search_box.text
+        try: 
+            key_string, value_string = search_string.split(',')
+        except ValueError:
+            toast(text="Please format the search like: key: _, value: _", duration=3.5)
+            return 
+        try: 
+            key_string = key_string.split(':')[-1].lstrip().rstrip()
+        except:
+            toast(text="key and value must be followed by a :", duration=3.5)
+            value_string = value_string.split(':')[-1].lstrip().rstrip()
+            return
         
-        key_string, value_string = search_string.split(',')
-        key_string = key_string.split(':')[-1].lstrip().rstrip()
-        value_string = value_string.split(':')[-1].lstrip().rstrip()
+        if key_string not in NodeKeys.NodesInfoKeys:
+            toast(text="Invalid key", duration=3.5)
+            return
         
         print(f"key: {key_string}, value: {value_string}")
         self.NodeTree.search(key=key_string,value=value_string)
         self.refresh_country_recycler()
-
+    
     def restore_results(self):
         self.NodeTree.restore_tree()
         self.refresh_country_recycler()

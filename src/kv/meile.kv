@@ -2393,31 +2393,38 @@ WindowManager:
     
     MDBoxLayout:
         orientation: "vertical"
+        size_hint: (1,1)
         MDLabel:
             font_name: "Roboto-Bold"
             text: "HELP SCREEN"
             font_size: "30sp"
-            size_hint_y: .1
-            width: dp(500)
-            pos_hint: { "right": 1.4, "top": 1.5}
+            size_hint_y: None
+            height: self.texture_size[1] + dp(20)
+            #width: dp(500)
+            #pos_hint: { "right": 1.5, "top": .9}
             theme_text_color: "Custom"
             text_color: get_color_from_hex(MeileColors.MEILE)
+            halign: "center"
         MDLabel:
             font_name: "Roboto-Bold"
             text: root.GetMeileVersion()
             font_size: "16sp"
-            size_hint_y: .1
-            width: dp(500)
-            pos_hint: { "right": 1.475, "top": 1.5}
+            size_hint_y: None
+            height: self.texture_size[1] + dp(20)
+            #width: dp(500)
+            #pos_hint: { "right": 1.425, "top": .85}
             theme_text_color: "Custom"
             text_color: get_color_from_hex(MeileColors.MEILE)
+            halign: "center"
         ScrollView:
             effect_cls: "ScrollEffect"
             scroll_type: ['bars']
+            size_hint: (1, 1)
+            height: self.parent.height
             MDGridLayout:
-                rows: 12
+                rows: 18
                 cols: 1
-                size_hint_y:None
+                size_hint_y: None
                 size_hint_x: 1
                 height: self.minimum_height
                 spacing: "10dp"
@@ -2523,6 +2530,60 @@ WindowManager:
                 MDLabel:
                     font_name: "DejaVuSans"
                     text: "Absolutely no refunds under any circumstances. All token sales are final as they cannot be refunded due to the limitations of blockchain technology. If for some reason your credit card was charged for a token purchase, and you did not receive the tokens in your wallet, please reach out to us at support@mathnodes.com - We will advise you on how to produce evidences of your purchase and we may double check our records along with a block explorer to view if the transaction did not go through."
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    size_hint_x: 1
+                    pos_hint_x: .9
+                    halign: "center" 
+                    theme_text_color: "Custom"
+                    text_color: get_color_from_hex(MeileColors.MEILE)
+                    font_size: "12dp"
+                MDLabel:
+                    font_name: "Roboto-BoldItalic"
+                    text: "Search"
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    size_hint_x: 1
+                    halign: "center"
+                MDLabel:
+                    font_name: "DejaVuSans"
+                    text: "Search must be done in the exact format - 'key: , value: ' filling in a text for both parameters. e.g: 'key: Moniker, value: Euler Product'. Please node this is case sensitive. "
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    size_hint_x: 1
+                    pos_hint_x: .9
+                    halign: "center" 
+                    theme_text_color: "Custom"
+                    text_color: get_color_from_hex(MeileColors.MEILE)
+                    font_size: "12dp"    
+                MDLabel:
+                    font_name: "Roboto-BoldItalic"
+                    text: "Valid Search Keys"
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    size_hint_x: 1
+                    halign: "center"
+                MDLabel:
+                    font_name: "DejaVuSans"
+                    text: "Moniker, Address, Price, Hourly Price, Country, City, Latitude, Longitude, Download, Upload, Peers, Max Peers, Handshake, Type, Version, ISP Type, Score, Votes, Formula"
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    size_hint_x: 1
+                    pos_hint_x: .9
+                    halign: "center" 
+                    theme_text_color: "Custom"
+                    text_color: get_color_from_hex(MeileColors.MEILE)
+                    font_size: "12dp"
+                MDLabel:
+                    font_name: "Roboto-BoldItalic"
+                    text: "Valid Values"
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    size_hint_x: 1
+                    halign: "center"
+                MDLabel:
+                    font_name: "DejaVuSans"
+                    text: "Value can be anything but must be something within the Node cards or the Node Carousel Screen (with the mini-map). This parameter is case sensitve."
                     size_hint_y: None
                     height: self.texture_size[1]
                     size_hint_x: 1
