@@ -105,17 +105,17 @@ class NodeTreeData():
                     r = http.get(CACHE_SERVER)
                     if r.status_code == 502:
                         print(f"Reponse 502 from {CACHE_SERVER}. Switching to backup server.")
-                        CACHE_SERVER = HTTParams.NODE_API[random.randint(0, len(HTTParams.NODE_API)-1)] 
+                        CACHE_SERVER = HTTParams.NODE_APIS[random.randint(0, len(HTTParams.NODE_API)-1)] 
                         continue
                 except (ReadTimeout, ConnectionError, HTTPError):
                     print(f"Read timed out for {CACHE_SERVER}. Switching to backup server.")
-                    CACHE_SERVER = HTTParams.NODE_API[random.randint(0, len(HTTParams.NODE_API)-1)] 
+                    CACHE_SERVER = HTTParams.NODE_APIS[random.randint(0, len(HTTParams.NODE_API)-1)] 
                     continue
                 data = r.json()
                 if not data:
                     retries += 1
                     if retries >= 2:
-                        CACHE_SERVER = HTTParams.NODE_API[random.randint(0, len(HTTParams.NODE_API)-1)]
+                        CACHE_SERVER = HTTParams.NODE_APIS[random.randint(0, len(HTTParams.NODE_API)-1)]
                     continue
                 #rint(data)
                 for node in data:
@@ -247,7 +247,7 @@ class NodeTreeData():
                 #print(content.data)
                 #print(key)
                 if key in content.data:
-                    #print(f"Key in data: {key}")
+                    print(f"Key in data: {key}")
                     # use in... / wherlike / contains
                     if value:
                         #print(f"Value: {value}")
@@ -507,13 +507,14 @@ class NodeTreeData():
 
                 
     def GetHourAllocation(self, hours, idate):
+        print(f"Hours: {hours}, inactive_date: {idate}")
         nodeQuota       = []
         nodeQuota.append(str(hours) + "hrs")
         inactive_date   = idate.lstrip().rstrip().split('.')[0]
         inactive_date   = datetime.strptime(inactive_date, '%Y-%m-%d %H:%M:%S')
         ts              = time.time()
-        utc_offset      = float((datetime.fromtimestamp(ts) - datetime.utcfromtimestamp(ts)).total_seconds()/3600)
-        inactive_date   = inactive_date + timedelta(hours=utc_offset)
+        #utc_offset      = float((datetime.fromtimestamp(ts) - datetime.utcfromtimestamp(ts)).total_seconds()/3600)
+        #inactive_date   = inactive_date + timedelta(hours=utc_offset)
         now             = datetime.now()
         subdelta        = inactive_date - now
         remaining_hours = round(float(subdelta.total_seconds())/3600,3)

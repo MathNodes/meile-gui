@@ -20,7 +20,16 @@ def compute_consumed_hours(allocated, expirary_date):
         
     allocated       = allocated.split('hrs')[0].rstrip().lstrip()
     now             = datetime.now()
-    expirary_date   = datetime.strptime(expirary_date,'%b %d %Y, %I:%M %p')
+    #expirary_date   = datetime.strptime(expirary_date,'%b %d %Y, %I:%M %p')
+    try:
+        expirary_date   = datetime.strptime(expirary_date,'%Y-%m-%d %H:%M:%S')
+    except ValueError:
+        print("Wrong datetime string...trying another")
+        try:
+            expirary_date   = datetime.strptime(expirary_date,'%b %d %Y, %I:%M %p')
+        except ValueError:
+            print("Can't agree on date string... skipping")
+            return 0
     sub_date        = expirary_date - timedelta(hours=float(allocated))
     subdelta        = now - sub_date
     remaining_hours = round(float(subdelta.total_seconds())/3600,3)

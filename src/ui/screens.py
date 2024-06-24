@@ -527,16 +527,10 @@ class MainWindow(Screen):
                     
                 else:
                     self.remove_loading_widget2()
-                    if not hwf.connected['status']['success']:
-                        
-                        error = hwf.connected['status']['error']
-                        if "invalid signature" in error['message']:
-                            status = "Invalid Signature. Please try connecting again."
-                        else:
-                            status = "Code: " + str(error['code'])
-                            
+                    
                     self.dialog = MDDialog(
-                        title="Something went wrong. Not connected: %s" % hwf.connected['status'],
+                        title="Something went wrong. Not connected: ",
+                        text=hwf.connected['status'],
                         md_bg_color=get_color_from_hex(MeileColors.BLACK),
                         buttons=[
                                 MDFlatButton(
@@ -834,8 +828,11 @@ class MainWindow(Screen):
             key_string = key_string.split(':')[-1].lstrip().rstrip()
         except:
             toast(text="key and value must be followed by a :", duration=3.5)
-            value_string = value_string.split(':')[-1].lstrip().rstrip()
             return
+        try: 
+            value_string = value_string.split(':')[-1].lstrip().rstrip()
+        except:
+            toast(text="Value string has improper formatting")
         
         if key_string not in NodeKeys.NodesInfoKeys:
             toast(text="Invalid key", duration=3.5)

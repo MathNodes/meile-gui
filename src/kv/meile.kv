@@ -53,108 +53,8 @@ WindowManager:
         orientation: 'vertical'
         md_bg_color: get_color_from_hex("#121212")
         MDFloatLayout:
-            #orientation: "horizontal"
             size_hint_y: .11
-            #MDTextField:
-            #    canvas.after:
-            #        Color:
-            #            rgba: root.box_color if not self.focus else (0, 0, 0, 0)
-            #        Line:
-            #            width: dp(1)
-            #            rectangle: (*self.pos, *self.size)
-            #    hint_text: "IP Address"
-            #    id: new_ip
-            #    size_hint_x: .15
-            #    size_hint_y: .47
-            #    font_size: 11
-            #    pos_hint: {"x" : 0.01, "center_y": .67}                
-            #    readonly: True
-            #    opacity: 1
-            #    mode: "fill"
-            #    text_color_focus: '#fcb711'
-            #    text_color_normal: '#fcb711'
-            #    hint_text: 'IP Address:'
-            #    hint_text_color_normal: '#fcb711'
-            #    hint_text_color_focus: '#fcb711'
-            #    fill_color_normal: get_color_from_hex("#121212")
-            #    fill_color_focus: get_color_from_hex("#000000")
-            #MDTextField:
-            #    canvas.after:
-            #        Color:
-            #            rgba: root.box_color if not self.focus else (0, 0, 0, 0)
-            #        Line:
-            #            width: dp(1)
-            #            rectangle: (*self.pos, *self.size)
-            #    hint_text: "Node:"
-            #    id: connected_node
-            #    mode: "fill"
-            #    size_hint_x: .4
-            #    size_hint_y: .47
-            #    font_size: 11
-            #    font_name: root.get_font()            
-            #    pos_hint: {"x" : .18, "center_y": .67}                
-            #    readonly: True
-            #    opacity: 1
-            #    text_color_focus: '#fcb711'
-            #    text_color_normal: '#fcb711'                
-            #    hint_text_color_normal: '#fcb711'
-            #    hint_text_color_focus: '#fcb711'
-            #    fill_color_normal: get_color_from_hex("#121212")
-            #    fill_color_focus: get_color_from_hex("#000000")
-            #MDLabel:
-            #    text: "Bandwidth"
-            #    font_size: 11
-            #    theme_text_color: "Custom"
-            #    text_color: get_color_from_hex(MeileColors.MEILE)
-            #    normal_color: app.theme_cls.accent_color
-            #    pos_hint: {"x" : .01, "center_y": .2}
-            #MDProgressBar:
-            #    id: quota
-            #    value: 0
-            #    color: app.theme_cls.accent_color
-            #    #back_color: get_color_from_hex("#ffffff")
-            #    pos_hint: {"x" : .085, "center_y" : .2 }
-            #    size_hint_x: .475
-            #    size_hint_y: .06
-            #MDLabel:
-            #    id: quota_pct
-            #    text: "0.00%"
-            #    font_size: 11
-            #    theme_text_color: "Custom"
-            #    text_color: get_color_from_hex(MeileColors.MEILE)
-            #    normal_color: app.theme_cls.accent_color
-            #    pos_hint: {"x" : .57, "center_y": .2}
-            #MDLabel:
-            #    text: "Sort"
-            #    theme_text_color: "Custom"
-            #    text_color: get_color_from_hex(MeileColors.MEILE)
-            #    normal_color: app.theme_cls.accent_color
-            #    pos_hint: {"x" : .63, "y": .25}
-            #MDDropDownItem:
-            #    id: drop_item
-            #    pos_hint: {'x': .625, 'y': .25}
-            #    text: "None"
-            #    on_release: root.menu.open()  
-            #TooltipMDRaisedButton:
-            #    tooltip_text: "VPNs encrypt your internet traffic, however DNS traffic is still in plaintext. Cloudflare's WARP will encrypt your DNS traffic ensuring no one can see your browsing history."
-            #    md_bg_color: get_color_from_hex("#121212")
-            #    pos_hint: {'x' : .72, 'center_y': .5}
-            #    on_press: root.start_warp()
-            #    
-            #    Image:
-            #        id: warp
-            #        size_hint: 2,2
-            #        source: root.set_warp_icon()
-            #        center_x: self.parent.center_x
-            #        center_y: self.parent.center_y
-                            
-            #Image:
-            #    id: protected
-            #    source: root.set_protected_icon(False, "")
-            #    opacity: 0
-            #    size_hint: None, None
-            #    height: "65dp"
-            #    pos_hint: {'x' : .8, 'center_y' : .5}    
+                
             Image:
                 source: root.get_logo()
                 size_hint: None, None
@@ -173,16 +73,6 @@ WindowManager:
                 text_color: get_color_from_hex(MeileColors.MEILE)
                 on_release: root.menu_open()
                 pos_hint: {'x' : .95, 'center_y' : .5}
-
-        #MDTabs:
-        #    id: android_tabs
-        #    on_tab_switch: root.on_tab_switch(*args)
-        #    size_hint_y: None
-        #    height: "48dp"
-        #    tab_indicator_anim: True
-        #    color: 1,1,1,1
-        #    normal_color: get_color_from_hex(MeileColors.MEILE)
-        #    background_color: get_color_from_hex(MeileColors.MEILE)
         
         MDBoxLayout:
             id: country_map
@@ -216,8 +106,8 @@ WindowManager:
                         on_text_validate: root.on_enter_search()
                                         
                     ToolTipMDIconButton:
-                        tooltip_text: "Clear Results"
-                        pos_hint: {'x' : 1.9, 'y': .15}
+                        tooltip_text: "Clear"
+                        pos_hint: {'x' : 2.1, 'y': .145}
                         on_release: root.restore_results()
                         icon: "restore"
                         theme_text_color: "Custom"
@@ -227,30 +117,10 @@ WindowManager:
                     id: rv
                     size_hint: (1,1)
                 MDBoxLayout:    
-                    #orientation: ''
-                    # padding: [20, 0, 0, 0]
-                    #size_hint_y: None
-                    #size_hint_x: .3
-                    #width: 50
                     size_hint: (1,None)
                     height: 50
                     spacing: 6
                     
-                    #canvas:
-                    #    # draw a background of red. This will be the border
-                    #    Color:
-                    #        rgba: get_color_from_hex(MeileColors.MEILE)
-                    #    RoundedRectangle:
-                    #        pos: self.pos
-                    #        size: self.size
-    
-                        # draw over the above except for 1 pixels around edges, leaving the orange border showing
-                    #    Color:
-                    #        rgba: get_color_from_hex("#212221")
-                    #    RoundedRectangle:
-                    #        pos: self.x+1, self.y+1
-                    #        size: self.width-2, self.height-2
-    
                     ToolTipMDIconButton:
                         tooltip_text: "Wallet"
                         icon: "wallet-outline"
@@ -285,43 +155,6 @@ WindowManager:
                         theme_text_color: "Custom"
                         text_color: get_color_from_hex(MeileColors.MEILE)
                         on_release: root.build_help_screen_interface()
-         
-        #MDBottomNavigation:
-        #    size_hint_y: 0.125
-        #    panel_color: get_color_from_hex("#121212")
-        #    text_color_normal: get_color_from_hex(MeileColors.MEILE)
-        #    text_color_active: get_color_from_hex("#fad783")
-        #    selected_color_background: get_color_from_hex("#200c3a")
-        #    MDBottomNavigationItem:
-        #        name: "wallet"
-        #        text: "Wallet"
-        #        icon: "wallet"
-        #        on_tab_release: root.wallet_dialog()
-        #        on_tab_press:
-        #        
-        #    MDBottomNavigationItem:
-        #        name: "subscriptions"
-        #        text: "Subscriptions"
-        #        icon: "book-open-variant"
-        #        on_tab_release: root.switch_to_sub_window()
-        #         
-        #    MDBottomNavigationItem:
-        #        name: "Refresh"
-        #        text: "Refresh"
-        #       icon: "shield-refresh"
-        #        on_tab_release: root.refresh_nodes_and_subs()
-        #    
-        #    MDBottomNavigationItem:
-        #        name: "settings"
-        #        text: "Settings"
-        #        icon: "cogs"
-        #        on_tab_release: root.build_settings_screen_interface()
-        #        
-        #    MDBottomNavigationItem:
-        #        name: "help"
-        #        text: "Help"
-        #        icon: "account-question"
-        #        on_tab_release: root.build_help_screen_interface()
                 
     
 <TooltipMDRaisedButton@MDRaisedButton+MDTooltip>
@@ -417,40 +250,7 @@ WindowManager:
     pos_hint: {"x" : .57, "center_y": .035}
     
           
-<NodeScreen_OLD>
-    name: "nodes"
-    MDBoxLayout:
-        orientation: "vertical"
-        NodeRV2:
-            id: rv
-        ActionBar:
-            background_normal: ''
-            background_down: ''
-            background_color: get_color_from_hex("#121212")
-            ActionView:
-                ActionPrevious:
-                    icon: "arrow-left-circle"
-                    title: 'Map'
-                    with_previous: True
-                    on_release: root.set_previous_screen() 
-                                        
-<SubscriptionScreen_OLD>
-    name: "subscriptions"
-    MDBoxLayout:
-        orientation: "vertical"
-        NodeRVSub:
-            id: rv
-        ActionBar:
-            background_normal: ''
-            background_down: ''
-            background_color: get_color_from_hex("#121212")
-            ActionView:
-                ActionPrevious:
-                    icon: "arrow-left-circle"
-                    title: 'Map'
-                    with_previous: True
-                    on_release: root.set_previous_screen()
-                    
+
 <WalletScreen>:
     name: "wallet"
     wallet_name: ""
@@ -539,77 +339,6 @@ WindowManager:
                         height: self.minimum_height
                         orientation: 'vertical'
                         spacing: '10dp'    
-
-            
-                
-            #MDRaisedButton:
-            #    pos_hint: {'x' : .1 , 'top': .9 }
-            #    text: "REFRESH"
-            #    on_release: root.refresh_wallet()
-                
-            #MDRaisedButton:
-            #    pos_hint: {'x' : .1 , 'top': .83 }
-            #    text: "NEW WALLET"
-            #    on_release: root.open_dialog_new_wallet()
-                
-            #MDRaisedButton:
-            #    pos_hint: {'x' : .8 , 'top': .9 }
-            #    text: "RE-FUEL"
-            #    on_release: root.open_fiat_interface()
-                
-            
-            #Image:
-            #    source: root.sentinel_logo
-            #    pos_hint: {'x': -.2, 'top': .9}
-            #MDLabel:
-            #    text: root.dvpn_text
-            #    theme_text_color: "Custom"
-            #    text_color: get_color_from_hex(MeileColors.MEILE)
-            #    pos_hint: {'x': .35, 'top': .905}
-            #    font_name: "RobotoMono-Regular"
-                
-
-            #Image:
-            #    source: root.secret_logo
-            #    pos_hint: {'x': -.2, 'top': .77}
-            #    
-            #MDLabel:
-            #    text: root.scrt_text
-            #    theme_text_color: "Custom"
-            #    text_color: get_color_from_hex(MeileColors.MEILE)
-            #    pos_hint: {'x': .35, 'top': .7695}
-            #    font_name: "RobotoMono-Regular"
-            #    
-            #Image:
-            #    source: root.osmosis_logo
-            #    pos_hint: {'x': -.2, 'top': .63}
-            #    
-            #MDLabel:
-            #    text: root.osmo_text
-            #    theme_text_color: "Custom"
-            #    text_color: get_color_from_hex(MeileColors.MEILE)
-            #    pos_hint: {'x': .35, 'top': .6295}
-            #    font_name: "RobotoMono-Regular"
-            #Image:
-            #    source: root.cosmos_logo
-            #    pos_hint: {'x': .25, 'top': .89}
-            #    
-            #MDLabel:
-            #    text: root.atom_text
-            #    theme_text_color: "Custom"
-            #    text_color: get_color_from_hex(MeileColors.MEILE)
-            #    pos_hint: {'x': .8, 'top': .89}
-            #    font_name: "RobotoMono-Regular"
-            #Image:
-            #    source: root.decentr_logo
-            #    pos_hint: {'x': .25, 'top': .76}
-            #    
-            #MDLabel:
-            #    text: root.dec_text
-            #    theme_text_color: "Custom"
-            #    text_color: get_color_from_hex(MeileColors.MEILE)
-            #    pos_hint: {'x': .8, 'top': .76}
-            #    font_name: "RobotoMono-Regular"
     ActionBar:
         background_normal: ''
         background_down: ''
@@ -895,18 +624,7 @@ WindowManager:
             rgba: get_color_from_hex("#212021")
         Rectangle:
             pos: self.pos
-            size: self.size
-    #RecycleGridLayout:
-    #    id: grid
-    #    md_bg_color: get_color_from_hex("#121212")
-    #    cols:1
-    #    default_size: dp(200), dp(50)
-    #    default_size_hint: 1, None
-    #    size_hint_y: None
-    #    height: self.minimum_height
-    #    orientation: 'lr-tb' 
-    #    spacing: 5
-    #    padding: 1,1,1,1     
+            size: self.size  
                        
 <RecycleViewCountryRow>:
     size_hint_y: 1
@@ -1091,16 +809,6 @@ WindowManager:
                 bold: True
                 size_hint_x: 2.2
     
-            # MDLabel:
-            #     text: "Status"
-            #     bold: True
-            #     size_hint_x: 1
-    
-            # MDLabel:
-            #     text: "Price"
-            #     bold: True
-            #     size_hint_x: 2
-    
             MDLabel:
                 text: "Protocol"
                 bold: True
@@ -1120,39 +828,6 @@ WindowManager:
                 #pos_hint: {"x" : .455, "top" : .40}
         NodeRV2:
             id: rv
-        #RecycleView:
-            #do_scroll_y: True
-        #    id: rv
-        #    bar_width: dp(12)
-        #    scroll_type: ["bars", "content"]
-            #MDBoxLayout:
-            #    size_hint_y: None
-            #    adaptive_height: True
-
-            #   orientation: "vertical"
-            #    padding: [10, 10, 10, 50]
-            #    spacing: 10
-            #    id: rv
-        #ActionBar:
-        #    background_normal: ''
-        #    background_down: ''
-        #    background_color: get_color_from_hex("#121212")
-        #    ActionView:
-        #        ActionPrevious:
-        #            icon: "arrow-left-circle"
-        #            title: 'Map'
-        #            with_previous: True
-        #            on_release: root.set_previous_screen()
-        #ScrollView:
-        #    do_scroll_y: True
-        #    MDBoxLayout:
-        #        size_hint_y: None
-        #        adaptive_height: True
-        #    
-        #        orientation: "vertical"
-        #        padding: [10, 10, 10, 50]
-        #        spacing: 10
-        #        id: servers_list
 
 <PlanRow>:
     rows: 2
@@ -1252,9 +927,7 @@ WindowManager:
 <PlanDetails>:
     rows: 3
     cols: 6
-    #adaptive_height: True
     height: 90
-    #orientation: 'horizontal'
 
     MDLabel
         text: "[b]UUID[/b]"
@@ -1320,8 +993,6 @@ WindowManager:
     rows: 2
     cols: 8
     height: 90
-    #adaptive_height: True
-    #orientation: 'horizontal'
 
     MDLabel
         text: "[b]ID[/b]"
@@ -1694,8 +1365,6 @@ WindowManager:
     MDGridLayout:
         cols: 5
         
-        #MDFloatLayout:
-        
         MDLabel:
             text: root.moniker_text
             theme_text_color: "Custom"
@@ -1703,9 +1372,6 @@ WindowManager:
             font_size: "16sp"
             font_name: root.get_font()
             text_color: get_color_from_hex(MeileColors.MEILE)
-            #pos_hint: {"x" : 0, "top" : 1.325}
-            #size_hint_x: None
-            #width: "500dp"
             size_hint_x: 2
         MDLabel:    
             text: root.country_text
@@ -1713,32 +1379,21 @@ WindowManager:
             font_style: "H6"
             font_size: "12sp"
             text_color: (1,1,1,1)  
-            #pos_hint: {"right" : 1.75 , "top": .8 }
             size_hint_x: 1
         MDLabel:
             text: root.speed_text
             theme_text_color: "Custom"
             markup: True
-            #font_style: "Subtitle2"
             font_name: root.get_font()
             font_size: "12sp"
             text_color: 1,1,1,1
-            #pos_hint: {"x" : .43 , "top": .86 }
             size_hint_x: 2
-        #MDLabel:
-        #    text: root.address_text
-        #    theme_text_color: "Custom"
-        #    font_style: "Subtitle2"
-        #    font_size: "10sp"
-        #    text_color: (0/255.0,141/255.0,155/255.0,255/255.0)
-        #    pos_hint: {"x" : 0, "top" : 1.125}
         MDLabel:
             text: root.protocol_text
             theme_text_color: "Custom"
             font_style: "Subtitle2"
             font_size: "12sp"
             text_color: get_color_from_hex("#ffffff")
-            #pos_hint: {"x" : 0, "top" : 1.01}
             size_hint_x: 1
         MDLabel:
             text: root.isp_type_text
@@ -1746,138 +1401,10 @@ WindowManager:
             font_style: "Subtitle2"
             font_size: "12sp"
             text_color: get_color_from_hex("#ffffff")
-            ##pos_hint: {"x" : 0, "top" : 1.01}
             size_hint_x: 1
-        #MDLabel:
-        #    text: "GB:"
-        #    theme_text_color: "Custom"
-        #    font_style: "Subtitle2"
-        #    font_size: "13sp"
-        #    text_color: get_color_from_hex("#ffffff")
-        #    pos_hint: {"x" : 0, "top" : .875}
-        #MDLabel:
-        #    text: root.price_text
-        #    theme_text_color: "Custom"
-        #    font_style: "Subtitle2"
-        #    font_size: "13sp"
-        #    text_color: get_color_from_hex(MeileColors.MEILE)
-        #    pos_hint: {"x" : 0.03, "top" : .875}
-        #MDLabel:
-        #    text: "Hs:"
-        #    theme_text_color: "Custom"
-        #    font_style: "Subtitle2"
-        #    font_size: "13sp"
-        #    text_color: get_color_from_hex("#ffffff")
-        #    pos_hint: {"x" : 0, "top" : .725}
-        #MDLabel:
-        #    text: root.hourly_price_text
-        #    theme_text_color: "Custom"
-        #    font_style: "Subtitle2"
-        #    font_size: "13sp"
-        #    text_color: get_color_from_hex(MeileColors.MEILE)
-        #    pos_hint: {"x" : 0.03, "top" : .725}
-        #MDLabel:
-        #    text: "SCORE: "
-        #    theme_text_color: "Custom"
-        #    font_style: "Subtitle2"
-        #    font_size: "11sp"
-        #    text_color: get_color_from_hex("#ffffff")
-        #    pos_hint: {"x" : 0, "top" : .575}
-        #MDLabel:
-        #    text: root.node_score
-        #    theme_text_color: "Custom"
-        #    font_style: "Subtitle2"
-        #    font_size: "11sp"
-        #    text_color: get_color_from_hex("#ffffff")
-        #    pos_hint: {"x" : .055, "top" : .575}
-        #MDLabel:
-        #    text: "VOTES: "
-        #    theme_text_color: "Custom"
-        #    font_style: "Subtitle2"
-        #    font_size: "11sp"
-        #    text_color: get_color_from_hex("#ffffff")
-        #    pos_hint: {"x" : .125, "top" : .575}
-        #MDLabel:
-        #    text: root.votes
-        #    theme_text_color: "Custom"
-        #    font_style: "Subtitle2"
-        #    font_size: "11sp"
-        #    text_color: get_color_from_hex("#ffffff")
-        #    pos_hint: {"x" : .175, "top" : .575}
-            
-        #Image:
-        #    source: root.source_image
-        #    # {"x", "y", "top", "bottom", "left", "right" }
-        #    pos_hint: {"x" : .3, "top" : 1.2 }
-
-        
-        #Image:
-        #    source: root.speed_image
-        #    pos_hint: {"x" : .44 , "top": .95 }
-        #    size_hint: None, .525
-            
-        #TooltipMDIconButton:
-        #    icon: root.icon
-        #    tooltip_text: root.tooltip
-        #    pos_hint: {"x" : .455, "top" : .40}
-        #TooltipMDIconButton:
-        #    icon: root.healthcheck
-        #    tooltip_text: root.healthchecktooltip
-        #    pos_hint: {"x" : .485, "top" : .40  }
-        #    size_hint: None, None
-            
-        
-        #MDLabel:    
-        #    text: root.city
-        #    theme_text_color: "Custom"
-        #    font_style: "Subtitle2"
-        #    font_size: "13sp"
-        #    text_color: get_color_from_hex(MeileColors.MEILE)
-        #    pos_hint: {"right" : 1.75 , "top": .625 }  
-
-    #OnHoverMDRaisedButton:
-    #    text: "Get Details"
-    #    md_bg_color: get_color_from_hex(MeileColors.MEILE)
-    #    text_color: 0,0,0,1
-    #    on_press: root.get_city_of_node(root.address_text)
-        
 
 <OnHoverMDRaisedButton>:
-       
-<YellowSwitch>:
-    size_hint: None, None
-    size: 100, 100
-
-    Switch:
-        id: new_switch  
-        active: False   
-        on_active: root.switch_callback()
-
-        canvas:
-            Color:
-                rgb: get_color_from_hex("#fab40c")
-            Rectangle:
-                size: sp(41.5), sp(20)
-                pos: self.center_x - sp(40.0), self.center_y - sp(10)
-            Color:
-                rgb: 0, 0, 1, 1
-            Rectangle:
-                size: sp(41.0), sp(20)
-                pos: self.center_x, self.center_y - sp(10)
-        Label:
-            color: 1, 1, 1, 1
-            text: 'CONNECTED'
-            bold: True
-            font_size: 13
-            pos: self.parent.center_x - sp(70), self.parent.center_y - sp(50)                
-        Label:
-            color: 0, 1, 0, 1
-            text: 'DISCONNECTED'
-            bold: True
-            font_size: 13
-            pos: self.parent.center_x - sp(30), self.parent.center_y - sp(50)
-            
-            
+                   
 <ClickableTextFieldRoundSeed>:
     size_hint_y: None
     height: seed_phrase.height
@@ -2039,34 +1566,6 @@ WindowManager:
         text: root.wallet_password
         readonly: True
 
-
-<LatencyContent>
-    orientation: "vertical"
-    spacing: "1dp"
-    size_hint_y: None
-    height: "140dp"
-
-    MDBoxLayout:
-        orientation: "vertical"
-        MDLabel:
-            id: latency_text
-            text: "Latency threshold. Increasing latency will take longer to load but will load more nodes; conversely for lower latency."
-            font_size: "12dp"
-                
-    MDBoxLayout:
-        orientation: "horizontal"
-        MDSlider:
-            
-            id: slider1
-            min: 5
-            max: 50
-            value: 21
-            
-        MDLabel:
-            id: latency
-            text: str(int(slider1.value)) + "s" 
-            size_hint_x: None
-            width: 75
             
 <SubTypeDialog>
     orientation: "vertical"
@@ -2158,7 +1657,6 @@ WindowManager:
             width: 75
     MDBoxLayout:
         orientation: "horizontal"
-        #size_hint_x: .8
         spacing: 20
         
         MDTextField:
@@ -2695,16 +2193,7 @@ WindowManager:
                 text_color: get_color_from_hex(MeileColors.MEILE)
                 text: 'dvpn'
                 on_release: root.menu_token.open()
-                
-            #MDLabel:
-            #    id: dvpn_qty_text
-            #    opacity: 1
-            #    text: "DVPN"
-            #    theme_text_color: "Custom"
-            #    text_color: get_color_from_hex(MeileColors.MEILE)
-            #    pos_hint: {"x": .355, "center_y": .60}
-            #    font_size: "14dp"
-                
+                      
             MDDropDownItem:
                 id: dvpn_qty_menu
                 pos_hint: {'center_x': .48, 'center_y': .60}
@@ -2820,8 +2309,6 @@ WindowManager:
             cvvnum.password = False if cvvnum.password is True else True
 
 <IconListItem>
-
-
     IconLeftWidget:
         icon: root.icon
 

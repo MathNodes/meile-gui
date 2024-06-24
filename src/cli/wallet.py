@@ -8,8 +8,8 @@ import re
 from time import sleep 
 from os import path, remove
 from urllib.parse import urlparse
-from grpc import RpcError
-
+from grpc import RpcError, StatusCode
+import grpc
 from json.decoder import JSONDecodeError 
 
 from conf.meile_config import MeileGuiConfig
@@ -104,6 +104,8 @@ class HandleWalletFunctions():
             "privkey": privkey,
             "curve": curve,
         }
+        
+    # The genius of Tkd-Alex
     def __migrate_wallets(self):    
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
@@ -212,7 +214,7 @@ class HandleWalletFunctions():
             'seed': seed_phrase
         }
         
-        
+    # May implement in the future    
     """
     def subscribe_toplan(self, KEYNAME, plan_id, DENOM, amount_required):
         if not KEYNAME:
@@ -293,8 +295,15 @@ class HandleWalletFunctions():
         kr = self.__keyring(PASSWORD)
         private_key = kr.get_password("meile-gui", KEYNAME)
 
-        sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key, ssl=True)
-
+        try:
+            sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key, ssl=True)
+        except grpc._channel._InactiveRpcError as e:
+            status_code = e.code()
+            
+            if status_code == StatusCode.NOT_FOUND:
+                message = "Wallet not found on blockchain. Please verify you have sent coins to your wallet to activate it. Then try your subscription again"
+                return (False, {'hash' : None, 'success' : False, 'message' : message})
+                
         balance = self.get_balance(sdk._account.address)
         print(balance)
 
@@ -398,8 +407,13 @@ class HandleWalletFunctions():
         kr = self.__keyring(PASSWORD)
         private_key = kr.get_password("meile-gui", KEYNAME)
         
-        sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key, ssl=True)
-    
+        try:
+            sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key, ssl=True)
+        except grpc._channel._InactiveRpcError as e:
+            status_code = e.code()
+            
+            if status_code == StatusCode.NOT_FOUND:
+                return(False, "Wallet not found on blockchain. Please verify you have sent coins to your wallet to activate it. Then try your subscription again")
         balance = self.get_balance(sdk._account.address)
         
         amount_required = float(DEPOSIT.replace(DENOM, ""))
@@ -463,7 +477,14 @@ class HandleWalletFunctions():
         kr = self.__keyring(PASSWORD)
         private_key = kr.get_password("meile-gui", KEYNAME) 
 
-        sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key, ssl=True)
+        try:
+            sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key, ssl=True)
+        except grpc._channel._InactiveRpcError as e:
+            status_code = e.code()
+            
+            if status_code == StatusCode.NOT_FOUND:
+                message = "Wallet not found on blockchain. Please verify you have sent coins to your wallet to activate it. Then try your subscription again"
+                return {'hash' : "0x0", 'success' : False, 'message' : message}
 
         tx_params = TxParams(
             gas=ConfParams.GAS,
@@ -515,8 +536,17 @@ class HandleWalletFunctions():
         kr = self.__keyring(PASSWORD)
         private_key = kr.get_password("meile-gui", KEYNAME)
         
-        sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key, ssl=True)
-        
+        try:
+            sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key, ssl=True)
+        except grpc._channel._InactiveRpcError as e:
+            status_code = e.code()
+            
+            if status_code == StatusCode.NOT_FOUND:
+                message = "Wallet not found on blockchain. Please verify you have sent coins to your wallet to activate it. Then try your subscription again"
+                self.connected = {"v2ray_pid" : None,  "result": False, "status" : message}
+                print(self.connected)
+                return
+            
         tx_params = TxParams(
             gas=ConfParams.GAS,
             gas_multiplier=ConfParams.GASADJUSTMENT,
