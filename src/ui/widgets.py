@@ -1518,7 +1518,7 @@ Node Version: %s
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         mw.clear_node_carousel()
         mw.carousel.remove_widget(self)
-        mw.carousel.load_slide(mw.NodeWidget)
+        mw.carousel.load_slide(mw.carousel.slides[-1])
         
     def closeDialogReturnToSubscriptions(self,inst):
         self.dialog.dismiss()

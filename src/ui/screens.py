@@ -1891,8 +1891,14 @@ class NodeScreen(MDBoxLayout):
 
     def set_previous_screen(self):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
-        mw.carousel.remove_widget(mw.NodeWidget)
-        mw.carousel.load_previous()
+        try:
+            while len(mw.carousel.slides) > 1:
+                mw.carousel.remove_widget(mw.carousel.slides[-1])
+        except Exception as e:
+            print(str(e))
+            pass
+                
+        mw.carousel.load_slide(mw.carousel.slides[0])
 
 class PlanScreen(MDBoxLayout):
     def __init__(self, **kwargs):
