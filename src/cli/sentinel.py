@@ -70,9 +70,10 @@ class NodeTreeData():
             return HTTParams.NODE_API[random.randint(0, len(HTTParams.NODE_API) -1)]
         
         cache_urls = []
+        country_urls = []
         for server in cache_json:
             if client_country.lower() == server['country'].lower():
-                return server['url']
+                country_urls.append(server['url'])
             elif client_continent == server['continent']:
                 cache_urls.append(server['url'])
             elif client_continent == "oc" and server['continent'] == "as":
@@ -81,8 +82,10 @@ class NodeTreeData():
                 cache_urls.append(server['url'])
             elif client_continent == "af" and server['continent'] == 'eu':
                 cache_urls.append(server['url'])
-                
-        if len(cache_urls) == 1:
+        
+        if len(country_urls) > 0:
+            return country_urls[random.randint(0, len(country_urls) -1)]
+        elif len(cache_urls) == 1:
             return cache_urls[0]
         else:
             return cache_urls[random.randint(0, len(cache_urls) -1)]

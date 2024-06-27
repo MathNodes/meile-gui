@@ -23,7 +23,7 @@ class ConfParams():
     #CHAINID          = 'testnet'
     GASPRICE         = "0.314159udvpn"
     #GASPRICE         = "0.2tsent"
-    GASADJUSTMENT    = 1.15
+    GASADJUSTMENT    = 1.25
     GAS              = 175000
     FEE              = 31416
     DEFAULT_SUB      = 5
@@ -135,7 +135,7 @@ class IBCTokens():
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
-    VERSION = "v2.0.0-alpha1"
+    VERSION = "2.0.0-beta3"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"
     FailedHealthCheck = "Failed Sentinel Health Check"

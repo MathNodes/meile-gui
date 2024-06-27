@@ -8,6 +8,7 @@ import re
 from time import sleep 
 from os import path, remove
 from urllib.parse import urlparse
+from urllib3.exceptions import NewConnectionError
 from grpc import RpcError, StatusCode
 import grpc
 from json.decoder import JSONDecodeError 
@@ -37,6 +38,7 @@ from mnemonic import Mnemonic
 from keyrings.cryptfile.cryptfile import CryptFileKeyring
 import ecdsa
 import hashlib
+from requests.exceptions import ReadTimeout
 
 MeileConfig = MeileGuiConfig()
 v2ray_tun2routes_connect_bash = path.join(ConfParams.KEYRINGDIR, "bin/routes.sh")
@@ -270,8 +272,12 @@ class HandleWalletFunctions():
             return(False, tx["log"])
 
         if tx.get("hash", None) is not None:
-            tx_response = sdk.nodes.wait_for_tx(tx["hash"])
-            print(tx_response)
+            try: 
+                tx_response = sdk.nodes.wait_for_tx(tx["hash"], timeout=25)
+            except mospy.exceptions.clients.TransactionTimeout as e:
+                print(str(e))
+                return(False, "GRPC error")
+            
             subscription_id = search_attribute(
                 tx_response, "sentinel.node.v2.EventCreateSubscription", "id"
             )
@@ -371,7 +377,11 @@ class HandleWalletFunctions():
             return (False, {'hash' : None, 'success' : False, 'message' : details})
 
         if tx.get("log", None) is None:
-            tx_response = sdk.nodes.wait_for_tx(tx["hash"])
+            try: 
+                tx_response = sdk.nodes.wait_for_tx(tx["hash"], timeout=25)
+            except mospy.exceptions.clients.TransactionTimeout as e:
+                return (False, {'hash' : None, 'success' : False, 'message' : "GRPC Error"})
+            
             tx_height = tx_response.get("txResponse", {}).get("height", 0) if isinstance(tx_response, dict) else tx_response.tx_response.height
 
         # F***ck we have always a unit issue ...
@@ -445,7 +455,12 @@ class HandleWalletFunctions():
             return(False, tx["log"])
 
         if tx.get("hash", None) is not None:
-            tx_response = sdk.nodes.wait_for_tx(tx["hash"])
+            try: 
+                tx_response = sdk.nodes.wait_for_tx(tx["hash"], timeout=25)
+            except mospy.exceptions.clients.TransactionTimeout as e:
+                print(str(e))
+                return(False, "GRPC Error")
+            
             print(tx_response)
             subscription_id = search_attribute(
                 tx_response, "sentinel.node.v2.EventCreateSubscription", "id"
@@ -463,13 +478,13 @@ class HandleWalletFunctions():
             
     
     def unsubscribe(self, subId):
+        CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
         KEYNAME = CONFIG['wallet'].get('keyname', '')
 
         if not KEYNAME:
             return {'hash' : "0x0", 'success' : False, 'message' : "ERROR Retrieving Keyname"}
         
-        CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
         self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
         grpcaddr, grpcport = self.GRPC.split(":")
@@ -510,7 +525,11 @@ class HandleWalletFunctions():
             return {'hash' : "0x0", 'success' : False, 'message' : message}
 
         if tx.get("log", None) is None:
-            tx_response = sdk.plans.wait_for_tx(tx["hash"])
+            try: 
+                tx_response = sdk.plans.wait_for_tx(tx["hash"], timeout=25)
+            except mospy.exceptions.clients.TransactionTimeout as e:
+                print(str(e))
+                return {'hash' : "0x0", 'success' : False, 'message' : "GRPC Error"}
             tx_height = tx_response.get("txResponse", {}).get("height", 0) if isinstance(tx_response, dict) else tx_response.tx_response.height
 
         message = f"Unsubscribe from Subscription ID: {subId}, was successful at Height: {tx_height}" if tx.get("log", None) is None else tx["log"]
@@ -526,9 +545,7 @@ class HandleWalletFunctions():
         
         confile = path.join(ConfParams.KEYRINGDIR, "connect.log")
         conndesc = open(confile, 'w')
-        
-       
-        
+
         self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
         self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
         grpcaddr, grpcport = self.GRPC.split(":")
@@ -560,7 +577,16 @@ class HandleWalletFunctions():
                 conndesc.write("Terminating any active session on chain...\n")
                 conndesc.flush()
                 tx = sdk.sessions.EndSession(session_id=session.id, rating=0, tx_params=tx_params)
-                print(sdk.sessions.wait_for_tx(tx["hash"]))
+                try:
+                    tx_response = sdk.sessions.wait_for_tx(tx["hash"], timeout=25)
+                except mospy.exceptions.clients.TransactionTimeout as e:
+                    print(str(e))
+                    conndesc.write("GRPC Error... Exiting")
+                    conndesc.flush()
+                    conndesc.close()
+                    self.connected = {"v2ray_pid" : None,  "result": False, "status" : "GRPC Error"}
+                    return
+                print(tx_response)
         
         tx = sdk.sessions.StartSession(subscription_id=int(ID), address=address, tx_params=tx_params)
         conndesc.write("Creating new session...\n")
@@ -571,7 +597,16 @@ class HandleWalletFunctions():
             print(self.connected)
             return
        
-        tx_response = sdk.sessions.wait_for_tx(tx["hash"])
+        try: 
+            tx_response = sdk.sessions.wait_for_tx(tx["hash"], timeout=25)
+        except mospy.exceptions.clients.TransactionTimeout as e:
+            print(str(e))
+            conndesc.write("GRPC Error... Exiting")
+            conndesc.flush()
+            conndesc.close()
+            self.connected = {"v2ray_pid" : None,  "result": False, "status" : "GRPC Error"}
+            return
+        
         session_id = search_attribute(tx_response, "sentinel.session.v2.EventStart", "id")
 
         from_event = {
@@ -622,14 +657,35 @@ class HandleWalletFunctions():
             print(payload)
             conndesc.write("Fetching credentials from node...\n")
             conndesc.flush()
-            response = requests.post(
-                f"{node.remote_url}/accounts/{sdk._account.address}/sessions/{session_id}",
-                json=payload,
-                headers={"Content-Type": "application/json; charset=utf-8"},
-                verify=False,
-                timeout=10
-            )
+            try:
+                response = requests.post(
+                    f"{node.remote_url}/accounts/{sdk._account.address}/sessions/{session_id}",
+                    json=payload,
+                    headers={"Content-Type": "application/json; charset=utf-8"},
+                    verify=False,
+                    timeout=17
+                )
+            except (ReadTimeout, ConnectionError, ConnectionRefusedError) as e:
+                print(str(e))
+                status = "Timeout while trying to fetch credentials from node...Exiting\n"
+                conndesc.write(status)
+                conndesc.flush()
+                conndesc.close()
+                self.connected = {"v2ray_pid" : None,  "result": False, "status" : status}
+                print(self.connected)
+                return
+            except NewConnectionError as e:
+                print(str(e))
+                status = "Timeout while trying to fetch credentials from node...Exiting\n"
+                conndesc.write(status)
+                conndesc.flush()
+                conndesc.close()
+                self.connected = {"v2ray_pid" : None,  "result": False, "status" : status}
+                print(self.connected)
+                return
+            
             print(response, response.text)
+            
             if response.ok is True:
                 break
 
@@ -838,7 +894,7 @@ class HandleWalletFunctions():
             ifconfig = resolver.DNSRequest()
             if ifconfig:
                 print("%s:%s" % (HTTParams.IPAPIDNS, ifconfig))
-                Request = HTTPRequests.MakeRequest()
+                Request = HTTPRequests.MakeRequest(TIMEOUT=7)
                 http = Request.hadapter()
                 req = http.get(HTTParams.IPAPI)
                 ifJSON = req.json()

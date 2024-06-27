@@ -530,7 +530,7 @@ class MainWindow(Screen):
                     
                     self.dialog = MDDialog(
                         title="Something went wrong. Not connected: ",
-                        text=hwf.connected['status'],
+                        text=hwf.connected['status'] if hwf.connected['status'] else "Connection Error",
                         md_bg_color=get_color_from_hex(MeileColors.BLACK),
                         buttons=[
                                 MDFlatButton(
