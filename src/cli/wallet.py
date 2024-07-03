@@ -813,7 +813,13 @@ class HandleWalletFunctions():
                     remove(config_file)
                 with open(config_file, "w", encoding="utf-8") as f:
                     f.write(json.dumps(v2ray_config.get(), indent=4))
-
+                    
+                proxy_ip_file = path.join(ConfParams.KEYRINGDIR, "v2ray.proxy")
+                if path.isfile(proxy_ip_file) is True:
+                    remove(proxy_ip_file)
+                with open(proxy_ip_file, "w", encoding="utf-8") as f:
+                    f.write(vmess_address)
+                    
                 # v2ray_tun2routes_connect_bash
                 # >> hardcoded = proxy port >> 1080
                 # >> hardcoded = v2ray file >> /home/${USER}/.meile-gui/v2ray_config.json
