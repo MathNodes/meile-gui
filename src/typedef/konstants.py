@@ -87,6 +87,8 @@ class HTTParams():
                               "https://metabase.jp.bluefren.xyz/api/public/card/feed7c25-410a-4e3a-bfe1-8a701defdc38/query/json",
                               "https://metabase.ro.mathnodes.com/api/public/card/6fd7194d-f025-4766-ba3c-3635ba6a6c00/query/json",
                               "https://noncompliant.network/api/public/card/bc75f719-db4a-44b8-9688-f5793742a203/query/json",
+                              "https://hsinao.com/api/public/card/5591a83b-d076-4278-b1c2-107ed441e21e/query/json",
+                              "https://cache.meile.cryptopepper.org/api/public/card/9ced889b-3532-422e-a4c2-e1ee3349342a/query/json"
                               ]
     
     
