@@ -1962,7 +1962,7 @@ WindowManager:
             size_hint: (1, 1)
             height: self.parent.height
             MDGridLayout:
-                rows: 18
+                rows: 27
                 cols: 1
                 size_hint_y: None
                 size_hint_x: 1
@@ -2132,6 +2132,45 @@ WindowManager:
                     theme_text_color: "Custom"
                     text_color: get_color_from_hex(MeileColors.MEILE)
                     font_size: "12dp"
+
+                MDLabel:
+                    font_name: "Roboto-BoldItalic"
+                    text: "What is a Sentinel?"
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    size_hint_x: 1
+                    halign: "center"
+                
+                MDLabel:
+                    font_name: "DejaVuSans"
+                    text: "Sentinel is a Layer-1 blockchain within the Cosmos ecosystem. It was founded in 2017, and provides privacy services, such as decentralized VPN to users both of traditional commerce and blockchain enthusiasts. It's native coin ticker is $DVPN. "
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    size_hint_x: 1
+                    pos_hint_x: .9
+                    halign: "center"
+                    theme_text_color: "Custom"
+                    text_color: get_color_from_hex(MeileColors.MEILE)
+                    font_size: "12dp"
+                
+                MDBoxLayout:
+                    size_hint_y: None
+                    height: dp(48)  # Adjust height as needed
+                    orientation: "vertical"
+        
+                    MDFlatButton:
+                        text: "Read More"
+                        size_hint_x: None
+                        width: self.parent.width  # Full width of the parent (MDBoxLayout)
+                        pos_hint: {'center_x': 0.5}
+                        on_release: root.open_sentinel()   
+                MDLabel:
+                MDLabel:
+                MDLabel:
+                MDLabel:
+                MDLabel:
+                MDLabel:            
+                    
 <FiatInterface>:
     name: "fiatgateway"
     title: "Re-fuel"
@@ -2388,4 +2427,6 @@ WindowManager:
     
 <HyperlinkLabel>:
     size_hint: None, None
-    text_size: self.size
+    text_size: self.width, None
+    halign: "center"
+    valign: "middle"

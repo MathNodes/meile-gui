@@ -48,6 +48,7 @@ setup(
         "unidecode",
         "dnspython",
         "bip_utils",
+        "toml",
 
         # "cosmpy",  # Replaced by sentinel-python-sdk + mospy
 
@@ -65,7 +66,7 @@ setup(
         "jwcrypto"
     ],
     package_data={
-        "conf": ["config/config.ini"],
+        "conf": ["config/config.ini", "config/dnscrypt-proxy.toml"],
         "bin": ["sentinelcli", "warp-cli", "warp-svc", "tun2socks", "v2ray"],
         "awoc": ["data/world.json"],
         "fonts": ["Roboto-BoldItalic.ttf", "arial-unicode-ms.ttf", "mplus-2c-bold.ttf"],

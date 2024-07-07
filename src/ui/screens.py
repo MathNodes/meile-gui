@@ -2011,6 +2011,11 @@ class HelpScreen(Screen):
         Meile.app.root.transistion = SlideTransition(direction="right")
         Meile.app.root.current = WindowNames.MAIN_WINDOW
 
+    def open_sentinel(self):
+        import webbrowser
+        
+        webbrowser.open('https://sentinel.co')
+
 class SettingsScreen(Screen):
     MeileConfig = MeileGuiConfig()
 
