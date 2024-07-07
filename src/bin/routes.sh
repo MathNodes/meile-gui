@@ -57,7 +57,7 @@ if [[ ${STATE} = "up" ]]; then
 
     	# start tun2socks 
     	echo "Starting tun2socks..."
-        /home/${USER}/.meile-gui/bin/tun2socks -device tun://${TUNIFACE} -proxy socks5://127.0.0.1:1080 -interface ${PRIMARY_IFACE} -mtu 1500 -tcp-sndbuf 1024k -tcp-rcvbuf 1024k -tcp-auto-tuning -loglevel silent
+        /home/${USER}/.meile-gui/bin/tun2socks -device tun://${TUNIFACE} -proxy socks5://127.0.0.1:1080 -interface ${PRIMARY_IFACE} -mtu 1500 -tcp-sndbuf 1024k -tcp-rcvbuf 1024k -tcp-auto-tuning -loglevel silent > /dev/null 2>&1 &
 
         #tun2socks -device tun0 -proxy socks5://127.0.0.1:1080 -interface ${PRIMARY_IFACE} -loglevel debug &
         # sanity check
@@ -77,7 +77,7 @@ else
         
         # terminate the v2ray setup
         pkill -9 tun2socks
-        pkill -11 v2ray
+        pkill -9 v2ray
 	    sleep 5
 
         # bring down tun interface
