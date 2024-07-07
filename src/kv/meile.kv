@@ -366,7 +366,8 @@ WindowManager:
             pos_hint: { "center_x": .9, "top": .3}
             theme_text_color: "Custom"
             text_color: get_color_from_hex("#fcb711")
-
+        MDLabel:
+        
         GridLayout:
             padding: 1
             cols: 2
@@ -473,14 +474,55 @@ WindowManager:
             MDDropDownItem:
                 id: gb_drop_item
                 text: root.get_config('gb')
-                on_release: root.gb_menu.open()
-        
-        
+                on_release: root.gb_menu.open()      
+
+        GridLayout
+            padding: 1
+            rows: 1
+            cols: 4
+            row_force_default: True
+            row_default_height: 5
+            
+            MDLabel:
+                font_name: "Roboto-Bold"
+                text: "Resolvers"
+                font_size: "20sp"
+                size_hint_x: None
+                width: dp(250)
+            
+            MDDropDownItem:
+                id: resolver1_drop_item
+                text: root.get_config('resolver1')
+                on_release: root.resolver1_menu.open()
+            
+            MDDropDownItem:
+                id: resolver2_drop_item
+                text: root.get_config('resolver2')
+                on_release: root.resolver2_menu.open()
+            
+            MDDropDownItem:
+                id: resolver3_drop_item
+                text: root.get_config('resolver3')
+                on_release: root.resolver3_menu.open()
+                
+        GridLayout
+            padding: 1
+            rows: 1
+            cols: 1
+            row_force_default: True
+            row_default_height: 5
+                    
+            HyperlinkLabel:
+                text: "Read more"
+                url: "https://dvpn.cc/resolvers"
+            
+            
         MDRaisedButton:
             text: "SAVE"
             font_size: "18sp"
             pos_hint: { "center_x": .9, "top": .5}
-            on_release: root.SaveOptions()    
+            on_release: root.SaveOptions()   
+             
 
 <WalletRestore>:
     name: "walletrestore"
@@ -2343,3 +2385,7 @@ WindowManager:
     group: 'group'
     size_hint: None, None
     size: dp(48), dp(48)
+    
+<HyperlinkLabel>:
+    size_hint: None, None
+    text_size: self.size

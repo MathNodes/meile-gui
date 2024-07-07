@@ -343,7 +343,7 @@ class MainWindow(Screen):
     menu = None
     MeileLand = None
     SortOptions = ['None', "Moniker", "Price"]
-    MenuOptions = ['Refresh', 'Sort', 'WARP', 'Exit']
+    MenuOptions = ['Refresh', 'Sort', 'WARP', 'DNSCrypt', 'Exit']
     Sort = SortOptions[1]
     MeileMap = None
     MeileMapBuilt = False
@@ -393,7 +393,7 @@ class MainWindow(Screen):
         Clock.schedule_once(self.get_config,1)
         Clock.schedule_once(self.build, 1)
         Clock.schedule_interval(self.update_wallet, 60)
-        menu_icons = ["cloud-refresh", "sort", "shield-lock", "exit-to-app"]
+        menu_icons = ["cloud-refresh", "sort", "shield-lock", "shield-lock", "exit-to-app"]
         menu_items = [
             {
                 "viewclass" : "IconListItem",
@@ -679,9 +679,14 @@ class MainWindow(Screen):
         elif selection == self.MenuOptions[2]:
             self.start_warp()
         elif selection == self.MenuOptions[3]:
+            self.start_dnscrypt()
+        elif selection == self.MenuOptions[4]:
             self.disconnect_from_node()
             sys.exit(0)
-
+    
+    def start_dnscrypt(self):
+        pass
+    
     def build(self, dt):
         # Check to build Map
         self.build_meile_map()
@@ -2014,13 +2019,18 @@ class SettingsScreen(Screen):
 
         params = HTTParams()
         cparams = ConfParams()
+        
+        config = self.MeileConfig.read_configuration(self.MeileConfig.CONFFILE)
         # Load default values
-        self.RPC   = params.RPC
-        self.GRPC  = params.GRPC
-        self.API   = params.APIURL
-        self.MNAPI = params.MNAPI
-        self.CACHE = params.NODE_API
-        self.GB    = cparams.DEFAULT_SUB
+        self.RPC       = config['network'].get('rpc', '')
+        self.GRPC      = config['network'].get('grpc', '')
+        self.API       = config['network'].get('api', '')
+        self.MNAPI     = config['network'].get('mnapi', '')
+        self.CACHE     = config['network'].get('cache', '')
+        self.RESOLVER1 = config['network'].get('resolver1', '')
+        self.RESOLVER2 = config['network'].get('resolver2', '')
+        self.RESOLVER3 = config['network'].get('resolver3', '')
+        self.GB        = config['subscription'].get('gb', '5')
         
         self.MeileConfig = MeileGuiConfig()
 
@@ -2122,10 +2132,58 @@ class SettingsScreen(Screen):
             width_mult=50,
         )
         self.gb_menu.bind()
+        
+        self.resolver1_menu = MDDropdownMenu(
+            caller=self.ids.resolver1_drop_item,
+            items=[
+                {
+                    "viewclass": "IconListItem",
+                    "icon": "server-security",
+                    "text": f"{i}",
+                    "height": dp(56),
+                    "on_release": lambda x=f"{i}": self.set_item(x, "resolver1"),
+                } for i in params.RESOLVERS
+            ],
+            position="center",
+            width_mult=50,
+        )
+        self.resolver1_menu.bind()
+        
+        self.resolver2_menu = MDDropdownMenu(
+            caller=self.ids.resolver2_drop_item,
+            items=[
+                {
+                    "viewclass": "IconListItem",
+                    "icon": "server-security",
+                    "text": f"{i}",
+                    "height": dp(56),
+                    "on_release": lambda x=f"{i}": self.set_item(x, "resolver2"),
+                } for i in params.RESOLVERS
+            ],
+            position="center",
+            width_mult=50,
+        )
+        self.resolver2_menu.bind()
+        
+        self.resolver3_menu = MDDropdownMenu(
+            caller=self.ids.resolver3_drop_item,
+            items=[
+                {
+                    "viewclass": "IconListItem",
+                    "icon": "server-security",
+                    "text": f"{i}",
+                    "height": dp(56),
+                    "on_release": lambda x=f"{i}": self.set_item(x, "resolver3"),
+                } for i in params.RESOLVERS
+            ],
+            position="center",
+            width_mult=50,
+        )
+        self.resolver3_menu.bind()
 
     def get_config(self, what: str = "rpc"):
         config = self.MeileConfig.read_configuration(self.MeileConfig.CONFFILE)
-        if what in ['cache', 'mnapi', 'api', 'grpc', 'rpc']:
+        if what in ['cache', 'mnapi', 'api', 'grpc', 'rpc', 'resolver1', 'resolver2', 'resolver3']:
             getattr(self.ids, f"{what}_drop_item").set_item(config['network'][what])
             return config['network'][what]
         else:
@@ -2143,7 +2201,7 @@ class SettingsScreen(Screen):
 
     def SaveOptions(self):
         config = self.MeileConfig.read_configuration(self.MeileConfig.CONFFILE)
-        for what in ["rpc", "grpc", "api", "mnapi", "cache"]:
+        for what in ["rpc", "grpc", "api", "mnapi", "cache", "resolver1", "resolver2", "resolver3"]:
             config.set('network', what, getattr(self, what.upper()))
         
         what = "gb"
@@ -2151,9 +2209,27 @@ class SettingsScreen(Screen):
         
         with open(self.MeileConfig.CONFFILE, 'w', encoding="utf-8") as f:
             config.write(f)
+            
+        
+        # Write the DNSCrypt-proxy configuration file
+        import toml
+        cparams = ConfParams()
+        meile_config = self.MeileConfig.read_configuration(self.MeileConfig.CONFFILE)
+        dnscrypt_confile = path.join(cparams.KEYRINGDIR, 'dnscrypt-proxy.toml')
+        with open(dnscrypt_confile, 'r') as file:
+            config = toml.load(file)
+        config['server_names'] = [meile_config['network'].get('resolver1', 'cs-ch'),
+                                  meile_config['network'].get('resolver2', 'uncensoreddns-ipv4'),
+                                  meile_config['network'].get('resolver3', 'doh-ibksturm')]
+
+        with open(dnscrypt_confile, 'w') as file:
+            toml.dump(config, file)
 
         self.set_previous_screen()
-
+    '''    
+    def strip_trailing_number(string):
+        return re.sub(r'\d+$', '', string)
+    '''
     def set_previous_screen(self):
         Meile.app.root.remove_widget(self)
         Meile.app.root.transistion = SlideTransition(direction="up")

@@ -113,6 +113,26 @@ class RatingContent(MDBoxLayout):
     def return_rating_value(self):
         return self.ids.rating_slider.value
     
+    
+class HyperlinkLabel(ButtonBehavior, MDLabel, HoverBehavior):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.bind(size=self.update_size)
+        self.color = get_color_from_hex(MeileColors.MEILE)
+        self.cursor = 'arrow'
+
+    def on_enter(self, *args):
+        Window.set_system_cursor('hand')
+
+    def on_leave(self, *args):
+        Window.set_system_cursor('arrow')
+        
+    def on_release(self):
+        webbrowser.open(self.url)  # Open the URL when the label is clicked
+
+    def update_size(self, *args):
+        self.size = self.texture_size  # Ensure label size matches text size
+    
 class SubTypeDialog(BoxLayout):
     
     def __init__(self, rvclass, price, hourly_price, moniker, naddress):

@@ -54,14 +54,6 @@ if [[ ${STATE} = "up" ]]; then
         echo "Add normal route for proxy..."
         echo "ip route add ${PROXY_IP} via ${GATEWAY} metric 1"
         ip route add ${PROXY_IP} via ${GATEWAY} metric 1
-        #ip route add 185.38.27.139 via ${GATEWAY}
-        #ip route add 190.211.255.227 via ${GATEWAY}
-        #ip route add 194.102.227.5 via ${GATEWAY}
-        
-        # Setting up DNSCRYPT-proxy
-        #echo "Setting up dnscrypt-proxy..."
-        #/home/${USER}/.meile-gui/bin/dnscrypt-proxy -config /home/${USER}/.meile-gui/bin/dnscrypt-proxy.toml &
-        #bash -c 'echo "nameserver 127.0.0.1" > /etc/resolv.conf'
 
     	# start tun2socks 
     	echo "Starting tun2socks..."

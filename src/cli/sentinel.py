@@ -3,7 +3,7 @@ from os import path
 import re
 import requests
 from requests.exceptions import ReadTimeout, ConnectionError, HTTPError
-from urllib3.exceptions import InsecureRequestWarning
+from urllib3.exceptions import InsecureRequestWarning, ResponseError
 from subprocess import Popen, PIPE, STDOUT
 from datetime import datetime,timedelta
 import time
@@ -106,19 +106,20 @@ class NodeTreeData():
                 #N = random.randint(0, len(HTTParams.NODE_API) -1)
                 try: 
                     r = http.get(CACHE_SERVER)
-                    if r.status_code == 502:
-                        print(f"Reponse 502 from {CACHE_SERVER}. Switching to backup server.")
-                        CACHE_SERVER = HTTParams.NODE_APIS[random.randint(0, len(HTTParams.NODE_API)-1)] 
-                        continue
+                    r.raise_for_status()
                 except (ReadTimeout, ConnectionError, HTTPError):
-                    print(f"Read timed out for {CACHE_SERVER}. Switching to backup server.")
-                    CACHE_SERVER = HTTParams.NODE_APIS[random.randint(0, len(HTTParams.NODE_API)-1)] 
+                    print(f"Server error for {CACHE_SERVER}. Switching to backup server.")
+                    CACHE_SERVER = HTTParams.NODE_APIS[random.randint(0, len(HTTParams.NODE_APIS)-1)] 
+                    continue
+                except requests.RequestException as e:
+                    print(f"Server error for {CACHE_SERVER}. Switching to backup server.")
+                    CACHE_SERVER = HTTParams.NODE_APIS[random.randint(0, len(HTTParams.NODE_APIS)-1)] 
                     continue
                 data = r.json()
                 if not data:
                     retries += 1
                     if retries >= 2:
-                        CACHE_SERVER = HTTParams.NODE_APIS[random.randint(0, len(HTTParams.NODE_API)-1)]
+                        CACHE_SERVER = HTTParams.NODE_APIS[random.randint(0, len(HTTParams.NODE_APIS)-1)]
                     continue
                 #rint(data)
                 for node in data:
