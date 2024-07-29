@@ -37,11 +37,12 @@ setup(
     install_requires=[
         "kivymd",
         "pydash",
-        "treelib",
+        "treelib==1.6.1",
         "kivyoav",
         "pexpect",
         "qrcode",
         "save_thread_result",
+        "stripe",
         "screeninfo",
         "mapview",
         "psutil",
@@ -49,6 +50,8 @@ setup(
         "dnspython",
         "bip_utils",
         "toml",
+        "netifaces",
+        "btcpay",
 
         # "cosmpy",  # Replaced by sentinel-python-sdk + mospy
 

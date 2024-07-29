@@ -51,7 +51,7 @@ import re
 from time import sleep
 from functools import partial
 from shutil import rmtree
-from os import path,geteuid, chdir, remove
+from os import path, chdir, remove
 from save_thread_result import ThreadWithResult
 from threading import Thread
 from unidecode import unidecode
@@ -216,10 +216,10 @@ class PreLoadWindow(Screen):
         super(PreLoadWindow, self).__init__()
 
         self.NodeTree = NodeTreeData(None)
-
+        self.RewriteBIN()
         self.GenerateUUID()
         self.CreateWarpConfig()
-        self.CopyBin()
+        #self.CopyBin()
 
         chdir(MeileGuiConfig.BASEDIR)
 
@@ -243,11 +243,17 @@ class PreLoadWindow(Screen):
             yield 0.0375
             self.manager.get_screen(WindowNames.PRELOAD).ids.pb.value += 0.0015
 
-
+    '''LINUX
     def CopyBin(self):
         MeileConfig = MeileGuiConfig()
         MeileConfig.copy_bin_dir()
-
+    '''
+    
+    # Windows
+    def RewriteBIN(self):
+        MeileConfig = MeileGuiConfig()
+        MeileConfig.rewrite_bin()
+        
     def CreateWarpConfig(self):
         MeileConfig = MeileGuiConfig()
         CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
@@ -299,9 +305,7 @@ class PreLoadWindow(Screen):
     @delayable
     def update_status_text(self, t, dt):
         go_button = self.manager.get_screen(WindowNames.PRELOAD).ids.go_button
-        #if geteuid() != 0:
-        #    self.add_loading_popup("Please start Meile-GUI as root. i.e., sudo -E env PATH=$PATH ./meile-gui or similarly")
-
+        
         yield 1.0
 
         if not t.is_alive():
@@ -715,7 +719,7 @@ class MainWindow(Screen):
 
 
     def build_node_data(self, ncountry):
-        floc = "../imgs/"
+        floc = "imgs/"
         NodeCountries = {}
 
         try:
@@ -1391,10 +1395,10 @@ class MainWindow(Screen):
     def return_connect_button(self, text):
         MeileConfig = MeileGuiConfig()
         if text == "c":
-            button_path = "../imgs/ConnectButton.png"
+            button_path = "imgs/ConnectButton.png"
             return MeileConfig.resource_path(button_path)
         else:
-            button_path = "../imgs/DisconnectButton.png"
+            button_path = "imgs/DisconnectButton.png"
             return MeileConfig.resource_path(button_path)
         
 class WalletScreen(Screen):
@@ -1537,7 +1541,7 @@ class WalletScreen(Screen):
     def return_coin_logo(self, coin):
         self.MeileConfig = MeileGuiConfig()
 
-        predir = "../imgs/"
+        predir = "imgs/"
         logoDict = {}
         for c in CoinsList.coins:
             logoDict[c] = predir + c + ".png"

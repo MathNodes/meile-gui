@@ -10,7 +10,7 @@ from kivymd.theming import ThemeManager
 from kivy.utils import get_color_from_hex
 from kivy.config import Config
 MeileConfig = MeileGuiConfig()
-Config.set('kivy','window_icon',MeileConfig.resource_path("../imgs/icon.png"))
+Config.set('kivy','window_icon',MeileConfig.resource_path("imgs/icon.png"))
         
 from screeninfo import get_monitors
 
@@ -18,7 +18,7 @@ from screeninfo import get_monitors
 
 class MyMainApp(MDApp):
     title = "Meile dVPN"
-    icon  = MeileConfig.resource_path("../imgs/icon.png")
+    icon  = MeileConfig.resource_path(".imgs/icon.png")
     manager = None
     def __init__(self,**kwargs):
         super(MyMainApp,self).__init__(**kwargs)
@@ -47,7 +47,7 @@ class MyMainApp(MDApp):
           
     def build(self):
         
-        kv = Builder.load_file(MeileConfig.resource_path("../kv/meile.kv"))
+        kv = Builder.load_file(MeileConfig.resource_path("kv/meile.kv"))
         
         self.manager = WindowManager()
         theme = ThemeManager()

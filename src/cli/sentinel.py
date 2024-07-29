@@ -1,5 +1,5 @@
 import collections
-from os import path
+from os import path, chdir
 import re
 import requests
 from requests.exceptions import ReadTimeout, ConnectionError, HTTPError
@@ -16,7 +16,7 @@ from treelib.exceptions import DuplicatedNodeIdError
 
 from geography.continents import OurWorld
 from conf.meile_config import MeileGuiConfig
-from typedef.konstants import ConfParams, HTTParams, IBCTokens, TextStrings, NodeKeys
+from typedef.konstants import ConfParams, HTTParams, IBCTokens, TextStrings, NodeKeys, Arch
 from adapters import HTTPRequests
 from cli.v2ray import V2RayHandler
 from helpers import helpers
@@ -26,6 +26,7 @@ from sentinel_sdk.types import PageRequest, Status
 from builtins import AttributeError
 
 MeileConfig = MeileGuiConfig()
+gsudo       = path.join(MeileConfig.BASEBINDIR, 'gsudo.exe')
 v2ray_tun2routes_connect_bash = path.join(ConfParams.KEYRINGDIR, "bin/routes.sh")
 
 class NodeTreeData():
@@ -533,22 +534,48 @@ class NodeTreeData():
             return str(inactive_date),nodeQuota   
                  
 def disconnect(v2ray):
+    import platform
+    pltfrm = platform.system()
     if v2ray:
         try:
-            V2Ray = V2RayHandler(v2ray_tun2routes_connect_bash + " down")
-            rc = V2Ray.kill_daemon()
-            return rc, False
+            if pltfrm == Arch.WINDOWS:
+                V2Ray = V2RayHandler(v2ray_tun2routes_connect_bash + " down")
+                chdir(MeileConfig.BASEBINDIR)
+                rc = V2Ray.kill_daemon()
+                chdir(MeileConfig.BASEDIR)  
+                return rc, False
+            else:
+                V2Ray = V2RayHandler(v2ray_tun2routes_connect_bash + " down")
+                rc = V2Ray.kill_daemon()
+                return rc, False
         except Exception as e:
             print(str(e))
             return 1, True
     else:
-        CONFFILE = path.join(ConfParams.KEYRINGDIR, 'wg99.conf')
-        wg_downCMD = ['pkexec', 'env', 'PATH=%s' % ConfParams.PATH, 'wg-quick', 'down', CONFFILE]
+        
+        if pltfrm == Arch.WINDOWS:
+            with open(path.join(MeileConfig.BASEBINDIR, 'disconnect.bat'), 'w') as DISBATFILE:
+                DISBATFILE.write("%s /uninstalltunnelservice wg99\n" % MeileConfig.WIREGUARD_BIN)
+                DISBATFILE.write("TASKKILL /F /IM WireGuard.exe\n")
+                DISBATFILE.flush()
+                DISBATFILE.close()
+               
+            partCMD = [gsudo, path.join(MeileConfig.BASEBINDIR, 'disconnect.bat')]
             
-        proc1 = Popen(wg_downCMD)
-        proc1.wait(timeout=30)
-    
-        proc_out,proc_err = proc1.communicate()
-        return proc1.returncode, False
+            chdir(MeileConfig.BASEBINDIR)
+            proc1 = Popen(partCMD)
+            proc1.wait(timeout=30)
+            chdir(MeileConfig.BASEDIR)  
+            
+            return proc1.returncode, False
+        else:
+            CONFFILE = path.join(ConfParams.KEYRINGDIR, 'wg99.conf')
+            wg_downCMD = ['pkexec', 'env', 'PATH=%s' % ConfParams.PATH, 'wg-quick', 'down', CONFFILE]
+                
+            proc1 = Popen(wg_downCMD)
+            proc1.wait(timeout=30)
+        
+            proc_out,proc_err = proc1.communicate()
+            return proc1.returncode, False
 
     

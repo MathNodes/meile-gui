@@ -10,10 +10,9 @@ class Arch():
     ARM     = "arm64"
     
 class ConfParams():
-    USER             = environ['SUDO_USER'] if 'SUDO_USER' in environ else environ['USER']
     PATH             = environ['PATH']
-    KEYRINGDIR       = path.join(path.expanduser('~' + USER), '.meile-gui')
-    BASEDIR          = path.join(path.expanduser('~' + USER), '.sentinelcli')
+    KEYRINGDIR       = path.join(path.expanduser('~'), '.meile-gui')
+    BASEDIR          = path.join(path.expanduser('~'), '.sentinelcli')
     WALLETINFO       = path.join(KEYRINGDIR, "infos.txt")
     SUBSCRIBEINFO    = path.join(KEYRINGDIR, "subscribe.infos")
     USUBSCRIBEINFO   = path.join(KEYRINGDIR, "unsubscribe.infos")
@@ -556,15 +555,15 @@ class MeileColors():
     DIALOG_BG_COLOR2         = "#181818"
     INACTIVE_DIALOG_BG_COLOR = "#50507c"
     ROW_HOVER                = "#39363c"
-    FONT_FACE                = "../fonts/mplus-2c-bold.ttf"
-    FONT_FACE_ARIAL          = "../fonts/arial-unicode-ms.ttf"
-    QR_FONT_FACE             = "../fonts/Roboto-BoldItalic.ttf"
-    MAP_MARKER               = "../imgs/location_pin.png"
-    LOGO                     = "../imgs/logo.png"
-    LOGO_HD                  = "../imgs/logo_hd.png"
-    LOGO_TEXT                = "../imgs/logo_text.png"
-    SUBSCRIBE_BUTTON         = "../imgs/SubscribeButton.png"
-    GETINFO_BUTTON           = "../imgs/GetInfoButton.png"
+    FONT_FACE                = "fonts/mplus-2c-bold.ttf"
+    FONT_FACE_ARIAL          = "fonts/arial-unicode-ms.ttf"
+    QR_FONT_FACE             = "fonts/Roboto-BoldItalic.ttf"
+    MAP_MARKER               = "imgs/location_pin.png"
+    LOGO                     = "imgs/logo.png"
+    LOGO_HD                  = "imgs/logo_hd.png"
+    LOGO_TEXT                = "imgs/logo_text.png"
+    SUBSCRIBE_BUTTON         = "imgs/SubscribeButton.png"
+    GETINFO_BUTTON           = "imgs/GetInfoButton.png"
     HEALTH_ICON              = "shield-plus"
     SICK_ICON                = "emoticon-sick"
     ARCGIS_MAP               = "https://server.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}.png"

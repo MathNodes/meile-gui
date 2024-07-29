@@ -5,16 +5,18 @@ import psutil
 import binascii
 import random
 import re
+import platform
 from time import sleep 
-from os import path, remove
+from os import path, remove, chdir  
 from urllib.parse import urlparse
 from urllib3.exceptions import NewConnectionError
 from grpc import RpcError, StatusCode
 import grpc
 from json.decoder import JSONDecodeError 
+import subprocess
 
 from conf.meile_config import MeileGuiConfig
-from typedef.konstants import IBCTokens, ConfParams, HTTParams, MEILE_PLAN_WALLET
+from typedef.konstants import IBCTokens, ConfParams, HTTParams, MEILE_PLAN_WALLET, Arch
 from adapters import HTTPRequests, DNSRequests
 from cli.v2ray import V2RayHandler, V2RayConfiguration
 
@@ -41,11 +43,13 @@ import hashlib
 from requests.exceptions import ReadTimeout
 
 MeileConfig = MeileGuiConfig()
+gsudo       = path.join(MeileConfig.BASEBINDIR, 'gsudo.exe')
 v2ray_tun2routes_connect_bash = path.join(ConfParams.KEYRINGDIR, "bin/routes.sh")
 
 
 class HandleWalletFunctions():
     connected =  {'v2ray_pid' : None, 'result' : False, 'status' : None}
+    wg_process = None # Used to Poll in case user quits with disconnecting
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -543,6 +547,8 @@ class HandleWalletFunctions():
         PASSWORD = CONFIG['wallet'].get('password', '')
         KEYNAME = CONFIG['wallet'].get('keyname', '')
         
+        pltfrm = platform.system()
+        
         confile = path.join(ConfParams.KEYRINGDIR, "connect.log")
         conndesc = open(confile, 'w')
 
@@ -754,9 +760,16 @@ class HandleWalletFunctions():
 
                 with open(config_file, "w", encoding="utf-8") as f:
                     config.write(f)
-
-                child = pexpect.spawn(f"pkexec sh -c 'ip link delete {iface}; wg-quick up {config_file}'")
-                child.expect(pexpect.EOF)
+                if pltfrm == Arch.LINUX:
+                    child = pexpect.spawn(f"pkexec sh -c 'ip link delete {iface}; wg-quick up {config_file}'")
+                    child.expect(pexpect.EOF)
+                elif pltfrm == Arch.WINDOWS:
+                    wgup = [gsudo, MeileConfig.WIREGUARD_BIN, "/installtunnelservice", config_file]
+                    wg_process = subprocess.Popen(wgup)
+                    sleep(15)
+                elif pltfrm == Arch.OSX:
+                    pass
+                    
 
                 if psutil.net_if_addrs().get(iface):
                     self.connected = {"v2ray_pid" : None,  "result": True, "status" : iface}
@@ -766,6 +779,7 @@ class HandleWalletFunctions():
                     conndesc.close()
                     return
             else:  # v2ray
+                chdir(MeileConfig.BASEBINDIR)
                 conndesc.write("Bringing up V2Ray socks tunnel...\n")
                 conndesc.flush()
                 if len(decode) != 7:
@@ -841,6 +855,7 @@ class HandleWalletFunctions():
                     conndesc.flush()
                     self.get_ip_address()
                     conndesc.close()
+                    chdir(MeileConfig.BASEDIR)
                     return
                 else:
                     try:
@@ -854,8 +869,9 @@ class HandleWalletFunctions():
 
                     self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid,  "result": False, "status": f"Error connecting to v2ray node: {tuniface}"}
                     print(self.connected)
+                    chdir(MeileConfig.BASEDIR)
                     return
-
+        chdir(MeileConfig.BASEDIR)
         self.connected = {"v2ray_pid" : None,  "result": False, "status": "boh"}
         return   
            
