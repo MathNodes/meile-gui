@@ -25,7 +25,7 @@ class QRCode():
         DepositCoin    = CoinsList.coins[2]
         DepositAddress = ADDRESS 
         
-        coinLogo = self.MeileConfig.resource_path('../utils/coinimg/' + DepositCoin + '.png')
+        coinLogo = self.MeileConfig.resource_path('utils/coinimg/' + DepositCoin + '.png')
         logo = Image.open(coinLogo)
         basewidth = 100
          
@@ -63,7 +63,7 @@ class QRCode():
             
         background = Image.new('RGBA', (QRimg.size[0], QRimg.size[1] + 15), (255,255,255,255))
         #robotoFont = ImageFont.truetype(pkg_resources.resource_filename(__name__, os.path.join('fonts', 'Roboto-BoldItalic.ttf')), fontSize)
-        robotoFont = ImageFont.truetype(self.MeileConfig.resource_path('../utils/fonts/Roboto-BoldItalic.ttf'), fontSize)
+        robotoFont = ImageFont.truetype(self.MeileConfig.resource_path('utils/fonts/Roboto-BoldItalic.ttf'), fontSize)
     
         draw = ImageDraw.Draw(background)
         
