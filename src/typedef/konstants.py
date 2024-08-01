@@ -12,6 +12,8 @@ class Arch():
 class ConfParams():
     PATH             = environ['PATH']
     KEYRINGDIR       = path.join(path.expanduser('~'), '.meile-gui')
+    BASEBINDIR       = path.join(KEYRINGDIR, "bin")
+    GSUDO            = path.join(BASEBINDIR, "gsudo.exe")
     BASEDIR          = path.join(path.expanduser('~'), '.sentinelcli')
     WALLETINFO       = path.join(KEYRINGDIR, "infos.txt")
     SUBSCRIBEINFO    = path.join(KEYRINGDIR, "subscribe.infos")
