@@ -709,6 +709,7 @@ class MainWindow(Screen):
             self.dnscrypt = True    
             self.remove_loading_widget(None)
             self.display_dnscrypt_success(dnsproxy.dnscrypt_pid)
+            self.ids.doh.opacity = 1
                 
         else:
             self.add_loading_popup("Terminating DNSCryptProxy...")
@@ -723,6 +724,7 @@ class MainWindow(Screen):
                 
             self.dnscrypt = False
             self.remove_loading_widget(None)
+            self.ids.doh.opacity = 0
              
     def build(self, dt):
         # Check to build Map
@@ -2057,8 +2059,11 @@ class RecycleViewCountryRow(MDCard,RectangularElevationBehavior,ThemableBehavior
 
 class HelpScreen(Screen):
 
-    def GetMeileVersion(self):
-        return TextStrings.VERSION
+    def GetMeileVersion(self, spec: str = "V"):
+        if spec == "V":
+            return TextStrings.VERSION
+        else:
+            return str(TextStrings.BUILD)
 
     def set_previous_screen(self):
 
