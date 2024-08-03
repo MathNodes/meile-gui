@@ -39,6 +39,7 @@ from keyrings.cryptfile.cryptfile import CryptFileKeyring
 import ecdsa
 import hashlib
 from requests.exceptions import ReadTimeout
+from Crypto.Hash import RIPEMD160
 
 MeileConfig = MeileGuiConfig()
 v2ray_tun2routes_connect_bash = path.join(ConfParams.KEYRINGDIR, "bin/routes.sh")
@@ -190,6 +191,18 @@ class HandleWalletFunctions():
         if path.isfile(file_path):
             remove(file_path)
             
+    def ripemd160(self, contents: bytes) -> bytes:
+        """
+        Get ripemd160 hash using PyCryptodome.
+    
+        :param contents: bytes contents.
+    
+        :return: bytes ripemd160 hash.
+        """
+        h = RIPEMD160.new()
+        h.update(contents)
+        return h.digest()
+            
     def create(self, wallet_name, keyring_passphrase, seed_phrase = None):
         # Credtis: https://github.com/ctrl-Felix/mospy/blob/master/src/mospy/utils.py
         self.__destroy_keyring()
@@ -203,7 +216,8 @@ class HandleWalletFunctions():
         privkey_obj = ecdsa.SigningKey.from_string(bip44_def_ctx.PrivateKey().Raw().ToBytes(), curve=ecdsa.SECP256k1)
         pubkey  = privkey_obj.get_verifying_key()
         s = hashlib.new("sha256", pubkey.to_string("compressed")).digest()
-        r = hashlib.new("ripemd160", s).digest()
+        #r = hashlib.new("ripemd160", s).digest()
+        r = self.ripemd160(s)
         five_bit_r = bech32.convertbits(r, 8, 5)
         account_address = bech32.bech32_encode("sent", five_bit_r)
 
