@@ -1,5 +1,6 @@
 from datetime import timedelta, datetime
 import psutil
+import re
 
 def compute_consumed_data(consumed):
     if "GB" in consumed:
