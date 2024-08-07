@@ -1947,12 +1947,21 @@ WindowManager:
             halign: "center"
         MDLabel:
             font_name: "Roboto-Bold"
-            text: root.GetMeileVersion()
+            text: root.GetMeileVersion("V")
             font_size: "16sp"
             size_hint_y: None
             height: self.texture_size[1] + dp(20)
             #width: dp(500)
             #pos_hint: { "right": 1.425, "top": .85}
+            theme_text_color: "Custom"
+            text_color: get_color_from_hex(MeileColors.MEILE)
+            halign: "center"
+        MDLabel:
+            font_name: "Roboto-Bold"
+            text: "build: " + root.GetMeileVersion(spec="B")
+            font_size: "13sp"
+            size_hint_y: None
+            height: self.texture_size[1] + dp(20)
             theme_text_color: "Custom"
             text_color: get_color_from_hex(MeileColors.MEILE)
             halign: "center"

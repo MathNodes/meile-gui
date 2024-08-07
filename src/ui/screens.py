@@ -2002,8 +2002,11 @@ class RecycleViewCountryRow(MDCard,RectangularElevationBehavior,ThemableBehavior
 
 class HelpScreen(Screen):
 
-    def GetMeileVersion(self):
-        return TextStrings.VERSION
+    def GetMeileVersion(self, spec: str = "V"):
+        if spec == "V":
+            return TextStrings.VERSION
+        else:
+            return str(TextStrings.BUILD)
 
     def set_previous_screen(self):
 
