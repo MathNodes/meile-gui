@@ -421,7 +421,7 @@ class MainWindow(Screen):
     def ping(self):
         UUID = Meile.app.root.get_screen(WindowNames.PRELOAD).UUID
         try:
-            uuid_dict = {'uuid' : "%s" % UUID, 'os' : "l"}
+            uuid_dict = {'uuid' : "%s" % UUID, 'os' : "w"}
             Request = HTTPRequests.MakeRequest(TIMEOUT=3)
             http = Request.hadapter()
             ping = http.post(HTTParams.SERVER_URL + HTTParams.API_PING_ENDPOINT, json=uuid_dict)
