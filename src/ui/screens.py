@@ -1714,10 +1714,14 @@ class SubscriptionScreen(MDBoxLayout):
 
         if not mw.SubResult:
             self.GetSubscriptions()
-
-        for sub in mw.SubResult:
-            self.add_sub_rv_data(sub)
-            
+        try:
+            for sub in mw.SubResult:
+                self.add_sub_rv_data(sub)
+        except TypeError:
+            print("Connection Error")
+            self.remove_loading_widget(None)
+            return    
+        
         self.remove_loading_widget(None)
                
         # Auto-connect from NodeCarousel if sub found

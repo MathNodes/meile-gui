@@ -2,8 +2,10 @@ from os import path,environ,mkdir
 
 import configparser
 import shutil
-
+import subprocess
 import sys
+
+from time import sleep 
 
 
 class MeileGuiConfig():
@@ -20,7 +22,8 @@ class MeileGuiConfig():
         base_path = getattr(sys, '_MEIPASS', path.dirname(path.abspath(__file__)))
         return path.join(base_path, relative_path)
     
-    def process_exists(self, process_name):
+    def process_exists(self):
+        '''
         call = 'TASKLIST', '/FI', 'imagename eq %s' % process_name
         try:
             output = subprocess.check_output(call).decode('windows-1252')
@@ -28,18 +31,30 @@ class MeileGuiConfig():
             print("Decoding error, reverting....")
             output = subprocess.check_output(call).decode(errors='ignore')
         
-        last_line = output.strip().split('\r\n')[-1]
-        return last_line.lower().startswith(process_name.lower())
-    
+        last_line = output.strip().split('\r\n')
+        return last_line
+        '''
+        command = 'tasklist | findstr /I "v2ray.exe wireguard.exe tun2socks.exe"'
+        process = subprocess.Popen(
+            command,
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        stdout, stderr = process.communicate()
+        if process.returncode == 0:
+            # Decode the output and split it into lines
+            return stdout.decode('utf-8').strip().splitlines()
     def kill_process(self, process_name):
         call = '%s TASKKILL /F /IM %s' % (self.resource_path("bin/gsudo.exe"),process_name)
         subprocess.Popen(call, shell=True)
         
     def update_bin(self, from_path, to_path):
         try:
-            if self.process_exists("WireGuard.exe"):
-                print("WireGuard is running!")
-                self.kill_process("WireGuard.exe")
+            procs = self.process_exists()
+            if len(procs) > 0: 
+                for p in procs:
+                    self.kill_process(p.split(' ')[0].rstrip().lstrip())
                 sleep(10)
                 if path.exists(to_path):
                     shutil.rmtree(to_path)

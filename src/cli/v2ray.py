@@ -1,4 +1,4 @@
-from subprocess import Popen
+from subprocess import Popen, PIPE
 import multiprocessing
 from multiprocessing import Process
 from time import sleep
@@ -7,6 +7,7 @@ import psutil
 import netifaces
 import json
 from os import path
+import win32gui, win32con
 
 from typedef.konstants import ConfParams 
 from conf.meile_config import MeileGuiConfig
@@ -17,21 +18,30 @@ class V2RayHandler():
     v2ray_pid    = None
     tunproc      = "tun2socks.exe"
     v2rayproc    = "v2ray.exe"
-    
+    CREATE_NO_WINDOW = 0x08000000
+    CREATE_NEW_CONSOLE = 0x00000010
     
     def __init__(self, script, **kwargs):
         self.v2ray_script = script
+
         print(self.v2ray_script)
     
     def fork_v2ray(self):
-        v2ray_daemon_cmd = 'gsudo %s' %(self.v2ray_script)
-        v2ray_srvc_proc = Popen(v2ray_daemon_cmd, shell=True,close_fds=True)
-        
+        v2ray_daemon_cmd = 'cmd.exe /c start cmd.exe /k gsudo.exe %s' %(self.v2ray_script)
+        #v2ray_daemon_cmd = 'gsudo.exe %s' %(self.v2ray_script)
+        v2ray_srvc_proc = Popen(v2ray_daemon_cmd, shell=True,stdout=PIPE,stderr=PIPE)
+        sleep(10)
         print("PID: %s" % v2ray_srvc_proc.pid)
-    
+        hwnd = win32gui.FindWindow(None, f'C:\\Windows\\system32\\cmd.exe')
+        print(hwnd)
+        win32gui.ShowWindow(hwnd,win32con.SW_HIDE)
         self.v2ray_pid = v2ray_srvc_proc.pid
 
         
+    def enum_windows_callback(self, hwnd, wildcard):
+        if wildcard in win32gui.GetClassName(hwnd).lower():
+            win32gui.ShowWindow(hwnd, win32con.SW_HIDE)
+            
     def start_daemon(self):
         
         print("Starting v2ray service...")
@@ -51,11 +61,17 @@ class V2RayHandler():
         batfile = open(routes_bat, 'w')
         
         batfile.write('CD "%s"\n' % path.join(self.MeileConfig.BASEBINDIR, "V2Ray"))
-        batfile.write('START /B %s run -c %s\n' % (self.v2rayproc, path.join(self.MeileConfig.BASEDIR, "v2ray_config.json")))
-        batfile.write('timeout /t 2\n')
+        batfile.write('START "" /B %s run -c %s\n' % (self.v2rayproc, path.join(self.MeileConfig.BASEDIR, "v2ray_config.json")))
+        batfile.write('timeout /t 1\n')
         batfile.write('CD "%s"\n' % self.MeileConfig.BASEBINDIR)
-        batfile.write('START /B %s -device tun://tun00 -proxy socks5://127.0.0.1:1080"\n' % self.tunproc)
-        batfile.write('timeout /t 5\n')
+        batfile.write('START "" /B %s -device tun://tun00 -proxy socks5://127.0.0.1:1080"\n' % self.tunproc)
+        #v2ray = [path.join(self.MeileConfig.BASEBINDIR, "V2Ray", self.v2rayproc), "run", "-c",path.join(self.MeileConfig.BASEDIR, "v2ray_config.json")]
+        #Popen(v2ray, shell=False)
+        #sleep(3)
+        #tun2socks = [path.join(self.MeileConfig.BASEBINDIR, self.tunproc), "-device", "tun://tun00", "-proxy", "socks5://127.0.0.1:1080"]
+        #Popen(tun2socks, shell=False)
+        #sleep(5)
+        batfile.write('timeout /t 3\n')
         batfile.write('netsh interface ip set address "tun00" static address=10.10.10.2 mask=255.255.255.0 gateway=10.10.10.1\n')
         batfile.write('netsh interface ip set dns name="tun00" static 1.1.1.1\n')
         batfile.write('route add %s %s metric 5\n' % (SERVER, default_gateway))
@@ -65,10 +81,11 @@ class V2RayHandler():
         
         self.v2ray_script = routes_bat
         
-        multiprocessing.get_context('spawn')
-        fork = Process(target=self.fork_v2ray)
-        fork.run()
-        sleep(1.5)
+        #multiprocessing.get_context('spawn')
+        #fork = Process(target=self.fork_v2ray)
+        #fork.run()
+        self.fork_v2ray()
+        
         return True
     
     def kill_daemon(self):
@@ -93,6 +110,7 @@ class V2RayHandler():
         batfile.write('timeout /t 3\n')
         batfile.write('TASKKILL /F /IM tun2socks.exe\n')
         batfile.write('TASKKILL /F /IM v2ray.exe\n')
+        batfile.write('TASKKILL /F /IM cmd.exe\n')
         batfile.flush()
         batfile.close()
         

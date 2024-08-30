@@ -52,6 +52,7 @@ setup(
         "toml",
         "netifaces",
         "btcpay",
+        "pywin32",
 
         # "cosmpy",  # Replaced by sentinel-python-sdk + mospy
 
