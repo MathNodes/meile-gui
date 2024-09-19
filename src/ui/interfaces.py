@@ -92,7 +92,8 @@ class SelectableRecycleGridLayout(FocusBehavior, LayoutSelectionBehavior,
 class ContinentMap(MapView):
     pass
 
-class DisplayPic(CircularElevationBehavior, ButtonBehavior, FitImage):
+#class DisplayPic(CircularElevationBehavior, ButtonBehavior, FitImage):
+class DisplayPic(ButtonBehavior, FitImage):
     pass
 
 class ClickableTextFieldRoundCC(MDRelativeLayout):

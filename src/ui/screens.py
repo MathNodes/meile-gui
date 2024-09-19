@@ -20,7 +20,7 @@ from adapters.DNSCryptproxy import HandleDNSCryptProxy as dcp
 from helpers.helpers import format_byte_size
 from helpers.bandwidth import compute_consumed_data, compute_consumed_hours, init_GetConsumedWhileConnected, GetConsumedWhileConnected
 
-from kivy.properties import BooleanProperty, StringProperty, ColorProperty
+from kivy.properties import BooleanProperty, StringProperty, ColorProperty, NumericProperty
 from kivy.uix.screenmanager import Screen, SlideTransition
 from kivymd.uix.button import MDFlatButton, MDRaisedButton,MDTextButton, MDFillRoundFlatButton
 from kivymd.uix.dialog import MDDialog
@@ -41,7 +41,7 @@ from kivy.uix.carousel import Carousel
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivymd.uix.anchorlayout import MDAnchorLayout
-
+from kivy.app import App
 
 import requests
 from requests.auth import HTTPBasicAuth
@@ -747,10 +747,12 @@ class MainWindow(Screen):
 
         CTTagsSorted = sorted(CountryTreeTags)
         #print(CTTagsSorted)
+        i = 0
         for tag in CTTagsSorted:
             for ctree in CountryTree:
                 if tag == ctree.tag:
-                    self.add_country_rv_data(self.build_node_data(ctree))
+                    self.add_country_rv_data(self.build_node_data(ctree), i)
+                    i += 1
 
 
     def build_node_data(self, ncountry):
@@ -810,13 +812,14 @@ class MainWindow(Screen):
 
 
 
-    def add_country_rv_data(self, NodeCountries):
+    def add_country_rv_data(self, NodeCountries, index):
         self.ids.rv.data.append(
             {
                 "viewclass"      : "RecycleViewCountryRow",
                 "num_text"       : str(NodeCountries['number']) + " Nodes",
                 "country_text"   : NodeCountries['country'],
-                "source_image"   : self.MeileConfig.resource_path(NodeCountries['flagloc'])
+                "source_image"   : self.MeileConfig.resource_path(NodeCountries['flagloc']),
+                "index"          : index
             },
         )
 
@@ -2030,15 +2033,29 @@ class PlanScreen(MDBoxLayout):
 '''
 This is the card class of the country cards on the left panel
 '''
-class RecycleViewCountryRow(MDCard,RectangularElevationBehavior,ThemableBehavior, HoverBehavior):
+#class RecycleViewCountryRow(MDCard,RectangularElevationBehavior,ThemableBehavior, HoverBehavior):
+class RecycleViewCountryRow(MDCard,ThemableBehavior, HoverBehavior):
     text = StringProperty()
+    
+    index = NumericProperty()
 
     def on_enter(self, *args):
-        self.md_bg_color = get_color_from_hex(MeileColors.ROW_HOVER)
+        app = App.get_running_app()
+        screen = app.root.get_screen(WindowNames.MAIN_WINDOW)
+        rv_data = screen.ids.rv.data
+        print(rv_data[self.index])
+        print(self.country_text)
+        if rv_data[self.index]["country_text"] == self.country_text:
+            self.md_bg_color = get_color_from_hex(MeileColors.ROW_HOVER)
         Window.set_system_cursor('hand')
 
     def on_leave(self, *args):
-        self.md_bg_color = get_color_from_hex(MeileColors.DIALOG_BG_COLOR)
+        app = App.get_running_app()
+        screen = app.root.get_screen(WindowNames.MAIN_WINDOW)
+        rv_data = screen.ids.rv.data
+        
+        if rv_data[self.index]["country_text"] == self.country_text:
+            self.md_bg_color = get_color_from_hex(MeileColors.DIALOG_BG_COLOR)
         Window.set_system_cursor('arrow')
 
     def switch_window(self, country):
