@@ -32,7 +32,7 @@ from kivy.utils import get_color_from_hex
 from kivy.metrics import dp
 from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.behaviors import HoverBehavior
-from kivymd.theming import ThemableBehavior
+#from kivymd.theming import ThemableBehavior
 from kivy.core.window import Window
 from kivymd.uix.behaviors.elevation import RectangularElevationBehavior
 from kivy_garden.mapview import MapMarkerPopup, MapView, MapSource
@@ -2034,17 +2034,14 @@ class PlanScreen(MDBoxLayout):
 This is the card class of the country cards on the left panel
 '''
 #class RecycleViewCountryRow(MDCard,RectangularElevationBehavior,ThemableBehavior, HoverBehavior):
-class RecycleViewCountryRow(MDCard,ThemableBehavior, HoverBehavior):
+class RecycleViewCountryRow(MDCard,HoverBehavior):
     text = StringProperty()
-    
     index = NumericProperty()
-
+    
     def on_enter(self, *args):
         app = App.get_running_app()
         screen = app.root.get_screen(WindowNames.MAIN_WINDOW)
         rv_data = screen.ids.rv.data
-        print(rv_data[self.index])
-        print(self.country_text)
         if rv_data[self.index]["country_text"] == self.country_text:
             self.md_bg_color = get_color_from_hex(MeileColors.ROW_HOVER)
         Window.set_system_cursor('hand')
@@ -2057,7 +2054,7 @@ class RecycleViewCountryRow(MDCard,ThemableBehavior, HoverBehavior):
         if rv_data[self.index]["country_text"] == self.country_text:
             self.md_bg_color = get_color_from_hex(MeileColors.DIALOG_BG_COLOR)
         Window.set_system_cursor('arrow')
-
+    
     def switch_window(self, country):
         print(country)
         mw       = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
