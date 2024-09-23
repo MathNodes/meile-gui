@@ -6,6 +6,7 @@ import binascii
 import random
 import re
 import platform
+import random
 from time import sleep 
 from os import path, remove, chdir  
 from urllib.parse import urlparse
@@ -30,6 +31,7 @@ import bech32
 from bip_utils import Bip39SeedGenerator, Bip44, Bip44Coins
 from sentinel_protobuf.sentinel.subscription.v2.msg_pb2 import MsgCancelRequest, MsgCancelResponse
 
+import mospy
 from mospy import Transaction
 from sentinel_protobuf.cosmos.base.v1beta1.coin_pb2 import Coin
 from sentinel_sdk.sdk import SDKInstance
@@ -43,8 +45,8 @@ import hashlib
 from requests.exceptions import ReadTimeout
 
 MeileConfig = MeileGuiConfig()
-gsudo       = path.join(MeileConfig.BASEBINDIR, 'gsudo.exe')
-v2ray_tun2routes_connect_bash = path.join(ConfParams.KEYRINGDIR, "bin/routes.sh")
+sentinel_connect_bash = MeileConfig.resource_path("bin/sentinel-connect.sh")
+v2ray_tun2routes_connect_bash = MeileConfig.resource_path("bin/tun2routes.sh")
 
 
 class HandleWalletFunctions():
@@ -437,13 +439,14 @@ class HandleWalletFunctions():
         
         if ubalance < amount_required:
             return(False, f"Balance is too low, required: {round(amount_required / IBCTokens.SATOSHI, 4)}{token_ibc[DENOM][1:]}")
-
+            
+        gas = random.randint(ConfParams.GAS, 314159)
+        
         tx_params = TxParams(
-            # denom="udvpn",  # TODO: from ConfParams
-            # fee_amount=20000,  # TODO: from ConfParams
-            gas=ConfParams.GAS,
+            denom=DENOM,
+            gas=gas,
             gas_multiplier=ConfParams.GASADJUSTMENT,
-            fee_amount=ConfParams.FEE
+            #fee_amount=ConfParams.FEE
         )
         
         tx = sdk.nodes.SubscribeToNode(
@@ -569,11 +572,13 @@ class HandleWalletFunctions():
                 self.connected = {"v2ray_pid" : None,  "result": False, "status" : message}
                 print(self.connected)
                 return
-            
+        
+        gas = random.randint(ConfParams.GAS, 314159)
+        
         tx_params = TxParams(
-            gas=ConfParams.GAS,
+            gas=gas,
             gas_multiplier=ConfParams.GASADJUSTMENT,
-            fee_amount=ConfParams.FEE
+            #fee_amount=ConfParams.FEE
         )
         
         # End active sessions if any. INACTIVE_PENDING is moot
@@ -648,7 +653,7 @@ class HandleWalletFunctions():
             # data length must be 17 bytes...
             #key = base64.b64encode(bytes(0x01) + uid_16b.bytes).decode("utf-8")
             key = base64.b64encode(uid_16b).decode('utf-8')
-         # Sometime we get a random "code":4,"message":"invalid signature ...``
+        # Sometime we get a random "code":4,"message":"invalid signature ...``
         for _ in range(0, 10):  # bumped as 3 wasn't enough
             sk = ecdsa.SigningKey.from_string(sdk._account.private_key, curve=ecdsa.SECP256k1, hashfunc=hashlib.sha256)
 
@@ -763,21 +768,32 @@ class HandleWalletFunctions():
                 if pltfrm == Arch.LINUX:
                     child = pexpect.spawn(f"pkexec sh -c 'ip link delete {iface}; wg-quick up {config_file}'")
                     child.expect(pexpect.EOF)
+                elif pltfrm == Arch.OSX:
+                    connectBASH = [sentinel_connect_bash]
+                    proc2 = subprocess.Popen(connectBASH)
+                    proc2.wait(timeout=30)
+                    pid2 = proc2.pid
+                    proc_out, proc_err = proc2.communicate()
+                '''
                 elif pltfrm == Arch.WINDOWS:
                     wgup = [gsudo, MeileConfig.WIREGUARD_BIN, "/installtunnelservice", config_file]
                     wg_process = subprocess.Popen(wgup)
                     sleep(15)
-                elif pltfrm == Arch.OSX:
-                    pass
+                '''
+                
                     
 
-                if psutil.net_if_addrs().get(iface):
+                if psutil.net_if_addrs().get(iface) or psutil.net_if_addrs().get("utun3"):
                     self.connected = {"v2ray_pid" : None,  "result": True, "status" : iface}
                     conndesc.write("Checking network connection...\n")
                     conndesc.flush()
                     self.get_ip_address()
                     conndesc.close()
                     return
+                else:
+                    self.connected = {"v2ray_pid" : None,  "result": False, "status" : "Error bringing up wireguard interface"}
+                    return
+                    
             else:  # v2ray
                 chdir(MeileConfig.BASEBINDIR)
                 conndesc.write("Bringing up V2Ray socks tunnel...\n")
@@ -841,12 +857,19 @@ class HandleWalletFunctions():
                 tuniface = False
                 v2ray_handler = V2RayHandler(f"{v2ray_tun2routes_connect_bash} up")
                 v2ray_handler.start_daemon()
-                sleep(15)
-
-                for iface in psutil.net_if_addrs().keys():
-                    if "tun" in iface:
+                sleep(14)
+                
+                if pltfrm != Arch.OSX:
+                    for iface in psutil.net_if_addrs().keys():
+                        if "tun" in iface:
+                            tuniface = True
+                            break
+                else:
+                    if psutil.net_if_addrs().get("utun123"):
+                        self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid, "result": True, "status" : "utun123"}
+                        print(self.connected)
                         tuniface = True
-                        break
+                    
 
                 if tuniface is True:
                     self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid, "result": True, "status" : tuniface}
@@ -872,7 +895,7 @@ class HandleWalletFunctions():
                     chdir(MeileConfig.BASEDIR)
                     return
         chdir(MeileConfig.BASEDIR)
-        self.connected = {"v2ray_pid" : None,  "result": False, "status": "boh"}
+        self.connected = {"v2ray_pid" : None,  "result": False, "status": "Bad response or user cancelled."}
         return   
            
 

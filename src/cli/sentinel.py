@@ -27,7 +27,7 @@ from builtins import AttributeError
 
 MeileConfig = MeileGuiConfig()
 gsudo       = path.join(MeileConfig.BASEBINDIR, 'gsudo.exe')
-v2ray_tun2routes_connect_bash = path.join(ConfParams.KEYRINGDIR, "bin/routes.sh")
+v2ray_tun2routes_connect_bash = path.join(ConfParams.BASEBINDIR, "tun2routes.sh")
 
 class NodeTreeData():
     BackupNodeTree = None
@@ -568,7 +568,7 @@ def disconnect(v2ray):
             chdir(MeileConfig.BASEDIR)  
             
             return proc1.returncode, False
-        else:
+        elif pltfrm == Arch.LINUX:
             CONFFILE = path.join(ConfParams.KEYRINGDIR, 'wg99.conf')
             wg_downCMD = ['pkexec', 'env', 'PATH=%s' % ConfParams.PATH, 'wg-quick', 'down', CONFFILE]
                 
@@ -577,5 +577,15 @@ def disconnect(v2ray):
         
             proc_out,proc_err = proc1.communicate()
             return proc1.returncode, False
+        
+        else:
+            wg_downCMD = [path.join(ConfParams.BASEBINDIR,'sentinel-disconnect.sh')]
+                
+            proc1 = Popen(wg_downCMD)
+            proc1.wait(timeout=30)
+        
+            proc_out,proc_err = proc1.communicate()
+            return proc1.returncode, False
+            
 
     

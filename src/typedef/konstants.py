@@ -25,8 +25,9 @@ class ConfParams():
     GASPRICE         = "0.314159udvpn"
     #GASPRICE         = "0.2tsent"
     GASADJUSTMENT    = 1.25
+    #GASADJ_NONDVPN   = 0.44444
     GAS              = 175000
-    FEE              = 31416
+    FEE              = 0
     DEFAULT_SUB      = 5
     DEFAULT_SUBS     = [5 * i for i in range(1, 6)]
 
@@ -545,8 +546,8 @@ class IBCTokens():
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
-    VERSION = "v2.0.0-beta5.1"
-    BUILD = "1726810350798"
+    VERSION = "v2.0.0-beta3.2"
+    BUILD = "17270719813"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"
     FailedHealthCheck = "Failed Sentinel Health Check"

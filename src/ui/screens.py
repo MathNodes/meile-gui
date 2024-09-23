@@ -421,7 +421,7 @@ class MainWindow(Screen):
     def ping(self):
         UUID = Meile.app.root.get_screen(WindowNames.PRELOAD).UUID
         try:
-            uuid_dict = {'uuid' : "%s" % UUID, 'os' : "w"}
+            uuid_dict = {'uuid' : "%s" % UUID, 'os' : "m"}
             Request = HTTPRequests.MakeRequest(TIMEOUT=3)
             http = Request.hadapter()
             ping = http.post(HTTParams.SERVER_URL + HTTParams.API_PING_ENDPOINT, json=uuid_dict)
@@ -1174,7 +1174,7 @@ class MainWindow(Screen):
             md_bg_color=get_color_from_hex(MeileColors.BLACK),
             buttons=[
                 MDFlatButton(
-                    text="Okay",
+                    text="OK",
                     theme_text_color="Custom",
                     text_color=Meile.app.theme_cls.primary_color,
                     on_release=self.get_ip_address,

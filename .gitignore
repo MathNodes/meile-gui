@@ -160,7 +160,10 @@ cython_debug/
 #.idea/
 
 # Custom
-scrtsxx.py
-scrtxxs.py
+#scrtsxx.py
+#scrtxxs.py
 
 src/meile_gui.egg-info/
+
+# OS X
+.DS_Store

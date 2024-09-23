@@ -1,1 +1,0 @@
-dpkg-deb --build --root-owner-group meile-gui-v1.8.0_ubuntu2004_amd64
