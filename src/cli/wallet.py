@@ -385,7 +385,9 @@ class HandleWalletFunctions():
         if tx.get("log", None) is None:
             try: 
                 tx_response = sdk.nodes.wait_for_tx(tx["hash"], timeout=25)
-            except mospy.exceptions.clients.TransactionTimeout as e:
+            except (mospy.exceptions.clients.TransactionTimeout,
+                    mospy.exceptions.clients.NodeException,
+                    mospy.exceptions.clients.NodeTimeoutException)  as e:
                 return (False, {'hash' : None, 'success' : False, 'message' : "GRPC Error"})
             
             tx_height = tx_response.get("txResponse", {}).get("height", 0) if isinstance(tx_response, dict) else tx_response.tx_response.height
@@ -429,7 +431,8 @@ class HandleWalletFunctions():
             status_code = e.code()
             
             if status_code == StatusCode.NOT_FOUND:
-                return(False, "Wallet not found on blockchain. Please verify you have sent coins to your wallet to activate it. Then try your subscription again")
+                self.returncode = (False, "Wallet not found on blockchain. Please verify you have sent coins to your wallet to activate it. Then try your subscription again")
+                return
         balance = self.get_balance(sdk._account.address)
         
         amount_required = float(DEPOSIT.replace(DENOM, ""))
@@ -438,7 +441,8 @@ class HandleWalletFunctions():
         ubalance = balance.get(token_ibc[DENOM][1:], 0) * IBCTokens.SATOSHI
         
         if ubalance < amount_required:
-            return(False, f"Balance is too low, required: {round(amount_required / IBCTokens.SATOSHI, 4)}{token_ibc[DENOM][1:]}")
+            self.returncode = (False, f"Balance is too low, required: {round(amount_required / IBCTokens.SATOSHI, 4)}{token_ibc[DENOM][1:]}")
+            return
             
         gas = random.randint(ConfParams.GAS, 314159)
         
@@ -459,23 +463,29 @@ class HandleWalletFunctions():
         
         if tx.get("log", None) is not None:
             print(tx["log"])
-            return(False, tx["log"])
+            self.returncode = (False, tx["log"])
+            return
 
         if tx.get("hash", None) is not None:
             try: 
                 tx_response = sdk.nodes.wait_for_tx(tx["hash"], timeout=25)
-            except mospy.exceptions.clients.TransactionTimeout as e:
+            except (mospy.exceptions.clients.TransactionTimeout,
+                    mospy.exceptions.clients.NodeException,
+                    mospy.exceptions.clients.NodeTimeoutException)  as e:
                 print(str(e))
-                return(False, "GRPC Error")
+                self.returncode = (False, "GRPC Error")
+                return
             
             print(tx_response)
             subscription_id = search_attribute(
                 tx_response, "sentinel.node.v2.EventCreateSubscription", "id"
             )
             if subscription_id:
-                return (True, subscription_id)
+                self.returncode = (True, subscription_id)
+                return
 
-        return(False, "Tx error")
+        self.returncode = (False, "Tx error")
+        return
         
     def DetermineDenom(self, deposit):
         for key,value in IBCTokens.IBCUNITTOKEN.items():
@@ -534,7 +544,9 @@ class HandleWalletFunctions():
         if tx.get("log", None) is None:
             try: 
                 tx_response = sdk.plans.wait_for_tx(tx["hash"], timeout=25)
-            except mospy.exceptions.clients.TransactionTimeout as e:
+            except (mospy.exceptions.clients.TransactionTimeout,
+                    mospy.exceptions.clients.NodeException,
+                    mospy.exceptions.clients.NodeTimeoutException)  as e:
                 print(str(e))
                 return {'hash' : "0x0", 'success' : False, 'message' : "GRPC Error"}
             tx_height = tx_response.get("txResponse", {}).get("height", 0) if isinstance(tx_response, dict) else tx_response.tx_response.height
@@ -610,7 +622,9 @@ class HandleWalletFunctions():
        
         try: 
             tx_response = sdk.sessions.wait_for_tx(tx["hash"], timeout=25)
-        except mospy.exceptions.clients.TransactionTimeout as e:
+        except (mospy.exceptions.clients.TransactionTimeout,
+                mospy.exceptions.clients.NodeException,
+                mospy.exceptions.clients.NodeTimeoutException)  as e:
             print(str(e))
             conndesc.write("GRPC Error... Exiting")
             conndesc.flush()

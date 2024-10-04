@@ -32,6 +32,6 @@ else
 	route delete -net 128.0.0.0/1 198.18.0.1
 	route delete -net 198.18.0.0/15 198.18.0.1
 	ifconfig utun123 198.18.0.1 198.18.0.1 down
-	pkill -9 v2ray
 	pkill -9 tun2socks
+	pkill -9 v2ray
 fi

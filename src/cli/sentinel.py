@@ -10,6 +10,7 @@ import time
 from urllib.parse import urlparse
 import copy
 import random
+from copy import deepcopy
 
 from treelib import  Tree
 from treelib.exceptions import DuplicatedNodeIdError
@@ -32,6 +33,7 @@ v2ray_tun2routes_connect_bash = path.join(ConfParams.BASEBINDIR, "tun2routes.sh"
 class NodeTreeData():
     BackupNodeTree = None
     NodeTree       = None
+    SubResult      = None
     NodeScores     = {}
     NodeLocations  = {}
     NodeTypes      = {}
@@ -493,7 +495,7 @@ class NodeTreeData():
                                             })
             k += 1
 
-        return SubsFinalResult
+        self.SubResult = deepcopy(SubsFinalResult)
 
 
     def GetQuota(self, id):

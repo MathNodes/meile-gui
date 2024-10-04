@@ -343,7 +343,6 @@ class MainWindow(Screen):
     dnscrypt = False
     warpd_disconnected = True
     NodeTree = None
-    SubResult = None
     MeileConfig = None
     ConnectedNode = None
     menu = None
@@ -1257,7 +1256,7 @@ class MainWindow(Screen):
             pass
 
         # Clear out Subscriptions
-        self.SubResult = None
+        self.NodeTree.SubResult = None
         # Redraw Map Pins
         self.AddCountryNodePins(False)
         self.refresh_country_recycler()
@@ -1676,49 +1675,74 @@ class WalletScreen(Screen):
 
 
 class SubscriptionScreen(MDBoxLayout):
-    SubResult = None
 
     def __init__(self, node_tree,  **kwargs):
         super(SubscriptionScreen, self).__init__()
         self.NodeTree = node_tree
 
         self.get_config(None)
-        self.add_loading_popup("Loading...")
+        self.cd = ConnectionDialog()
+        self.set_conn_dialog(self.cd, "Loading Subscriptions...")
 
         if self.address:
-            Clock.schedule_once(self.subs_callback, 0.25)
+            self.subs_callback(None)
             return
         else:
             self.remove_loading_widget(None)
             self.sub_address_error()
             return
-
+    '''
     def GetSubscriptions(self):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         
-        '''
-        Make this a background thread and not on main loop
-        Remove ThreadWtithResult dep.
-        Add loading bar or spinning wheel
-        '''
         try:
-            thread = ThreadWithResult(target=self.NodeTree.get_subscriptions, args=(self.address,))
-            thread.start()
-            thread.join()
-            mw.SubResult = thread.result
+            print("Staring thread...")
+            #self.NodeTree.get_subscriptions(self.address)
+            
+            t = Thread(target=lambda: self.NodeTree.get_subscriptions(self.address))
+            t.start()
+            l = 13
+            pool = l*100
+            inc = float(1/pool)
+            while t.is_alive():
+                yield 0.0165
+                self.cd.ids.pb.value += inc
+            print("Thread completed.")
+            self.cd.ids.pb.value = 1
+            #thread = ThreadWithResult(target=self.NodeTree.get_subscriptions, args=(self.address,))
+            #thread.start()
+            #thread.join()
+            
+            mw.NodeTree.SubResult = deepcopy(self.NodeTree.SubResult)
+            print(mw.NodeTree.SubResult)
         except Exception as e:
             print(str(e))
             return None
-
+    '''
+        
     @delayable
     def subs_callback(self, dt):
         yield 0.314
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
 
-        if not mw.SubResult:
-            self.GetSubscriptions()
+        if mw.NodeTree.SubResult is None:
+            try:
+                t = Thread(target=lambda: self.NodeTree.get_subscriptions(self.address))
+                t.start()
+                l = 13
+                pool = l*100
+                inc = float(1/pool)
+                while t.is_alive():
+                    yield 0.0165
+                    self.cd.ids.pb.value += inc
+                self.cd.ids.pb.value = 1
+                mw.NodeTree.SubResult = deepcopy(self.NodeTree.SubResult)
+                print(mw.NodeTree.SubResult)
+            except Exception as e:
+                print(str(e))
+                return None
         try:
-            for sub in mw.SubResult:
+            for sub in mw.NodeTree.SubResult:
                 self.add_sub_rv_data(sub)
         except TypeError:
             print("Connection Error")
@@ -1729,7 +1753,7 @@ class SubscriptionScreen(MDBoxLayout):
                
         # Auto-connect from NodeCarousel if sub found
         if mw.SubCaller: 
-            for sub in mw.SubResult:
+            for sub in mw.NodeTree.SubResult:
                 print(sub)
                 if mw.NodeCarouselData['address'] == sub[NodeKeys.FinalSubsKeys[2]]:
                     mw.SelectedSubscription['id']        = sub[NodeKeys.FinalSubsKeys[0]]
@@ -1812,9 +1836,14 @@ class SubscriptionScreen(MDBoxLayout):
         self.address = CONFIG['wallet'].get("address")
 
     @mainthread
-    def add_loading_popup(self, title_text):
+    def set_conn_dialog(self, cd, title):
         self.dialog = None
-        self.dialog = MDDialog(title=title_text,md_bg_color=get_color_from_hex(MeileColors.BLACK))
+        self.dialog = MDDialog(
+                        title=title,
+                        type="custom",
+                        content_cls=cd,
+                        md_bg_color=get_color_from_hex(MeileColors.BLACK),
+                    )
         self.dialog.open()
 
     @mainthread
