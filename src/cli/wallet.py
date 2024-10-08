@@ -337,14 +337,16 @@ class HandleWalletFunctions():
             token_ibc = {k: v for k, v in IBCTokens.IBCUNITTOKEN.items()}
             DENOM = token_ibc.get(DENOM, DENOM)
 
+
+        gas = random.randint(ConfParams.GAS-50000, 314159)
+        
         tx_params = TxParams(
             # denom="udvpn",  # TODO: from ConfParams
             # fee_amount=20000,  # TODO: from ConfParams
-            gas=ConfParams.GAS,
+            gas=gas,
             gas_multiplier=ConfParams.GASADJUSTMENT,
-            fee_amount=ConfParams.FEE
         )
-
+        
         tx = Transaction(
             account=sdk._account,
             fee=Coin(denom=tx_params.denom, amount=f"{tx_params.fee_amount}"),
@@ -356,12 +358,9 @@ class HandleWalletFunctions():
         tx.add_msg(
             tx_type='transfer',
             sender=sdk._account,
-            receipient=MEILE_PLAN_WALLET,
-            # receipient=sdk._account.address,  # TODO: debug send to myself
+            recipient=MEILE_PLAN_WALLET,
             amount=amount_required,
             denom=DENOM,
-            # amount=1000000,  # TODO: debug
-            # denom="udvpn"  # TODO: debug
         )
         # # Required before each tx of we get account sequence mismatch, expected 945, got 944: incorrect account sequence
         sdk._client.load_account_data(account=sdk._account)

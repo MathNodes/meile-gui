@@ -70,7 +70,7 @@ class HTTParams():
     ]
     GRPC = "grpc.ungovernable.dev:443"
     GRPCS = [GRPC] + [
-        "grc.mathnodes.com:443",
+        "grpc.mathnodes.com:443",
         "grpc.dvpn.me:443",
         "grpc.noncompliant.network:443",
         "grpc.ungovernable.dev:443",
@@ -546,8 +546,8 @@ class IBCTokens():
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
-    VERSION = "v2.0.0-beta3.2"
-    BUILD = "17270719813"
+    VERSION = "2.0.0-beta3.3"
+    BUILD = "17283639173"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"
     FailedHealthCheck = "Failed Sentinel Health Check"
