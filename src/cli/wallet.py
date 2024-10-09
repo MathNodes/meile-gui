@@ -344,13 +344,15 @@ class HandleWalletFunctions():
             # token_ibc (k: v) is a dict like: {'uscrt': 'ibc/31FEE1A2A9F9C01113F90BD0BBCCE8FD6BBB8585FAF109A2101827DD1D5B95B8', 'uatom': 'ibc/A8C2D23A1E6
             token_ibc = {k: v for k, v in IBCTokens.IBCUNITTOKEN.items()}
             DENOM = token_ibc.get(DENOM, DENOM)
-
+        
+        gas = random.randint(ConfParams.GAS-50000, 314159)
+        
         tx_params = TxParams(
             # denom="udvpn",  # TODO: from ConfParams
             # fee_amount=20000,  # TODO: from ConfParams
-            gas=ConfParams.GAS,
+            gas=gas,
             gas_multiplier=ConfParams.GASADJUSTMENT,
-            fee_amount=ConfParams.FEE
+            #fee_amount=ConfParams.FEE
         )
 
         tx = Transaction(
@@ -364,7 +366,7 @@ class HandleWalletFunctions():
         tx.add_msg(
             tx_type='transfer',
             sender=sdk._account,
-            receipient=MEILE_PLAN_WALLET,
+            recipient=MEILE_PLAN_WALLET,
             # receipient=sdk._account.address,  # TODO: debug send to myself
             amount=amount_required,
             denom=DENOM,
