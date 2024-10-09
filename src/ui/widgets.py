@@ -19,7 +19,7 @@ from kivymd.uix.gridlayout import MDGridLayout
 from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.list import OneLineIconListItem
 from kivymd.uix.behaviors import HoverBehavior
-from kivymd.theming import ThemableBehavior
+#from kivymd.theming import ThemableBehavior
 from kivyoav.delayed import delayable
 
 from functools import partial
@@ -37,6 +37,7 @@ import time
 from requests.auth import HTTPBasicAuth
 import json
 import webbrowser
+import sys
 
 from typedef.konstants import IBCTokens, HTTParams, MeileColors, NodeKeys
 from typedef.win import CoinsList, WindowNames
@@ -1473,9 +1474,16 @@ Node Version: %s
         KEYNAME = CONFIG['wallet'].get('keyname', '')
         
         hwf = HandleWalletFunctions()
-        returncode = hwf.subscribe(KEYNAME, sub_node[1], deposit, sub_node[3], sub_node[4])
+        t = Thread(target=lambda: hwf.subscribe(KEYNAME, sub_node[1], deposit, sub_node[3], sub_node[4]))
+        t.start()
+
+        while t.is_alive():
+            print(".", end="")
+            sys.stdout.flush()
+            yield 0.5
+        #returncode = hwf.subscribe(KEYNAME, sub_node[1], deposit, sub_node[3], sub_node[4])
         
-        if returncode[0]:
+        if hwf.returncode[0]:
             self.dialog.dismiss()
             self.dialog = MDDialog(
                 title="Successful!",
@@ -1543,7 +1551,7 @@ Node Version: %s
         self.dialog.dismiss()
         self.dialog = None
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
-        mw.SubResult = None
+        mw.NodeTree.SubResult = None
         
         if mw.SubCaller:
             mw.switch_to_sub_window()
@@ -1559,7 +1567,7 @@ Node Version: %s
             print(str(e))
             self.dialog = None
 
-class WalletCoinRow(MDCard,ThemableBehavior, HoverBehavior):
+class WalletCoinRow(MDCard, HoverBehavior):
     logo = StringProperty('')
     text = StringProperty('')
     
@@ -1570,7 +1578,7 @@ class RowContainer(MDBoxLayout):
 '''
 Recycler of the node cards after clicking country
 '''
-class RecycleViewRow(MDCard,ThemableBehavior, HoverBehavior):
+class RecycleViewRow(MDCard, HoverBehavior):
     dialog = None
     node_data = ObjectProperty()
     #node_types = ObjectProperty()
@@ -1611,7 +1619,7 @@ class RecycleViewRow(MDCard,ThemableBehavior, HoverBehavior):
         mw.carousel.add_widget(NodeWidget)
         mw.carousel.load_slide(NodeWidget)
 
-class MDMapCountryButton(MDFillRoundFlatButton,ThemableBehavior, HoverBehavior):
+class MDMapCountryButton(MDFillRoundFlatButton, HoverBehavior):
     def on_enter(self, *args):
         self.md_bg_color = get_color_from_hex("#fcb711")
         Window.set_system_cursor('arrow')

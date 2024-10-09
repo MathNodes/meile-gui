@@ -9,6 +9,7 @@ from datetime import datetime,timedelta
 import time
 from urllib.parse import urlparse
 import copy
+from copy import deepcopy
 import random
 
 from treelib import  Tree
@@ -31,6 +32,7 @@ v2ray_tun2routes_connect_bash = path.join(ConfParams.KEYRINGDIR, "bin/routes.sh"
 class NodeTreeData():
     BackupNodeTree = None
     NodeTree       = None
+    SubResult      = None
     NodeScores     = {}
     NodeLocations  = {}
     NodeTypes      = {}
@@ -492,7 +494,7 @@ class NodeTreeData():
                                             })
             k += 1
 
-        return SubsFinalResult
+        self.SubResult = deepcopy(SubsFinalResult)
 
 
     def GetQuota(self, id):
