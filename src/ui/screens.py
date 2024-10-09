@@ -58,6 +58,8 @@ from threading import Thread
 from unidecode import unidecode
 from datetime import datetime
 import json
+from treelib.exceptions import NodeIDAbsentError
+
 
 class WalletRestore(Screen):
     screemanager = ObjectProperty()
@@ -1694,41 +1696,7 @@ class SubscriptionScreen(MDBoxLayout):
             self.remove_loading_widget(None)
             self.sub_address_error()
             return
-
-    def GetSubscriptions(self):
-        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         
-        
-        
-        '''
-        Make this a background thread and not on main loop
-        Remove ThreadWtithResult dep.
-        Add loading bar or spinning wheel
-        '''
-        try:
-            print("Staring thread...")
-            #self.NodeTree.get_subscriptions(self.address)
-            
-            t = Thread(target=lambda: self.NodeTree.get_subscriptions(self.address))
-            t.start()
-            l = 13
-            pool = l*100
-            inc = float(1/pool)
-            while t.is_alive():
-                yield 0.0165
-                self.cd.ids.pb.value += inc
-            print("Thread completed.")
-            self.cd.ids.pb.value = 1
-            #thread = ThreadWithResult(target=self.NodeTree.get_subscriptions, args=(self.address,))
-            #thread.start()
-            #thread.join()
-            
-            mw.NodeTree.SubResult = deepcopy(self.NodeTree.SubResult)
-            print(mw.NodeTree.SubResult)
-        except Exception as e:
-            print(str(e))
-            return None
-
     @delayable
     def subs_callback(self, dt):
         yield 0.314
@@ -2024,8 +1992,8 @@ class PlanScreen(MDBoxLayout):
         http = Request.hadapter()
 
         req = http.get(HTTParams.PLAN_API + HTTParams.API_PLANS, auth=HTTPBasicAuth(scrtsxx.PLANUSERNAME, scrtsxx.PLANPASSWORD))
-        plan_data = req.json()
-        print(plan_data)
+        plan_data = req.json() if req.ok and req.status_code != 404 else []
+        #print(plan_data)
 
         # Prevent plan parsing when wallet is not initialized
         user_enrolled_plans = []
@@ -2036,9 +2004,25 @@ class PlanScreen(MDBoxLayout):
             user_enrolled_plans = req2.json() if req2.ok and req2.status_code != 404 else []
 
         for pd in plan_data:
-            self.build_plans( pd, user_enrolled_plans)
+            req3 = http.get(HTTParams.PLAN_API + HTTParams.API_PLANS_NODES % pd['uuid'], auth=HTTPBasicAuth(scrtsxx.PLANUSERNAME, scrtsxx.PLANPASSWORD))
+            plan_nodes = req3.json() if req3.ok and req3.status_code != 404 else []
+            no_of_nodes = len(plan_nodes)
+            countries = []
+            no_of_countries = 0
+            for node in plan_nodes:
+                node_data = self.mw.NodeTree.NodeTree.get_node(node)
+                try: 
+                    if node_data.data['Country'] in countries:
+                        continue
+                    else:
+                        no_of_countries += 1
+                        countries.append(node_data.data['Country'])
+                except AttributeError as e:
+                    print(f"{node}: {str(e)}")
+                    continue
+            self.build_plans( pd, user_enrolled_plans, no_of_nodes, no_of_countries)
 
-    def build_plans(self, data, plans):
+    def build_plans(self, data, plans, no_of_nodes, no_of_countries):
         plan = None
         for p in plans:
             if data['uuid'] == p['uuid']:
@@ -2051,8 +2035,8 @@ class PlanScreen(MDBoxLayout):
         item = PlanAccordion(
             node=PlanRow(
                 plan_name=data['plan_name'],
-                num_of_nodes=str(45),
-                num_of_countries=str(30),
+                num_of_nodes=str(no_of_nodes),
+                num_of_countries=str(no_of_countries),
                 cost=str(round(float(data['plan_price'] / IBCTokens.SATOSHI),2)) + data['plan_denom'],
                 logo_image=data['logo'],
                 uuid=data['uuid'],

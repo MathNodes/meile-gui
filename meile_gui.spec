@@ -9,7 +9,7 @@ binaries = []
 hiddenimports = []
 tmp_ret = collect_all('bip_utils')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
-tmp_ret = collect_all('mospy_wallet')
+tmp_ret = collect_all('mospy')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 tmp_ret = collect_all('sentinel_protobuf')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
