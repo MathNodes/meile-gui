@@ -30,7 +30,7 @@ from kivy.utils import get_color_from_hex
 from kivy.metrics import dp
 from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.behaviors import HoverBehavior
-from kivymd.theming import ThemableBehavior
+#from kivymd.theming import ThemableBehavior
 from kivy.core.window import Window
 #from kivymd.uix.behaviors.elevation import RectangularElevationBehavior
 from kivy_garden.mapview import MapMarkerPopup, MapView, MapSource
@@ -1969,7 +1969,7 @@ class PlanScreen(MDBoxLayout):
 '''
 This is the card class of the country cards on the left panel
 '''
-class RecycleViewCountryRow(MDCard,ThemableBehavior, HoverBehavior):
+class RecycleViewCountryRow(MDCard, HoverBehavior):
     text = StringProperty()
 
     def on_enter(self, *args):
