@@ -19,13 +19,12 @@ from adapters.ChangeDNS import ChangeDNS
 from helpers.helpers import format_byte_size
 from helpers.bandwidth import compute_consumed_data, compute_consumed_hours, init_GetConsumedWhileConnected, GetConsumedWhileConnected
 
-from kivy.properties import BooleanProperty, StringProperty, ColorProperty
+from kivy.properties import BooleanProperty, StringProperty, ColorProperty,ObjectProperty, NumericProperty
 from kivy.uix.screenmanager import Screen, SlideTransition
 from kivymd.uix.button import MDFlatButton, MDRaisedButton,MDTextButton, MDFillRoundFlatButton
 from kivymd.uix.dialog import MDDialog
 from kivy.clock import Clock, mainthread
 from kivyoav.delayed import delayable
-from kivy.properties import ObjectProperty
 from kivymd.uix.card import MDCard
 from kivy.utils import get_color_from_hex
 from kivy.metrics import dp
@@ -33,7 +32,7 @@ from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.behaviors import HoverBehavior
 from kivymd.theming import ThemableBehavior
 from kivy.core.window import Window
-from kivymd.uix.behaviors.elevation import RectangularElevationBehavior
+#from kivymd.uix.behaviors.elevation import RectangularElevationBehavior
 from kivy_garden.mapview import MapMarkerPopup, MapView, MapSource
 from kivymd.toast import toast
 from kivy.uix.carousel import Carousel
@@ -41,6 +40,7 @@ from kivymd.uix.boxlayout import MDBoxLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivymd.uix.anchorlayout import MDAnchorLayout
 
+from kivy.app import App
 
 import requests
 from requests.auth import HTTPBasicAuth
@@ -1969,7 +1969,7 @@ class PlanScreen(MDBoxLayout):
 '''
 This is the card class of the country cards on the left panel
 '''
-class RecycleViewCountryRow(MDCard,RectangularElevationBehavior,ThemableBehavior, HoverBehavior):
+class RecycleViewCountryRow(MDCard,ThemableBehavior, HoverBehavior):
     text = StringProperty()
 
     def on_enter(self, *args):

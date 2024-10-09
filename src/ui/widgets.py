@@ -20,7 +20,6 @@ from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.list import OneLineIconListItem
 from kivymd.uix.behaviors import HoverBehavior
 from kivymd.theming import ThemableBehavior
-from kivymd.uix.behaviors.elevation import RectangularElevationBehavior
 from kivyoav.delayed import delayable
 
 from functools import partial
@@ -1560,7 +1559,7 @@ Node Version: %s
             print(str(e))
             self.dialog = None
 
-class WalletCoinRow(MDCard,RectangularElevationBehavior,ThemableBehavior, HoverBehavior):
+class WalletCoinRow(MDCard,ThemableBehavior, HoverBehavior):
     logo = StringProperty('')
     text = StringProperty('')
     
@@ -1571,7 +1570,7 @@ class RowContainer(MDBoxLayout):
 '''
 Recycler of the node cards after clicking country
 '''
-class RecycleViewRow(MDCard,RectangularElevationBehavior,ThemableBehavior, HoverBehavior):
+class RecycleViewRow(MDCard,ThemableBehavior, HoverBehavior):
     dialog = None
     node_data = ObjectProperty()
     #node_types = ObjectProperty()

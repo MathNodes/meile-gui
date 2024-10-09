@@ -68,7 +68,7 @@ class HTTParams():
     ]
     GRPC = "grpc.ungovernable.dev:443"
     GRPCS = [GRPC] + [
-        "grc.mathnodes.com:443",
+        "grpc.mathnodes.com:443",
         "grpc.dvpn.me:443",
         "grpc.noncompliant.network:443",
         "grpc.ungovernable.dev:443",

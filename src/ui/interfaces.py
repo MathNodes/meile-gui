@@ -13,7 +13,7 @@ from kivymd.uix.button import MDFlatButton, MDRaisedButton, MDIconButton
 from kivymd.uix.tooltip import MDTooltip
 from kivy.uix.switch import Switch
 from kivy_garden.mapview.view import MapView
-from kivymd.uix.behaviors import RoundedRectangularElevationBehavior, CircularElevationBehavior, RectangularRippleBehavior, CircularRippleBehavior
+from kivymd.uix.behaviors import RoundedRectangularElevationBehavior, RectangularRippleBehavior, CircularRippleBehavior
 from kivymd.uix.fitimage.fitimage import FitImage
 from kivy.uix.behaviors import ButtonBehavior 
 from kivymd.uix.textfield.textfield import MDTextField
@@ -92,7 +92,7 @@ class SelectableRecycleGridLayout(FocusBehavior, LayoutSelectionBehavior,
 class ContinentMap(MapView):
     pass
 
-class DisplayPic(CircularElevationBehavior, ButtonBehavior, FitImage):
+class DisplayPic(ButtonBehavior, FitImage):
     pass
 
 class ClickableTextFieldRoundCC(MDRelativeLayout):
