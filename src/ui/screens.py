@@ -1718,13 +1718,16 @@ class SubscriptionScreen(MDBoxLayout):
             except Exception as e:
                 print(str(e))
                 return None
-        try:
-            for sub in mw.NodeTree.SubResult:
-                self.add_sub_rv_data(sub)
-        except TypeError:
-            print("Connection Error")
-            self.remove_loading_widget(None)
-            return    
+        #try:
+        print(mw.NodeTree.SubResult)
+        for sub in mw.NodeTree.SubResult:
+            print(sub)
+            self.add_sub_rv_data(sub)
+        #except TypeError as e:
+        #    print(str(e))
+        #    print("Connection Error")
+        #    self.remove_loading_widget(None)
+        #    return    
         
         self.remove_loading_widget(None)
                
@@ -1774,7 +1777,7 @@ class SubscriptionScreen(MDBoxLayout):
         '''
               
         node_data = self.NodeTree.NodeTree.get_node(node[NodeKeys.FinalSubsKeys[2]])
-        if node_data:
+        if node_data.data:
             NodeTypeText = node_data.data['ISP Type'] if node_data.data['ISP Type'] else "Unknown" 
             nscore = node_data.data['Score']
             votes = node_data.data['Votes']
