@@ -1770,7 +1770,7 @@ class SubscriptionScreen(MDBoxLayout):
         '''
               
         node_data = self.NodeTree.NodeTree.get_node(node[NodeKeys.FinalSubsKeys[2]])
-        if node_data:
+        if node_data and node_data.data:
             NodeTypeText = node_data.data['ISP Type'] if node_data.data['ISP Type'] else "Unknown" 
             nscore = node_data.data['Score']
             votes = node_data.data['Votes']
