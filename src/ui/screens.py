@@ -16,6 +16,7 @@ from fiat import fiat_interface
 from cli.v2ray import V2RayHandler
 from fiat.stripe_pay import scrtsxx
 from adapters.ChangeDNS import ChangeDNS
+from adapters.DNSCryptproxy import HandleDNSCryptProxy as dcp
 from helpers.helpers import format_byte_size
 from helpers.bandwidth import compute_consumed_data, compute_consumed_hours, init_GetConsumedWhileConnected, GetConsumedWhileConnected
 
@@ -379,6 +380,7 @@ class MainWindow(Screen):
     
     SubCaller = False
     PlanID = None
+    dnscrypt = False
 
 
 
@@ -684,8 +686,38 @@ class MainWindow(Screen):
             self.disconnect_from_node()
             sys.exit(0)
     
+    @delayable
     def start_dnscrypt(self):
-        pass
+        dnsproxy = dcp()
+        if not self.dnscrypt:
+            self.add_loading_popup("Starting DNSCryptProxy with user selected resolvers...")
+            yield 1.3
+            t = Thread(target=lambda: dnsproxy.dnscrypt(state=True))
+            t.start()
+            
+            while t.is_alive():
+                print(".", end="")
+                yield 0.5
+                
+            self.dnscrypt = True    
+            self.remove_loading_widget(None)
+            self.display_dnscrypt_success(dnsproxy.dnscrypt_pid)
+            self.ids.doh.opacity = 1
+                
+        else:
+            self.add_loading_popup("Terminating DNSCryptProxy...")
+            yield 1.3
+            
+            t = Thread(target=lambda: dnsproxy.dnscrypt(state=False))
+            t.start()
+            
+            while t.is_alive():
+                print(".", end="")
+                yield 0.5
+                
+            self.dnscrypt = False
+            self.remove_loading_widget(None)
+            self.ids.doh.opacity = 0
     
     def build(self, dt):
         # Check to build Map
@@ -863,6 +895,23 @@ class MainWindow(Screen):
                     text="Okay",
                     theme_text_color="Custom",
                     text_color=(1,1,1,1),
+                    on_release=self.remove_loading_widget
+                ),
+            ],
+        )
+        self.dialog.open()
+        
+    @mainthread
+    def display_dnscrypt_success(self, pid):
+
+        self.dialog = MDDialog(
+            text=f"You are now using DoH (DNS-over-HTTPS) and your DNS traffic is encrypted from prying eyes. {pid}",
+            md_bg_color=get_color_from_hex(MeileColors.BLACK),
+            buttons=[
+                MDRaisedButton(
+                    text="Okay",
+                    theme_text_color="Custom",
+                    text_color=MeileColors.BLACK,
                     on_release=self.remove_loading_widget
                 ),
             ],
