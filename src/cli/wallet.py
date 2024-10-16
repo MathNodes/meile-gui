@@ -870,7 +870,7 @@ class HandleWalletFunctions():
                 tuniface = False
                 v2ray_handler = V2RayHandler(f"{v2ray_tun2routes_connect_bash} up")
                 v2ray_handler.start_daemon()
-                sleep(15)
+                sleep(3)
 
                 for iface in psutil.net_if_addrs().keys():
                     if "tun" in iface:

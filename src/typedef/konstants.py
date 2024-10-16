@@ -546,7 +546,7 @@ class IBCTokens():
 class TextStrings():
     dash = "-"
     VERSION = "v2.0.0-beta6.3"
-    BUILD = "1728964286501"
+    BUILD = "1729056534853"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"
     FailedHealthCheck = "Failed Sentinel Health Check"
@@ -589,6 +589,9 @@ class NodeKeys():
     FinalSubsKeys = [SubsInfoKeys[0], NodesInfoKeys[0],SubsInfoKeys[4],SubsInfoKeys[5], SubsInfoKeys[7], NodesInfoKeys[4], "Allocated", "Consumed", NodesInfoKeys[13],SubsInfoKeys[2],SubsInfoKeys[6]]
     NodeVersions  = [str(item).zfill(3) for item in range(70,1000)]
     Nodetypes = ['residential', 'business', 'hosting', 'edu']
+
+
+
 
 
 
