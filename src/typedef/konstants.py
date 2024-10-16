@@ -13,12 +13,11 @@ class ConfParams():
     USER             = environ['SUDO_USER'] if 'SUDO_USER' in environ else environ['USER']
     PATH             = environ['PATH']
     KEYRINGDIR       = path.join(path.expanduser('~' + USER), '.meile-gui')
-    BASEDIR          = path.join(path.expanduser('~' + USER), '.sentinelcli')
+    BASEBINDIR       = path.join(KEYRINGDIR, "bin")
     WALLETINFO       = path.join(KEYRINGDIR, "infos.txt")
     SUBSCRIBEINFO    = path.join(KEYRINGDIR, "subscribe.infos")
     USUBSCRIBEINFO   = path.join(KEYRINGDIR, "unsubscribe.infos")
     CONNECTIONINFO   = path.join(KEYRINGDIR, "connection.infos")
-    WIREGUARD_STATUS = path.join(BASEDIR, "status.json")
     CHAINID          = 'sentinelhub-2'
     #CHAINID          = 'testnet'
     GASPRICE         = "0.314159udvpn"
