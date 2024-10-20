@@ -170,6 +170,13 @@ WindowManager:
 <TooltipMDFlatButton@MDFlatButton+MDTooltip>
 <ToolTipMDIconButton@MDIconButton+MDTooltip>
 
+<MapCenterButton@MDIconButton+MDTooltip>    
+    pos_hint: {"x" : .015, "center_y": .975}
+    tooltip_text: "Center"
+    icon: "image-filter-center-focus"
+    theme_text_color: "Custom"
+    text_color: get_color_from_hex(MeileColors.MEILE)
+
 <ProtectedLabel@MDLabel>
     id: protected
     font_size: sp(26)
@@ -1135,12 +1142,14 @@ WindowManager:
             AnchorLayout:
                 anchor_x: "right"
                 TooltipMDIconButton:
-                    icon: "spider-web"
-                    #tooltip_text: "Map"
+                    icon: "server-network"
+                    tooltip_text: "Nodes"
                     #size_hint_x: .01
                     theme_text_color: "Custom"
                     text_color: get_color_from_hex(MeileColors.MEILE)
-                    on_press: root.switch_carousel()
+                    on_press: 
+                        self.on_leave()
+                        root.switch_carousel()
             HSeparator:
             HSeparator:
             MDLabel:
@@ -1846,6 +1855,7 @@ WindowManager:
             text: str(int(slider1.value)) + " Months"
             size_hint_x: None
             width: 90
+            font_size: sp(12)
 
     MDBoxLayout:
         orientation: "horizontal"

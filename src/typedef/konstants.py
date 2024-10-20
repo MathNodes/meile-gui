@@ -19,7 +19,6 @@ class ConfParams():
     SUBSCRIBEINFO    = path.join(KEYRINGDIR, "subscribe.infos")
     USUBSCRIBEINFO   = path.join(KEYRINGDIR, "unsubscribe.infos")
     CONNECTIONINFO   = path.join(KEYRINGDIR, "connection.infos")
-    WIREGUARD_STATUS = path.join(BASEDIR, "status.json")
     CHAINID          = 'sentinelhub-2'
     #CHAINID          = 'testnet'
     GASPRICE         = "0.314159udvpn"
@@ -546,8 +545,8 @@ class IBCTokens():
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
-    VERSION = "2.0.0-beta3.3"
-    BUILD = "17285904263"
+    VERSION = "2.0.0-beta3.4"
+    BUILD = "17294671503"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"
     FailedHealthCheck = "Failed Sentinel Health Check"

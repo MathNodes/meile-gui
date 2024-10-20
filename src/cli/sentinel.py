@@ -454,7 +454,13 @@ class NodeTreeData():
         #print(SubsResult)
         for snaddress in SubsResult[NodeKeys.SubsInfoKeys[4]]:
             try:
-                NodeData = self.NodeTree.get_node(snaddress).data
+                
+                if snaddress:
+                    NodeData = self.NodeTree.get_node(snaddress).data
+                else:
+                    k += 1
+                    continue
+                
                 if NodeData is None:
                     raise AttributeError
             except AttributeError:
