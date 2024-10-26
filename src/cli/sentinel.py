@@ -22,6 +22,7 @@ from adapters import HTTPRequests
 from cli.v2ray import V2RayHandler
 from helpers import helpers
 
+import mospy
 from sentinel_sdk.sdk import SDKInstance
 from sentinel_sdk.types import PageRequest, Status
 from builtins import AttributeError
@@ -32,7 +33,7 @@ v2ray_tun2routes_connect_bash = path.join(ConfParams.KEYRINGDIR, "bin/routes.sh"
 class NodeTreeData():
     BackupNodeTree = None
     NodeTree       = None
-    SubResult      = None
+    SubResult      = []
     NodeScores     = {}
     NodeLocations  = {}
     NodeTypes      = {}
@@ -423,8 +424,28 @@ class NodeTreeData():
         self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
         grpcaddr, grpcport = self.GRPC.split(":")
         
-        sdk = SDKInstance(grpcaddr, int(grpcport), ssl=True)
-        subscriptions = sdk.subscriptions.QuerySubscriptionsForAccount(ADDRESS, pagination=PageRequest(limit=1000))
+        try:
+            sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key, ssl=True)
+        except grpc._channel._InactiveRpcError as e:
+            status_code = e.code()
+            
+            if status_code == StatusCode.NOT_FOUND:
+                self.message = "Wallet not found on blockchain. Please verify you have sent coins to your wallet to activate it. Then try your subscription again"
+                
+            else:
+                self.message = "gRPC Error!"
+            return
+                
+        try:        
+            subscriptions = sdk.subscriptions.QuerySubscriptionsForAccount(ADDRESS, pagination=PageRequest(limit=1000))
+        except (mospy.exceptions.clients.TransactionTimeout,
+                mospy.exceptions.clients.NodeException,
+                mospy.exceptions.clients.NodeTimeoutException) as e:
+            print(str(e))
+            self.message = "Error connecting to gRPC. Try again or switch gRPCs"
+            return
+            
+            
 
         # TODO: Casting all to str is required?
         SubsNodesInfo = [{
@@ -453,7 +474,14 @@ class NodeTreeData():
         #print(SubsResult)
         for snaddress in SubsResult[NodeKeys.SubsInfoKeys[4]]:
             try:
-                NodeData = self.NodeTree.get_node(snaddress).data
+                if snaddress:
+                    NodeData = self.NodeTree.get_node(snaddress).data
+                else:
+                    k += 1
+                    continue
+                
+                if NodeData is None:
+                    raise AttributeError
             except AttributeError:
                 SubsFinalResult.append({
                                             NodeKeys.FinalSubsKeys[0] : SubsResult[NodeKeys.SubsInfoKeys[0]][k],
@@ -477,7 +505,7 @@ class NodeTreeData():
 
             else:
                 nodeQuota = self.GetQuota(SubsResult[NodeKeys.SubsInfoKeys[0]][k])
-
+            print(nodeQuota)
             if nodeQuota:
                 SubsFinalResult.append({
                                             NodeKeys.FinalSubsKeys[0] : SubsResult[NodeKeys.SubsInfoKeys[0]][k],
@@ -505,6 +533,7 @@ class NodeTreeData():
         
         sdk = SDKInstance(grpcaddr, int(grpcport), ssl=True)
         allocations = sdk.subscriptions.QueryAllocations(subscription_id=int(id))
+        print(allocations)
 
         for allocation in allocations:
             if int(allocation.granted_bytes) == int(allocation.utilised_bytes):
