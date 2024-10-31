@@ -16,6 +16,7 @@ from kivymd.uix.dialog import MDDialog
 from kivymd.uix.button import MDFlatButton, MDRaisedButton, MDFillRoundFlatButton
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.gridlayout import MDGridLayout
+from kivymd.uix.floatlayout import MDFloatLayout
 from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.list import OneLineIconListItem
 from kivymd.uix.behaviors import HoverBehavior
@@ -355,6 +356,7 @@ class PlanSubscribeContent(BoxLayout):
         ]
         self.menu = MDDropdownMenu(
             caller=self.ids.drop_item,
+            background_color=get_color_from_hex(MeileColors.BLACK),
             items=menu_items,
             position="center",
             width_mult=4,
@@ -376,9 +378,13 @@ class PlanSubscribeContent(BoxLayout):
 
 
     def set_item(self, text_item):
+        print("Setting item...")
         self.ids.drop_item.set_item(text_item)
         self.ids.deposit.text = self.parse_coin_deposit(text_item)
-        self.menu.dismiss()
+        try: 
+            self.menu.dismiss()
+        except TypeError as e:
+            print(str(e))
 
     def parse_coin_deposit(self, mu_coin):
         # Save a copy, so we can edit the value without update the ui
@@ -412,6 +418,41 @@ class PlanSubscribeContent(BoxLayout):
     def on_checkbox_active(self, pay_with: str, checkbox, value):
         if value is True:
             self.pay_with = pay_with
+            if pay_with == "now":
+                self.ids.drop_item.text = "firo"
+                menu_items = [
+                    {
+                        "viewclass": "IconListItem",
+                        "icon": "circle-multiple",
+                        "text": "firo",
+                        "height": dp(56),
+                        "on_release": lambda x="firo": self.set_item(x),
+                    },
+                    {
+                        "viewclass": "IconListItem",
+                        "icon": "circle-multiple",
+                        "text": "beam",
+                        "height": dp(56),
+                        "on_release": lambda x="beam": self.set_item(x),
+                    }  
+                ]
+                self.menu.items = menu_items
+                self.set_item("firo")
+                #self.menu.bind()
+            else:
+                self.ids.drop_item.text = "dvpn"
+                menu_items = [
+                    {
+                        "viewclass": "IconListItem",
+                        "icon": "circle-multiple",
+                        "text": f"{i}",
+                        "height": dp(56),
+                        "on_release": lambda x=f"{i}": self.set_item(x),
+                    } for i in CoinsList.ibc_mu_coins
+                ]
+                self.menu.items = menu_items
+                self.set_item("dvpn")
+                #self.menu.bind()
             
 class ProcessingSubDialog(BoxLayout):
     moniker = StringProperty()
@@ -735,7 +776,7 @@ class PlanRow(MDGridLayout):
                        id,
                        plan_id):
         super(PlanRow, self).__init__()
-        self.stop_event =Event()
+        self.stop_event = Event()
         self.plan_name = plan_name
         self.num_of_nodes = num_of_nodes
         self.num_of_countries = num_of_countries
@@ -923,8 +964,25 @@ class PlanRow(MDGridLayout):
                 #     amt= int(float(deposit) * IBCTokens.SATOSHI),
                 #     denom= mu_coin
                 # )
-        elif subscribe_dialog.pay_with == "pirate":
-            self.pay_meile_plan_with_pirate(usd)
+        elif subscribe_dialog.pay_with == "now":
+            if self.dialog:
+                self.dialog.dismiss()
+            self.dialog = None
+            self.dialog = MDDialog(
+                    title="Waiting for invoice to be paid...",
+                    md_bg_color=get_color_from_hex(MeileColors.BLACK),
+                    buttons=[
+                        MDFlatButton(
+                            text="CANCEL",
+                            theme_text_color="Custom",
+                            text_color=get_color_from_hex(MeileColors.MEILE),
+                            on_release=self.cancel_payment
+                        ),
+                    ]
+                )
+            self.dialog.open()
+            yield 0.6
+            self.start_payment_thread_now(usd)
         else:
             MDDialog(text="[color=#FF0000]Please select a payment option[/color]").open()
 
@@ -1038,10 +1096,18 @@ class PlanRow(MDGridLayout):
             print("Payment process was canceled.")
             Clock.schedule_once(lambda dt: self.update_ui_after_payment(True), 0)
         
-        
+    def pay_meile_plan_with_now(self, usd):
+        print(f"Method: 'pay_meile_plan_with_pirate', usd: {usd}")
+            
     def start_payment_thread(self, usd):
         self.stop_event.clear()
         self.invoice_thread = Thread(target=lambda: self.pay_meile_plan_with_btcpay(usd))
+        self.invoice_thread.start()
+        Clock.schedule_interval(self.check_thread_status, 0.1)
+        
+    def start_payment_thread_now(self, usd):
+        self.stop_event.clear()
+        self.invoice_thread = Thread(target=lambda: self.pay_meile_plan_with_now(usd))
         self.invoice_thread.start()
         Clock.schedule_interval(self.check_thread_status, 0.1)
         
@@ -1070,6 +1136,7 @@ class PlanRow(MDGridLayout):
                 self.dialog = None
             self.dialog = MDDialog(
                 title=f"Invoice {self.invoice_result['id']} has been marked as paid! Finishing up...",
+                md_bg_color=get_color_from_hex(MeileColors.BLACK),
             )
             self.dialog.open()
 
@@ -1079,9 +1146,6 @@ class PlanRow(MDGridLayout):
     def call_on_success_subscription(self, dt):
         if self.on_success_subscription:
             self.on_success_subscription()
-        
-    def pay_meile_plan_with_pirate(self, usd):
-        print(f"Method: 'pay_meile_plan_with_pirate', usd: {usd}")
 
     def reparse_coin_deposit(self, deposit):
         for k,v in CoinsList.ibc_coins.items():
@@ -1551,7 +1615,7 @@ Node Version: %s
         self.dialog.dismiss()
         self.dialog = None
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
-        mw.NodeTree.SubResult = None
+        mw.NodeTree.SubResult = []
         
         if mw.SubCaller:
             mw.switch_to_sub_window()
@@ -1603,7 +1667,7 @@ class RecycleViewRow(MDCard, HoverBehavior):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         Meile.app.root.transition = SlideTransition(direction = "down")
         Meile.app.root.current = WindowNames.MAIN_WINDOW
-        mw.SubResult = None
+        mw.SubResult = []
     
     def closeDialog(self, inst):
         try:
@@ -1631,3 +1695,19 @@ class MDMapCountryButton(MDFillRoundFlatButton, HoverBehavior):
         self.md_bg_color = get_color_from_hex(MeileColors.BLACK)
         Window.set_system_cursor('arrow')
             
+class LoadingSpinner(MDFloatLayout):
+    angle = NumericProperty(0)
+    def __init__(self, **kwargs):
+        super(LoadingSpinner, self).__init__(**kwargs)
+        anim = Animation(angle = 360, duration=2) 
+        anim += Animation(angle = 360, duration=2)
+        anim.repeat = True
+        anim.start(self)
+        
+    def on_angle(self, item, angle):
+        if angle == 360:
+            item.angle = 0
+            
+    def get_spinner_image(self):
+        Config = MeileGuiConfig()
+        return Config.resource_path(MeileColors.SPINNER)

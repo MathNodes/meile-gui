@@ -23,6 +23,7 @@ from cli.v2ray import V2RayHandler
 from helpers import helpers
 
 import mospy
+import grpc
 from sentinel_sdk.sdk import SDKInstance
 from sentinel_sdk.types import PageRequest, Status
 from builtins import AttributeError
@@ -425,7 +426,7 @@ class NodeTreeData():
         grpcaddr, grpcport = self.GRPC.split(":")
         
         try:
-            sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key, ssl=True)
+            sdk = SDKInstance(grpcaddr, int(grpcport), ssl=True)
         except grpc._channel._InactiveRpcError as e:
             status_code = e.code()
             

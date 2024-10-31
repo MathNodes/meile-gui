@@ -788,6 +788,7 @@ WindowManager:
     MDGridLayout:
         rows: 2
         size_hint_x: 1
+        id: grid
         MDGridLayout:
             cols: 7
             height: 25
@@ -1797,6 +1798,7 @@ WindowManager:
                 MDLabel:
                     text: "Wallet"
                     size_hint: (None, 1.75)
+                    font_size: sp(12)
                 TooltipMDIconButton:
                     icon: "help-circle"
                     tooltip_text: "Pay with Wallet in DVPN or IBC enabled coins"
@@ -1808,6 +1810,7 @@ WindowManager:
                 MDLabel:
                     text: "BTCPay"
                     size_hint: (None, 1.75)
+                    font_size: sp(12)
                 TooltipMDIconButton:
                     icon: "help-circle"
                     tooltip_text: "Pay an invoice in BTC, BTC (lightning), XMR, LTC, DASH, or DOGE"
@@ -1815,14 +1818,15 @@ WindowManager:
             MDBoxLayout:
                 orientation: "horizontal"
                 Check:
-                    on_active: root.on_checkbox_active("pirate", *args)
+                    on_active: root.on_checkbox_active("now", *args)
                 MDLabel:
-                    text: "Pirate Chain"
+                    text: "NOWPayments"
                     size_hint: (None, 1.75)
+                    font_size: sp(12)
                 TooltipMDIconButton:
                     icon: "help-circle"
-                    #tooltip_text: "Pay using Pirate chain. Note: processing for ARRR payments could take up to 72 hours"
-                    tooltip_text: "Not currently available. We are working on it... Stay tuned..."
+                    #tooltip_text: "Pay using FIRO & BEAM"
+                    tooltip_text: "Pay using FIRO & BEAM. Note: Payments takes between 5 and 10 minutes to process."
 
 
     MDBoxLayout:
@@ -1867,7 +1871,7 @@ WindowManager:
         MDDropDownItem:
             id: drop_item
             pos_hint: {'center_x': .5, 'center_y': .5}
-            text: "udvpn"
+            text: "dvpn"
             on_release: root.menu.open()
                    
 <ProcessingSubDialog>
@@ -2458,3 +2462,19 @@ WindowManager:
     text_size: self.width, None
     halign: "center"
     valign: "middle"
+    
+<LoadingSpinner>:
+    canvas.before:
+        PushMatrix
+        Rotate:
+            angle: root.angle
+            axis: 0, 0, 1
+            origin: root.center
+    canvas.after:
+        PopMatrix
+
+    Image:
+        source: root.get_spinner_image()
+        size_hint: None, None
+        size: 40, 40
+        pos_hint: {'center_x': 0.5, 'center_y': 0.5}
