@@ -1,5 +1,5 @@
 from geography.continents import OurWorld
-from ui.interfaces import Tab, LatencyContent, TooltipMDIconButton, ConnectionDialog, ProtectedLabel, IPAddressTextField, ConnectedNode, QuotaPct,BandwidthBar,BandwidthLabel
+from ui.interfaces import Tab, LatencyContent, TooltipMDIconButton, ConnectionDialog, ProtectedLabel, IPAddressTextField, ConnectedNode, QuotaPct,BandwidthBar,BandwidthLabel, MapCenterButton
 from typedef.win import WindowNames
 from cli.sentinel import  NodeTreeData
 from typedef.konstants import NodeKeys, TextStrings, MeileColors, HTTParams, IBCTokens, ConfParams
@@ -794,6 +794,9 @@ class MainWindow(Screen):
             self.map_widget_1 = IPAddressTextField()
             self.map_widget_2 = ConnectedNode()
             self.map_widget_3 = ProtectedLabel()
+            self.recenter     = MapCenterButton()
+
+            self.recenter.on_release = self.recenter_map
 
             layout.add_widget(self.MeileMap)
             layout.add_widget(self.map_widget_1)
@@ -802,7 +805,8 @@ class MainWindow(Screen):
             layout.add_widget(bw_label)
             layout.add_widget(self.quota)
             layout.add_widget(self.quota_pct)
-
+            layout.add_widget(self.recenter)
+            
             self.quota.value = 0
             self.quota_pct.text = "0%"
 
@@ -1265,6 +1269,10 @@ class MainWindow(Screen):
         self.AddCountryNodePins(False)
         self.refresh_country_recycler()
         self.remove_loading_widget(None)
+        
+    def recenter_map(self):
+        self.MeileMap.zoom = 2
+        self.MeileMap.center_on(0.0, 0.0)
         
     def get_continent_coordinates(self, c):
         loc = self.MeileLand.ContinentLatLong[c]
@@ -1777,7 +1785,7 @@ class SubscriptionScreen(MDBoxLayout):
         '''
               
         node_data = self.NodeTree.NodeTree.get_node(node[NodeKeys.FinalSubsKeys[2]])
-        if node_data.data:
+        if node_data and node_data.data:
             NodeTypeText = node_data.data['ISP Type'] if node_data.data['ISP Type'] else "Unknown" 
             nscore = node_data.data['Score']
             votes = node_data.data['Votes']

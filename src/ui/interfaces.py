@@ -38,6 +38,9 @@ class ProtectedLabel(MDLabel):
         Config = MeileGuiConfig()
         return Config.resource_path(MeileColors.QR_FONT_FACE)
 
+class MapCenterButton(MDIconButton, MDTooltip):
+    pass
+
 class ToolTipMDIconButton(MDIconButton, MDTooltip):
     pass
 

@@ -14,12 +14,10 @@ class ConfParams():
     KEYRINGDIR       = path.join(path.expanduser('~'), '.meile-gui')
     BASEBINDIR       = path.join(KEYRINGDIR, "bin")
     GSUDO            = path.join(BASEBINDIR, "gsudo.exe")
-    BASEDIR          = path.join(path.expanduser('~'), '.sentinelcli')
     WALLETINFO       = path.join(KEYRINGDIR, "infos.txt")
     SUBSCRIBEINFO    = path.join(KEYRINGDIR, "subscribe.infos")
     USUBSCRIBEINFO   = path.join(KEYRINGDIR, "unsubscribe.infos")
     CONNECTIONINFO   = path.join(KEYRINGDIR, "connection.infos")
-    WIREGUARD_STATUS = path.join(BASEDIR, "status.json")
     CHAINID          = 'sentinelhub-2'
     #CHAINID          = 'testnet'
     GASPRICE         = "0.314159udvpn"
