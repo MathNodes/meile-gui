@@ -36,7 +36,13 @@ foreach ($interface in $interfaces) {
         pass
     
     def fork_dnscrypt(self):
-        dnscryptcmd = f"gsudo.exe powershell.exe {self.dnscryptcmd}"
+        pltfrm = platform.system()
+        
+        if pltfrm == Arch.WINDOWS:
+            dnscryptcmd = f"gsudo.exe powershell.exe {self.dnscryptcmd}"   
+        else:
+            dnscryptcmd = f"{self.dnscryptcmd}"
+            
         process = subprocess.Popen(dnscryptcmd, shell=True,close_fds=True)
         print(f"DNSCryptProxy: {process.pid}")
         self.dnscrypt_pid = process.pid
@@ -44,11 +50,11 @@ foreach ($interface in $interfaces) {
     # Be sure to run in thread or concurent.futures
     def dnscrypt(self, state: bool = False):
         chdir(ConfParams.BASEBINDIR)
-        dnscrypt_proxy_executable = path.join(ConfParams.BASEBINDIR, 'dnscrypt-proxy.exe')
-        dnscrypt_proxy_config = path.join(ConfParams.KEYRINGDIR, 'dnscrypt-proxy.toml')
         pltfrm = platform.system()
         if state == True:
             if pltfrm == Arch.WINDOWS:
+                dnscrypt_proxy_executable = path.join(ConfParams.BASEBINDIR, 'dnscrypt-proxy.exe')
+                dnscrypt_proxy_config = path.join(ConfParams.KEYRINGDIR, 'dnscrypt-proxy.toml')
                 dnscrypt_start = self.dnscrypt_start % (dnscrypt_proxy_executable, dnscrypt_proxy_config)
                 dns_bat = self.dns_ps1 % (self.lh, self.lhv6)
                 print(dns_bat)
@@ -66,8 +72,26 @@ foreach ($interface in $interfaces) {
                 fork.run()
                 sleep(1.5)
 
+            elif pltfrm == Arch.OSX:
+                dnscrypt_proxy_executable = path.join(ConfParams.BASEBINDIR, 'dnscrypt.sh')
+                dnscrypt_start = dnscrypt_proxy_executable + " up"
+                print("Startin DNScrypt-proxy...", end=' ')
+                self.dnscryptcmd = f"{dnscrypt_start}"
+                multiprocessing.get_context('spawn')
+                fork = Process(target=self.fork_dnscrypt)
+                fork.run()
+                sleep(10)
                 
-            # TODO: Linux/osx
+            else:
+                dnscrypt_proxy_executable = path.join(ConfParams.BASEBINDIR, 'run_dnscrypt.sh')
+                dnscrypt_start = dnscrypt_proxy_executable + " up"
+                print("Startin DNScrypt-proxy...", end=' ')
+                self.dnscryptcmd = f"pkexec sh -c '{dnscrypt_start}'"
+                multiprocessing.get_context('spawn')
+                fork = Process(target=self.fork_dnscrypt)
+                fork.run()
+                sleep(1.5)
+            
                 
                 
         else:
@@ -94,7 +118,27 @@ foreach ($interface in $interfaces) {
                 #dnscmd = [ConfParams.GSUDO, path.join(ConfParams.BASEBINDIR, "change_dns.bat")]
                 #process = subprocess.Popen(dnscmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 self.dnscrypt_pid = 0
-            # TODO: Linux/osx    
+                
+            elif pltfrm == Arch.OSX:
+                dnscrypt_proxy_executable = path.join(ConfParams.BASEBINDIR, 'dnscrypt.sh')
+                dnscrypt_start = dnscrypt_proxy_executable + " down"
+                print("Stopping DNScrypt-proxy...", end=' ')
+                self.dnscryptcmd = f"{dnscrypt_start}"
+                multiprocessing.get_context('spawn')
+                fork = Process(target=self.fork_dnscrypt)
+                fork.run()
+                sleep(10)
+                
+            else:
+                dnscrypt_proxy_executable = path.join(ConfParams.BASEBINDIR, 'run_dnscrypt.sh')
+                dnscrypt_start = dnscrypt_proxy_executable + " down"
+                print("Stopping DNScrypt-proxy...", end=' ')
+                self.dnscryptcmd = f"pkexec sh -c '{dnscrypt_start}'"
+                multiprocessing.get_context('spawn')
+                fork = Process(target=self.fork_dnscrypt)
+                fork.run()
+                sleep(1.5)
+            # TODO: OS/X  
             
         chdir(ConfParams.KEYRINGDIR)
                     
