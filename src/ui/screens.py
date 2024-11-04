@@ -5,7 +5,7 @@ from cli.sentinel import  NodeTreeData
 from typedef.konstants import NodeKeys, TextStrings, MeileColors, HTTParams, IBCTokens, ConfParams
 from cli.sentinel import disconnect as Disconnect
 import main.main as Meile
-from ui.widgets import WalletInfoContent, MDMapCountryButton, RatingContent, NodeRV, NodeRV2, NodeAccordion, NodeRow, NodeDetails, PlanAccordion, PlanRow, PlanDetails, NodeCarousel, SubTypeDialog, SubscribeContent
+from ui.widgets import WalletInfoContent, MDMapCountryButton, RatingContent, NodeRV, NodeRV2, NodeAccordion, NodeRow, NodeDetails, PlanAccordion, PlanRow, PlanDetails, NodeCarousel, SubTypeDialog, SubscribeContent, LoadingSpinner
 from utils.qr import QRCode
 from cli.wallet import HandleWalletFunctions
 from conf.meile_config import MeileGuiConfig
@@ -42,6 +42,7 @@ from kivymd.uix.boxlayout import MDBoxLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivymd.uix.anchorlayout import MDAnchorLayout
 from kivy.app import App
+from kivymd.uix.label.label import MDLabel
 
 import requests
 from requests.auth import HTTPBasicAuth
@@ -55,6 +56,7 @@ from shutil import rmtree
 from os import path, chdir, remove
 from save_thread_result import ThreadWithResult
 from threading import Thread
+import threading
 from unidecode import unidecode
 from datetime import datetime
 import json
@@ -1264,7 +1266,7 @@ class MainWindow(Screen):
             pass
 
         # Clear out Subscriptions
-        self.NodeTree.SubResult = None
+        self.NodeTree.SubResult = []
         # Redraw Map Pins
         self.AddCountryNodePins(False)
         self.refresh_country_recycler()
@@ -1710,7 +1712,7 @@ class SubscriptionScreen(MDBoxLayout):
         yield 0.314
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
 
-        if mw.NodeTree.SubResult is None:
+        if len(self.NodeTree.SubResult) == 0:
             try:
                 t = Thread(target=lambda: self.NodeTree.get_subscriptions(self.address))
                 t.start()
@@ -1995,7 +1997,34 @@ class NodeScreen(MDBoxLayout):
 class PlanScreen(MDBoxLayout):
     def __init__(self, **kwargs):
         super(PlanScreen, self).__init__()
+        self.PlanData       = []
+        self.TotalCountries = []
+        self.TotalNodes     = []
+        
         self.mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
+        self.label = MDLabel()
+        self.spinner = LoadingSpinner()
+        self.spinner.opacity = 1
+        self.ids.rv.add_widget(self.label)
+        self.ids.rv.add_widget(self.spinner)
+        Clock.schedule_once(self.pre_build, 1)
+        #self.build()
+    
+    def pre_build(self, *args):
+        try:
+            t = Thread(target=lambda: self.build())
+            t.start()
+            print("Running Thread...")
+            #while t.is_alive():
+            #    print(".", end="")
+            #    sys.stdout.flush()
+            #    sleep(.5)
+            
+        except Exception as e:
+            print(str(e))
+            return None
+    def build(self):
+        
         MeileConfig = MeileGuiConfig()
         CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
         wallet = CONFIG['wallet'].get('address', None)
@@ -2007,12 +2036,12 @@ class PlanScreen(MDBoxLayout):
         #print(plan_data)
 
         # Prevent plan parsing when wallet is not initialized
-        user_enrolled_plans = []
+        self.user_enrolled_plans = []
         if wallet not in [None, ""]:
             req2 = http.get(HTTParams.PLAN_API + HTTParams.API_PLANS_SUBS % wallet, auth=HTTPBasicAuth(scrtsxx.PLANUSERNAME, scrtsxx.PLANPASSWORD))
 
             # If the request failed please don't .json() or will raised a exception
-            user_enrolled_plans = req2.json() if req2.ok and req2.status_code != 404 else []
+            self.user_enrolled_plans = req2.json() if req2.ok and req2.status_code != 404 else []
 
         for pd in plan_data:
             req3 = http.get(HTTParams.PLAN_API + HTTParams.API_PLANS_NODES % pd['uuid'], auth=HTTPBasicAuth(scrtsxx.PLANUSERNAME, scrtsxx.PLANPASSWORD))
@@ -2031,8 +2060,15 @@ class PlanScreen(MDBoxLayout):
                 except AttributeError as e:
                     print(f"{node}: {str(e)}")
                     continue
-            self.build_plans( pd, user_enrolled_plans, no_of_nodes, no_of_countries)
-
+            
+            self.PlanData.append(pd)
+            self.TotalCountries.append(no_of_countries)
+            self.TotalNodes.append(no_of_nodes)
+            #self.build_plans( pd, user_enrolled_plans, no_of_nodes, no_of_countries)
+        
+        #self.finish_loading()
+        Clock.schedule_once(self.finished)
+        
     def build_plans(self, data, plans, no_of_nodes, no_of_countries):
         plan = None
         for p in plans:
@@ -2069,6 +2105,12 @@ class PlanScreen(MDBoxLayout):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         mw.carousel.remove_widget(mw.NodeWidget)
         mw.carousel.load_previous()
+        
+    def finished(self, *args):
+        self.ids.rv.remove_widget(self.label)
+        self.ids.rv.remove_widget(self.spinner)
+        for pd, nodes, countries in zip(self.PlanData, self.TotalNodes, self.TotalCountries):
+            self.build_plans( pd, self.user_enrolled_plans, nodes, countries)
 '''
 This is the card class of the country cards on the left panel
 '''

@@ -23,6 +23,7 @@ from cli.v2ray import V2RayHandler
 from helpers import helpers
 
 import mospy
+import grpc
 from sentinel_sdk.sdk import SDKInstance
 from sentinel_sdk.types import PageRequest, Status
 from builtins import AttributeError
