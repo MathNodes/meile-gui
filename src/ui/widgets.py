@@ -54,6 +54,7 @@ from adapters.ChangeDNS import ChangeDNS
 from kivy.uix.recyclegridlayout import RecycleGridLayout
 from helpers.helpers import format_byte_size
 from fiat.stripe_pay import scrtsxx
+from utils.qr import QRCode
 
 class WalletInfoContent(BoxLayout):
     def __init__(self, seed_phrase, name, address, password, **kwargs):
@@ -829,15 +830,13 @@ class PlanRow(MDGridLayout):
     
     @delayable
     def add_wallet_2plan(self, wallet, plan_id, duration, sub_id, uuid, amt, denom):
-        Request = HTTPRequests.MakeRequest(TIMEOUT=120)
-        http = Request.hadapter()
         plan_details = {"data": {"wallet" : wallet, "plan_id" : plan_id, "duration" : duration, "sub_id" : sub_id, "uuid" : uuid, "amt" : amt, "denom" : denom}}
         print(plan_details)
         SERVER_ADDRESS = scrtsxx.MEILE_PLAN_API
         API            = scrtsxx.MEILE_PLAN_ADD
         USERNAME       = scrtsxx.PLANUSERNAME
         PASSWORD       = scrtsxx.PLANPASSWORD
-        Request = HTTPRequests.MakeRequest()
+        Request = HTTPRequests.MakeRequest(TIMEOUT=120)
         http = Request.hadapter()
         try:
             print("Sending plan add request...")
@@ -955,15 +954,6 @@ class PlanRow(MDGridLayout):
 
                 on_success_subscription()
 
-                # self.add_wallet_2plan(
-                #     wallet= mw.address,
-                #     plan_id= self.plan_id,
-                #     duration= subscribe_dialog.ids.slider1.value,
-                #     sub_id= self.id,
-                #     uuid= self.uuid,
-                #     amt= int(float(deposit) * IBCTokens.SATOSHI),
-                #     denom= mu_coin
-                # )
         elif subscribe_dialog.pay_with == "now":
             if self.dialog:
                 self.dialog.dismiss()
@@ -982,7 +972,19 @@ class PlanRow(MDGridLayout):
                 )
             self.dialog.open()
             yield 0.6
-            self.start_payment_thread_now(usd)
+            self.start_payment_thread_now(usd, mu_coin)
+            
+            if self.invoice_result['success']:
+                self.dialog.dismiss()
+                self.dialog = None
+                self.dialog = MDDialog(
+                        title=f"Invoice {self.invoice_result['id']} has been marked as paid! Finishing up...",
+                        md_bg_color=get_color_from_hex(MeileColors.BLACK),
+                    )
+                self.dialog.open()
+                yield 0.6
+
+                on_success_subscription()
         else:
             MDDialog(text="[color=#FF0000]Please select a payment option[/color]").open()
 
@@ -1097,7 +1099,92 @@ class PlanRow(MDGridLayout):
             Clock.schedule_once(lambda dt: self.update_ui_after_payment(True), 0)
         
     def pay_meile_plan_with_now(self, usd):
-        print(f"Method: 'pay_meile_plan_with_pirate', usd: {usd}")
+        print(f"Method: 'pay_meile_plan_with_now', usd: {usd}")
+        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
+        buyer = mw.address
+
+        Request = HTTPRequests.MakeRequest(TIMEOUT=120)
+        http = Request.hadapter()
+
+        headers = {
+                "x-api-key": scrtsxx.NOWPAYMENTS,
+                "Content-Type": "application/json"
+                }
+
+        USD = round(usd, 2)
+
+        # Create the Invoice
+        idata = {"price_amount": USD,
+                "price_currency": "usd",
+                "pay_currency" : f"{coin}", 
+                "order_id": f"{buyer}", 
+                "order_description": "Meile Subscription Plan",
+                "cancel_url": "https://nowpayments.io",
+                }
+
+        #print(idata)
+
+        try:
+            response = http.post(HTTParams.NOWINVOICE, headers=headers, json=idata)
+            invoice_response = response.json()
+            #print(invoice_response)
+            invoiceID = invoice_response['id']
+        except Exception as e:
+            print(str(e))
+            self.ret_now = (False, "Error creating NOW invoice request")
+            return
+
+        # Create the payment request from Invoice ID    
+        pdata = {
+                  "iid": int(invoiceID),
+                  "pay_currency": f"{coin}",
+                  "order_description": "Meile Subscription Plan",
+                  "customer_email": f"{buyer}"
+                }
+
+        #print(pdata)
+
+        try:
+            response = http.post(HTTParams.NOWPAYMENT, headers=headers, json=pdata)
+            payment_response = response.json()
+            print(payment_response)
+            self.paymentID = payment_response['payment_id']
+        except Exception as e:
+            print(str(e))
+            self.ret_now = (False, "Error creating NOW payment request")
+            return
+
+
+        url = HTTParams.NOWURL % (invoiceID, self.paymentID)
+        webbrowser.open(url)    
+
+        try:
+            headers = {
+                        "x-api-key": scrtsxx.NOWPAYMENTS
+                      }
+            response = http.get(HTTParams.NOWSTATUS % self.paymentID, headers=headers)
+            self.now_status = response.json()
+        except Exception as e:
+            print(str(e))
+            self.ret_now = (False, "Error getting NOW invoice status")
+
+        while not self.stop_event.is_set():
+            sleep(10)
+            self.check_invoice_status_now()
+
+            if self.invoice_result['success']:
+                self.stop_event.set()
+                Clock.schedule_once(lambda dt: self.update_ui_after_payment(False), 0)
+                print(self.invoice_result)
+                return
+
+        if self.stop_event.is_set() and self.invoice_result['success']:
+            print("Invoice has been paid.")
+            Clock.schedule_once(lambda dt: self.update_ui_after_payment(False), 0)
+        elif self.stop_event.is_set():
+            print("Payment process was canceled.")
+            Clock.schedule_once(lambda dt: self.update_ui_after_payment(True), 0)
+        
         
             
     def start_payment_thread(self, usd):
@@ -1106,9 +1193,9 @@ class PlanRow(MDGridLayout):
         self.invoice_thread.start()
         Clock.schedule_interval(self.check_thread_status, 0.1)
         
-    def start_payment_thread_now(self, usd):
+    def start_payment_thread_now(self, usd, coin):
         self.stop_event.clear()
-        self.invoice_thread = Thread(target=lambda: self.pay_meile_plan_with_now(usd))
+        self.invoice_thread = Thread(target=lambda: self.pay_meile_plan_with_now(usd, coin))
         self.invoice_thread.start()
         Clock.schedule_interval(self.check_thread_status, 0.1)
         
@@ -1124,7 +1211,26 @@ class PlanRow(MDGridLayout):
         else:
             print(self.fetched_invoice)
             self.invoice_result = {"success" : True, "id": self.new_invoice['id'] }
-        
+    
+    def check_invoice_status_now(self):
+        print("Checking if invoice is paid...")
+        Request = HTTPRequests.MakeRequest(TIMEOUT=120)
+        http = Request.hadapter()
+
+        if self.now_status['payment_status'] != "confirming":
+            print("invoice not yet confirmed....")
+            try:
+                headers = {
+                            "x-api-key": scrtsxx.NOWPAYMENTS
+                          }
+                response = http.get(HTTParams.NOWSTATUS % self.paymentID, headers=headers)
+                self.now_status = response.json()
+                print(self.now_status)
+            except Exception as e:
+                print(str(e))
+                self.ret_now = (False, "Error getting NOW invoice status")
+        else:
+            self.invoice_result = {"success" : True, "id": self.now_status['payment_id']}
             
     def update_ui_after_payment(self, canceled):
         if canceled:

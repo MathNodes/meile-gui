@@ -115,6 +115,10 @@ class HTTParams():
     IFCONFIGURL            = "https://ifconfig.co/json"
     IPAPIDNS               = "ip-api.com"
     IPAPI                  = "http://ip-api.com/json"
+    NOWINVOICE             = "https://api.nowpayments.io/v1/invoice"
+    NOWPAYMENT             = "https://api.nowpayments.io/v1/invoice-payment"
+    NOWSTATUS              = "https://api.nowpayments.io/v1/payment/%s"
+    NOWURL                 = "https://nowpayments.io/payment?iid=%s&paymentId=%s"
     RESOLVERS              = [
                               "adfilter-adl",
                               "adfilter-adl-ipv6",
