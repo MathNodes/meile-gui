@@ -543,15 +543,6 @@ class NodeTreeData():
             else:
                 self.message = "gRPC Error!"
             return
-                
-        try:        
-            subscriptions = sdk.subscriptions.QuerySubscriptionsForAccount(ADDRESS, pagination=PageRequest(limit=1000))
-        except (mospy.exceptions.clients.TransactionTimeout,
-                mospy.exceptions.clients.NodeException,
-                mospy.exceptions.clients.NodeTimeoutException) as e:
-            print(str(e))
-            self.message = "Error connecting to gRPC. Try again or switch gRPCs"
-            return
         
         try:
             allocations = sdk.subscriptions.QueryAllocations(subscription_id=int(id))
