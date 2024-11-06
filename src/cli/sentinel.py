@@ -532,9 +532,36 @@ class NodeTreeData():
         self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
         grpcaddr, grpcport = self.GRPC.split(":")
         
-        sdk = SDKInstance(grpcaddr, int(grpcport), ssl=True)
-        allocations = sdk.subscriptions.QueryAllocations(subscription_id=int(id))
-        print(allocations)
+        try:
+            sdk = SDKInstance(grpcaddr, int(grpcport), ssl=True)
+        except grpc._channel._InactiveRpcError as e:
+            status_code = e.code()
+            
+            if status_code == StatusCode.NOT_FOUND:
+                self.message = "Wallet not found on blockchain. Please verify you have sent coins to your wallet to activate it. Then try your subscription again"
+                
+            else:
+                self.message = "gRPC Error!"
+            return
+                
+        try:        
+            subscriptions = sdk.subscriptions.QuerySubscriptionsForAccount(ADDRESS, pagination=PageRequest(limit=1000))
+        except (mospy.exceptions.clients.TransactionTimeout,
+                mospy.exceptions.clients.NodeException,
+                mospy.exceptions.clients.NodeTimeoutException) as e:
+            print(str(e))
+            self.message = "Error connecting to gRPC. Try again or switch gRPCs"
+            return
+        
+        try:
+            allocations = sdk.subscriptions.QueryAllocations(subscription_id=int(id))
+        except (mospy.exceptions.clients.TransactionTimeout,
+                mospy.exceptions.clients.NodeException,
+                mospy.exceptions.clients.NodeTimeoutException) as e:
+            print(str(e))
+            self.message = "Error connecting to gRPC. Try again or switch gRPCs"
+            return
+        #print(allocations)
 
         for allocation in allocations:
             if int(allocation.granted_bytes) == int(allocation.utilised_bytes):

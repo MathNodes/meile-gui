@@ -642,7 +642,7 @@ class HandleWalletFunctions():
             self.connected = {"v2ray_pid" : None,  "result": False, "status" : "GRPC Error"}
             return
         
-        DENOM = sub.deposit.denom
+        DENOM = sub.deposit.denom if sub.deposit.denom != '' else "udvpn"
         print(f"Sub DENOM: {DENOM}")
         
         if DENOM == IBCTokens.IBCUNITTOKEN['uatom']:
@@ -835,7 +835,7 @@ class HandleWalletFunctions():
                 config.set("Interface", "Address", ",".join([ipv4_address, ipv6_address]))
                 config.set("Interface", "ListenPort", f"{listen_port}")
                 config.set("Interface", "PrivateKey", wgkey.privkey)
-                config.set("Interface", "DNS", ",".join(["10.8.0.1","1.0.0.1","1.1.1.1"]))  # TODO: 8.8.8.8 (?)
+                config.set("Interface", "DNS", ",".join(["10.8.0.1","127.0.0.1", "1.0.0.1","1.1.1.1"]))
                 config.add_section("Peer")
                 config.set("Peer", "PublicKey", public_key)
                 config.set("Peer", "Endpoint", peer_endpoint)

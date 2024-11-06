@@ -115,6 +115,10 @@ class HTTParams():
     IFCONFIGURL            = "https://ifconfig.co/json"
     IPAPIDNS               = "ip-api.com"
     IPAPI                  = "http://ip-api.com/json"
+    NOWINVOICE             = "https://api.nowpayments.io/v1/invoice"
+    NOWPAYMENT             = "https://api.nowpayments.io/v1/invoice-payment"
+    NOWSTATUS              = "https://api.nowpayments.io/v1/payment/%s"
+    NOWURL                 = "https://nowpayments.io/payment?iid=%s&paymentId=%s"
     RESOLVERS              = [
                               "adfilter-adl",
                               "adfilter-adl-ipv6",
@@ -543,7 +547,7 @@ class IBCTokens():
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
-    VERSION = "v2.0.0-beta6.3"
+    VERSION = "v2.0.0"
     BUILD   = "1722988800718"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"
