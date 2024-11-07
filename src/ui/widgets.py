@@ -54,6 +54,7 @@ from adapters.ChangeDNS import ChangeDNS
 from kivy.uix.recyclegridlayout import RecycleGridLayout
 from helpers.helpers import format_byte_size
 from fiat.stripe_pay import scrtsxx
+from utils.qr import QRCode
 
 class WalletInfoContent(BoxLayout):
     def __init__(self, seed_phrase, name, address, password, **kwargs):
@@ -827,15 +828,13 @@ class PlanRow(MDGridLayout):
     
     @delayable
     def add_wallet_2plan(self, wallet, plan_id, duration, sub_id, uuid, amt, denom):
-        Request = HTTPRequests.MakeRequest(TIMEOUT=120)
-        http = Request.hadapter()
         plan_details = {"data": {"wallet" : wallet, "plan_id" : plan_id, "duration" : duration, "sub_id" : sub_id, "uuid" : uuid, "amt" : amt, "denom" : denom}}
         print(plan_details)
         SERVER_ADDRESS = scrtsxx.MEILE_PLAN_API
         API            = scrtsxx.MEILE_PLAN_ADD
         USERNAME       = scrtsxx.PLANUSERNAME
         PASSWORD       = scrtsxx.PLANPASSWORD
-        Request = HTTPRequests.MakeRequest()
+        Request = HTTPRequests.MakeRequest(TIMEOUT=120)
         http = Request.hadapter()
         try:
             print("Sending plan add request...")
@@ -953,15 +952,6 @@ class PlanRow(MDGridLayout):
 
                 on_success_subscription()
 
-                # self.add_wallet_2plan(
-                #     wallet= mw.address,
-                #     plan_id= self.plan_id,
-                #     duration= subscribe_dialog.ids.slider1.value,
-                #     sub_id= self.id,
-                #     uuid= self.uuid,
-                #     amt= int(float(deposit) * IBCTokens.SATOSHI),
-                #     denom= mu_coin
-                # )
         elif subscribe_dialog.pay_with == "now":
             if self.dialog:
                 self.dialog.dismiss()

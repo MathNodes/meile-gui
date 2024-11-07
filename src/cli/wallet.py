@@ -631,7 +631,7 @@ class HandleWalletFunctions():
             self.connected = {"v2ray_pid" : None,  "result": False, "status" : "GRPC Error"}
             return
         
-        DENOM = sub.deposit.denom
+        DENOM = sub.deposit.denom if sub.deposit.denom != '' else "udvpn"
         print(f"Sub DENOM: {DENOM}")
         
         if DENOM == IBCTokens.IBCUNITTOKEN['uatom']:
