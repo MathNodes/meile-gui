@@ -24,6 +24,7 @@ from helpers import helpers
 
 import mospy
 import grpc
+from grpc import RpcError, StatusCode
 from sentinel_sdk.sdk import SDKInstance
 from sentinel_sdk.types import PageRequest, Status
 from builtins import AttributeError
