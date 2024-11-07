@@ -22,6 +22,8 @@ from adapters import HTTPRequests
 from cli.v2ray import V2RayHandler
 from helpers import helpers
 
+import mospy
+import grpc
 from sentinel_sdk.sdk import SDKInstance
 from sentinel_sdk.types import PageRequest, Status
 from builtins import AttributeError
@@ -33,7 +35,7 @@ v2ray_tun2routes_connect_bash = path.join(ConfParams.BASEBINDIR, "tun2routes.sh"
 class NodeTreeData():
     BackupNodeTree = None
     NodeTree       = None
-    SubResult      = None
+    SubResult      = []
     NodeScores     = {}
     NodeLocations  = {}
     NodeTypes      = {}
@@ -424,8 +426,26 @@ class NodeTreeData():
         self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
         grpcaddr, grpcport = self.GRPC.split(":")
         
-        sdk = SDKInstance(grpcaddr, int(grpcport), ssl=True)
-        subscriptions = sdk.subscriptions.QuerySubscriptionsForAccount(ADDRESS, pagination=PageRequest(limit=1000))
+        try: 
+            sdk = SDKInstance(grpcaddr, int(grpcport), ssl=True)
+        except grpc._channel._InactiveRpcError as e:
+            status_code = e.code()
+            
+            if status_code == StatusCode.NOT_FOUND:
+                self.message = "Wallet not found on blockchain. Please verify you have sent coins to your wallet to activate it. Then try your subscription again"
+                
+            else:
+                self.message = "gRPC Error!"
+            return
+                
+        try:        
+            subscriptions = sdk.subscriptions.QuerySubscriptionsForAccount(ADDRESS, pagination=PageRequest(limit=1000))
+        except (mospy.exceptions.clients.TransactionTimeout,
+                mospy.exceptions.clients.NodeException,
+                mospy.exceptions.clients.NodeTimeoutException) as e:
+            print(str(e))
+            self.message = "Error connecting to gRPC. Try again or switch gRPCs"
+            return
 
         # TODO: Casting all to str is required?
         SubsNodesInfo = [{

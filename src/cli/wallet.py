@@ -341,8 +341,8 @@ class HandleWalletFunctions():
         gas = random.randint(ConfParams.GAS-50000, 314159)
         
         tx_params = TxParams(
-            # denom="udvpn",  # TODO: from ConfParams
-            # fee_amount=20000,  # TODO: from ConfParams
+            denom=DENOM,
+            fee_amount=ConfParams.FEE,  
             gas=gas,
             gas_multiplier=ConfParams.GASADJUSTMENT,
         )
@@ -432,6 +432,9 @@ class HandleWalletFunctions():
             if status_code == StatusCode.NOT_FOUND:
                 self.returncode = (False, "Wallet not found on blockchain. Please verify you have sent coins to your wallet to activate it. Then try your subscription again")
                 return
+            else:
+                self.returncode = (False, "gRPC unresponsive. Try again later or switch gRPCs.")
+                return
         balance = self.get_balance(sdk._account.address)
         
         amount_required = float(DEPOSIT.replace(DENOM, ""))
@@ -442,6 +445,11 @@ class HandleWalletFunctions():
         if ubalance < amount_required:
             self.returncode = (False, f"Balance is too low, required: {round(amount_required / IBCTokens.SATOSHI, 4)}{token_ibc[DENOM][1:]}")
             return
+        
+        if DENOM == IBCTokens.IBCUNITTOKEN['uatom']:
+            fee = int(ConfParams.FEE / 10)
+        else:
+            fee = ConfParams.FEE
             
         gas = random.randint(ConfParams.GAS, 314159)
         
@@ -449,7 +457,7 @@ class HandleWalletFunctions():
             denom=DENOM,
             gas=gas,
             gas_multiplier=ConfParams.GASADJUSTMENT,
-            #fee_amount=ConfParams.FEE
+            fee_amount=fee
         )
         
         tx = sdk.nodes.SubscribeToNode(
@@ -472,7 +480,7 @@ class HandleWalletFunctions():
                     mospy.exceptions.clients.NodeException,
                     mospy.exceptions.clients.NodeTimeoutException)  as e:
                 print(str(e))
-                self.returncode = (False, "GRPC Error")
+                self.returncode = (False, str(e).split(":")[-1])
                 return
             
             print(tx_response)
@@ -516,11 +524,34 @@ class HandleWalletFunctions():
             if status_code == StatusCode.NOT_FOUND:
                 message = "Wallet not found on blockchain. Please verify you have sent coins to your wallet to activate it. Then try your subscription again"
                 return {'hash' : "0x0", 'success' : False, 'message' : message}
+            else:
+                message = "gRPC unresponsive. Try again later or switch gRPCs."
+                return {'hash' : "0x0", 'success' : False, 'message' : message}
+            
+        try: 
+            sub = sdk.subscriptions.QuerySubscription(subscription_id=int(ID))
+        except (mospy.exceptions.clients.TransactionTimeout,
+                mospy.exceptions.clients.NodeException,
+                mospy.exceptions.clients.NodeTimeoutException) as e:
+            print(str(e))
+            message = "gRPC Error!"
+            return {'hash' : "0x0", 'success' : False, 'message' : message}
+        
+        DENOM = sub.deposit.denom
+        print(f"Sub DENOM: {DENOM}")
+        
+        if DENOM == IBCTokens.IBCUNITTOKEN['uatom']:
+            fee = int(ConfParams.FEE / 10)
+        else:
+            fee = ConfParams.FEE
+        
+        gas = random.randint(ConfParams.GAS, 314159)
 
         tx_params = TxParams(
-            gas=ConfParams.GAS,
+            denom=DENOM,
+            gas=gas,
             gas_multiplier=ConfParams.GASADJUSTMENT,
-            fee_amount=ConfParams.FEE
+            fee_amount=fee
         )
         tx_height = 0
 
@@ -583,13 +614,40 @@ class HandleWalletFunctions():
                 self.connected = {"v2ray_pid" : None,  "result": False, "status" : message}
                 print(self.connected)
                 return
+            else:
+                message = "gRPC Error!"
+                self.connected = {"v2ray_pid" : None, "result" : False, "status" : message}
+                return
+        
+        try: 
+            sub = sdk.subscriptions.QuerySubscription(subscription_id=int(ID))
+        except (mospy.exceptions.clients.TransactionTimeout,
+                mospy.exceptions.clients.NodeException,
+                mospy.exceptions.clients.NodeTimeoutException) as e:
+            print(str(e))
+            conndesc.write("GRPC Error... Exiting")
+            conndesc.flush()
+            conndesc.close()
+            self.connected = {"v2ray_pid" : None,  "result": False, "status" : "GRPC Error"}
+            return
+        
+        DENOM = sub.deposit.denom
+        print(f"Sub DENOM: {DENOM}")
+        
+        if DENOM == IBCTokens.IBCUNITTOKEN['uatom']:
+            fee = int(ConfParams.FEE / 10)
+        else:
+            fee = ConfParams.FEE
         
         gas = random.randint(ConfParams.GAS, 314159)
+        print(f"GAS: {gas}")
         
+
         tx_params = TxParams(
             gas=gas,
+            denom=DENOM,
             gas_multiplier=ConfParams.GASADJUSTMENT,
-            #fee_amount=ConfParams.FEE
+            fee_amount=fee
         )
         
         # End active sessions if any. INACTIVE_PENDING is moot
@@ -601,7 +659,9 @@ class HandleWalletFunctions():
                 tx = sdk.sessions.EndSession(session_id=session.id, rating=0, tx_params=tx_params)
                 try:
                     tx_response = sdk.sessions.wait_for_tx(tx["hash"], timeout=25)
-                except mospy.exceptions.clients.TransactionTimeout as e:
+                except (mospy.exceptions.clients.TransactionTimeout,
+                        mospy.exceptions.clients.NodeException,
+                        mospy.exceptions.clients.NodeTimeoutException) as e:
                     print(str(e))
                     conndesc.write("GRPC Error... Exiting")
                     conndesc.flush()
@@ -908,7 +968,7 @@ class HandleWalletFunctions():
                     chdir(MeileConfig.BASEDIR)
                     return
         chdir(MeileConfig.BASEDIR)
-        self.connected = {"v2ray_pid" : None,  "result": False, "status": "Bad response or user cancelled."}
+        self.connected = {"v2ray_pid" : None,  "result": False, "status": "Bad Response from Node"}
         return   
            
 

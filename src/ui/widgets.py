@@ -1499,7 +1499,7 @@ Node Version: %s
         else:
             self.dialog.dismiss()
             self.dialog = MDDialog(
-            title="Error: %s" % "No wallet found!" if returncode[1] == 1337  else returncode[1],
+            title="Error: %s" % "No wallet found!" if hwf.returncode[1] == 1337  else hwf.returncode[1],
             md_bg_color=get_color_from_hex(MeileColors.BLACK),
             buttons=[
                     MDFlatButton(
