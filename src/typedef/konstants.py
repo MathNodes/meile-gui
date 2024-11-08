@@ -545,18 +545,19 @@ class IBCTokens():
     UNITTOKEN    = {'uscrt' : 'scrt', 'uatom' : 'atom' , 'uosmo' : 'osmo', 'udec' : 'dec', 'udvpn' : 'dvpn', 'tsent' : 'tsent'}
     IBCUNITTOKEN = {'uscrt' : IBCSCRT, 'uatom' : IBCATOM , 'uosmo' : IBCOSMO, 'udec' : IBCDEC, 'udvpn' : 'udvpn', 'tsent' : 'tsent'}
     mu_coins     = ["udvpn", "uscrt", "uosmo", "uatom", "udec"]
-    CSAPPMAP     = {'dec' : 'decentr', 'atom' : 'cosmos', 'scrt' : 'secret', 'osmo' : 'osmosis', 'dvpn' : 'sentinel', 'beam' : 'beam', 'firo' : 'zcoin'}}
+    CSAPPMAP     = {'dec' : 'decentr', 'atom' : 'cosmos', 'scrt' : 'secret', 'osmo' : 'osmosis', 'dvpn' : 'sentinel', 'beam' : 'beam', 'firo' : 'zcoin'}
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
     VERSION = "v2.0.0"
-    BUILD = "17294718083"
+    BUILD = "17310399933"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"
     FailedHealthCheck = "Failed Sentinel Health Check"
     
 class MeileColors():
     BLACK                    = "#000000"
+    WHITE                    = "#FFFFFF"
     MEILE                    = "#fcb711"
     DIALOG_BG_COLOR          = "#121212"
     DIALOG_BG_COLOR2         = "#181818"

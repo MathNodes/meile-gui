@@ -29,13 +29,13 @@ WindowManager:
             halign: "center"
             pos_hint: {"center_x" : .5, "y" : -.3}
     
-        MDRaisedButton:
-            id: go_button
-            opacity: 0
-            disabled: True
-            text: "Let's Go"
-            pos_hint: {"center_x" : .5, "y" : .05}
-            on_press: root.switch_window()
+        #MDRaisedButton:
+        #    id: go_button
+        #    opacity: 0
+        #    disabled: True
+        #    text: "Let's Go"
+        #    pos_hint: {"center_x" : .5, "y" : .05}
+        #    on_press: root.switch_window()
             
         MDProgressBar:
             id: pb
@@ -64,7 +64,7 @@ WindowManager:
                 source: root.get_logo_text()
                 size_hint_y: .6
                 size_hint_x: .6
-                pos_hint: {'x' : -.15, 'center_y' : .5}
+                pos_hint: {'x' : -.19, 'center_y' : .5}
             ToolTipMDIconButton:
                 id: doh
                 opacity: 0
@@ -729,8 +729,10 @@ WindowManager:
                 #size_hint_x: None
                 
 <SubscriptionScreen>:
+	size_hint_x: .99
+	pos_hint: {"center_x": 0.5}
     MDGridLayout:
-        rows: 2
+        rows: 4
         size_hint_x: 1
         MDGridLayout:
             cols: 7
@@ -772,6 +774,30 @@ WindowManager:
                 text_color: app.theme_cls.primary_color
                 on_release: root.set_previous_screen()
                 #pos_hint: {"x" : .455, "top" : .40}
+                
+        MDGridLayout:
+        	cols: 1
+            height: sp(25)
+            adaptive_height: True
+            padding: [15, 25, 0, 25]        
+	        MDLabel:
+	        	height: sp(35)
+	            font_size: sp(13)
+	            theme_text_color: "Custom"
+	        	text_color: get_color_from_hex(MeileColors.WHITE) 
+	        	text: "To connect to one of your subscriptions, click on the desired subscription which will expand the details. This will also select the subscription. Then simply press connect."
+    	MDGridLayout:
+        	cols: 1
+            height: sp(25)
+            adaptive_height: True
+            padding: [15, 25, 0, 25]        
+	        MDLabel:
+	        	height: sp(35)
+	            font_size: sp(14)
+	            theme_text_color: "Custom"
+	        	text_color: get_color_from_hex(MeileColors.WHITE) 
+	        	text: ""
+	        	
         RecycleView:
             do_scroll_y: True
             size_hint_x: 1
@@ -785,9 +811,11 @@ WindowManager:
                 spacing: 10
                 id: rv
 <PlanScreen>:
+	size_hint_x: .99
+	pos_hint: {"center_x": 0.5}
     MDGridLayout:
-        rows: 2
-        size_hint_x: 1
+        rows: 4
+        size_hint_x: .9
         MDGridLayout:
             cols: 7
             height: 25
@@ -828,6 +856,28 @@ WindowManager:
                 text_color: app.theme_cls.primary_color
                 on_release: root.set_previous_screen()
                 #pos_hint: {"x" : .455, "top" : .40}
+        MDGridLayout:
+        	cols: 1
+            height: sp(25)
+            adaptive_height: True
+            padding: [15, 25, 0, 25]        
+	        MDLabel:
+	        	height: sp(35)
+	            font_size: sp(13)
+	            theme_text_color: "Custom"
+	        	text_color: get_color_from_hex(MeileColors.WHITE) 
+	        	text: "In order to use plans that you subscribe to, click on the subscribed plan to expand it. This will select the plan. Click 'filter nodes' to find the online nodes on the plan. They will be available in the countires on the left bar. Navigate to your desired node, click on it, and then press connect."
+    	MDGridLayout:
+        	cols: 1
+            height: sp(25)
+            adaptive_height: True
+            padding: [15, 25, 0, 25]        
+	        MDLabel:
+	        	height: sp(35)
+	            font_size: sp(14)
+	            theme_text_color: "Custom"
+	        	text_color: get_color_from_hex(MeileColors.WHITE) 
+	        	text: ""
         RecycleView:
             do_scroll_y: True
             size_hint_x: 1
@@ -842,6 +892,8 @@ WindowManager:
                 id: rv   
         
 <NodeScreen>:
+	size_hint_x: .95
+	pos_hint: {"center_x": 0.5}
     MDGridLayout:
         rows: 3
         size_hint_x: 1
@@ -1833,7 +1885,7 @@ WindowManager:
             MDBoxLayout:
                 orientation: "horizontal"
                 Check:
-                    on_active: root.on_checkbox_active("pirate", *args)
+                    on_active: root.on_checkbox_active("now", *args)
                 MDLabel:
                     text: "NOWPayments"
                     size_hint: (None, 1.75)
@@ -1939,13 +1991,13 @@ WindowManager:
             id: node_moniker_text
             text: root.moniker
             font_name: root.get_font()
-            font_size: 19
+            font_size: sp(24)
             pos_hint: {"x" : 0.05, "center_y": .9}
              
         MDLabel:
             id: node_addresss_text
             text: root.naddress
-            font_size: 10
+            font_size: sp(14)
             pos_hint: {"x" : 0.05, "center_y": .70}
              
         MDSlider:
@@ -2007,7 +2059,8 @@ WindowManager:
         ScrollView:
             effect_cls: "ScrollEffect"
             scroll_type: ['bars']
-            size_hint: (1, 1)
+            size_hint: (.9, 1)
+            pos_hint: {"center_x": 0.5}
             height: self.parent.height
             MDGridLayout:
                 rows: 27
@@ -2023,6 +2076,8 @@ WindowManager:
                     height: self.texture_size[1]
                     size_hint_x: 1
                     halign: "center"
+                    theme_text_color: "Custom"
+                    text_color: get_color_from_hex(MeileColors.MEILE)
                 MDLabel:
                     font_name: "DejaVuSans"
                     text: "A mnemonic/seed phrase is a set of pre-defined dictionary words that form a unique set. This unique set is used to generate a wallet with a unique address, similar to how bank accounts have a unique number. i.e., no two bank accounts have the same account number. This address can be used to send and receive currency just like your bank account."
@@ -2032,8 +2087,8 @@ WindowManager:
                     pos_hint_x: .9
                     halign: "center"
                     theme_text_color: "Custom"
-                    text_color: get_color_from_hex(MeileColors.MEILE)
-                    font_size: "12dp"
+                    text_color: get_color_from_hex(MeileColors.WHITE)
+                    font_size: sp(12)
                     
                 MDLabel:
                     font_name: "Roboto-BoldItalic"
@@ -2042,6 +2097,8 @@ WindowManager:
                     height: self.texture_size[1]
                     size_hint_x: 1
                     halign: "center"
+                    theme_text_color: "Custom"
+                    text_color: get_color_from_hex(MeileColors.MEILE)
                 MDLabel:
                     font_name: "DejaVuSans"
                     text: "An address is a unique identifier that links your funds to the blockchain. This is a pseudonymous identifier meaning it links your digital identity on the blockchain without storing any personal identifiers of an individual. Addresses are used to send and receive funds in the native currency of the acting network. "
@@ -2051,8 +2108,8 @@ WindowManager:
                     pos_hint_x: .9
                     halign: "center" 
                     theme_text_color: "Custom"
-                    text_color: get_color_from_hex(MeileColors.MEILE)
-                    font_size: "12dp"
+                    text_color: get_color_from_hex(MeileColors.WHITE)
+                    font_size: sp(12)
                 MDLabel:
                     font_name: "Roboto-BoldItalic"
                     text: "How do I receive funds to be able to subscribe and use Meile dVPN?"
@@ -2060,6 +2117,8 @@ WindowManager:
                     height: self.texture_size[1]
                     size_hint_x: 1
                     halign: "center"
+                    theme_text_color: "Custom"
+                    text_color: get_color_from_hex(MeileColors.MEILE)
                 MDLabel:
                     font_name: "DejaVuSans"
                     text: "There are two primary ways to receive tokens to purchase dVPN (the currency) subscriptions and utilize the network. 1.) You get the DVPN token on a exchange and send it to your wallet address. Current exchanges are KuCoin, HotBit, Polarity and Osmosis. Once you purchase the tokens on the exchange, you need to withdraw them to your address listed in the wallet section of this app. The tokens should appear within minutes after a withdrawal and you can begin purchasing and subscribing to Sentinel dVPN nodes through Meile. 2.) You can purchase the currency used for Meile dVPN right in our app via the 'RE-FUEL' button within the wallet. These funds will be handled by our servers and the payment processing is handled by Stripe. Once you successfully complete a purchase, your funds should appear in your wallet within minutes of a successful purchase through our app. This is the easiest method to using Meile dVPN."
@@ -2069,8 +2128,8 @@ WindowManager:
                     pos_hint_x: .9
                     halign: "center" 
                     theme_text_color: "Custom"
-                    text_color: get_color_from_hex(MeileColors.MEILE)
-                    font_size: "12dp"
+                    text_color: get_color_from_hex(MeileColors.WHITE)
+                    font_size: sp(12)
                 MDLabel:
                     font_name: "Roboto-BoldItalic"
                     text: "What is MathNodes privacy policy?"
@@ -2078,6 +2137,8 @@ WindowManager:
                     height: self.texture_size[1]
                     size_hint_x: 1
                     halign: "center"
+                    theme_text_color: "Custom"
+                    text_color: get_color_from_hex(MeileColors.MEILE)
                 MDLabel:
                     font_name: "DejaVuSans"
                     text: "MathNodes uses Stripe to process payments in order to receive funds to use the dVPN. You will see that we do not even need the name of the individual. Once a payment is processed through Stripe, MathNodes stores only the payment_id received from Stripe, the address of your wallet, and the amount of tokens sent (1,000). We have to keep records some information in case there is a dispute and we need to query the orders and verify if tokens were sent to the recipient's address. We do not store your name, your credit card details, or any other information beside what we have mentioned. The full policy can be viewed at https://meile.app/policy"
@@ -2087,8 +2148,8 @@ WindowManager:
                     pos_hint_x: .9
                     halign: "center" 
                     theme_text_color: "Custom"
-                    text_color: get_color_from_hex(MeileColors.MEILE)
-                    font_size: "12dp"
+                    text_color: get_color_from_hex(MeileColors.WHITE)
+                    font_size: sp(12)
                 MDLabel:
                     font_name: "Roboto-BoldItalic"
                     text: "Why is a dVPN better than a tradiational VPN?"
@@ -2096,6 +2157,8 @@ WindowManager:
                     height: self.texture_size[1]
                     size_hint_x: 1
                     halign: "center"
+                    theme_text_color: "Custom"
+                    text_color: get_color_from_hex(MeileColors.MEILE)
                 MDLabel:
                     font_name: "DejaVuSans"
                     text: "A traditional VPN, like Nord, Norton, Cryptostorm, or Proton is a centralized set of servers that a user connects through to access the internet. Most VPNs are required to keep a degree of logging information about users. Centralized VPNs can terminate a user's plan or restrict access to the internet based on private, public, or governmental policy. A dVPN such as the one Meile offers, uses blockchain technologies via the Sentinel Network to ensure a decentralized structure. This means that the servers you connect through are run by a community of volunteers rather than a central authority. As such, no logging takes places, users don't have the ability to throttle or restrict traffic and no censorship is possible through the use of a dVPN."
@@ -2105,8 +2168,8 @@ WindowManager:
                     pos_hint_x: .9
                     halign: "center" 
                     theme_text_color: "Custom"
-                    text_color: get_color_from_hex(MeileColors.MEILE)
-                    font_size: "12dp"
+                    text_color: get_color_from_hex(MeileColors.WHITE)
+                    font_size: sp(12)
                     
                 MDLabel:
                     font_name: "Roboto-BoldItalic"
@@ -2115,6 +2178,8 @@ WindowManager:
                     height: self.texture_size[1]
                     size_hint_x: 1
                     halign: "center"
+                    theme_text_color: "Custom"
+                    text_color: get_color_from_hex(MeileColors.MEILE)
                 MDLabel:
                     font_name: "DejaVuSans"
                     text: "Absolutely no refunds under any circumstances. All token sales are final as they cannot be refunded due to the limitations of blockchain technology. If for some reason your credit card was charged for a token purchase, and you did not receive the tokens in your wallet, please reach out to us at support@mathnodes.com - We will advise you on how to produce evidences of your purchase and we may double check our records along with a block explorer to view if the transaction did not go through."
@@ -2124,8 +2189,8 @@ WindowManager:
                     pos_hint_x: .9
                     halign: "center" 
                     theme_text_color: "Custom"
-                    text_color: get_color_from_hex(MeileColors.MEILE)
-                    font_size: "12dp"
+                    text_color: get_color_from_hex(MeileColors.WHITE)
+                    font_size: sp(12)
                 MDLabel:
                     font_name: "Roboto-BoldItalic"
                     text: "Search"
@@ -2133,6 +2198,8 @@ WindowManager:
                     height: self.texture_size[1]
                     size_hint_x: 1
                     halign: "center"
+                    theme_text_color: "Custom"
+                    text_color: get_color_from_hex(MeileColors.MEILE)
                 MDLabel:
                     font_name: "DejaVuSans"
                     text: "Search must be done in the exact format and is case sensitive - 'key: , value: ' filling in a text for both parameters. e.g: 'key: ISP Type, value: residential'"
@@ -2142,8 +2209,8 @@ WindowManager:
                     pos_hint_x: .9
                     halign: "center" 
                     theme_text_color: "Custom"
-                    text_color: get_color_from_hex(MeileColors.MEILE)
-                    font_size: "12dp"    
+                    text_color: get_color_from_hex(MeileColors.WHITE)
+                    font_size: sp(12)
                 MDLabel:
                     font_name: "Roboto-BoldItalic"
                     text: "Valid Search Keys"
@@ -2151,6 +2218,8 @@ WindowManager:
                     height: self.texture_size[1]
                     size_hint_x: 1
                     halign: "center"
+                    theme_text_color: "Custom"
+                    text_color: get_color_from_hex(MeileColors.MEILE)
                 MDLabel:
                     font_name: "DejaVuSans"
                     text: "Moniker, Address, Price, Hourly Price, Country, City, Latitude, Longitude, Download, Upload, Peers, Max Peers, Handshake, Type, Version, ISP Type, Score, Votes, Formula"
@@ -2160,8 +2229,8 @@ WindowManager:
                     pos_hint_x: .9
                     halign: "center" 
                     theme_text_color: "Custom"
-                    text_color: get_color_from_hex(MeileColors.MEILE)
-                    font_size: "12dp"
+                    text_color: get_color_from_hex(MeileColors.WHITE)
+                    font_size: sp(12)
                 MDLabel:
                     font_name: "Roboto-BoldItalic"
                     text: "Valid Values"
@@ -2169,6 +2238,8 @@ WindowManager:
                     height: self.texture_size[1]
                     size_hint_x: 1
                     halign: "center"
+                    theme_text_color: "Custom"
+                    text_color: get_color_from_hex(MeileColors.MEILE)
                 MDLabel:
                     font_name: "DejaVuSans"
                     text: "Value can be anything but must be something within the Node cards or the Node Carousel Screen (with the mini-map). This parameter is case sensitve."
@@ -2178,8 +2249,8 @@ WindowManager:
                     pos_hint_x: .9
                     halign: "center" 
                     theme_text_color: "Custom"
-                    text_color: get_color_from_hex(MeileColors.MEILE)
-                    font_size: "12dp"
+                    text_color: get_color_from_hex(MeileColors.WHITE)
+                    font_size: sp(12)
 
                 MDLabel:
                     font_name: "Roboto-BoldItalic"
@@ -2188,6 +2259,8 @@ WindowManager:
                     height: self.texture_size[1]
                     size_hint_x: 1
                     halign: "center"
+                    theme_text_color: "Custom"
+                    text_color: get_color_from_hex(MeileColors.MEILE)
                 
                 MDLabel:
                     font_name: "DejaVuSans"
@@ -2198,8 +2271,8 @@ WindowManager:
                     pos_hint_x: .9
                     halign: "center"
                     theme_text_color: "Custom"
-                    text_color: get_color_from_hex(MeileColors.MEILE)
-                    font_size: "12dp"
+                    text_color: get_color_from_hex(MeileColors.WHITE)
+                    font_size: sp(12)
                 
                 MDBoxLayout:
                     size_hint_y: None
