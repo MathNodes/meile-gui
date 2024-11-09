@@ -555,6 +555,7 @@ class TextStrings():
     
 class MeileColors():
     BLACK                    = "#000000"
+    WHITE                    = "#FFFFFF"
     MEILE                    = "#fcb711"
     DIALOG_BG_COLOR          = "#121212"
     DIALOG_BG_COLOR2         = "#181818"

@@ -239,7 +239,7 @@ class PreLoadWindow(Screen):
         thread = Thread(target=lambda: self.NodeTree.get_nodes("13s"))
         thread.start()
 
-        Clock.schedule_interval(partial(self.update_status_text, thread), 1.6)
+        self.event = Clock.schedule_interval(partial(self.update_status_text, thread), 1.6)
 
     @delayable
     def progress_load(self):
@@ -302,25 +302,22 @@ class PreLoadWindow(Screen):
 
     @delayable
     def update_status_text(self, t, dt):
-        go_button = self.manager.get_screen(WindowNames.PRELOAD).ids.go_button
-        #if geteuid() != 0:
-        #    self.add_loading_popup("Please start Meile-GUI as root. i.e., sudo -E env PATH=$PATH ./meile-gui or similarly")
-
         yield 1.0
 
         if not t.is_alive():
+            Clock.unschedule(self.event)
             self.manager.get_screen(WindowNames.PRELOAD).status_text = self.StatusMessages[6]
             self.manager.get_screen(WindowNames.PRELOAD).ids.pb.value = 1
-            go_button.opacity = 1
-            go_button.disabled = False
 
-            return
-
-        if self.k == 6:
-            self.k = 0
-        else:
-            self.manager.get_screen(WindowNames.PRELOAD).status_text = self.StatusMessages[self.k]
-            self.k += 1
+            yield 1.0
+            self.switch_window()
+            
+        else:                
+            if self.k == 6:
+                self.k = 0
+            else:
+                self.manager.get_screen(WindowNames.PRELOAD).status_text = self.StatusMessages[self.k]
+                self.k += 1
 
 
 
@@ -396,7 +393,11 @@ class MainWindow(Screen):
 
         Clock.schedule_once(self.get_config,1)
         Clock.schedule_once(self.build, 1)
-        Clock.schedule_interval(self.update_wallet, 60)
+        Clock.schedule_interval(self.update_wallet, 10)
+        
+        item_height = 100
+        max_height = len(self.MenuOptions) * item_height
+        
         menu_icons = ["cloud-refresh", "sort", "shield-lock", "shield-lock", "exit-to-app"]
         menu_items = [
             {
@@ -409,6 +410,8 @@ class MainWindow(Screen):
         self.menu = MDDropdownMenu(items=menu_items, 
                                    caller=self.ids.settings_menu,
                                    width_mult=3,
+                                   position="center",
+                                   max_height=max_height,
                                    background_color=get_color_from_hex(MeileColors.BLACK))
         
     def update_wallet(self, dt):
@@ -453,17 +456,13 @@ class MainWindow(Screen):
             hwf = HandleWalletFunctions()
             thread = Thread(target=lambda: self.ping())
             thread.start()
-            t = Thread(target=lambda: hwf.connect(ID, naddress, type))
+            t = Thread(target=lambda: hwf.connect(ID, naddress, proto))
             t.start()
             
             while t.is_alive():
                 yield 0.0314
                 self.cd.ids.pb.value += 0.00085
-                
-                #if "WireGuard" not in type:
-                #    self.cd.ids.pb.value += 0.001
-                #else:
-                #    self.cd.ids.pb.value += 0.001
+
                 try:
                     if path.isfile(confile) and not CONNFILE_OPENED:
                         conndesc = open(confile, 'r')
@@ -483,7 +482,9 @@ class MainWindow(Screen):
                 if hwf.connected['result']:
                     print("CONNECTED!!!")
                     self.CONNECTED = True
-                    try:
+                    if self.PlanID:
+                        Moniker = self.NodeCarouselData['moniker']
+                    else:
                         Moniker                         = self.SelectedSubscription['moniker']
                         self.NodeSwitch['moniker']      = self.SelectedSubscription['moniker']
                         self.NodeSwitch['node']         = self.SelectedSubscription['address']
@@ -508,10 +509,9 @@ class MainWindow(Screen):
                             self.setQuotaClock(ID, naddress, True)
                         else:
                             self.setQuotaClock(ID, naddress, False)
-                    except TypeError:
-                        Moniker = self.NodeCarouselData['moniker']
-                        print("On a plan connection")
-                        pass
+                    
+                        
+                        
                     self.remove_loading_widget2()
                     #print("REmove loading Widget")
                     self.dialog = MDDialog(
@@ -564,10 +564,11 @@ class MainWindow(Screen):
             #print(self.NodeCarouselData)
             if self.NodeCarouselData['moniker']:
                 if self.PlanID:
-                    ID = self.PlanID
+                    ID       = self.PlanID
                     naddress = self.NodeCarouselData['address']
-                    type = self.NodeCarouselData['protocol']
+                    proto    = self.NodeCarouselData['protocol']
                     connect()
+                    return
                 else:
                     self.SubCaller = True
                     nc = NodeCarousel(node=None)
@@ -577,9 +578,9 @@ class MainWindow(Screen):
                                          self.NodeCarouselData['moniker'])
                     
             if self.SelectedSubscription['id'] and self.SelectedSubscription['address'] and self.SelectedSubscription['protocol']:
-                ID = self.SelectedSubscription['id']
+                ID       = self.SelectedSubscription['id']
                 naddress = self.SelectedSubscription['address']
-                type = self.SelectedSubscription['protocol']
+                proto    = self.SelectedSubscription['protocol']
                 
                 connect()
                 
@@ -727,7 +728,7 @@ class MainWindow(Screen):
 
         # Build alphabetical country recyclerview tree data
         self.build_country_tree()
-        
+        print("Running: nonblock_get_ip_address()")
         thread = Thread(target=lambda: self.nonblock_get_ip_address(self.get_ip_address, True))
         thread.start() 
 
@@ -902,7 +903,7 @@ class MainWindow(Screen):
                 MDRaisedButton(
                     text="Okay",
                     theme_text_color="Custom",
-                    text_color=(1,1,1,1),
+                    text_color=get_color_from_hex(MeileColors.BLACK),
                     on_release=self.remove_loading_widget
                 ),
             ],
@@ -919,7 +920,7 @@ class MainWindow(Screen):
                 MDRaisedButton(
                     text="Okay",
                     theme_text_color="Custom",
-                    text_color=MeileColors.BLACK,
+                    text_color=get_color_from_hex(MeileColors.BLACK),
                     on_release=self.remove_loading_widget
                 ),
             ],
@@ -985,7 +986,7 @@ class MainWindow(Screen):
                     MDRaisedButton(
                         text="OKAY",
                         theme_text_color="Custom",
-                        text_color=(1,1,1,1),
+                        text_color=get_color_from_hex(MeileColors.BLACK),
                         on_release=self.warp_disconnect
                     ),
                 ],
@@ -1147,7 +1148,7 @@ class MainWindow(Screen):
                     MDRaisedButton(
                         text="RATE",
                         theme_text_color="Custom",
-                        text_color=(1,1,1,1),
+                        text_color=get_color_from_hex(MeileColors.BLACK),
                         on_release=partial(self.WrapperSubmitRating, rating_dialog),
                     ),
                     ]
@@ -1212,7 +1213,7 @@ class MainWindow(Screen):
                     MDRaisedButton(
                         text="RESTORE",
                         theme_text_color="Custom",
-                        text_color=(1,1,1,1),
+                        text_color=get_color_from_hex(MeileColors.BLACK),
                         on_release=partial(self.wallet_restore, False)
                     ),
                 ],
@@ -1351,7 +1352,8 @@ class MainWindow(Screen):
         # Clear out any previous Carousel Data
         self.clear_node_carousel()
         try:
-            self.carousel.remove_widget(self.NodeWidget)
+            while len(self.carousel.slides) > 1:
+                self.carousel.remove_widget(self.carousel.slides[-1])
         except Exception as e:
             print(str(e))
         self.NodeWidget = PlanScreen(name=WindowNames.PLAN)
@@ -1388,11 +1390,10 @@ class MainWindow(Screen):
             
 
     def load_country_nodes(self, country, *kwargs):
-        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         NodeTree = NodeTreeData(self.NodeTree.NodeTree)
         try:
-            while len(mw.carousel.slides) > 1:
-                mw.carousel.remove_widget(mw.carousel.slides[-1])
+            while len(self.carousel.slides) > 1:
+                self.carousel.remove_widget(self.carousel.slides[-1])
         except Exception as e:
             print(str(e))
             pass
@@ -1523,7 +1524,7 @@ class WalletScreen(Screen):
                 MDRaisedButton(
                     text="CANCEL",
                     theme_text_color="Custom",
-                    text_color=(1,1,1,1),
+                    text_color=get_color_from_hex(MeileColors.BLACK),
                     on_release=self.closeDialog
                 ),
             ],
@@ -1573,7 +1574,7 @@ class WalletScreen(Screen):
                 MDRaisedButton(
                     text="RESTORE",
                     theme_text_color="Custom",
-                    text_color=(1,1,1,1),
+                    text_color=get_color_from_hex(MeileColors.BLACK),
                     on_release=partial(self.wallet_restore, False)
                 ),
             ],
@@ -1655,7 +1656,7 @@ class WalletScreen(Screen):
                     MDRaisedButton(
                         text="OKay",
                         theme_text_color="Custom",
-                        text_color=(1,1,1,1),
+                        text_color=get_color_from_hex(MeileColors.BLACK),
                         on_release=self.closeDialog
                     ),
                 ],
@@ -1714,7 +1715,6 @@ class SubscriptionScreen(MDBoxLayout):
                     self.cd.ids.pb.value += inc
                 self.cd.ids.pb.value = 1
                 mw.NodeTree.SubResult = deepcopy(self.NodeTree.SubResult)
-                print(mw.NodeTree.SubResult)
             except Exception as e:
                 print(str(e))
                 return None
@@ -1729,7 +1729,6 @@ class SubscriptionScreen(MDBoxLayout):
         # Auto-connect from NodeCarousel if sub found
         if mw.SubCaller: 
             for sub in mw.NodeTree.SubResult:
-                print(sub)
                 if mw.NodeCarouselData['address'] == sub[NodeKeys.FinalSubsKeys[2]]:
                     mw.SelectedSubscription['id']        = sub[NodeKeys.FinalSubsKeys[0]]
                     mw.SelectedSubscription['address']   = sub[NodeKeys.FinalSubsKeys[2]]
@@ -1839,7 +1838,7 @@ class SubscriptionScreen(MDBoxLayout):
                 MDRaisedButton(
                     text="Okay",
                     theme_text_color="Custom",
-                    text_color=(1,1,1,1),
+                    text_color=get_color_from_hex(MeileColors.BLACK),
                     on_release=self.remove_loading_widget
                 ),
             ],

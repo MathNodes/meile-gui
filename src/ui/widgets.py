@@ -820,7 +820,7 @@ class PlanRow(MDGridLayout):
                     MDRaisedButton(
                         text="SUBCRIBE",
                         theme_text_color="Custom",
-                        text_color=MeileColors.BLACK,
+                        text_color=get_color_from_hex(MeileColors.BLACK),
                         on_release=partial(self.subscribe, subscribe_dialog)
                     ),
                 ],
@@ -852,7 +852,7 @@ class PlanRow(MDGridLayout):
                             MDRaisedButton(
                                 text="CLOSE",
                                 theme_text_color="Custom",
-                                text_color=MeileColors.BLACK,
+                                text_color=get_color_from_hex(MeileColors.BLACK),
                                 on_release=self.closeDialog
                             ),
                         ],
@@ -868,7 +868,7 @@ class PlanRow(MDGridLayout):
                             MDRaisedButton(
                                 text="CLOSE",
                                 theme_text_color="Custom",
-                                text_color=MeileColors.BLACK,
+                                text_color=get_color_from_hex(MeileColors.BLACK),
                                 on_release=self.closeDialog
                             ),
                         ],
@@ -883,13 +883,28 @@ class PlanRow(MDGridLayout):
     
     @delayable
     def subscribe(self, subscribe_dialog, *kwargs):
-        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         
         CONFIG = MeileGuiConfig()
         conf = CONFIG.read_configuration(MeileGuiConfig.CONFFILE)
         self.ADDRESS = conf['wallet'].get("address")
         
         if not self.ADDRESS:
+            if self.dialog:
+                self.dialog.dismiss()
+            self.dialog = None
+            self.dialog = MDDialog(
+                    title="Please create a Sentinel wallet before subscribing to a plan. The wallet is used for gas fees on the Sentinel network. We provide you with coins for gas fees after subscribing to a plan.",
+                    md_bg_color=get_color_from_hex(MeileColors.BLACK),
+                    buttons=[
+                        MDFlatButton(
+                            text="OKAY",
+                            theme_text_color="Custom",
+                            text_color=get_color_from_hex(MeileColors.MEILE),
+                            on_release=self.closeDialog
+                        ),
+                    ]
+                )
+            self.dialog.open()
             return
 
         deposit = subscribe_dialog.ids.deposit.text
