@@ -31,9 +31,11 @@ sleep 2
 echo "Signing wg..."
 codesign --force --options runtime --timestamp --sign "Developer ID Application: Pool Stats LLC (VQYLU43P5V)" /Users/freqnik/eclipse-workspace/Meile2.0/dist/Meile/Meile.app/Contents/Resources/bin/wg
 
-#sleep 2
-#echo "Signing sentinelcli..."
-#codesign --force --options runtime --timestamp --sign "Developer ID Application: Pool Stats LLC (VQYLU43P5V)" /Users/freqnik/eclipse-workspace/Meile2.0/dist/Meile/Meile.app/Contents/Resources/bin/sentinelcli
+sleep 2
+echo "Signing pyarmor..."
+codesign --force --options runtime --timestamp --sign "Developer ID Application: Pool Stats LLC (VQYLU43P5V)" /Users/freqnik/eclipse-workspace/Meile2.0/dist/Meile/Meile.app/Contents/Resources/pyarmor_runtime_002918/pyarmor_runtime.so
+codesign --force --options runtime --timestamp --sign "Developer ID Application: Pool Stats LLC (VQYLU43P5V)" /Users/freqnik/eclipse-workspace/Meile2.0/dist/Meile/Meile.app/Contents/Resources/pyarmor/cli/core/pyarmor_runtime.so
+codesign --force --options runtime --timestamp --sign "Developer ID Application: Pool Stats LLC (VQYLU43P5V)" /Users/freqnik/eclipse-workspace/Meile2.0/dist/Meile/Meile.app/Contents/Resources/pyarmor/cli/core/pytransform3.so
 
 sleep 2
 echo "Signing meile-gui..."
