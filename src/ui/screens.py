@@ -14,7 +14,7 @@ from cli.warp import WarpHandler
 from adapters import HTTPRequests, DNSRequests
 from fiat import fiat_interface
 from cli.v2ray import V2RayHandler
-from fiat.stripe_pay import scrtsxx
+from fiat.stripe_pay.dist import scrtsxx
 from adapters.ChangeDNS import ChangeDNS
 from adapters.DNSCryptproxy import HandleDNSCryptProxy as dcp
 from helpers.helpers import format_byte_size

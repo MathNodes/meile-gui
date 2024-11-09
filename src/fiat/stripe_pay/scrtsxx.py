@@ -1,4 +1,5 @@
 SECRET_KEY         = "sk_live_..."
+NOWPAYMENTS	   = "apikey..."
 WALLET_ADDRESS     = 'sent19xv2hk6sdnndj6jkz48dpzzg08c26kjujyg8d2'
 SERVER_ADDRESS     = "https://aimokoivunen.mathnodes.com:5000"
 API_ENDPOINT       = "/api/tt"

@@ -53,7 +53,7 @@ from coin_api.get_price import GetPriceAPI
 from adapters.ChangeDNS import ChangeDNS
 from kivy.uix.recyclegridlayout import RecycleGridLayout
 from helpers.helpers import format_byte_size
-from fiat.stripe_pay import scrtsxx
+from fiat.stripe_pay.dist import scrtsxx
 from utils.qr import QRCode
 
 class WalletInfoContent(BoxLayout):
@@ -1308,7 +1308,6 @@ class PlanDetails(MDGridLayout):
     coin = StringProperty()
     
     def filter_nodes(self):
-        from fiat.stripe_pay import scrtsxx
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         
         Request = HTTPRequests.MakeRequest()
