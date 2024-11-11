@@ -16,6 +16,7 @@ from kivymd.uix.dialog import MDDialog
 from kivymd.uix.button import MDFlatButton, MDRaisedButton, MDFillRoundFlatButton
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.gridlayout import MDGridLayout
+from kivymd.uix.floatlayout import MDFloatLayout
 from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.list import OneLineIconListItem
 from kivymd.uix.behaviors import HoverBehavior
@@ -29,7 +30,7 @@ from urllib3.exceptions import InsecureRequestWarning
 from copy import deepcopy
 from datetime import datetime, timedelta
 from os import path
-from time import sleep 
+from time import sleep
 from threading import Thread, Event
 import requests
 import re
@@ -53,7 +54,7 @@ from coin_api.get_price import GetPriceAPI
 from adapters.ChangeDNS import ChangeDNS
 from kivy.uix.recyclegridlayout import RecycleGridLayout
 from helpers.helpers import format_byte_size
-from fiat.stripe_pay import scrtsxx
+from fiat.stripe_pay.dist import scrtsxx
 from utils.qr import QRCode
 
 class WalletInfoContent(BoxLayout):
@@ -820,7 +821,7 @@ class PlanRow(MDGridLayout):
                     MDRaisedButton(
                         text="SUBCRIBE",
                         theme_text_color="Custom",
-                        text_color=MeileColors.BLACK,
+                        text_color=get_color_from_hex(MeileColors.BLACK),
                         on_release=partial(self.subscribe, subscribe_dialog)
                     ),
                 ],
@@ -868,7 +869,7 @@ class PlanRow(MDGridLayout):
                             MDRaisedButton(
                                 text="CLOSE",
                                 theme_text_color="Custom",
-                                text_color=MeileColors.BLACK,
+                                text_color=get_color_from_hex(MeileColors.BLACK),
                                 on_release=self.closeDialog
                             ),
                         ],
@@ -890,7 +891,22 @@ class PlanRow(MDGridLayout):
         self.ADDRESS = conf['wallet'].get("address")
         
         if not self.ADDRESS:
-            return
+            if self.dialog:
+                self.dialog.dismiss()
+            self.dialog = None
+            self.dialog = MDDialog(
+                    title="Please create a Sentinel wallet before subscribing to a plan. The wallet is used for gas fees on the Sentinel network. We provide you with coins for gas fees after subscribing to a plan.",
+                    md_bg_color=get_color_from_hex(MeileColors.BLACK),
+                    buttons=[
+                        MDFlatButton(
+                            text="OKAY",
+                            theme_text_color="Custom",
+                            text_color=get_color_from_hex(MeileColors.MEILE),
+                            on_release=self.closeDialog
+                        ),
+                    ]
+                )
+            self.dialog.open()
 
         deposit = subscribe_dialog.ids.deposit.text
         nnodes = subscribe_dialog.nnodes
@@ -1098,7 +1114,7 @@ class PlanRow(MDGridLayout):
             print("Payment process was canceled.")
             Clock.schedule_once(lambda dt: self.update_ui_after_payment(True), 0)
         
-    def pay_meile_plan_with_now(self, usd):
+    def pay_meile_plan_with_now(self, usd, coin):
         print(f"Method: 'pay_meile_plan_with_now', usd: {usd}")
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         buyer = mw.address

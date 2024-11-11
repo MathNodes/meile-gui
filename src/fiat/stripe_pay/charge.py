@@ -1,6 +1,6 @@
 import stripe
 import requests 
-import fiat.stripe_pay.scrtsxx as scrtsxx
+from fiat.stripe_pay.dist import scrtsxx
 
 stripe.api_key=scrtsxx.SECRET_KEY
 

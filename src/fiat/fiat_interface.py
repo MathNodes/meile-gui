@@ -26,7 +26,7 @@ import time
 from stripe.error import CardError
 from fiat.stripe_pay.charge import HotwalletFuncs as HandleWalletFunctions
 import fiat.stripe_pay.charge as Charge
-from fiat.stripe_pay import scrtsxx
+from fiat.stripe_pay.dist import scrtsxx
 
 from typedef.win import WindowNames
 from ui.interfaces import TXContent

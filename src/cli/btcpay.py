@@ -6,7 +6,7 @@ import sys
 from requests.auth import HTTPBasicAuth
 
 from adapters import HTTPRequests
-from fiat.stripe_pay import scrtsxx
+from fiat.stripe_pay.dist import scrtsxx
 class BTCPayDB():
     
     def connDB(self): 
