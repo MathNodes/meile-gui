@@ -106,7 +106,7 @@ class RatingContent(MDBoxLayout):
             Request = HTTPRequests.MakeRequest()
             http = Request.hadapter()
             if MNAPI != HTTParams.SERVER_URL:
-                req = http.post(HTTParams.MNAPI + HTTParams.API_RATING_ENDPOINT, json=rating_dict)
+                req = http.post(MNAPI + HTTParams.API_RATING_ENDPOINT, json=rating_dict)
             else:
                 req = http.post(HTTParams.SERVER_URL + HTTParams.API_RATING_ENDPOINT, json=rating_dict)
             if req.status_code == 200:
