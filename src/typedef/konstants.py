@@ -45,7 +45,9 @@ class HTTParams():
         "https://api.sentinelgrowthdao.com",
     ]
     MNAPI = "https://aimokoivunen.mathnodes.com"
-    MNAPIS = [MNAPI] + []
+    MNAPIS = [MNAPI] + [
+        "https://michaelfay.bluefren.net"
+    ]
     RPC = "https://rpc.mathnodes.com:443"
     # Note http://128.199.90.172:26657 is testnet ONLY!
     RPCS = [RPC] + [
@@ -547,8 +549,8 @@ class IBCTokens():
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
-    VERSION = "v2.0.0"
-    BUILD = "1731321084740"
+    VERSION = "v2.0.1"
+    BUILD = "1731677502060"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"
     FailedHealthCheck = "Failed Sentinel Health Check"
@@ -593,6 +595,10 @@ class NodeKeys():
     FinalSubsKeys = [SubsInfoKeys[0], NodesInfoKeys[0],SubsInfoKeys[4],SubsInfoKeys[5], SubsInfoKeys[7], NodesInfoKeys[4], "Allocated", "Consumed", NodesInfoKeys[13],SubsInfoKeys[2],SubsInfoKeys[6]]
     NodeVersions  = [str(item).zfill(3) for item in range(70,1000)]
     Nodetypes = ['residential', 'business', 'hosting', 'edu']
+
+
+
+
 
 
 

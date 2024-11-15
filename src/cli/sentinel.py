@@ -51,10 +51,14 @@ class NodeTreeData():
             
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
+        self.MNAPI = CONFIG['network'].get('mnapi', HTTParams.SERVER_URL)
         
     def get_api_server(self):
         Request = HTTPRequests.MakeRequest(TIMEOUT=25) # long timeout in case there is heavy load
         http = Request.hadapter()
+        
+        CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
+        self.MNAPI = CONFIG['network'].get('mnapi', HTTParams.SERVER_URL)
         
         try:
             resp = http.get(HTTParams.IPAPI)
@@ -68,7 +72,10 @@ class NodeTreeData():
         client_continent = OurWorld.our_world.get_country_continent_code(client_country.lower())
         print(f"IP-API: {client_country},{client_continent}")
         try:
-            resp = http.get(HTTParams.SERVER_URL + HTTParams.CACHE_ENDPOINT)
+            if HTTParams.SERVER_URL != self.MNAPI: 
+                resp = http.get(self.MNAPI + HTTParams.CACHE_ENDPOINT)
+            else:
+                resp = http.get(HTTParams.SERVER_URL + HTTParams.CACHE_ENDPOINT)
             cache_json = resp.json()
             
         except Exception as e:

@@ -420,12 +420,18 @@ class MainWindow(Screen):
         
         self.address = CONFIG['wallet'].get('address', None)
     def ping(self):
+        CONFIG = self.MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
+        
+        MNAPI = CONFIG['network'].get('mnapi', HTTParams.SERVER_URL)
         UUID = Meile.app.root.get_screen(WindowNames.PRELOAD).UUID
         try:
             uuid_dict = {'uuid' : "%s" % UUID, 'os' : "w"}
             Request = HTTPRequests.MakeRequest(TIMEOUT=3)
             http = Request.hadapter()
-            ping = http.post(HTTParams.SERVER_URL + HTTParams.API_PING_ENDPOINT, json=uuid_dict)
+            if MNAPI != HTTParams.SERVER_URL:
+                ping = http.post(MNAPI + HTTParams.API_PING_ENDPOINT, json=uuid_dict)
+            else:
+                ping = http.post(HTTParams.SERVER_URL + HTTParams.API_PING_ENDPOINT, json=uuid_dict)
             if ping.status_code == 200:
                 print('ping')
             else:

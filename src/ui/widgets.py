@@ -97,12 +97,18 @@ class RatingContent(MDBoxLayout):
         return Config.resource_path(MeileColors.FONT_FACE)
     
     def SubmitRating(self, rating, node_address):
+        MeileConfig = MeileGuiConfig()
+        CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
+        MNAPI = CONFIG['network'].get('mnapi', HTTParams.SERVER_URL)
         UUID = Meile.app.root.get_screen(WindowNames.PRELOAD).UUID
         try:
             rating_dict = {'uuid' : "%s" % UUID, 'address' : "%s" % node_address, "rating" : rating}
             Request = HTTPRequests.MakeRequest()
             http = Request.hadapter()
-            req = http.post(HTTParams.SERVER_URL + HTTParams.API_RATING_ENDPOINT, json=rating_dict)
+            if MNAPI != HTTParams.SERVER_URL:
+                req = http.post(HTTParams.MNAPI + HTTParams.API_RATING_ENDPOINT, json=rating_dict)
+            else:
+                req = http.post(HTTParams.SERVER_URL + HTTParams.API_RATING_ENDPOINT, json=rating_dict)
             if req.status_code == 200:
                 print("Rating Sent")
                 return 0

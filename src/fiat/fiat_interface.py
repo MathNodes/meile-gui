@@ -182,9 +182,14 @@ class FiatInterface(Screen):
         
         Request = HTTPRequests.MakeRequest()
         http = Request.hadapter()
-        
+        MeileConfig = MeileGuiConfig()
+        CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
+        MNAPI = CONFIG['network'].get('mnapi', HTTParams.SERVER_URL)
         try:
-            r = http.get(scrtsxx.SERVER_ADDRESS + scrtsxx.MAX_SPEND_ENDPOINT)
+            if "aimokoivunen" in MNAPI:
+                r = http.get(scrtsxx.SERVER_ADDRESS + scrtsxx.MAX_SPEND_ENDPOINT)
+            else:
+                r = http.get(MNAPI + scrtsxx.MAX_SPEND_ENDPOINT)
             MAX_SPEND = r.json()['max_spend']
         except:
             pass
@@ -451,8 +456,11 @@ class FiatInterface(Screen):
         else:
             coin_qty = self.SCRTOptions[self.idvpn]
         
+        MeileConfig = MeileGuiConfig()
+        CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
+        MNAPI = CONFIG['network'].get('mnapi', HTTParams.SERVER_URL)
         
-        SERVER_ADDRESS = scrtsxx.SERVER_ADDRESS
+        SERVER_ADDRESS = scrtsxx.SERVER_ADDRESS if "aimokoivunen" in MNAPI else MNAPI
         API            = scrtsxx.API_ENDPOINT
         JSON           = {'id' : stripe_id, 'address' : wallet_address, 'qty' : coin_qty, 'token' : token }
         STATUS         = {'message' : None}
