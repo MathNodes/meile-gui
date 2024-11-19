@@ -37,7 +37,7 @@ class BTCPayDB():
     '''    
     def get_remote_btcpay_client(self):
         MeileConfig = MeileGuiConfig()
-        CONFIG = self.MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
+        CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
         MNAPI = CONFIG['network'].get('mnapi', HTTParams.SERVER_URL)
         SERVER_ADDRESS = scrtsxx.SERVER_ADDRESS if "aimokoivunen" in scrtsxx.SERVER_ADDRESS else MNAPI
         API            = scrtsxx.BTCPAY_ENDPOINT
