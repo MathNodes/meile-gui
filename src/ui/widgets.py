@@ -1308,7 +1308,6 @@ class PlanDetails(MDGridLayout):
     coin = StringProperty()
     
     def filter_nodes(self):
-        from fiat.stripe_pay import scrtsxx
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         
         Request = HTTPRequests.MakeRequest()
