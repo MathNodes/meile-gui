@@ -47,7 +47,9 @@ class HTTParams():
         "https://api.sentinelgrowthdao.com",
     ]
     MNAPI = "https://aimokoivunen.mathnodes.com"
-    MNAPIS = [MNAPI] + []
+    MNAPIS = [MNAPI] + [
+        "https://michaelfay.bluefren.net"
+    ]
     RPC = "https://rpc.mathnodes.com:443"
     # Note http://128.199.90.172:26657 is testnet ONLY!
     RPCS = [RPC] + [
@@ -550,7 +552,7 @@ class IBCTokens():
 class TextStrings():
     dash = "-"
     VERSION = "v2.0.0"
-    BUILD = "17310399933"
+    BUILD = "17311398863"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"
     FailedHealthCheck = "Failed Sentinel Health Check"
