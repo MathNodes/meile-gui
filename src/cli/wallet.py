@@ -308,6 +308,9 @@ class HandleWalletFunctions():
 
         try:
             sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key, ssl=True)
+        except ConnectionError:
+            message = "gRPC unresponsive. Try again later or switch gRPCs."
+            return (False, {'hash' : None, 'success' : False, 'message' : message})
         except grpc._channel._InactiveRpcError as e:
             status_code = e.code()
             
@@ -322,7 +325,8 @@ class HandleWalletFunctions():
 
         # Get balance automatically return udvpn ad dvpn
         if balance.get(DENOM, 0) < amount_required:
-            return(False, f"Balance is too low, required: {amount_required}{DENOM}")
+            message = f"Balance is too low, required: {amount_required}{DENOM}"
+            return (False, {'hash' : None, 'success' : False, 'message' : message})
 
         # F***ck we have always a unit issue ...
         if DENOM == "dvpn":
@@ -428,6 +432,10 @@ class HandleWalletFunctions():
         
         try:
             sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key, ssl=True)
+        # SDK raises ConnectionError, otherwise it is a grpc module exception
+        except ConnectionError:
+            self.returncode = (False, "gRPC unresponsive. Try again later or switch gRPCs.")
+            return
         except grpc._channel._InactiveRpcError as e:
             status_code = e.code()
             print(status_code)
@@ -537,6 +545,10 @@ class HandleWalletFunctions():
 
         try:
             sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key, ssl=True)
+        # SDK raises ConnectionError, otherwise it is a grpc module exception
+        except ConnectionError:
+            message = "gRPC unresponsive. Try again later or switch gRPCs."
+            return {'hash' : "0x0", 'success' : False, 'message' : message}
         except grpc._channel._InactiveRpcError as e:
             status_code = e.code()
             
@@ -624,6 +636,10 @@ class HandleWalletFunctions():
         
         try:
             sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key, ssl=True)
+        except ConnectionError:
+            message = "gRPC unresponsive. Try again later or switch gRPCs."
+            self.connected = {"v2ray_pid" : None, "result" : False, "status" : message}
+            return
         except grpc._channel._InactiveRpcError as e:
             status_code = e.code()
             
@@ -987,8 +1003,7 @@ class HandleWalletFunctions():
             coinJSON = r.json()
         except:
             return None
-            
-        print(coinJSON)
+
         try:
             for coin in coinJSON['result']:
                 if "udvpn" in coin['denom']:
