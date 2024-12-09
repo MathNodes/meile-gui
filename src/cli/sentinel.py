@@ -60,10 +60,7 @@ class NodeTreeData():
         self.MNAPI = CONFIG['network'].get('mnapi', HTTParams.SERVER_URL)
         
         try:
-            if HTTParams.SERVER_URL != self.MNAPI: 
-                resp = http.get(self.MNAPI + HTTParams.CACHE_ENDPOINT)
-            else:
-                resp = http.get(HTTParams.SERVER_URL + HTTParams.CACHE_ENDPOINT)
+            resp = http.get(HTTParams.IPAPI)
             ipapi_json = resp.json()
         except Exception as e:
             print(str(e))
@@ -74,7 +71,10 @@ class NodeTreeData():
         client_continent = OurWorld.our_world.get_country_continent_code(client_country.lower())
         print(f"IP-API: {client_country},{client_continent}")
         try:
-            resp = http.get(HTTParams.SERVER_URL + HTTParams.CACHE_ENDPOINT)
+            if HTTParams.SERVER_URL != self.MNAPI: 
+                resp = http.get(self.MNAPI + HTTParams.CACHE_ENDPOINT)
+            else:
+                resp = http.get(HTTParams.SERVER_URL + HTTParams.CACHE_ENDPOINT)
             cache_json = resp.json()
             
         except Exception as e:
