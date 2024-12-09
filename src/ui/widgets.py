@@ -430,20 +430,13 @@ class PlanSubscribeContent(BoxLayout):
                     {
                         "viewclass": "IconListItem",
                         "icon": "circle-multiple",
-                        "text": "firo",
+                        "text": f"{i}",
                         "height": dp(56),
-                        "on_release": lambda x="firo": self.set_item(x),
-                    },
-                    {
-                        "viewclass": "IconListItem",
-                        "icon": "circle-multiple",
-                        "text": "beam",
-                        "height": dp(56),
-                        "on_release": lambda x="beam": self.set_item(x),
-                    }  
+                        "on_release": lambda x=f"{i}": self.set_item(x),
+                    } for i in IBCTokens.NOWCOINS    
                 ]
                 self.menu.items = menu_items
-                self.set_item("firo")
+                self.set_item(IBCTokens.NOWCOINS[0])
                 #self.menu.bind()
             else:
                 self.ids.drop_item.text = "dvpn"
@@ -912,7 +905,7 @@ class PlanRow(MDGridLayout):
 
         deposit = subscribe_dialog.ids.deposit.text
         nnodes = subscribe_dialog.nnodes
-        mu_coin = subscribe_dialog.ids.drop_item.current_item
+        mu_coin = subscribe_dialog.ids.drop_item.current_item #need to set current item when changing payment processor i.e., firo
 
         # Parse all the coins without u-unit
         if mu_coin.startswith("u"):
@@ -960,6 +953,7 @@ class PlanRow(MDGridLayout):
             yield 0.6
             self.start_payment_thread(usd)
             
+            '''
             if self.invoice_result['success']:
                 self.dialog.dismiss()
                 self.dialog = None
@@ -971,7 +965,7 @@ class PlanRow(MDGridLayout):
                 yield 0.6
 
                 on_success_subscription()
-
+            '''
         elif subscribe_dialog.pay_with == "now":
             if self.dialog:
                 self.dialog.dismiss()
@@ -992,6 +986,7 @@ class PlanRow(MDGridLayout):
             yield 0.6
             self.start_payment_thread_now(usd, mu_coin)
             
+            '''
             if self.invoice_result['success']:
                 self.dialog.dismiss()
                 self.dialog = None
@@ -1003,6 +998,7 @@ class PlanRow(MDGridLayout):
                 yield 0.6
 
                 on_success_subscription()
+            '''
         else:
             MDDialog(text="[color=#FF0000]Please select a payment option[/color]").open()
 

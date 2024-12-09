@@ -547,12 +547,21 @@ class IBCTokens():
     UNITTOKEN    = {'uscrt' : 'scrt', 'uatom' : 'atom' , 'uosmo' : 'osmo', 'udec' : 'dec', 'udvpn' : 'dvpn', 'tsent' : 'tsent'}
     IBCUNITTOKEN = {'uscrt' : IBCSCRT, 'uatom' : IBCATOM , 'uosmo' : IBCOSMO, 'udec' : IBCDEC, 'udvpn' : 'udvpn', 'tsent' : 'tsent'}
     mu_coins     = ["udvpn", "uscrt", "uosmo", "uatom", "udec"]
-    CSAPPMAP     = {'dec' : 'decentr', 'atom' : 'cosmos', 'scrt' : 'secret', 'osmo' : 'osmosis', 'dvpn' : 'sentinel', 'beam' : 'beam', 'firo' : 'zcoin'}
+    CSAPPMAP     = {'dec' : 'decentr',
+                    'atom' : 'cosmos', 
+                    'scrt' : 'secret', 
+                    'osmo' : 'osmosis', 
+                    'dvpn' : 'sentinel', 
+                    'beam' : 'beam', 
+                    'firo' : 'zcoin',
+                    'pivx' : 'pivx'}
+    
+    NOWCOINS     = ["firo", "beam", "pivx"]
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
-    VERSION = "v2.0.0"
-    BUILD = "17311398863"
+    VERSION = "v2.0.4"
+    BUILD = "17337124793"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"
     FailedHealthCheck = "Failed Sentinel Health Check"
