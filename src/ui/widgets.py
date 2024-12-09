@@ -53,7 +53,7 @@ from coin_api.get_price import GetPriceAPI
 from adapters.ChangeDNS import ChangeDNS
 from kivy.uix.recyclegridlayout import RecycleGridLayout
 from helpers.helpers import format_byte_size
-from fiat.stripe_pay import scrtsxx
+from fiat.stripe_pay.dist import scrtsxx
 from utils.qr import QRCode
 
 class WalletInfoContent(BoxLayout):
@@ -96,12 +96,18 @@ class RatingContent(MDBoxLayout):
         return Config.resource_path(MeileColors.FONT_FACE)
     
     def SubmitRating(self, rating, node_address):
+        MeileConfig = MeileGuiConfig()
+        CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
+        MNAPI = CONFIG['network'].get('mnapi', HTTParams.SERVER_URL)
         UUID = Meile.app.root.get_screen(WindowNames.PRELOAD).UUID
         try:
             rating_dict = {'uuid' : "%s" % UUID, 'address' : "%s" % node_address, "rating" : rating}
             Request = HTTPRequests.MakeRequest()
             http = Request.hadapter()
-            req = http.post(HTTParams.SERVER_URL + HTTParams.API_RATING_ENDPOINT, json=rating_dict)
+            if MNAPI != HTTParams.SERVER_URL:
+                req = http.post(MNAPI + HTTParams.API_RATING_ENDPOINT, json=rating_dict)
+            else:
+                req = http.post(HTTParams.SERVER_URL + HTTParams.API_RATING_ENDPOINT, json=rating_dict)
             if req.status_code == 200:
                 print("Rating Sent")
                 return 0
@@ -425,20 +431,13 @@ class PlanSubscribeContent(BoxLayout):
                     {
                         "viewclass": "IconListItem",
                         "icon": "circle-multiple",
-                        "text": "firo",
+                        "text": f"{i}",
                         "height": dp(56),
-                        "on_release": lambda x="firo": self.set_item(x),
-                    },
-                    {
-                        "viewclass": "IconListItem",
-                        "icon": "circle-multiple",
-                        "text": "beam",
-                        "height": dp(56),
-                        "on_release": lambda x="beam": self.set_item(x),
-                    }  
+                        "on_release": lambda x=f"{i}": self.set_item(x),
+                    } for i in IBCTokens.NOWCOINS
                 ]
                 self.menu.items = menu_items
-                self.set_item("firo")
+                self.set_item(IBCTokens.NOWCOINS[0])
                 #self.menu.bind()
             else:
                 self.ids.drop_item.text = "dvpn"
@@ -957,6 +956,7 @@ class PlanRow(MDGridLayout):
             yield 0.6
             self.start_payment_thread(usd)
             
+            '''
             if self.invoice_result['success']:
                 self.dialog.dismiss()
                 self.dialog = None
@@ -968,6 +968,7 @@ class PlanRow(MDGridLayout):
                 yield 0.6
 
                 on_success_subscription()
+            '''
 
         elif subscribe_dialog.pay_with == "now":
             if self.dialog:
@@ -989,6 +990,8 @@ class PlanRow(MDGridLayout):
             yield 0.6
             self.start_payment_thread_now(usd, mu_coin)
             
+            
+            '''
             if self.invoice_result['success']:
                 self.dialog.dismiss()
                 self.dialog = None
@@ -1000,6 +1003,7 @@ class PlanRow(MDGridLayout):
                 yield 0.6
 
                 on_success_subscription()
+            '''
         else:
             MDDialog(text="[color=#FF0000]Please select a payment option[/color]").open()
 
@@ -1303,7 +1307,6 @@ class PlanDetails(MDGridLayout):
     coin = StringProperty()
     
     def filter_nodes(self):
-        from fiat.stripe_pay import scrtsxx
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         
         Request = HTTPRequests.MakeRequest()

@@ -45,7 +45,9 @@ class HTTParams():
         "https://api.sentinelgrowthdao.com",
     ]
     MNAPI = "https://aimokoivunen.mathnodes.com"
-    MNAPIS = [MNAPI] + []
+    MNAPIS = [MNAPI] + [
+        "https://michaelfay.bluefren.net"
+    ]
     RPC = "https://rpc.mathnodes.com:443"
     # Note http://128.199.90.172:26657 is testnet ONLY!
     RPCS = [RPC] + [
@@ -543,11 +545,19 @@ class IBCTokens():
     UNITTOKEN    = {'uscrt' : 'scrt', 'uatom' : 'atom' , 'uosmo' : 'osmo', 'udec' : 'dec', 'udvpn' : 'dvpn', 'tsent' : 'tsent'}
     IBCUNITTOKEN = {'uscrt' : IBCSCRT, 'uatom' : IBCATOM , 'uosmo' : IBCOSMO, 'udec' : IBCDEC, 'udvpn' : 'udvpn', 'tsent' : 'tsent'}
     mu_coins     = ["udvpn", "uscrt", "uosmo", "uatom", "udec"]
-    CSAPPMAP     = {'dec' : 'decentr', 'atom' : 'cosmos', 'scrt' : 'secret', 'osmo' : 'osmosis', 'dvpn' : 'sentinel', 'beam' : 'beam', 'firo' : 'zcoin'}
+    CSAPPMAP     = {'dec' : 'decentr',
+                    'atom' : 'cosmos', 
+                    'scrt' : 'secret', 
+                    'osmo' : 'osmosis', 
+                    'dvpn' : 'sentinel', 
+                    'beam' : 'beam', 
+                    'firo' : 'zcoin',
+                    'pivx' : 'pivx'}
+    NOWCOINS     = ["firo", "beam", "pivx"]
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
-    VERSION = "v2.0.0"
+    VERSION = "v2.0.4"
     BUILD   = "1722988800718"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"

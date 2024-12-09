@@ -24,6 +24,7 @@ from helpers import helpers
 
 import mospy
 import grpc
+from grpc import RpcError, StatusCode
 from sentinel_sdk.sdk import SDKInstance
 from sentinel_sdk.types import PageRequest, Status
 from builtins import AttributeError
@@ -49,13 +50,20 @@ class NodeTreeData():
             
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
+        self.MNAPI = CONFIG['network'].get('mnapi', HTTParams.SERVER_URL)
         
     def get_api_server(self):
-        Request = HTTPRequests.MakeRequest(TIMEOUT=25) # long timeout in case there is heavy load
+        Request = HTTPRequests.MakeRequest(TIMEOUT=10) # long timeout in case there is heavy load
         http = Request.hadapter()
         
+        CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
+        self.MNAPI = CONFIG['network'].get('mnapi', HTTParams.SERVER_URL)
+        
         try:
-            resp = http.get(HTTParams.IPAPI)
+            if HTTParams.SERVER_URL != self.MNAPI: 
+                resp = http.get(self.MNAPI + HTTParams.CACHE_ENDPOINT)
+            else:
+                resp = http.get(HTTParams.SERVER_URL + HTTParams.CACHE_ENDPOINT)
             ipapi_json = resp.json()
         except Exception as e:
             print(str(e))
