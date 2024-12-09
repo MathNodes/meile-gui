@@ -2,6 +2,7 @@ from subprocess import Popen
 import multiprocessing
 from multiprocessing import Process
 from time import sleep
+from dataclasses import dataclass
 import psutil
 
 from typedef.konstants import ConfParams 
@@ -40,3 +41,116 @@ class V2RayHandler():
         proc2.wait(timeout=30)
         proc_out,proc_err = proc2.communicate()
         return proc2.returncode
+    
+    
+    
+@dataclass
+class V2RayConfiguration:
+    api_port: int
+
+    vmess_port: int
+    vmess_address: str
+    vmess_uid: str
+    vmess_transport: str
+
+    proxy_port: int = 1080
+
+    def get(self) -> dict:
+        return {
+            "api": {
+                "services": [
+                    "StatsService"
+                ],
+                "tag": "api"
+            },
+            "inbounds": [
+                {
+                    "listen": "127.0.0.1",
+                    "port": self.api_port,
+                    "protocol": "dokodemo-door",
+                    "settings": {
+                        "address": "127.0.0.1"
+                    },
+                    "tag": "api"
+                },
+                {
+                    "listen": "127.0.0.1",
+                    "port": self.proxy_port,
+                    "protocol": "socks",
+                    "settings": {
+                        "ip": "127.0.0.1",
+                        "udp": True
+                    },
+                    "sniffing": {
+                        "destOverride": [
+                            "http",
+                            "tls"
+                        ],
+                        "enabled": True
+                    },
+                    "tag": "proxy"
+                }
+            ],
+            "log": {
+                "loglevel": "none"
+            },
+            "outbounds": [
+                {
+                    "protocol": "vmess",
+                    "settings": {
+                        "vnext": [
+                            {
+                                "address": self.vmess_address,
+                                "port": self.vmess_port,
+                                "users": [
+                                    {
+                                        "alterId": 0,
+                                        "id": self.vmess_uid
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    "streamSettings": {
+                        "network": self.vmess_transport
+                    },
+                    "tag": "vmess"
+                }
+            ],
+            "policy": {
+                "levels": {
+                    "0": {
+                        "downlinkOnly": 0,
+                        "uplinkOnly": 0
+                    }
+                },
+                "system": {
+                    "statsOutboundDownlink": True,
+                    "statsOutboundUplink": True
+                }
+            },
+            "routing": {
+                "rules": [
+                    {
+                        "inboundTag": [
+                            "api"
+                        ],
+                        "outboundTag": "api",
+                        "type": "field"
+                    }
+                ]
+            },
+            "stats": {},
+            "transport": {
+                "dsSettings": {},
+                "grpcSettings": {},
+                "gunSettings": {},
+                "httpSettings": {},
+                "kcpSettings": {},
+                "quicSettings": {
+                    "security": "chacha20-poly1305"
+                },
+                "tcpSettings": {},
+                "wsSettings": {}
+            }
+        }

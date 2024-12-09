@@ -3,7 +3,7 @@ from kivymd.uix.floatlayout import MDFloatLayout
 from kivymd.uix.tab import MDTabsBase
 from kivy.uix.screenmanager import ScreenManager
 from kivymd.uix.relativelayout import MDRelativeLayout
-from kivy.properties import  StringProperty
+from kivy.properties import  StringProperty, NumericProperty
 from kivy.uix.behaviors import FocusBehavior
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.recyclegridlayout import RecycleGridLayout
@@ -13,9 +13,15 @@ from kivymd.uix.button import MDFlatButton, MDRaisedButton, MDIconButton
 from kivymd.uix.tooltip import MDTooltip
 from kivy.uix.switch import Switch
 from kivy_garden.mapview.view import MapView
-from kivymd.uix.behaviors import RoundedRectangularElevationBehavior, CircularElevationBehavior, RectangularRippleBehavior, CircularRippleBehavior
+from kivymd.uix.behaviors import RoundedRectangularElevationBehavior, RectangularRippleBehavior, CircularRippleBehavior
 from kivymd.uix.fitimage.fitimage import FitImage
 from kivy.uix.behaviors import ButtonBehavior 
+from kivymd.uix.textfield.textfield import MDTextField
+from kivymd.uix.label.label import MDLabel
+from kivymd.uix.progressbar.progressbar import MDProgressBar
+
+from conf.meile_config import MeileGuiConfig
+from typedef.konstants import MeileColors
 
 class Tab(MDBoxLayout, MDTabsBase):
     pass
@@ -27,6 +33,32 @@ class SubscribeContent(BoxLayout):
     def __init_ (self, price):
         self.price_text = price
 '''
+class ProtectedLabel(MDLabel):
+    def get_font(self):
+        Config = MeileGuiConfig()
+        return Config.resource_path(MeileColors.QR_FONT_FACE)
+    
+class MapCenterButton(MDIconButton, MDTooltip):
+    pass
+
+class ToolTipMDIconButton(MDIconButton, MDTooltip):
+    pass
+
+class IPAddressTextField(MDTextField):
+    pass
+
+class ConnectedNode(MDTextField):
+    pass
+
+class BandwidthLabel(MDLabel):
+    pass
+
+class BandwidthBar(MDProgressBar):
+    pass
+
+class QuotaPct(MDLabel):
+    pass
+
 class LatencyContent(BoxLayout):
     
     def return_latency(self):
@@ -34,6 +66,8 @@ class LatencyContent(BoxLayout):
 class YellowSwitch(Switch):
     pass
 class TooltipMDRaisedButton(MDRaisedButton, MDTooltip):
+    pass
+class TooltipMDFlatButton(MDFlatButton, MDTooltip):
     pass
 
 class TooltipMDIconButton(MDIconButton, MDTooltip):
@@ -61,7 +95,7 @@ class SelectableRecycleGridLayout(FocusBehavior, LayoutSelectionBehavior,
 class ContinentMap(MapView):
     pass
 
-class DisplayPic(CircularElevationBehavior, ButtonBehavior, FitImage):
+class DisplayPic(ButtonBehavior, FitImage):
     pass
 
 class ClickableTextFieldRoundCC(MDRelativeLayout):
@@ -81,5 +115,6 @@ class ClickableTextFieldRoundCVV(MDRelativeLayout):
 class TXContent(BoxLayout):
     pass
 
-class ConnectionDialog(MDFloatLayout):
+class ConnectionDialog(MDBoxLayout):
     pass
+

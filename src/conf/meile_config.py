@@ -43,14 +43,49 @@ class MeileGuiConfig():
             
         if not path.isdir(self.IMGDIR):
             mkdir(self.IMGDIR)
-            
+        
+        dnscrypt_confile = path.join(self.BASEDIR, 'dnscrypt-proxy.toml')
+        
+        if not path.isfile(dnscrypt_confile):
+            dnscryptconf = self.resource_path(path.join('config', 'dnscrypt-proxy.toml'))
+            shutil.copyfile(dnscryptconf, dnscrypt_confile)
+        
+        
         self.CONFIG.read(confpath)
+        
+        if not self.CONFIG.has_section('subscription'):
+            self.CONFIG.add_section('subscription')
+            self.CONFIG.set('subscription', 'gb', '5')
+            FILE = open(self.CONFFILE, 'w')    
+            self.CONFIG.write(FILE)
         
         if not self.CONFIG.has_section('network'):
             self.CONFIG.add_section('network')
             self.CONFIG.set('network', 'rpc', 'https://rpc.mathnodes.com:443')
+            self.CONFIG.set('network', 'grpc', 'grpc.ungovernable.dev:443')
+            self.CONFIG.set('network', 'api', 'https://api.sentinel.mathnodes.com')
+            self.CONFIG.set('network', 'mnapi', 'https://aimokoivunen.mathnodes.com')
+            self.CONFIG.set('network', 'cache', 'https://metabase.bluefren.xyz/api/public/card/4a891454-51da-462a-a5df-e85ca17c05d5/query/json')
             FILE = open(self.CONFFILE, 'w')    
             self.CONFIG.write(FILE)
+        else:
+            if not self.CONFIG.has_option('network', 'grpc'):
+                self.CONFIG.set('network', 'grpc', 'grpc.ungovernable.dev:443')
+            if not self.CONFIG.has_option('network', 'api'):
+                self.CONFIG.set('network', 'api', 'https://api.sentinel.mathnodes.com')
+            if not self.CONFIG.has_option('network', 'mnapi'):
+                self.CONFIG.set('network', 'mnapi', 'https://aimokoivunen.mathnodes.com')
+            if not self.CONFIG.has_option('network', 'cache'):
+                self.CONFIG.set('network', 'cache', 'https://metabase.bluefren.xyz/api/public/card/4a891454-51da-462a-a5df-e85ca17c05d5/query/json')
+            if not self.CONFIG.has_option('network', 'resolver1'):
+                self.CONFIG.set('network', 'resolver1', 'cs-ch')
+            if not self.CONFIG.has_option('network', 'resolver2'):
+                self.CONFIG.set('network', 'resolver2', 'uncensoreddns-ipv4')
+            if not self.CONFIG.has_option('network', 'resolver3'):
+                self.CONFIG.set('network', 'resolver3', 'doh-ibksturm')
             
-        
+            FILE = open(self.CONFFILE, 'w')    
+            self.CONFIG.write(FILE) 
+            
+           
         return self.CONFIG
