@@ -545,7 +545,7 @@ class HandleWalletFunctions():
                 return {'hash' : "0x0", 'success' : False, 'message' : message}
             
         try: 
-            sub = sdk.subscriptions.QuerySubscription(subscription_id=int(subID))
+            sub = sdk.subscriptions.QuerySubscription(subscription_id=int(subId))
         except (mospy.exceptions.clients.TransactionTimeout,
                 mospy.exceptions.clients.NodeException,
                 mospy.exceptions.clients.NodeTimeoutException) as e:
