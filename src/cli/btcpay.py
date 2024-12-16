@@ -8,6 +8,7 @@ from requests.auth import HTTPBasicAuth
 from adapters import HTTPRequests
 from fiat.stripe_pay.dist import scrtsxx
 from conf.meile_config import MeileGuiConfig
+from typedef.konstants import HTTParams
 class BTCPayDB():
     
     def connDB(self): 
