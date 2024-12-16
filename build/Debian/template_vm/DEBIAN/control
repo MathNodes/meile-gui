@@ -1,0 +1,7 @@
+Package: meile-gui
+Version: 2.0.5
+Architecture: amd64
+Depends: wireguard-tools (>= 1.0), mesa-utils (>=8.4.0), xclip (>=0.13), curl (>=7.68.0), net-tools (>=1.60)
+Maintainer: freQniK <freQniK@mathnodes.com>
+Description: Meile dVPN GUI for Sentinel
+ This is a desktop gui dVPN client, called Meile, which means "for us" in Estonian. It provides decentralized VPN access through the Sentinel Blockchain on Cosmos. 
