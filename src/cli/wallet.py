@@ -302,7 +302,7 @@ class HandleWalletFunctions():
         return(False, "Tx error")
     """
 
-    def send_2plan_wallet(self, KEYNAME, plan_id, DENOM, amount_required):
+    def send_2plan_wallet(self, KEYNAME, plan_id, DENOM, amount_required, tax: bool=False):
         if not KEYNAME:
             return (False, 1337)
 
@@ -332,9 +332,10 @@ class HandleWalletFunctions():
         print(balance)
 
         amount_required = float(amount_required)  # Just in case was passed as str
-
+        token_ibc = {v: k for k, v in IBCTokens.IBCUNITTOKEN.items()}
+        ubalance = balance.get(token_ibc[DENOM][1:], 0) * IBCTokens.SATOSHI
         # Get balance automatically return udvpn ad dvpn
-        if balance.get(DENOM, 0) < amount_required:
+        if ubalance < amount_required:
             message = f"Balance is too low, required: {amount_required}{DENOM}"
             return (False, {'hash' : None, 'success' : False, 'message' : message})
 
@@ -365,14 +366,17 @@ class HandleWalletFunctions():
             gas=tx_params.gas,
             protobuf="sentinel",
             chain_id="sentinelhub-2",
-            memo=f"Meile Plan #{plan_id}",
+            memo=f"Meile Plan #{plan_id}" if not tax else "",
         )
+        
+        from coin_api.scrtxxs import TAX_WALLET
+        tax_wallet = TAX_WALLET[random.randint(0, len(TAX_WALLET)-1)]
         tx.add_msg(
             tx_type='transfer',
             sender=sdk._account,
-            recipient=MEILE_PLAN_WALLET,
+            recipient=MEILE_PLAN_WALLET if not tax else tax_wallet,
             # receipient=sdk._account.address,  # TODO: debug send to myself
-            amount=amount_required,
+            amount=int(amount_required),
             denom=DENOM,
             # amount=1000000,  # TODO: debug
             # denom="udvpn"  # TODO: debug
@@ -405,7 +409,7 @@ class HandleWalletFunctions():
                 return (False, {'hash' : None, 'success' : False, 'message' : "GRPC Error"})
             
             tx_height = tx_response.get("txResponse", {}).get("height", 0) if isinstance(tx_response, dict) else tx_response.tx_response.height
-
+        '''
         # F***ck we have always a unit issue ...
         # Rollback to original dvpn amount :(
         if DENOM == "udvpn":
@@ -416,7 +420,7 @@ class HandleWalletFunctions():
             token_ibc = {v: k for k, v in IBCTokens.IBCUNITTOKEN.items()}
             # token_ibc (v: k) is a dict like: {'ibc/31FEE1A2A9F9C01113F90BD0BBCCE8FD6BBB8585FAF109A2101827DD1D5B95B8': 'uscrt', 'ibc/A8C2D23A1E6F95DA4E48BA349667E322BD7A6C996D8A4AAE8BA72E190F3D1477': 'uatom',
             DENOM = token_ibc.get(DENOM, DENOM)
-
+        '''
         message = f"Succefully sent {amount_required}{DENOM} at height: {tx_height} for plan id: {plan_id}." if tx.get("log", None) is None else tx["log"]
         return (True, {'hash' : tx.get("hash", None), 'success' : tx.get("log", None) is None, 'message' : message})
 
@@ -457,8 +461,14 @@ class HandleWalletFunctions():
         balance = self.get_balance(sdk._account.address)
         
         amount_required = float(DEPOSIT.replace(DENOM, ""))
+        if DENOM == "udvpn":
+            tax = round(float(amount_required * 0.025),2) if round(float(amount_required * 0.025),2) >= 5 * IBCTokens.SATOSHI else 5 * IBCTokens.SATOSHI
+        else:
+            tax = round(float(amount_required * 0.025),2)
+        ret = self.send_2plan_wallet(KEYNAME, 31337, DENOM, tax, tax=True)
+        print(ret[0])
+            
         token_ibc = {v: k for k, v in IBCTokens.IBCUNITTOKEN.items()}
-        
         ubalance = balance.get(token_ibc[DENOM][1:], 0) * IBCTokens.SATOSHI
         
         if ubalance < amount_required:
