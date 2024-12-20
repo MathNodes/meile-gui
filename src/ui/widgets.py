@@ -1036,7 +1036,7 @@ class PlanRow(MDGridLayout):
         KEYNAME = CONFIG['wallet'].get('keyname', '')
 
         hwf = HandleWalletFunctions()
-        result, output = hwf.send_2plan_wallet(KEYNAME, self.plan_id, mu_coin, deposit)
+        result, output = hwf.send_2plan_wallet(KEYNAME, self.plan_id, mu_coin, int(round(float(deposit),4)*IBCTokens.SATOSHI))
         print("result", result)
         print("output", output)
 
@@ -1061,7 +1061,7 @@ class PlanRow(MDGridLayout):
                         MDFlatButton(
                             text="OK",
                             theme_text_color="Custom",
-                            text_color=self.theme_cls.primary_color,
+                            text_color=MeileColors.MEILE,
                             on_release=self.closeDialog
                         ),])
             if isinstance(output, dict) is True:
