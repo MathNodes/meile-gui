@@ -331,25 +331,27 @@ class HandleWalletFunctions():
         balance = self.get_balance(sdk._account.address)
         print(balance)
 
-        amount_required = float(amount_required)  # Just in case was passed as str
-        token_ibc = {v: k for k, v in IBCTokens.IBCUNITTOKEN.items()}
-        ubalance = balance.get(token_ibc[DENOM][1:], 0) * IBCTokens.SATOSHI
-        # Get balance automatically return udvpn ad dvpn
-        if ubalance < amount_required:
-            message = f"Balance is too low, required: {amount_required}{DENOM}"
-            return (False, {'hash' : None, 'success' : False, 'message' : message})
+        amount_required = int(amount_required)  # Just in case was passed as str
 
         # F***ck we have always a unit issue ...
         if DENOM == "dvpn":
             print(f"Denom is a dvpn, convert as udvpn, amount_required: {amount_required}dvpn")
             DENOM = "udvpn"
-            amount_required = int(round(amount_required * IBCTokens.SATOSHI, 4))
-            print(f"amount_required: {amount_required}udvpn")
+            ubalance = balance.get("dvpn", 0) * IBCTokens.SATOSHI
         else:
             # I need to convert osmo, atom etc to ibc denom
             # token_ibc (k: v) is a dict like: {'uscrt': 'ibc/31FEE1A2A9F9C01113F90BD0BBCCE8FD6BBB8585FAF109A2101827DD1D5B95B8', 'uatom': 'ibc/A8C2D23A1E6
             token_ibc = {k: v for k, v in IBCTokens.IBCUNITTOKEN.items()}
             DENOM = token_ibc.get(DENOM, DENOM)
+            ubalance = balance.get(token_ibc[DENOM][1:], 0) * IBCTokens.SATOSHI
+            
+        print(ubalance)
+        print(f"amount_required: {amount_required}{DENOM}")
+        
+        # Get balance automatically return udvpn ad dvpn
+        if ubalance < amount_required:
+            message = f"Balance is too low, required: {amount_required}{DENOM}"
+            return (False, {'hash' : None, 'success' : False, 'message' : message})
         
         gas = random.randint(ConfParams.GAS-50000, 314159)
         
