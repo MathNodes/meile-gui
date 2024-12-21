@@ -545,7 +545,7 @@ class HandleWalletFunctions():
                 return {'hash' : "0x0", 'success' : False, 'message' : message}
             
         try: 
-            sub = sdk.subscriptions.QuerySubscription(subscription_id=int(subID))
+            sub = sdk.subscriptions.QuerySubscription(subscription_id=int(subId))
         except (mospy.exceptions.clients.TransactionTimeout,
                 mospy.exceptions.clients.NodeException,
                 mospy.exceptions.clients.NodeTimeoutException) as e:
@@ -950,7 +950,7 @@ class HandleWalletFunctions():
                 tuniface = False
                 v2ray_handler = V2RayHandler(f"{v2ray_tun2routes_connect_bash} up")
                 v2ray_handler.start_daemon()
-                sleep(14)
+                sleep(20)
                 
                 if pltfrm != Arch.OSX:
                     for iface in psutil.net_if_addrs().keys():

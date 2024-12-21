@@ -404,7 +404,7 @@ class MainWindow(Screen):
         Clock.schedule_once(self.build, 1)
         Clock.schedule_interval(self.update_wallet, 10)
         
-        item_height = 100
+        item_height = 50
         max_height = len(self.MenuOptions) * item_height
         
         menu_icons = ["cloud-refresh", "sort", "shield-lock", "shield-lock", "exit-to-app"]

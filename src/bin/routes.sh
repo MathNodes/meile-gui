@@ -10,7 +10,7 @@ if [[ ${STATE} == "up" ]]; then
 	${HOME}/.meile-gui/bin/tun2socks  -device utun123 -proxy socks5://127.0.0.1:1080 -interface $NIC &
 	sleep 5
 	ifconfig utun123 198.18.0.1 198.18.0.1 up
-	sleep 1
+	sleep 4
 	route add -net 1.0.0.0/8 198.18.0.1
 	route add -net 2.0.0.0/7 198.18.0.1
 	route add -net 4.0.0.0/6 198.18.0.1

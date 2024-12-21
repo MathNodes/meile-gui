@@ -15,9 +15,9 @@ WindowManager:
     
         Image:
             source: root.get_logo()
-            size_hint: 1, 1
-            size: 1000, 1000
-            pos_hint: {"x": 0, "y": .075}
+            size_hint: 1, None
+            size: 500, 500
+            pos_hint: {"x": 0, "y": .275}
             # size: self.texture_size[0] / 2, self.texture_size[1] / 2
             # opacity: 0.1
         
@@ -28,14 +28,6 @@ WindowManager:
             color: 1,1,1,1
             halign: "center"
             pos_hint: {"center_x" : .5, "y" : -.3}
-    
-        #MDRaisedButton:
-        #    id: go_button
-        #    opacity: 0
-        #    disabled: True
-        #    text: "Let's Go"
-        #    pos_hint: {"center_x" : .5, "y" : .05}
-        #    on_press: root.switch_window()
             
         MDProgressBar:
             id: pb
@@ -64,7 +56,7 @@ WindowManager:
                 source: root.get_logo_text()
                 size_hint_y: .6
                 size_hint_x: .6
-                pos_hint: {'x' : -.19, 'center_y' : .5}
+                pos_hint: {'x' : -.15, 'center_y' : .5}
             ToolTipMDIconButton:
                 id: doh
                 opacity: 0
@@ -94,7 +86,7 @@ WindowManager:
                     TooltipMDFlatButton:
                         #tooltip_text: "Connect to Node"
                         #md_bg_color: get_color_from_hex("#121212")
-                        pos_hint: {'x' : 1, 'y': .6}
+                        pos_hint: {'x' : .5, 'y': .6}
                         on_release: root.connect_routine()
                         opacity: 1
                         Image:
@@ -109,14 +101,14 @@ WindowManager:
                         hint_text: "key: , value:"
                         icon_right: "magnify"
                         pos_hint: {'x' : .1, 'y': 0}
-                        size_hint_x: 3.8
+                        size_hint_x: 1.8
                         size_hint_y: .6
                         font_size: sp(12)
                         on_text_validate: root.on_enter_search()
                                         
                     ToolTipMDIconButton:
                         tooltip_text: "Clear"
-                        pos_hint: {'x' : 3.7, 'y': .145}
+                        pos_hint: {'x' : 2, 'y': .145}
                         on_release: root.restore_results()
                         icon: "restore"
                         theme_text_color: "Custom"
@@ -1040,7 +1032,7 @@ WindowManager:
 <PlanDetails>:
     rows: 3
     cols: 6
-    height: 160 # different on oses
+    height: 90 # different on oses
 
     MDLabel
         text: "[b]UUID[/b]"
@@ -1105,7 +1097,7 @@ WindowManager:
 <NodeDetails>:
     rows: 2
     cols: 8
-    height: 160 # different on oses
+    height: 90 # different on oses
 
     MDLabel
         text: "[b]ID[/b]"
@@ -1162,7 +1154,7 @@ WindowManager:
     md_bg_color: get_color_from_hex(MeileColors.DIALOG_BG_COLOR2)
     radius: [5, 5, 5, 5]
 
-    height: 90
+    height: 45
     adaptive_height: True
 
 <PlanAccordion>:
@@ -1171,7 +1163,7 @@ WindowManager:
     md_bg_color: get_color_from_hex(MeileColors.DIALOG_BG_COLOR2)
     radius: [5, 5, 5, 5]
 
-    height: 90
+    height: 45
     adaptive_height: True
     
     
@@ -1717,7 +1709,7 @@ WindowManager:
                 Color:
                     rgba: get_color_from_hex(MeileColors.MEILE) 
                 Line:
-                    width: 2
+                    width: 1
                     circle: (self.x + self.width / 2, self.y + self.height / 2, min(self.width, self.height) / 4 - 4)
         MDLabel:
             id: hourly_text
@@ -1736,7 +1728,7 @@ WindowManager:
                 Color:
                     rgba: get_color_from_hex(MeileColors.MEILE)  # Use the color from MeileColors
                 Line:
-                    width: 2
+                    width: 1
                     circle: (self.x + self.width / 2, self.y + self.height / 2, min(self.width, self.height) / 4 - 4)
                                
 <SubscribeContent>
