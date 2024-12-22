@@ -1,6 +1,4 @@
 #!/bin/bash
-#
-# Debian build script
 
 if [[ $# -lt 1 ]]; then
 	echo "Usage: $0 <version>"
@@ -14,7 +12,7 @@ build_version=`date +%s%3N`
 sed -i "s/VERSION = \".*\"/VERSION = \"$new_version\"/" src/typedef/konstants.py
 sed -i "s/BUILD = \".*\"/BUILD = \"$build_version\"/" src/typedef/konstants.py
 
-source meile2.0/bin/activate
+source meile310/bin/activate
 
 # Linux 
 pyinstaller --onefile --collect-all bip_utils --collect-all mospy --collect-all sentinel_protobuf --collect-all sentinel_sdk --collect-all stripe --collect-all kivy_garden --add-data src/fiat/stripe_pay/dist/pyarmor_runtime_002918:pyarmor_runtime_002918 --add-data src/fonts:../fonts --add-data src/awoc/datum/:datum --add-data src/utils/fonts/:../utils/fonts --add-data src/utils/coinimg/:../utils/coinimg --add-data src/imgs/:../imgs --add-data src/kv/:../kv --add-data src/conf/config/:config  --add-data src/bin/:../bin src/main/meile_gui.py
@@ -25,6 +23,11 @@ if [[ -z "$version" ]]; then
     echo "Invalid version format. Please use the format 'vX.Y.Z'."
     exit 1
 fi
+
+rm -rf meile-gui-v"$version"_ubuntu"$ubuntu_version"_amd64/
+rm -rf meile-gui-v"$version"_ubuntu"$ubuntu_version"_amd64_vm/
+
+rm -rf *.deb
 
 mkdir meile-gui-v"$version"_ubuntu"$ubuntu_version"_amd64
 mkdir meile-gui-v"$version"_ubuntu"$ubuntu_version"_amd64_vm
@@ -47,6 +50,8 @@ else
     echo "Control file not found: $control_file_vm"
     exit 1
 fi
+
+
 
 cp -R template/* meile-gui-v"$version"_ubuntu"$ubuntu_version"_amd64/
 cp -R template_vm/* meile-gui-v"$version"_ubuntu"$ubuntu_version"_amd64_vm/

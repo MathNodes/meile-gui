@@ -467,8 +467,11 @@ class HandleWalletFunctions():
             tax = round(float(amount_required * 0.025),2) if round(float(amount_required * 0.025),2) >= 5 * IBCTokens.SATOSHI else 5 * IBCTokens.SATOSHI
         else:
             tax = round(float(amount_required * 0.025),2)
-        ret = self.send_2plan_wallet(KEYNAME, 31337, DENOM, tax, tax=True)
-        print(ret[0])
+        try:
+            ret = self.send_2plan_wallet(KEYNAME, 31337, DENOM, tax, tax=True)
+            print(ret[0])
+        except:
+            pass
             
         token_ibc = {v: k for k, v in IBCTokens.IBCUNITTOKEN.items()}
         ubalance = balance.get(token_ibc[DENOM][1:], 0) * IBCTokens.SATOSHI
