@@ -1499,7 +1499,10 @@ class WalletScreen(Screen):
         self.ADDRESS = ADDRESS
         print("WalletScreen, ADDRESS: %s" % self.ADDRESS)
         self.wallet_address = self.ADDRESS
-
+        
+        item_height = 100
+        max_height = len(self.MenuOptions) * item_height
+        
         menu_icons = ["refresh-circle", "wallet-plus", "cash-multiple"]
         menu_items = [
             {
@@ -1512,6 +1515,8 @@ class WalletScreen(Screen):
         self.menu = MDDropdownMenu(items=menu_items, 
                                    caller=self.ids.wallet_menu,
                                    width_mult=3,
+                                   position="center",
+                                   max_height=max_height,
                                    background_color=get_color_from_hex(MeileColors.BLACK))
         Clock.schedule_once(self.build)
 
