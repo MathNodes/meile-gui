@@ -554,14 +554,21 @@ class IBCTokens():
                     'dvpn' : 'sentinel', 
                     'beam' : 'beam', 
                     'firo' : 'zcoin',
-                    'pivx' : 'pivx'}
+                    'pivx' : 'pivx',
+                    'zec'  : 'zcash',
+                    'sol'  : 'solana',
+                    'btc'  : 'bitcoin',
+                    'xmr'  : 'monero',
+                    'ltc'  : 'litecoin',
+                    'doge' : 'dogecoin'}
     
-    NOWCOINS     = ["firo", "beam", "pivx"]
+    NOWCOINS     = ["firo", "beam", "pivx", "zec", "sol"]
+    BTCPAYCOINS  = ["xmr", "btc", "ltc", "doge"]
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
-    VERSION = "v2.0.7"
-    BUILD = "17354365963"
+    VERSION = "v2.1.0"
+    BUILD = "17370138213"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"
     FailedHealthCheck = "Failed Sentinel Health Check"
