@@ -10,6 +10,8 @@ from kivy.utils import get_color_from_hex
 from kivy.config import Config
 MeileConfig = MeileGuiConfig()
 Config.set('kivy','window_icon',MeileConfig.resource_path("imgs/icon.png"))
+Config.set('input', 'mouse', 'mouse,disable_multitouch')
+
         
 #import tkinter as tk
 
