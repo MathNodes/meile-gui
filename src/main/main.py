@@ -9,36 +9,14 @@ from kivymd.theming import ThemeManager
 from kivy.utils import get_color_from_hex
 from kivy.config import Config
 MeileConfig = MeileGuiConfig()
-Config.set('kivy','window_icon',MeileConfig.resource_path("imgs/icon.png"))
-Config.set('input', 'mouse', 'mouse,disable_multitouch')
-
-        
-#import tkinter as tk
-
 from AppKit import NSScreen
  
-import threading
 class MyMainApp(MDApp):
     title = "Meile dVPN"
     icon  = MeileConfig.resource_path("imgs/icon.png")
     manager = None
     def __init__(self,**kwargs):
         super(MyMainApp,self).__init__(**kwargs)
-        from kivy.config import Config
-        from kivy.core.window import Window
-        Window.size = (1280, 800)
-        
-        # Tkinter error on OS X
-        #dim = self.get_curr_screen_geometry()
-        
-        dim = []
-        dim.append(NSScreen.mainScreen().frame().size.width)
-        dim.append(NSScreen.mainScreen().frame().size.height)
-
-        Window.left = int((dim[0] - 1280)/2)
-        Window.top = int((dim[1] - 800)/2)
-        
-        
           
     def build(self):
 
@@ -57,9 +35,21 @@ class MyMainApp(MDApp):
         #MeileConfig.read_configuration(MeileGuiConfig, MeileGuiConfig.CONFFILE)
         return self.manager
     
-    
+# Get Primary Monitor Resolution
+# Scaled down and not using tkinter library
+            
+dim = []
+dim.append(NSScreen.mainScreen().frame().size.width)
+dim.append(NSScreen.mainScreen().frame().size.height)        
+l = int((dim[0] - 1280)/2)
+t = int((dim[1] - 800)/2)
 
+Config.set('kivy','window_icon',MeileConfig.resource_path("imgs/icon.png"))
+Config.set('input', 'mouse', 'mouse,disable_multitouch')
+Config.set('graphics', 'width', '1280')
+Config.set('graphics', 'height', '800')
+Config.set('graphics', 'left', l)
+Config.set('graphics', 'top', t)
+Config.write()
 
-
-     
 app = MyMainApp()
