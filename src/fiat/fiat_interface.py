@@ -29,6 +29,7 @@ import fiat.stripe_pay.charge as Charge
 from fiat.stripe_pay.dist import scrtsxx
 
 from typedef.win import WindowNames
+from typedef.konstants import HTTParams
 from ui.interfaces import TXContent
 from conf.meile_config import MeileGuiConfig
 import main.main as Meile
