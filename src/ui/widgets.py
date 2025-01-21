@@ -388,6 +388,7 @@ class PlanSubscribeContent(BoxLayout):
     def set_item(self, text_item):
         self.ids.drop_item.set_item(text_item)
         self.ids.deposit.text = self.parse_coin_deposit(text_item)
+        self.get_usd(text_item)
         try: 
             self.menu.dismiss()
         except TypeError as e:
@@ -411,11 +412,11 @@ class PlanSubscribeContent(BoxLayout):
         if mu_coin == "dvpn":
             value = float(price_text.rstrip(mu_coin).strip())
         else:
-            value = round(float(price_text.rstrip("dvpn").strip()) * self.price_cache["dvpn"]["price"] / self.price_cache[mu_coin]["price"], 5)
+            value = round(float(price_text.rstrip("dvpn").strip()) * self.price_cache["dvpn"]["price"] / self.price_cache[mu_coin]["price"], 8)
 
         print(f"mu_coin={mu_coin}, month={month}, value={value}, price_cache={self.price_cache}")
 
-        self.ids.deposit.text = str(round(month * value, 5))
+        self.ids.deposit.text = str(format(round(month * value, 8),'8f'))
         return self.ids.deposit.text
 
 
@@ -438,7 +439,21 @@ class PlanSubscribeContent(BoxLayout):
                 ]
                 self.menu.items = menu_items
                 self.set_item(IBCTokens.NOWCOINS[0])
-                #self.menu.bind()
+                
+            elif pay_with == "btcpay":
+                self.ids.drop_item.text = "xmr"
+                menu_items = [
+                    {
+                        "viewclass": "IconListItem",
+                        "icon": "circle-multiple",
+                        "text": f"{i}",
+                        "height": dp(56),
+                        "on_release": lambda x=f"{i}": self.set_item(x),
+                    } for i in IBCTokens.BTCPAYCOINS    
+                ]
+                self.menu.items = menu_items
+                self.set_item(IBCTokens.BTCPAYCOINS[0])
+                
             else:
                 self.ids.drop_item.text = "dvpn"
                 menu_items = [
@@ -452,7 +467,22 @@ class PlanSubscribeContent(BoxLayout):
                 ]
                 self.menu.items = menu_items
                 self.set_item("dvpn")
-                #self.menu.bind()
+        
+    def get_usd(self, coin):
+        deposit_ret = self.return_deposit_text()
+        match = re.match(r"([0-9]+.[0-9]+)", deposit_ret[0], re.I)
+        if match:
+            amt    = match.groups()[0]
+        else:
+            amt    = 0.0
+            coin   = "dvpn"
+        
+        self.refresh_price(coin, cache=30)
+        self.ids.usd_price.text = '$' + str(round(float(self.price_cache[coin]["price"]) * float(amt),3))
+                
+    def get_font(self):
+        Config = MeileGuiConfig()
+        return Config.resource_path(MeileColors.FONT_FACE)    
 
             
 class ProcessingSubDialog(BoxLayout):

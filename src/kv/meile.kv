@@ -1918,6 +1918,16 @@ WindowManager:
             pos_hint: {'center_x': .5, 'center_y': .5}
             text: "dvpn"
             on_release: root.menu.open()
+            
+        MDLabel:
+            id: usd_price
+            text: "$0.00"
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "14sp"
+            font_name: root.get_font()
+            text_color: get_color_from_hex(MeileColors.MEILE)
+        
                    
 <ProcessingSubDialog>
     orientation: "vertical"

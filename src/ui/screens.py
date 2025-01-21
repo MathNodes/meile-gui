@@ -786,16 +786,16 @@ class MainWindow(Screen):
             #self.MeileMap.map_source = "osm"
             self.MeileMap.map_source = source
 
-            layout = FloatLayout(size_hint=(1,1))
+            layout            = FloatLayout(size_hint=(1,1))
             bw_label          = BandwidthLabel()
             self.quota        = BandwidthBar()
             self.quota_pct    = QuotaPct()
             self.map_widget_1 = IPAddressTextField()
             self.map_widget_2 = ConnectedNode()
             self.map_widget_3 = ProtectedLabel()
-            self.recenter     = MapCenterButton()
+            recenter          = MapCenterButton()
 
-            self.recenter.on_release = self.recenter_map
+            recenter.on_release = self.recenter_map
             
             self.MeileMap.bind(lat=self.check_boundaries)
             self.MeileMap.bind(lon=self.check_boundaries)
@@ -807,7 +807,7 @@ class MainWindow(Screen):
             layout.add_widget(bw_label)
             layout.add_widget(self.quota)
             layout.add_widget(self.quota_pct)
-            layout.add_widget(self.recenter)
+            layout.add_widget(recenter)
             
             self.quota.value = 0
             self.quota_pct.text = "0%"
