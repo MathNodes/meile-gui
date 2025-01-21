@@ -779,7 +779,8 @@ class MainWindow(Screen):
                                tile_size=256,
                                image_ext="png",
                                attribution="@ Meile",
-                               size_hint=(.7,1))
+                               size_hint=(.7,1),
+                               min_zoom=2)
             #self.MeileMap.map_source = "osm"
             self.MeileMap.map_source = source
 
@@ -792,9 +793,10 @@ class MainWindow(Screen):
             self.map_widget_3 = ProtectedLabel()
             self.recenter     = MapCenterButton()
             
-
             self.recenter.on_release = self.recenter_map
             
+            self.MeileMap.bind(lat=self.check_boundaries)
+            self.MeileMap.bind(lon=self.check_boundaries)
             
             layout.add_widget(self.MeileMap)
             layout.add_widget(self.map_widget_1)
@@ -810,13 +812,14 @@ class MainWindow(Screen):
 
             self.carousel = Carousel(direction='right')
             self.ids.country_map.add_widget(self.carousel)
-            #self.carousel.add_widget(self.MeileMap)
             self.carousel.add_widget(layout)
             self.AddCountryNodePins(False)
             self.MeileMapBuilt = True
-
-
-
+            
+    def check_boundaries(self, instance, value):
+        if self.MeileMap.zoom == 2:
+            self.recenter_map()
+            
     def add_country_rv_data(self, NodeCountries):
         self.ids.rv.data.append(
             {
