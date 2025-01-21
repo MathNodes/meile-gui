@@ -5,26 +5,24 @@ from conf.meile_config import MeileGuiConfig
 
 
 from kivy.lang import Builder
-from kivymd.app import MDApp
 from kivymd.theming import ThemeManager
 from kivy.utils import get_color_from_hex
 from kivy.config import Config
 MeileConfig = MeileGuiConfig()
-Config.set('kivy','window_icon',MeileConfig.resource_path("imgs/icon.png"))
-        
+from kivymd.app import MDApp
 from screeninfo import get_monitors
 
 
 
 class MyMainApp(MDApp):
     title = "Meile dVPN"
-    icon  = MeileConfig.resource_path(".imgs/icon.png")
     manager = None
     def __init__(self,**kwargs):
         super(MyMainApp,self).__init__(**kwargs)
         from kivy.core.window import Window
-        Window.size = (1280, 800)
+        #Window.size = (1280, 800)
 
+        '''
         # Get Primary Monitor Resolution
         # Scaled down and not using tkinter library
         if len(get_monitors()) == 1:
@@ -40,9 +38,9 @@ class MyMainApp(MDApp):
         dim.append(primary_monitor.width)
         dim.append(primary_monitor.height)
         
-        Window.left = int((dim[0] - 1280)/2)
-        Window.top = int((dim[1] - 800)/2)
-        
+        #Window.left = int((dim[0] - 1280)/2)
+        #Window.top = int((dim[1] - 800)/2)
+        '''
         
           
     def build(self):
@@ -62,32 +60,30 @@ class MyMainApp(MDApp):
         #MeileConfig.read_configuration(MeileGuiConfig, MeileGuiConfig.CONFFILE)
         return self.manager
 
-    
-    
-    
 
-    # Solution for multiple screens, but results in flickering which looks buggy
-    '''
-    def get_curr_screen_geometry(self):
-        """
-        Workaround to get the size of the current screen in a multi-screen setup.
-    
-        Returns:
-            geometry (str): The standard Tk geometry string.
-                [width]x[height]+[left]+[top]
-        """
-        root = tk.Tk()
-        root.update_idletasks()
-        root.attributes('-fullscreen', True)
-        root.state('iconic')
-        geometry = root.winfo_geometry()
-        width = int(geometry.split('x')[0])
-        height = int(geometry.split('x')[1].split('+')[0])
-        root.destroy()
-        
-        return (width, height)
-        
-        
-    
-    '''     
+# Get Primary Monitor Resolution
+# Scaled down and not using tkinter library
+if len(get_monitors()) == 1:
+    print("ONE MONITOR")
+    primary_monitor = get_monitors()[0]
+else:
+    for m in get_monitors():
+        print(str(m))
+        if m.is_primary:
+            primary_monitor = m
+            
+dim = []
+dim.append(primary_monitor.width)
+dim.append(primary_monitor.height)        
+l = int((dim[0] - 1280)/2)
+t = int((dim[1] - 800)/2)
+
+Config.set('kivy','window_icon',MeileConfig.resource_path("imgs/icon.png"))
+Config.set('input', 'mouse', 'mouse,disable_multitouch')
+Config.set('graphics', 'width', '1280')
+Config.set('graphics', 'height', '800')
+Config.set('graphics', 'left', l)
+Config.set('graphics', 'top', t)
+Config.write()
+
 app = MyMainApp()
