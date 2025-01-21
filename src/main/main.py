@@ -17,6 +17,9 @@ class MyMainApp(MDApp):
     manager = None
     def __init__(self,**kwargs):
         super(MyMainApp,self).__init__(**kwargs)
+        
+        from kivy.core.window import Window
+        Window.size = (1280, 800)
           
     def build(self):
 
