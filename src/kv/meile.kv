@@ -2413,15 +2413,15 @@ WindowManager:
                 
             MDFloatLayout:
         
-                CheckBox:
+                Check:
                     on_active: root.terms_agreement(self.active)
                     pos_hint: {"x": .36, "center_y": .54}
-                    color: get_color_from_hex("f42121")
-                    size_hint: None, None
-                    size: dp(30), dp(30)
+                    color: get_color_from_hex(MeileColors.MEILE)
+                    #size_hint: None, None
+                    #size: dp(30), dp(30)
                 MDLabel:
                     text: "I agree to the terms of the MathNodes purchasing policy."
-                    font_size: 10
+                    font_size: 20
                     theme_text_color: "Custom"
                     text_color: get_color_from_hex("f42121")
                     pos_hint: {"x": .40, "center_y": .54}
