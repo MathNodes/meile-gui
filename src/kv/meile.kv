@@ -724,7 +724,7 @@ WindowManager:
     size_hint_x: .99
     pos_hint: {"center_x": 0.5}
     MDGridLayout:
-        rows: 4
+        rows: 3
         size_hint_x: 1
         MDGridLayout:
             cols: 7
@@ -777,17 +777,17 @@ WindowManager:
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex(MeileColors.WHITE) 
                 text: "To connect to one of your subscriptions, click on the desired subscription which will expand the details. This will also select the subscription. Then simply press connect."
-        MDGridLayout:
-            cols: 1
-            height: sp(25)
-            adaptive_height: True
-            padding: [15, 25, 0, 25]        
-            MDLabel:
-                height: sp(35)
-                font_size: sp(14)
-                theme_text_color: "Custom"
-                text_color: get_color_from_hex(MeileColors.WHITE) 
-                text: ""
+        #MDGridLayout:
+        #    cols: 1
+        #    height: sp(25)
+        #    adaptive_height: True
+        #    padding: [15, 25, 0, 25]        
+        #    MDLabel:
+        #        height: sp(35)
+        #        font_size: sp(14)
+        #        theme_text_color: "Custom"
+        #        text_color: get_color_from_hex(MeileColors.WHITE) 
+        #        text: ""
                 
         RecycleView:
             do_scroll_y: True
@@ -805,7 +805,7 @@ WindowManager:
     size_hint_x: .99
     pos_hint: {"center_x": 0.5}
     MDGridLayout:
-        rows: 2
+        rows: 3
         size_hint_x: 1
         MDGridLayout:
             cols: 7
@@ -859,17 +859,17 @@ WindowManager:
                 text_color: get_color_from_hex(MeileColors.WHITE) 
                 text: "In order to use plans that you subscribe to, click on the subscribed plan to expand it. This will select the plan. Click 'filter nodes' to find the online nodes on the plan. They will be available in the countires on the left bar. Navigate to your desired node, click on it, and then press connect."
                 
-        MDGridLayout:
-            cols: 1
-            height: sp(25)
-            adaptive_height: True
-            padding: [15, 25, 0, 25]        
-            MDLabel:
-                height: sp(35)
-                font_size: sp(14)
-                theme_text_color: "Custom"
-                text_color: get_color_from_hex(MeileColors.WHITE) 
-                text: ""
+        #MDGridLayout:
+        #    cols: 1
+        #    height: sp(25)
+        #    adaptive_height: True
+        #    padding: [15, 25, 0, 25]        
+        #    MDLabel:
+        #        height: sp(35)
+        #        font_size: sp(14)
+        #        theme_text_color: "Custom"
+        #        text_color: get_color_from_hex(MeileColors.WHITE) 
+        #        text: ""
                 
         RecycleView:
             do_scroll_y: True
@@ -1917,6 +1917,15 @@ WindowManager:
             pos_hint: {'center_x': .5, 'center_y': .5}
             text: "dvpn"
             on_release: root.menu.open()
+            
+         MDLabel:
+            id: usd_price
+            text: "$0.00"
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "14sp"
+            font_name: root.get_font()
+            text_color: get_color_from_hex(MeileColors.MEILE)
                    
 <ProcessingSubDialog>
     orientation: "vertical"
