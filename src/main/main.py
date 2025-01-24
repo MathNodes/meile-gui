@@ -53,7 +53,7 @@ dim.append(primary_monitor.height)
 l = int((dim[0] - 1280)/2)
 t = int((dim[1] - 800)/2)
 
-Config.set('kivy','window_icon',MeileConfig.resource_path("imgs/icon.png"))
+Config.set('kivy','window_icon',MeileConfig.resource_path("../imgs/icon.png"))
 Config.set('input', 'mouse', 'mouse,disable_multitouch')
 Config.set('graphics', 'width', '1280')
 Config.set('graphics', 'height', '800')

@@ -85,7 +85,6 @@ class HTTParams():
     NODE_APIS = [NODE_API] +  [
                               "https://metabase.mathnodes.com/api/public/card/bdff9cda-e0b8-417e-afd0-a8736a329914/query/json",
                               "https://metabase.bluefren.xyz/api/public/card/4a891454-51da-462a-a5df-e85ca17c05d5/query/json",
-                              "https://metabase.jp.bluefren.xyz/api/public/card/feed7c25-410a-4e3a-bfe1-8a701defdc38/query/json",
                               "https://metabase.ro.mathnodes.com/api/public/card/6fd7194d-f025-4766-ba3c-3635ba6a6c00/query/json",
                               "https://noncompliant.network/api/public/card/bc75f719-db4a-44b8-9688-f5793742a203/query/json",
                               "https://hsinao.com/api/public/card/5591a83b-d076-4278-b1c2-107ed441e21e/query/json",
@@ -564,7 +563,7 @@ class IBCTokens():
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
-    VERSION = "v2.0.8"
+    VERSION = "v2.1.0"
     BUILD   = "1722988800718"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"
