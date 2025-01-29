@@ -20,32 +20,16 @@ class MyMainApp(MDApp):
         super(MyMainApp,self).__init__(**kwargs)
         from kivy.core.window import Window
         
+        global dim
         if Window.size[0] != dim[0] and Window.size[1] != dim[1]:
             Window.size = (dim[0], dim[1])
 
-        '''
-        # Get Primary Monitor Resolution
-        # Scaled down and not using tkinter library
-        if len(get_monitors()) == 1:
-            print("ONE MONITOR")
-            primary_monitor = get_monitors()[0]
-        else:
-            for m in get_monitors():
-                print(str(m))
-                if m.is_primary:
-                    primary_monitor = m
-                    
-        dim = []
-        dim.append(primary_monitor.width)
-        dim.append(primary_monitor.height)
-        
-        #Window.left = int((dim[0] - 1280)/2)
-        #Window.top = int((dim[1] - 800)/2)
-        '''
-        
+        if Window.left != dim[2] and Window.top != dim[3]:
+            Window.left = dim[2]
+            Window.top  = dim[3]
           
     def build(self):
-        
+        global MeileConfig
         kv = Builder.load_file(MeileConfig.resource_path("kv/meile.kv"))
         
         self.manager = WindowManager()
@@ -61,8 +45,10 @@ class MyMainApp(MDApp):
         #MeileConfig.read_configuration(MeileGuiConfig, MeileGuiConfig.CONFFILE)
         return self.manager
 
+global MeileConfig
 MeileConfig = MeileGuiConfig()
 
+global dim
 dim = Resolution().set_dimensions()
 
 Config.set('kivy','window_icon',MeileConfig.resource_path("imgs/icon.png"))
