@@ -565,8 +565,8 @@ class IBCTokens():
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
-    VERSION = "v2.0.9"
-    BUILD = "1737460019911"
+    VERSION = "v2.1.1"
+    BUILD = "1738137472380"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"
     FailedHealthCheck = "Failed Sentinel Health Check"
@@ -579,6 +579,7 @@ class MeileColors():
     DIALOG_BG_COLOR2         = "#181818"
     INDICATOR                = "#00DD21"
     INACTIVE_DIALOG_BG_COLOR = "#50507c"
+    MAP_BG_COLOR             = "#232227"
     ROW_HOVER                = "#39363c"
     FONT_FACE                = "fonts/mplus-2c-bold.ttf"
     FONT_FACE_ARIAL          = "fonts/arial-unicode-ms.ttf"
@@ -611,6 +612,37 @@ class NodeKeys():
     FinalSubsKeys = [SubsInfoKeys[0], NodesInfoKeys[0],SubsInfoKeys[4],SubsInfoKeys[5], SubsInfoKeys[7], NodesInfoKeys[4], "Allocated", "Consumed", NodesInfoKeys[13],SubsInfoKeys[2],SubsInfoKeys[6]]
     NodeVersions  = [str(item).zfill(3) for item in range(70,1000)]
     Nodetypes = ['residential', 'business', 'hosting', 'edu']
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

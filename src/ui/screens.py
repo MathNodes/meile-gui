@@ -19,6 +19,7 @@ from adapters.ChangeDNS import ChangeDNS
 from adapters.DNSCryptproxy import HandleDNSCryptProxy as dcp
 from helpers.helpers import format_byte_size
 from helpers.bandwidth import compute_consumed_data, compute_consumed_hours, init_GetConsumedWhileConnected, GetConsumedWhileConnected
+from helpers.res import Resolution
 
 from kivy.properties import BooleanProperty, StringProperty, ColorProperty, NumericProperty
 from kivy.uix.screenmanager import Screen, SlideTransition
@@ -775,15 +776,15 @@ class MainWindow(Screen):
     def build_meile_map(self):
 
         if not self.MeileMapBuilt:
-            self.MeileMap = MapView(zoom=2)
+            self.MeileMap = MapView(zoom=2,
+                                    background_color=get_color_from_hex(MeileColors.MAP_BG_COLOR))
             source = MapSource(url=MeileColors.ARCGIS_MAP,
                                cache_key="meile-map-canvas-dark-grey-base-2",
                                tile_size=256,
                                image_ext="png",
                                attribution="@ Meile",
-                               size_hint=(.7,1),
-                               min_zoom=2)
-            #self.MeileMap.map_source = "osm"
+                               min_zoom=1)
+            
             self.MeileMap.map_source = source
 
             layout            = FloatLayout(size_hint=(1,1))
@@ -819,7 +820,7 @@ class MainWindow(Screen):
             self.MeileMapBuilt = True
 
     def check_boundaries(self, instance, value):
-        if self.MeileMap.zoom == 2:
+        if self.MeileMap.zoom == 1:
             self.recenter_map()
 
     def add_country_rv_data(self, NodeCountries, index):
@@ -1275,7 +1276,7 @@ class MainWindow(Screen):
         
     def recenter_map(self):
         self.MeileMap.zoom = 2
-        self.MeileMap.center_on(0.0, 0.0)
+        self.MeileMap.center_on(0, 0)
         
     def get_continent_coordinates(self, c):
         loc = self.MeileLand.ContinentLatLong[c]
