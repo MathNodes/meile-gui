@@ -15,18 +15,21 @@ from screeninfo import get_monitors
 
 class MyMainApp(MDApp):
     title = "Meile dVPN"
-    icon  = MeileConfig.resource_path("../imgs/icon.png")
     manager = None
     def __init__(self,**kwargs):
         super(MyMainApp,self).__init__(**kwargs)
         from kivy.core.window import Window
         
+        global dim
         if Window.size[0] != dim[0] and Window.size[1] != dim[1]:
             Window.size = (dim[0], dim[1])
 
+        if Window.left != dim[2] and Window.top != dim[3]:
+            Window.left = dim[2]
+            Window.top  = dim[3]
         
     def build(self):
-        
+        global MeileConfig
         kv = Builder.load_file(MeileConfig.resource_path("../kv/meile.kv"))
         
         self.manager = WindowManager()
@@ -42,8 +45,10 @@ class MyMainApp(MDApp):
         #MeileConfig.read_configuration(MeileGuiConfig, MeileGuiConfig.CONFFILE)
         return self.manager
 
-MeileConfig = MeileGuiConfig()
+global MeileConfig 
+MeileConfig= MeileGuiConfig()
 
+global dim
 dim = Resolution().set_dimensions()
 
 Config.set('kivy','window_icon',MeileConfig.resource_path("imgs/icon.png"))
