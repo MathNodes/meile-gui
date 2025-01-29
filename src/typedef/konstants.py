@@ -567,8 +567,8 @@ class IBCTokens():
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
-    VERSION = "v2.1.0"
-    BUILD = "17370138213"
+    VERSION = "v2.1.1"
+    BUILD = "17381822363"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"
     FailedHealthCheck = "Failed Sentinel Health Check"
@@ -581,6 +581,7 @@ class MeileColors():
     DIALOG_BG_COLOR2         = "#181818"
     INDICATOR                = "#00DD21"
     INACTIVE_DIALOG_BG_COLOR = "#50507c"
+    MAP_BG_COLOR             = "#232227"
     ROW_HOVER                = "#39363c"
     FONT_FACE                = "fonts/mplus-2c-bold.ttf"
     FONT_FACE_ARIAL          = "fonts/arial-unicode-ms.ttf"
