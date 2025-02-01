@@ -12,9 +12,13 @@ from kivy.config import Config
 class MyMainApp(MDApp):
     title = "Meile dVPN"
     manager = None
+    
     def __init__(self,**kwargs):
         super(MyMainApp,self).__init__(**kwargs)
         from kivy.core.window import Window
+        
+        global MeileConfig
+        self.icon = MeileConfig.resource_path("imgs/icon.png")
         
         global dim
         if Window.size[0] != dim[0] and Window.size[1] != dim[1]:
@@ -56,6 +60,6 @@ Config.set('graphics', 'width', dim[0])
 Config.set('graphics', 'height', dim[1])
 Config.set('graphics', 'left', dim[2])
 Config.set('graphics', 'top', dim[3])
-Config.write()
+#Config.write()
 
 app = MyMainApp()
