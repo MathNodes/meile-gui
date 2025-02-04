@@ -420,7 +420,10 @@ class NodeTreeData():
             UnitAmounts.append(amt)
 
         for u in UnitAmounts:
-            tokenString += str(round(float(float(u[1]) / IBCTokens.SATOSHI),4)) + str(IBCTokens.UNITTOKEN[u[2]]) + ','
+            try: 
+                tokenString += str(round(float(float(u[1]) / IBCTokens.SATOSHI),4)) + str(IBCTokens.UNITTOKEN[u[2]]) + ','
+            except:
+                pass
 
         return tokenString[0:-1]
     

@@ -20,6 +20,9 @@ class MyMainApp(MDApp):
         super(MyMainApp,self).__init__(**kwargs)
         from kivy.core.window import Window
         
+        global MeileConfig
+        self.icon = MeileConfig.resource_path("imgs/icon.png")
+        
         global dim
         if Window.size[0] != dim[0] and Window.size[1] != dim[1]:
             Window.size = (dim[0], dim[1])
