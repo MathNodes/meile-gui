@@ -5,6 +5,7 @@ import psutil
 import binascii
 import random
 import re
+import platform
 from time import sleep 
 from os import path, remove
 from urllib.parse import urlparse
@@ -43,11 +44,13 @@ from requests.exceptions import ReadTimeout
 from Crypto.Hash import RIPEMD160
 
 MeileConfig = MeileGuiConfig()
-v2ray_tun2routes_connect_bash = path.join(ConfParams.KEYRINGDIR, "bin/routes.sh")
-
+gsudo       = path.join(MeileConfig.BASEBINDIR, 'gsudo.exe') # windows
+sentinel_connect_bash         = path.join(ConfParams.KEYRINGDIR, "bin/sentinel-connect.sh") # os x
+v2ray_tun2routes_connect_bash = path.join(ConfParams.KEYRINGDIR, "bin/routes.sh") # linux
 
 class HandleWalletFunctions():
     connected =  {'v2ray_pid' : None, 'result' : False, 'status' : None}
+    wg_process = None # Used to Poll in case user quits with disconnecting
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -177,7 +180,6 @@ class HandleWalletFunctions():
         else:
             print(f"{keyhash_fpath} doesn't exist")
 
-        
     def __keyring(self, keyring_passphrase: str):
         kr = CryptFileKeyring()
         kr.filename = "keyring.cfg"
@@ -460,6 +462,7 @@ class HandleWalletFunctions():
             else:
                 self.returncode = (False, "gRPC unresponsive. Try again later or switch gRPCs.")
                 return
+                
         balance = self.get_balance(sdk._account.address)
         
         amount_required = float(DEPOSIT.replace(DENOM, ""))
@@ -477,7 +480,6 @@ class HandleWalletFunctions():
         ubalance = balance.get(token_ibc[DENOM][1:], 0) * IBCTokens.SATOSHI
         
         if ubalance < amount_required:
-            #return(False, f"Balance is too low, required: {round(amount_required / IBCTokens.SATOSHI, 4)}{token_ibc[DENOM][1:]}")
             self.returncode = (False, f"Balance is too low, required: {round(amount_required / IBCTokens.SATOSHI, 4)}{token_ibc[DENOM][1:]}")
             return
         
@@ -485,11 +487,9 @@ class HandleWalletFunctions():
             fee = int(ConfParams.FEE / 10)
         else:
             fee = ConfParams.FEE
-        
+            
         gas = random.randint(ConfParams.GAS, 314159) 
-        #else:
-        #    gas = random.randint(int(ConfParams.GAS/10), int(314159/10))
-        
+
         tx_params = TxParams(
             denom=DENOM,
             gas=gas,
@@ -536,8 +536,6 @@ class HandleWalletFunctions():
             if value in deposit:
                 return value
             
-            
-    
     def unsubscribe(self, subId):
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
@@ -559,6 +557,7 @@ class HandleWalletFunctions():
         except ConnectionError:
             message = "gRPC unresponsive. Try again later or switch gRPCs."
             return {'hash' : "0x0", 'success' : False, 'message' : message}
+            
         except grpc._channel._InactiveRpcError as e:
             status_code = e.code()
             
@@ -568,6 +567,7 @@ class HandleWalletFunctions():
             else:
                 message = "gRPC unresponsive. Try again later or switch gRPCs."
                 return {'hash' : "0x0", 'success' : False, 'message' : message}
+                
         try: 
             sub = sdk.subscriptions.QuerySubscription(subscription_id=int(subId))
         except (mospy.exceptions.clients.TransactionTimeout,
@@ -632,6 +632,11 @@ class HandleWalletFunctions():
         PASSWORD = CONFIG['wallet'].get('password', '')
         KEYNAME = CONFIG['wallet'].get('keyname', '')
         
+        pltfrm = platform.system()
+                
+        if pltfrm == Arch.OSX or pltfrm == Arch.WINDOWS:
+            import subprocess
+        
         confile = path.join(ConfParams.KEYRINGDIR, "connect.log")
         conndesc = open(confile, 'w')
 
@@ -660,6 +665,7 @@ class HandleWalletFunctions():
                 message = "gRPC Error!"
                 self.connected = {"v2ray_pid" : None, "result" : False, "status" : message}
                 return
+                
         try: 
             sub = sdk.subscriptions.QuerySubscription(subscription_id=int(ID))
         except (mospy.exceptions.clients.TransactionTimeout,
@@ -681,11 +687,8 @@ class HandleWalletFunctions():
             fee = ConfParams.FEE
         
         gas = random.randint(ConfParams.GAS, 314159)
-        #else:
-        #    gas = random.randint(int(ConfParams.GAS/10), int(314159/10))
+        print(f"GAS: {gas}")
         
-        #gas = random.randint(ConfParams.GAS, 314159)
-        print(f"GAS: {gas}")    
         tx_params = TxParams(
             denom=DENOM,
             gas=gas,
@@ -882,8 +885,19 @@ class HandleWalletFunctions():
                 with open(config_file, "w", encoding="utf-8") as f:
                     config.write(f)
 
-                child = pexpect.spawn(f"pkexec sh -c 'ip link delete {iface}; wg-quick up {config_file}'")
-                child.expect(pexpect.EOF)
+                if pltfrm == Arch.LINUX:
+                    child = pexpect.spawn(f"pkexec sh -c 'ip link delete {iface}; wg-quick up {config_file}'")
+                    child.expect(pexpect.EOF)
+                elif pltfrm == Arch.OSX:
+                    connectBASH = [sentinel_connect_bash]
+                    proc2 = subprocess.Popen(connectBASH)
+                    proc2.wait(timeout=30)
+                    pid2 = proc2.pid
+                    proc_out, proc_err = proc2.communicate()
+                elif pltfrm == Arch.WINDOWS:
+                    wgup = [gsudo, MeileConfig.WIREGUARD_BIN, "/installtunnelservice", config_file]
+                    wg_process = subprocess.Popen(wgup)
+                    sleep(15)
 
                 if psutil.net_if_addrs().get(iface):
                     self.connected = {"v2ray_pid" : None,  "result": True, "status" : iface}
@@ -892,7 +906,13 @@ class HandleWalletFunctions():
                     self.get_ip_address()
                     conndesc.close()
                     return
+                else:
+                    self.connected = {"v2ray_pid" : None,  "result": False, "status" : "Error bringing up wireguard interface"}
+                    return
+                    
             else:  # v2ray
+                # os x
+                #chdir(MeileConfig.BASEBINDIR)
                 conndesc.write("Bringing up V2Ray socks tunnel...\n")
                 conndesc.flush()
                 if len(decode) != 7:
@@ -954,12 +974,18 @@ class HandleWalletFunctions():
                 tuniface = False
                 v2ray_handler = V2RayHandler(f"{v2ray_tun2routes_connect_bash} up")
                 v2ray_handler.start_daemon()
-                sleep(15)
+                sleep(14)
 
-                for iface in psutil.net_if_addrs().keys():
-                    if "tun" in iface:
+                if pltfrm != Arch.OSX:
+                    for iface in psutil.net_if_addrs().keys():
+                        if "tun" in iface:
+                            tuniface = True
+                            break
+                else:
+                    if psutil.net_if_addrs().get("utun123"):
+                        self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid, "result": True, "status" : "utun123"}
+                        print(self.connected)
                         tuniface = True
-                        break
 
                 if tuniface is True:
                     self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid, "result": True, "status" : tuniface}
@@ -968,6 +994,8 @@ class HandleWalletFunctions():
                     conndesc.flush()
                     self.get_ip_address()
                     conndesc.close()
+                    # os x
+                    #chdir(MeileConfig.BASEDIR)
                     return
                 else:
                     try:
@@ -981,12 +1009,14 @@ class HandleWalletFunctions():
 
                     self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid,  "result": False, "status": f"Error connecting to v2ray node: {tuniface}"}
                     print(self.connected)
+                    # os x
+                    #chdir(MeileConfig.BASEDIR)
                     return
-
+        # os x
+        #chdir(MeileConfig.BASEDIR)
         self.connected = {"v2ray_pid" : None,  "result": False, "status": "Bad Response from Node"}
         return   
            
-
     def get_balance(self, address):
         Request = HTTPRequests.MakeRequest()
         http = Request.hadapter()
