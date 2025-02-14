@@ -567,8 +567,8 @@ class IBCTokens():
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
-    VERSION = "v2.1.1"
-    BUILD = "17381822363"
+    VERSION = "v2.1.3"
+    BUILD = "17395216793"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"
     FailedHealthCheck = "Failed Sentinel Health Check"
