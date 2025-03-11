@@ -15,7 +15,7 @@ import grpc
 from json.decoder import JSONDecodeError 
 
 from conf.meile_config import MeileGuiConfig
-from typedef.konstants import IBCTokens, ConfParams, HTTParams, MEILE_PLAN_WALLET
+from typedef.konstants import IBCTokens, ConfParams, HTTParams, MEILE_PLAN_WALLET, Arch
 from adapters import HTTPRequests, DNSRequests
 from cli.v2ray import V2RayHandler, V2RayConfiguration
 
@@ -64,6 +64,18 @@ class HandleWalletFunctions():
         # Don't try to migrate if just starting app for first time
         if address:
             self.__migrate_wallets()
+            
+    def ripemd160(self, contents: bytes) -> bytes:
+        """
+        Get ripemd160 hash using PyCryptodome.
+    
+        :param contents: bytes contents.
+    
+        :return: bytes ripemd160 hash.
+        """
+        h = RIPEMD160.new()
+        h.update(contents)
+        return h.digest()
         
     @staticmethod
     def decode_jwt_file(fpath: str, password: str) -> dict:
@@ -94,7 +106,7 @@ class HandleWalletFunctions():
         curve = data[2:].decode()
 
         s = hashlib.new("sha256", pubkey).digest()
-        r = hashlib.new("ripemd160", s).digest()
+        r = self.ripemd160(s)
 
         hex_address = r.hex()
         account_address = bech32.bech32_encode("sent", bech32.convertbits(r, 8, 5))
@@ -193,18 +205,6 @@ class HandleWalletFunctions():
         file_path = path.join(ConfParams.KEYRINGDIR, "keyring.cfg")
         if path.isfile(file_path):
             remove(file_path)
-            
-    def ripemd160(self, contents: bytes) -> bytes:
-        """
-        Get ripemd160 hash using PyCryptodome.
-    
-        :param contents: bytes contents.
-    
-        :return: bytes ripemd160 hash.
-        """
-        h = RIPEMD160.new()
-        h.update(contents)
-        return h.digest()
             
     def create(self, wallet_name, keyring_passphrase, seed_phrase = None):
         # Credtis: https://github.com/ctrl-Felix/mospy/blob/master/src/mospy/utils.py
