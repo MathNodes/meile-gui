@@ -18,6 +18,7 @@ from conf.meile_config import MeileGuiConfig
 from typedef.konstants import IBCTokens, ConfParams, HTTParams, MEILE_PLAN_WALLET, Arch
 from adapters import HTTPRequests, DNSRequests
 from cli.v2ray import V2RayHandler, V2RayConfiguration
+from helpers.wireguard import WgKey
 
 import base64
 import bcrypt
@@ -35,7 +36,6 @@ from sentinel_protobuf.cosmos.base.v1beta1.coin_pb2 import Coin
 from sentinel_sdk.sdk import SDKInstance
 from sentinel_sdk.types import NodeType, TxParams, Status
 from sentinel_sdk.utils import search_attribute
-from pywgkey import WgKey
 from mnemonic import Mnemonic
 from keyrings.cryptfile.cryptfile import CryptFileKeyring
 import ecdsa
