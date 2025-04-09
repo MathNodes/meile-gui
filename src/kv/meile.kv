@@ -1708,17 +1708,9 @@ WindowManager:
             font_size: "14sp"
             text_color: get_color_from_hex("#ffffff")
             pos_hint: {"x" : 0, "top" : 1}        
-        CheckBox:
-            group: "sub_type"
-            on_active: root.select_sub_type(self, self.active, "gb")
-            pos_hint: {"x": 0, "y" : .375}
-            size_hint_y: .3
-            canvas.before:
-                Color:
-                    rgba: get_color_from_hex(MeileColors.MEILE) 
-                Line:
-                    width: 2
-                    circle: (self.x + self.width / 2, self.y + self.height / 2, min(self.width, self.height) / 4 - 4)
+        Check:
+        	on_active: root.select_sub_type(self, self.active, "gb")
+            pos_hint: {"x": .5, "y" : .30}
         MDLabel:
             id: hourly_text
             text: "Hourly"
@@ -1727,17 +1719,9 @@ WindowManager:
             font_size: "14sp"
             text_color: get_color_from_hex("#ffffff")
             pos_hint: {"x" : 0, "top" : .8}    
-        CheckBox:
-            group: "sub_type"
-            on_active: root.select_sub_type(self, self.active, "hourly")
-            pos_hint: {"x": 0, "y" : .15}
-            size_hint_y: .3
-            canvas.before:
-                Color:
-                    rgba: get_color_from_hex(MeileColors.MEILE)  # Use the color from MeileColors
-                Line:
-                    width: 2
-                    circle: (self.x + self.width / 2, self.y + self.height / 2, min(self.width, self.height) / 4 - 4)
+        Check:
+        	on_active: root.select_sub_type(self, self.active, "hourly")
+            pos_hint: {"x": .5, "y" : .10}	
                                
 <SubscribeContent>
     orientation: "vertical"
@@ -2417,8 +2401,6 @@ WindowManager:
                     on_active: root.terms_agreement(self.active)
                     pos_hint: {"x": .36, "center_y": .54}
                     color: get_color_from_hex(MeileColors.MEILE)
-                    #size_hint: None, None
-                    #size: dp(30), dp(30)
                 MDLabel:
                     text: "I agree to the terms of the MathNodes purchasing policy."
                     font_size: 20
@@ -2549,11 +2531,6 @@ WindowManager:
     zoom: 3
 
 <TooltipMDIconButton@MDIconButton+MDTooltip>
-
-<Check@MDCheckbox>:
-    group: 'group'
-    size_hint: None, None
-    size: dp(48), dp(48)
     
 <HyperlinkLabel>:
     size_hint: None, None
