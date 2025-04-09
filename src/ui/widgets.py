@@ -1538,31 +1538,18 @@ class NodeCarousel(MDBoxLayout):
             gbprices = node[NodeKeys.NodesInfoKeys[2]].split(',')
             hrprices = node[NodeKeys.NodesInfoKeys[3]].split(',')
             
-            g = gbprices[0]
-            self.gb_prices = deepcopy(g)
+            self.gb_prices = ""
+            self.hr_prices = ""
             
-            k=0
             for g in gbprices:
-                if k == 0:
-                    k +=1
-                    continue
-                self.gb_prices = '\n'.join([self.gb_prices,g])
-                
-            h = hrprices[0]
-            self.hr_prices = deepcopy(h)
+                self.gb_prices = self.gb_prices + g.lstrip() + '\n'
             
-            k=0
             for h in hrprices:
-                if k == 0:
-                    k +=1
-                    continue
-                self.hr_prices = '\n'.join([self.hr_prices,h])
+                self.hr_prices = self.hr_prices + h.lstrip() + '\n'
                 
             
             self.moniker         = node[NodeKeys.NodesInfoKeys[0]]
             self.address         = node[NodeKeys.NodesInfoKeys[1]]
-            #self.gb_prices       = node[NodeKeys.NodesInfoKeys[2]]
-            #self.hr_prices       = node[NodeKeys.NodesInfoKeys[3]]
             self.download        = format_byte_size(node[NodeKeys.NodesInfoKeys[8]])+ "/s"
             self.upload          = format_byte_size(node[NodeKeys.NodesInfoKeys[9]])+ "/s"
             self.connected_peers = str(node[NodeKeys.NodesInfoKeys[10]])
