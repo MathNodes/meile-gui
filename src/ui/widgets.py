@@ -39,6 +39,7 @@ from requests.auth import HTTPBasicAuth
 import json
 import webbrowser
 import sys
+from timeit import default_timer as timer
 
 from typedef.konstants import IBCTokens, HTTParams, MeileColors, NodeKeys
 from typedef.win import CoinsList, WindowNames
@@ -1618,14 +1619,20 @@ class NodeCarousel(MDBoxLayout):
         Request = HTTPRequests.MakeRequest(TIMEOUT=2.7)
         http = Request.hadapter()
         endpoint = "/sentinel/nodes/" + naddress.lstrip().rstrip()
+        MeileConfig = MeileGuiConfig()
         try:
             '''
             Add get from config.ini for API when settings is  merged. 
             '''
             requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
-            r = http.get(HTTParams.APIURL + endpoint)
+            CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
+            API = CONFIG['network'].get('api', HTTParams.APIURL)
+            r = http.get(API + endpoint)
             remote_url = r.json()['node']['remote_url']
+            start = timer()
             r = http.get(remote_url + "/status", verify=False)
+            end = timer()
+            latency = int(round((end-start), 4)*1000)
             print(remote_url)
     
             NodeInfoJSON = r.json()
@@ -1635,6 +1642,7 @@ class NodeCarousel(MDBoxLayout):
             NodeInfoDict['max_peers']       = NodeInfoJSON['result']['qos']['max_peers']
             NodeInfoDict['version']         = NodeInfoJSON['result']['version']
             NodeInfoDict['city']            = NodeInfoJSON['result']['location']['city']
+            NodeInfoDict['latency']         = latency
 
         except Exception as e:
             print(str(e))
@@ -1645,11 +1653,16 @@ class NodeCarousel(MDBoxLayout):
             self.dialog = MDDialog(
                 md_bg_color=get_color_from_hex(MeileColors.BLACK),
                 text='''
-City: %s
-Connected Peers:  %s  
-Max Peers: %s  
-Node Version: %s 
-                    ''' % (NodeInfoDict['city'], NodeInfoDict['connected_peers'],NodeInfoDict['max_peers'],NodeInfoDict['version']),
+                    City: %s
+                    Connected Peers:  %s  
+                    Max Peers: %s  
+                    Node Version: %s 
+                    Latency: %sms
+                    ''' % (NodeInfoDict['city'], 
+                           NodeInfoDict['connected_peers'],
+                           NodeInfoDict['max_peers'],
+                           NodeInfoDict['version'],
+                           NodeInfoDict['latency']),
   
                 buttons=[
                     MDRaisedButton(
