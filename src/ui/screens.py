@@ -527,7 +527,8 @@ class MainWindow(Screen):
                             self.setQuotaClock(ID, naddress, False)
                 
                     self.remove_loading_widget2()
-                    #print("REmove loading Widget")
+                    # Here change the Connection button to a "Disconnect" button then display dialog
+                    self.set_protected_icon(True, Moniker)
                     self.dialog = MDDialog(
                         title="Connected!",
                         md_bg_color=get_color_from_hex(MeileColors.BLACK),
@@ -1438,8 +1439,7 @@ class MainWindow(Screen):
     def call_ip_get(self,result, moniker,  *kwargs):
         if result:
             self.CONNECTED = True
-            # Here change the Connection button to a "Disconnect" button
-            self.set_protected_icon(True, moniker)
+            
         else:
             self.CONNECTED = False
             self.set_protected_icon(False, " ")
