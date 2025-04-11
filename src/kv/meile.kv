@@ -241,21 +241,21 @@ WindowManager:
     pos_hint: {"x" : .1, "center_y" : .035 }
     size_hint_x: .45
     size_hint_y: None
-    height:dp(4)                                   
+    height:sp(4)                                   
     canvas:
 
         Color: 
             rgba: 0,0,0,.3
         BorderImage:
-            border: (dp(4), dp(4), dp(4), dp(4))
-            pos: self.x, self.center_y - dp(2)
-            size: self.width, dp(4)
+            border: (sp(4), sp(4), sp(4), sp(4))
+            pos: self.x, self.center_y - sp(2)
+            size: self.width, sp(4)
         Color:
             rgba: get_color_from_hex(MeileColors.MEILE)                        
         BorderImage:
-            border: [int(min(self.width * (self.value / float(self.max)) if self.max else 0, dp(4)))] * 4
-            pos: self.x, self.center_y -dp(2)
-            size: self.width * (self.value / float(self.max)) if self.max else 0, dp(4)
+            border: [int(min(self.width * (self.value / float(self.max)) if self.max else 0, sp(4)))] * 4
+            pos: self.x, self.center_y -sp(2)
+            size: self.width * (self.value / float(self.max)) if self.max else 0, sp(4)
     
 <QuotaPct@MDLabel>
     id: quota_pct
@@ -303,11 +303,11 @@ WindowManager:
             MDBoxLayout:
                 orientation: 'horizontal'
                 size_hint_x: None
-                width: self.parent.width - dp(96)  # Adjust to leave space for left and right actions
+                width: self.parent.width - sp(96)  # Adjust to leave space for left and right actions
                 pos_hint: {'center_x': 0.5}
                 MDLabel:
                     size_hint_x: None
-                    width: (self.parent.width - dp(400) - dp(96)) / 2
+                    width: (self.parent.width - sp(400) - sp(96)) / 2
                 
                 MDTextField:
                     hint_text: "Address"
@@ -339,7 +339,7 @@ WindowManager:
                 orientation: "vertical"
                 size_hint_x: 0.5  
                 pos_hint: {'center_x': 0.5, 'top': .925}  
-                spacing: '40dp'
+                spacing: '40sp'
                 Image:
                     id: qr
                     source: root.qr_address
@@ -349,12 +349,12 @@ WindowManager:
                     viewclass: 'RowContainer'
                     id: rv
                     RecycleBoxLayout:
-                        default_size: None, dp(56)
+                        default_size: None, sp(56)
                         default_size_hint: 1, None
                         size_hint_y: None
                         height: self.minimum_height
                         orientation: 'vertical'
-                        spacing: '10dp'    
+                        spacing: '10sp'    
     ActionBar:
         background_normal: ''
         background_down: ''
@@ -395,7 +395,7 @@ WindowManager:
                 text: "RPC"
                 font_size: "20sp"
                 size_hint_x: None
-                width: dp(250)
+                width: sp(250)
 
             MDDropDownItem:
                 id: rpc_drop_item
@@ -413,7 +413,7 @@ WindowManager:
                 text: "GRPC"
                 font_size: "20sp"
                 size_hint_x: None
-                width: dp(250)
+                width: sp(250)
 
             MDDropDownItem:
                 id: grpc_drop_item
@@ -431,7 +431,7 @@ WindowManager:
                 text: "API"
                 font_size: "20sp"
                 size_hint_x: None
-                width: dp(250)
+                width: sp(250)
 
             MDDropDownItem:
                 id: api_drop_item
@@ -449,7 +449,7 @@ WindowManager:
                 text: "MathNodes API"
                 font_size: "20sp"
                 size_hint_x: None
-                width: dp(250)
+                width: sp(250)
 
             MDDropDownItem:
                 id: mnapi_drop_item
@@ -467,7 +467,7 @@ WindowManager:
                 text: "Cache Server"
                 font_size: "20sp"
                 size_hint_x: None
-                width: dp(250)
+                width: sp(250)
 
             MDDropDownItem:
                 id: cache_drop_item
@@ -485,7 +485,7 @@ WindowManager:
                 text: "Default Gigabytes"
                 font_size: "20sp"
                 size_hint_x: None
-                width: dp(250)
+                width: sp(250)
 
             MDDropDownItem:
                 id: gb_drop_item
@@ -504,7 +504,7 @@ WindowManager:
                 text: "Resolvers"
                 font_size: "20sp"
                 size_hint_x: None
-                width: dp(250)
+                width: sp(250)
             
             MDDropDownItem:
                 id: resolver1_drop_item
@@ -558,8 +558,8 @@ WindowManager:
     ClickableTextFieldRoundSeed:
         id: seed
         size_hint_x: None
-        width: "300dp"
-        height: "300dp"
+        width: "300sp"
+        height: "300sp"
         hint_text: "Seed Phrase"
         pos_hint: {"center_x": .5, "center_y": .80}
         
@@ -569,13 +569,13 @@ WindowManager:
         theme_text_color: "Custom"
         text_color: get_color_from_hex("#4a4545")
         pos_hint: {"x": .47, "center_y": .74}
-        font_size: "12dp"
+        font_size: "12sp"
      
     ClickableTextFieldRoundName:
         id: name
         size_hint_x: None
-        width: "300dp"
-        height: "300dp"
+        width: "300sp"
+        height: "300sp"
         hint_text: "Wallet Name"
         pos_hint: {"center_x": .5, "center_y": .67}
         
@@ -586,7 +586,7 @@ WindowManager:
         theme_text_color: "Custom"
         text_color: get_color_from_hex("f42121")
         pos_hint: {"x": .47, "center_y": .61}
-        font_size: "12dp"
+        font_size: "12sp"
         
     MDLabel:
         id: wallet_name_charset_warning
@@ -595,13 +595,13 @@ WindowManager:
         theme_text_color: "Custom"
         text_color: get_color_from_hex("f42121")
         pos_hint: {"x": .47, "center_y": .61}
-        font_size: "12dp"
+        font_size: "12sp"
      
     ClickableTextFieldRoundPass:
         id: password
         size_hint_x: None
-        width: "300dp"
-        height: "300dp"
+        width: "300sp"
+        height: "300sp"
         hint_text: "Wallet Password"
         pos_hint: {"center_x": .5, "center_y": .55}
         MDLabel:
@@ -613,7 +613,7 @@ WindowManager:
         theme_text_color: "Custom"
         text_color: get_color_from_hex("f42121")
         pos_hint: {"x": .47, "center_y": .49}
-        font_size: "12dp"
+        font_size: "12sp"
         
     MDRaisedButton:
         id: restore_wallet_button
@@ -625,7 +625,7 @@ WindowManager:
     
 <NodeRV>:
     key_viewclass: "viewclass"
-    bar_width: dp(8)
+    bar_width: sp(8)
     scroll_type: ["bars", "content"]
     canvas.before:
         Color:
@@ -636,7 +636,7 @@ WindowManager:
     RecycleBoxLayout:
         md_bg_color: get_color_from_hex("#121212")
         #cols: 1
-        default_size: dp(75), dp(50)
+        default_size: sp(75), sp(50)
         default_size_hint: 1, None
         size_hint_y: None
         height: self.minimum_height
@@ -650,7 +650,7 @@ WindowManager:
     size_hint: (1,1)       
     key_viewclass: "viewclass"
     #key_viewclass: "NodeAccordion"
-    bar_width: dp(12)
+    bar_width: sp(12)
     scroll_type: ["bars", "content"]
     canvas.before:
         Color:
@@ -662,7 +662,7 @@ WindowManager:
         id: grid
         md_bg_color: get_color_from_hex("#121212")
         cols:1
-        default_size: dp(200), dp(50)
+        default_size: sp(200), sp(50)
         default_size_hint: 1, None
         size_hint_y: None
         height: self.minimum_height
@@ -675,7 +675,7 @@ WindowManager:
     size_hint: (1,1)       
     #key_viewclass: "viewclass"
     key_viewclass: "NodeAccordion"
-    bar_width: dp(12)
+    bar_width: sp(12)
     scroll_type: ["bars", "content"]
     canvas.before:
         Color:
@@ -688,7 +688,7 @@ WindowManager:
     size_hint_y: 1
     size_hint_x: .7
     #height: self.height
-    #size: "50dp", "50dp"
+    #size: "50sp", "50sp"
     type_swipe: "hand"
     #pos_hint: {"center_x": .5, "center_y": .5}
     padding: 1,1
@@ -702,10 +702,10 @@ WindowManager:
     MDBoxLayout:
         DisplayPic:
             source: root.source_image
-            elevation: dp(3)
+            elevation: sp(3)
             size_hint: None, None
-            size: dp(45), dp(45)
-            radius: dp(360)
+            size: sp(45), sp(45)
+            radius: sp(360)
             pos_hint: {'center_x': .12, 'center_y': .5}
             on_release: print("clicked")
         MDFloatLayout:
@@ -1408,16 +1408,16 @@ WindowManager:
             size: self.size
 <HSeparator@Separator>:
     size_hint_y: None
-    height: dp(2)
+    height: sp(2)
     
 <RowContainer@MDBoxLayout>:
     orientation: 'vertical'
     size_hint_y: None
     height: self.minimum_height
-    padding: '5dp'  # Adjust the padding as needed
+    padding: '5sp'  # Adjust the padding as needed
     MDBoxLayout:
         size_hint_y: None
-        height: '50dp'
+        height: '50sp'
         WalletCoinRow:
             logo: root.logo
             text: root.text
@@ -1428,12 +1428,12 @@ WindowManager:
     md_bg_color: get_color_from_hex("#000000")
     orientation: 'horizontal'
     size_hint_y: None
-    height: '50dp'
+    height: '50sp'
 
     Image:
         source: root.logo
         size_hint_x: None
-        width: '50dp'
+        width: '50sp'
 
     MDLabel:
         text: root.text
@@ -1445,8 +1445,8 @@ WindowManager:
         
 <RecycleViewRow>:
     size_hint_y: None
-    #size: "180dp", "180dp"
-    size: "180dp", "25dp"
+    #size: "180sp", "180sp"
+    size: "180sp", "25sp"
     pos_hint: {"center_x": .5, "center_y": .5}
     orientation: "vertical"
     #padding: 10,10
@@ -1536,7 +1536,7 @@ WindowManager:
     MDIconButton:
         icon: "eye-off"
         pos_hint: {"center_y": .5}
-        pos: seed_phrase.width - self.width + dp(8), 0
+        pos: seed_phrase.width - self.width + sp(8), 0
         theme_text_color: "Hint"
         on_release:
             self.icon = "eye" if self.icon == "eye-off" else "eye-off"
@@ -1558,7 +1558,7 @@ WindowManager:
     MDIconButton:
         icon: "eye-off"
         pos_hint: {"center_y": .5}
-        pos: wallet_name.width - self.width + dp(8), 0
+        pos: wallet_name.width - self.width + sp(8), 0
         theme_text_color: "Hint"
         on_release:
             self.icon = "eye" if self.icon == "eye-off" else "eye-off"
@@ -1579,7 +1579,7 @@ WindowManager:
     MDIconButton:
         icon: "eye-off"
         pos_hint: {"center_y": .5}
-        pos: wallet_password.width - self.width + dp(8), 0
+        pos: wallet_password.width - self.width + sp(8), 0
         theme_text_color: "Hint"
         on_release:
             self.icon = "eye" if self.icon == "eye-off" else "eye-off"
@@ -1592,9 +1592,9 @@ WindowManager:
 <ConnectionDialog>
     size_hint_y: None
     orientation: "vertical"
-    height: "30dp"  # Adjusted height for visibility
-    padding: "10dp"
-    spacing: "10dp"
+    height: "30sp"  # Adjusted height for visibility
+    padding: "10sp"
+    spacing: "10sp"
     MDBoxLayout:
         orientation: "vertical"
         size_hint_y: None
@@ -1604,7 +1604,7 @@ WindowManager:
             text: "Connecting..."
             halign: "center"  # Center align the text for better visibility
             size_hint_y: None
-            height: self.texture_size[1] + dp(10)  # Ensure the label has a height
+            height: self.texture_size[1] + sp(10)  # Ensure the label has a height
             
         MDProgressBar:
             id: pb
@@ -1613,15 +1613,15 @@ WindowManager:
             max: 1
             color: get_color_from_hex(MeileColors.MEILE)
             size_hint_y: None
-            height: "10dp"  # Set explicit height for the progress bar
+            height: "10sp"  # Set explicit height for the progress bar
             size_hint_x: .85
             pos_hint: {'center_x': .5}
 
 <WalletInfoContent>
     orientation: "vertical"
-    spacing: "15dp"
+    spacing: "15sp"
     size_hint_y: None
-    height: "300dp"
+    height: "300sp"
     seed_phrase: ""
     wallet_address: ""
     wallet_password: ""
@@ -1643,7 +1643,7 @@ WindowManager:
         MDIconButton:
             icon: "eye-off"
             pos_hint: {"center_y": .5}
-            pos: seed_phrase.width - self.width + dp(8), 0
+            pos: seed_phrase.width - self.width + sp(8), 0
             theme_text_color: "Hint"
             on_release:
                 self.icon = "eye" if self.icon == "eye-off" else "eye-off"
@@ -1653,11 +1653,11 @@ WindowManager:
         id: seed_box
         orientation: "horizontal"
         padding: 0,0,20,20
-        spacing: "20dp"    
+        spacing: "20sp"    
         MDRaisedButton:
             id: copy_seed_button
             text: "COPY SEED"
-            font_size: dp(9)
+            font_size: sp(9)
             pos_hint: {"center_x": .1, "center_y": .5}
             on_press: root.copy_seed_phrase()
             size_hint: None, None
@@ -1684,9 +1684,9 @@ WindowManager:
             
 <SubTypeDialog>
     orientation: "vertical"
-    spacing: "1dp"
+    spacing: "1sp"
     size_hint_y: None
-    height: "130dp"
+    height: "130sp"
     price_text: ""
     naddress: " "
     moniker: " "
@@ -1725,9 +1725,9 @@ WindowManager:
                                
 <SubscribeContent>
     orientation: "vertical"
-    spacing: "1dp"
+    spacing: "1sp"
     size_hint_y: None
-    height: "250dp"
+    height: "250sp"
     price_text: ""
     naddress: " "
     moniker: " "
@@ -1805,9 +1805,9 @@ WindowManager:
             
 <PlanSubscribeContent>
     orientation: "vertical"
-    spacing: "1dp"
+    spacing: "1sp"
     size_hint_y: None
-    height: "260dp"
+    height: "260sp"
     price_text: ""
 
     white_label: " "
@@ -1906,8 +1906,8 @@ WindowManager:
             mode: "fill"
             text: ""
             size_hint_y: .65
-            width: "50dp"
-            height: "30dp"
+            width: "50sp"
+            height: "30sp"
             readonly: True
 
         MDTextField:
@@ -1916,8 +1916,8 @@ WindowManager:
             mode: "fill"
             text: root.price_text
             size_hint_y: .65
-            width: "50dp"
-            height: "30dp"
+            width: "50sp"
+            height: "30sp"
             readonly: True
 
         MDDropDownItem:
@@ -1937,9 +1937,9 @@ WindowManager:
                    
 <ProcessingSubDialog>
     orientation: "vertical"
-    spacing: "1dp"
+    spacing: "1sp"
     size_hint_y: None
-    height: "130dp"
+    height: "130sp"
     price_text: ""
     naddress: " "
     moniker: " "
@@ -1972,9 +1972,9 @@ WindowManager:
             pos_hint: {"x" : 0, "top" : .95}
     
 <RatingContent>
-    spacing: "1dp"
+    spacing: "1sp"
     size_hint_y: None
-    height: "100dp"
+    height: "100sp"
     price_text: ""
     naddress: " "
     moniker: " "    
@@ -1985,6 +1985,7 @@ WindowManager:
             text: root.moniker
             font_name: root.get_font()
             font_size: sp(24)
+            text_color: get_color_from_hex(MeileColors.MEILE)
             pos_hint: {"x" : 0.05, "center_y": .9}
              
         MDLabel:
@@ -2023,8 +2024,8 @@ WindowManager:
             text: "HELP SCREEN"
             font_size: "30sp"
             size_hint_y: None
-            height: self.texture_size[1] + dp(20)
-            #width: dp(500)
+            height: self.texture_size[1] + sp(20)
+            #width: sp(500)
             #pos_hint: { "right": 1.5, "top": .9}
             theme_text_color: "Custom"
             text_color: get_color_from_hex(MeileColors.MEILE)
@@ -2034,8 +2035,8 @@ WindowManager:
             text: root.GetMeileVersion(spec="V")
             font_size: "16sp"
             size_hint_y: None
-            height: self.texture_size[1] + dp(20)
-            #width: dp(500)
+            height: self.texture_size[1] + sp(20)
+            #width: sp(500)
             #pos_hint: { "right": 1.425, "top": .85}
             theme_text_color: "Custom"
             text_color: get_color_from_hex(MeileColors.MEILE)
@@ -2045,7 +2046,7 @@ WindowManager:
             text: "build: " + root.GetMeileVersion(spec="B")
             font_size: "13sp"
             size_hint_y: None
-            height: self.texture_size[1] + dp(20)
+            height: self.texture_size[1] + sp(20)
             theme_text_color: "Custom"
             text_color: get_color_from_hex(MeileColors.MEILE)
             halign: "center"
@@ -2061,7 +2062,7 @@ WindowManager:
                 size_hint_y: None
                 size_hint_x: 1
                 height: self.minimum_height
-                spacing: "10dp"
+                spacing: sp(10)
                 MDLabel:
                     font_name: "Roboto-BoldItalic"
                     text: "What is a mnemonic/seed phrase?"
@@ -2269,7 +2270,7 @@ WindowManager:
                 
                 MDBoxLayout:
                     size_hint_y: None
-                    height: dp(48)  # Adjust height as needed
+                    height: sp(48)  # Adjust height as needed
                     orientation: "vertical"
         
                     MDFlatButton:
@@ -2295,7 +2296,7 @@ WindowManager:
             id: toolbar
             title: "Wallet"
             md_bg_color: get_color_from_hex("#FFB908")
-            height: "70dp"
+            height: sp(70)
             type: "top"
             padding: 0,20,0,0
             
@@ -2315,8 +2316,8 @@ WindowManager:
             ClickableTextFieldRoundCC:
                 id: ccnum
                 size_hint_x: None
-                width: "300dp"
-                height: "300dp"
+                width: sp(300)
+                height: sp(300)
                 hint_text: "Credit Card Number"
                 pos_hint: {"center_x": .5, "center_y": .80}
          
@@ -2327,7 +2328,7 @@ WindowManager:
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex(MeileColors.MEILE)
                 pos_hint: {"x": .47, "center_y": .74}
-                font_size: "12dp"
+                font_size: sp(12)
              
             MDLabel:
                 opacity: 1
@@ -2335,7 +2336,7 @@ WindowManager:
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex(MeileColors.MEILE)
                 pos_hint: {"x": .35, "center_y": .7}
-                font_size: "12dp"
+                font_size: sp(12)
              
             MDDropDownItem:
                 id: month_list
@@ -2349,7 +2350,7 @@ WindowManager:
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex(MeileColors.MEILE)
                 pos_hint: {"x": .45, "center_y": .7}
-                font_size: "12dp"
+                font_size: sp(12)
             
             MDDropDownItem:
                 id: year_list
@@ -2360,8 +2361,8 @@ WindowManager:
             ClickableTextFieldRoundCVV:
                 id: cvvnum
                 size_hint_x: None
-                width: "100dp"
-                height: "300dp"
+                width: "100sp"
+                height: "300sp"
                 hint_text: "CVV"
                 pos_hint: {"center_x": .6, "center_y": .69}
                 
@@ -2372,7 +2373,7 @@ WindowManager:
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex("f42121")
                 pos_hint: {"x": .47, "center_y": .62}
-                font_size: "12dp"
+                font_size: "12sp"
             
             MDLabel:
                 opacity: 1
@@ -2380,7 +2381,7 @@ WindowManager:
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex(MeileColors.MEILE)
                 pos_hint: {"x": .355, "center_y": .63}
-                font_size: "12dp"
+                font_size: "12sp"
                     
             MDDropDownItem:
                 id: token
@@ -2414,7 +2415,7 @@ WindowManager:
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex(MeileColors.MEILE)
                 pos_hint: {"x": .40, "center_y": .48}
-                font_size: "16dp"
+                font_size: "16sp"
                 
             MDLabel:
                 id: surcharge
@@ -2422,14 +2423,14 @@ WindowManager:
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex("ffffff")
                 pos_hint: {"x": .40, "center_y": .43}
-                font_size: "16dp"
+                font_size: "16sp"
             MDLabel:
                 id: coin_qty
                 text:"QTY: " + str(root.DVPNOptions[root.idvpn]) + " dvpn"
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex(MeileColors.MEILE)
                 pos_hint: {"x": .40, "center_y": .38}
-                font_size: "16dp"
+                font_size: "16sp"
             
             MDLabel:
                 id: charge_amount
@@ -2437,7 +2438,7 @@ WindowManager:
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex(MeileColors.MEILE)
                 pos_hint: {"x": .40, "center_y": .33}
-                font_size: "16dp"
+                font_size: "16sp"
                 
             MDRaisedButton:
                 id: restore_wallet_button
@@ -2472,7 +2473,7 @@ WindowManager:
     MDIconButton:
         icon: "eye-off"
         pos_hint: {"center_y": .5}
-        pos: ccnum.width - self.width + dp(8), 0
+        pos: ccnum.width - self.width + sp(8), 0
         theme_text_color: "Hint"
         on_release:
             self.icon = "eye" if self.icon == "eye-off" else "eye-off"
@@ -2495,7 +2496,7 @@ WindowManager:
     MDIconButton:
         icon: "eye-off"
         pos_hint: {"center_y": .5}
-        pos: cvvnum.width - self.width + dp(8), 0
+        pos: cvvnum.width - self.width + sp(8), 0
         theme_text_color: "Hint"
         on_release:
             self.icon = "eye" if self.icon == "eye-off" else "eye-off"
@@ -2508,9 +2509,9 @@ WindowManager:
         
 <TXContent>
     orientation: "vertical"
-    spacing: "4dp"
+    spacing: "4sp"
     size_hint_y: None
-    height: "130dp"
+    height: "130sp"
     MDTextField:
         id: message
         multiline: True
@@ -2525,7 +2526,7 @@ WindowManager:
         readonly: True
     MDLabel:
         text: "Please copy the TX ID and save it somewhere safely."
-        font_size: "11dp"
+        font_size: "11sp"
    
 <ContinentMap>:
     zoom: 3
@@ -2535,7 +2536,7 @@ WindowManager:
 <Check@MDCheckbox>:
 	group: 'group'
 	size_hint: None, None
-	size: dp(48), dp(48)
+	size: sp(48), sp(48)
     
 <HyperlinkLabel>:
     size_hint: None, None
