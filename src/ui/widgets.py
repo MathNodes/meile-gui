@@ -584,14 +584,20 @@ class NodeDetails(MDGridLayout):
         yield 0.6
         sleep(1)
 
-        Wallet = HandleWalletFunctions()
-        unsub_value = Wallet.unsubscribe(int(subId))
+        hwf = HandleWalletFunctions()
+        t = Thread(target=lambda: hwf.unsubscribe(int(subId)))
+        t.start()
+        
+        while t.is_alive():
+            print(".", end="")
+            sys.stdout.flush()
+            yield 0.5
 
         self.closeDialog(None)
 
         TXDialog = TXContent()
-        TXDialog.ids.message.text = unsub_value['message']
-        TXDialog.ids.txhash.text  = unsub_value['hash']
+        TXDialog.ids.message.text = hwf.unsub_result['message']
+        TXDialog.ids.txhash.text  = hwf.unsub_result['hash']
         
         yield 0.3
         if not self.dialog:
@@ -1686,8 +1692,8 @@ class NodeCarousel(MDBoxLayout):
             self.dialog = None
         except:
             mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
-            self.mw.dialog.dismiss()
-            self.mw.dialog = None
+            mw.dialog.dismiss()
+            mw.dialog = None
             
         self.dialog = MDDialog(
                 title="Subscribing...",
