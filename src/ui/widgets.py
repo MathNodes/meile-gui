@@ -41,7 +41,7 @@ import webbrowser
 import sys
 from timeit import default_timer as timer
 
-from typedef.konstants import IBCTokens, HTTParams, MeileColors, NodeKeys
+from typedef.konstants import IBCTokens, HTTParams, MeileColors, NodeKeys, ConfParams
 from typedef.win import CoinsList, WindowNames
 from conf.meile_config import MeileGuiConfig
 from cli.wallet import HandleWalletFunctions
@@ -974,6 +974,7 @@ class PlanRow(MDGridLayout):
 
         if subscribe_dialog.pay_with == "wallet":
             self.pay_meile_plan_with_wallet(deposit, mu_coin, usd, self.on_success_subscription)
+            
         elif subscribe_dialog.pay_with == "btcpay":
             if self.dialog:
                 self.dialog.dismiss()
@@ -992,7 +993,7 @@ class PlanRow(MDGridLayout):
                 )
             self.dialog.open()
             yield 0.6
-            self.start_payment_thread(usd)
+            self.start_payment_thread(usd*ConfParams.BTCPAYADJ)
             
             '''
             if self.invoice_result['success']:
@@ -1025,7 +1026,7 @@ class PlanRow(MDGridLayout):
                 )
             self.dialog.open()
             yield 0.6
-            self.start_payment_thread_now(usd, mu_coin)
+            self.start_payment_thread_now(usd*ConfParams.BTCPAYADJ, mu_coin)
             
             '''
             if self.invoice_result['success']:
