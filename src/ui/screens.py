@@ -5,7 +5,7 @@ from cli.sentinel import  NodeTreeData
 from typedef.konstants import NodeKeys, TextStrings, MeileColors, HTTParams, IBCTokens, ConfParams
 from cli.sentinel import disconnect as Disconnect
 import main.main as Meile
-from ui.widgets import WalletInfoContent, MDMapCountryButton, RatingContent, NodeRV, NodeRV2, NodeAccordion, NodeRow, NodeDetails, PlanAccordion, PlanRow, PlanDetails, NodeCarousel, SubTypeDialog, SubscribeContent, LoadingSpinner
+from ui.widgets import WalletInfoContent, SeedInfoContent, MDMapCountryButton, RatingContent, NodeRV, NodeRV2, NodeAccordion, NodeRow, NodeDetails, PlanAccordion, PlanRow, PlanDetails, NodeCarousel, SubTypeDialog, SubscribeContent, LoadingSpinner
 from utils.qr import QRCode
 from cli.wallet import HandleWalletFunctions
 from conf.meile_config import MeileGuiConfig
@@ -19,6 +19,7 @@ from adapters.ChangeDNS import ChangeDNS
 from adapters.DNSCryptproxy import HandleDNSCryptProxy as dcp
 from helpers.helpers import format_byte_size
 from helpers.bandwidth import compute_consumed_data, compute_consumed_hours, init_GetConsumedWhileConnected, GetConsumedWhileConnected
+from helpers.aes import SecureSeed
 
 from kivy.properties import BooleanProperty, StringProperty, ColorProperty, NumericProperty
 from kivy.uix.screenmanager import Screen, SlideTransition
@@ -62,6 +63,7 @@ from unidecode import unidecode
 from datetime import datetime
 import json
 from treelib.exceptions import NodeIDAbsentError
+import base64
 
 class WalletRestore(Screen):
     screemanager = ObjectProperty()
@@ -73,6 +75,7 @@ class WalletRestore(Screen):
         self.build()
 
     def build(self):
+        '''This chooses to display seed phrase box'''
         if Meile.app.manager.get_screen(WindowNames.MAIN_WINDOW).NewWallet:
             self.ids.seed.opacity = 0
             self.ids.seed_hint.opacity = 0
@@ -87,6 +90,7 @@ class WalletRestore(Screen):
         wallet_name     = unidecode(self.ids.name.ids.wallet_name.text)
         seed_phrase     = unidecode(self.ids.seed.ids.seed_phrase.text)
         
+        '''Add a conditional for seed_phrase.split(" ") and see if len == 12 or 24. Display warning if not'''
         if not wallet_name and not wallet_password:
             self.ids.wallet_name_warning.opacity = 1
             self.ids.wallet_password_warning.opacity = 1
@@ -184,6 +188,13 @@ class WalletRestore(Screen):
 
         CONFIG.write(FILE)
         FILE.close()
+        
+        
+        ss = SecureSeed()
+        encrypted_seed = ss.encrypt_seed(seed_phrase, keyring_passphrase)
+        with open(path.join(ConfParams.KEYRINGDIR, "seed"), "wb") as f:
+            f.write(base64.b64decode(encrypted_seed))
+            
         WalletInfo = WalletInfoContent(Wallet['seed'], wallet_name, Wallet['address'], keyring_passphrase)
         self.dialog = MDDialog(
                 type="custom",
@@ -1496,12 +1507,10 @@ class WalletScreen(Screen):
     MeileConfig = None
     dialog = None
     qr_address = StringProperty()
-    MenuOptions = ["Refresh", "New Wallet", "Re-Fuel"]
+    MenuOptions = ["Refresh", "New Wallet", "Re-Fuel", "View Seed"]
 
     def __init__(self, ADDRESS,  **kwargs):
         super(WalletScreen, self).__init__()
-        #self.qr_address = self.get_qr_code_address()
-        #self.ids.qr.source = self.get_qr_code_address()
         self.ADDRESS = ADDRESS
         print("WalletScreen, ADDRESS: %s" % self.ADDRESS)
         self.wallet_address = self.ADDRESS
@@ -1509,7 +1518,7 @@ class WalletScreen(Screen):
         item_height = 100
         max_height = len(self.MenuOptions) * item_height
         
-        menu_icons = ["refresh-circle", "wallet-plus", "cash-multiple"]
+        menu_icons = ["refresh-circle", "wallet-plus", "cash-multiple", "lock-open-variant"]
         menu_items = [
             {
                 "viewclass" : "IconListItem",
@@ -1544,6 +1553,8 @@ class WalletScreen(Screen):
             self.open_dialog_new_wallet()
         elif selection == self.MenuOptions[2]:
             self.open_fiat_interface()
+        elif selection == self.MenuOptions[3]:
+            self.display_seed()
         
     def open_dialog_new_wallet(self):
         self.dialog = MDDialog(
@@ -1631,6 +1642,39 @@ class WalletScreen(Screen):
         Meile.app.root.add_widget(fiat_interface.FiatInterface(name=WindowNames.FIAT))
         Meile.app.root.transistion = SlideTransition(direction="right")
         Meile.app.root.current = WindowNames.FIAT
+        
+    def display_seed(self):
+        MeileConfig = MeileGuiConfig()
+        CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
+        keyring_passphrase = CONFIG['wallet'].get('password', '')
+        
+        ss = SecureSeed()
+        
+        if path.isfile(path.join(ConfParams.KEYRINGDIR, "seed")):
+            with open(path.join(ConfParams.KEYRINGDIR, "seed"), "rb") as f:
+                encrypted_seed= base64.b64encode(f.read()).decode()
+            
+            seedphrase = ss.decrypt_seed(encrypted_seed, keyring_passphrase)
+        else:
+            seedphrase = "NULL"
+            
+        SeedInfo = SeedInfoContent(seedphrase)
+        self.dialog = MDDialog(
+                type="custom",
+                content_cls=SeedInfo,
+                md_bg_color=get_color_from_hex(MeileColors.BLACK),
+
+                buttons=[
+                    MDRaisedButton(
+                        text="CLOSE",
+                        theme_text_color="Custom",
+                        text_color=get_color_from_hex(MeileColors.BLACK),
+                        on_release=self.closeDialog
+                    ),
+                ],
+            )
+        self.dialog.open()
+        
 
     def return_coin_logo(self, coin):
         self.MeileConfig = MeileGuiConfig()

@@ -83,6 +83,29 @@ class WalletInfoContent(BoxLayout):
             
         return label
     
+class SeedInfoContent(BoxLayout):
+    def __init__(self, seed_phrase, **kwargs):
+        super(SeedInfoContent, self).__init__(**kwargs)
+        self.seed_phrase = seed_phrase
+        
+    def copy_seed_phrase(self):
+        Clipboard.copy(self.seed_phrase)
+        self.AnimateCopiedLabel()
+        
+    def AnimateCopiedLabel(self):
+        label = MDLabel(text='Seed Phrase Copied!',
+                      theme_text_color="Custom",
+                      text_color=get_color_from_hex("#fcb711"),
+                      font_size=dp(10))
+        self.ids.seed_box.add_widget(label)
+
+        anim = Animation(color=(0, 0, 0, 1), duration=.2) + Animation(color=get_color_from_hex("#fcb711"), duration=.2)
+        anim.repeat = True
+                
+        anim.start(label)
+            
+        return label
+    
 class RatingContent(MDBoxLayout):
     naddress = StringProperty()
     moniker  = StringProperty()

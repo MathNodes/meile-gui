@@ -1681,7 +1681,51 @@ WindowManager:
         text: root.wallet_password
         readonly: True
 
-            
+<SeedInfoContent>
+    orientation: "vertical"
+    spacing: "15sp"
+    size_hint_y: None
+    height: "150sp"
+    seed_phrase: ""
+    wallet_address: ""
+    wallet_password: ""
+    wallet_name: ""
+    padding: 0,10,0,10
+    
+    MDRelativeLayout:
+        size_hint_y: None
+        height: seed_phrase.height
+        MDTextField:
+            id: seed_phrase
+            multiline: True
+            hint_text: "Mnemonic Seed"
+            text: root.seed_phrase
+            readonly: True
+            icon_left: "key-variant"
+            password: True 
+        MDIconButton:
+            icon: "eye-off"
+            pos_hint: {"center_y": .5}
+            pos: seed_phrase.width - self.width + sp(8), 0
+            theme_text_color: "Hint"
+            on_release:
+                self.icon = "eye" if self.icon == "eye-off" else "eye-off"
+                seed_phrase.password = False if seed_phrase.password is True else True
+                
+    MDBoxLayout:
+        id: seed_box
+        orientation: "horizontal"
+        padding: 0,0,20,20
+        spacing: "20sp"    
+        MDRaisedButton:
+            id: copy_seed_button
+            text: "COPY SEED"
+            font_size: sp(9)
+            pos_hint: {"center_x": .1, "center_y": .5}
+            on_press: root.copy_seed_phrase()
+            size_hint: None, None
+            size: 15,10
+                    
 <SubTypeDialog>
     orientation: "vertical"
     spacing: "1sp"
