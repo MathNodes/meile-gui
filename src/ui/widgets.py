@@ -53,7 +53,7 @@ from coin_api.get_price import GetPriceAPI
 from adapters.ChangeDNS import ChangeDNS
 from kivy.uix.recyclegridlayout import RecycleGridLayout
 from helpers.helpers import format_byte_size
-from fiat.stripe_pay import scrtsxx
+from fiat.stripe_pay.dist import scrtsxx
 from utils.qr import QRCode
 
 class WalletInfoContent(BoxLayout):
@@ -96,12 +96,18 @@ class RatingContent(MDBoxLayout):
         return Config.resource_path(MeileColors.FONT_FACE)
     
     def SubmitRating(self, rating, node_address):
+        MeileConfig = MeileGuiConfig()
+        CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
+        MNAPI = CONFIG['network'].get('mnapi', HTTParams.SERVER_URL)
         UUID = Meile.app.root.get_screen(WindowNames.PRELOAD).UUID
         try:
             rating_dict = {'uuid' : "%s" % UUID, 'address' : "%s" % node_address, "rating" : rating}
             Request = HTTPRequests.MakeRequest()
             http = Request.hadapter()
-            req = http.post(HTTParams.SERVER_URL + HTTParams.API_RATING_ENDPOINT, json=rating_dict)
+            if MNAPI != HTTParams.SERVER_URL:
+                req = http.post(MNAPI + HTTParams.API_RATING_ENDPOINT, json=rating_dict)
+            else:
+                req = http.post(HTTParams.SERVER_URL + HTTParams.API_RATING_ENDPOINT, json=rating_dict)
             if req.status_code == 200:
                 print("Rating Sent")
                 return 0
@@ -382,6 +388,7 @@ class PlanSubscribeContent(BoxLayout):
         print("Setting item...")
         self.ids.drop_item.set_item(text_item)
         self.ids.deposit.text = self.parse_coin_deposit(text_item)
+        self.get_usd(text_item)
         try: 
             self.menu.dismiss()
         except TypeError as e:
@@ -405,11 +412,12 @@ class PlanSubscribeContent(BoxLayout):
         if mu_coin == "dvpn":
             value = float(price_text.rstrip(mu_coin).strip())
         else:
-            value = round(float(price_text.rstrip("dvpn").strip()) * self.price_cache["dvpn"]["price"] / self.price_cache[mu_coin]["price"], 5)
+            value = round(float(price_text.rstrip("dvpn").strip()) * self.price_cache["dvpn"]["price"] / self.price_cache[mu_coin]["price"], 8)
 
         print(f"mu_coin={mu_coin}, month={month}, value={value}, price_cache={self.price_cache}")
 
-        self.ids.deposit.text = str(round(month * value, 5))
+        # display satoshis for BTC
+        self.ids.deposit.text = str(format(round(month * value, 8),'8f'))
         return self.ids.deposit.text
 
 
@@ -425,21 +433,28 @@ class PlanSubscribeContent(BoxLayout):
                     {
                         "viewclass": "IconListItem",
                         "icon": "circle-multiple",
-                        "text": "firo",
+                        "text": f"{i}",
                         "height": dp(56),
-                        "on_release": lambda x="firo": self.set_item(x),
-                    },
+                        "on_release": lambda x=f"{i}": self.set_item(x),
+                    } for i in IBCTokens.NOWCOINS
+                ]
+                self.menu.items = menu_items
+                self.set_item(IBCTokens.NOWCOINS[0])
+            
+            elif pay_with == "btcpay":
+                self.ids.drop_item.text = "xmr"
+                menu_items = [
                     {
                         "viewclass": "IconListItem",
                         "icon": "circle-multiple",
-                        "text": "beam",
+                        "text": f"{i}",
                         "height": dp(56),
-                        "on_release": lambda x="beam": self.set_item(x),
-                    }  
+                        "on_release": lambda x=f"{i}": self.set_item(x),
+                    } for i in IBCTokens.BTCPAYCOINS    
                 ]
                 self.menu.items = menu_items
-                self.set_item("firo")
-                #self.menu.bind()
+                self.set_item(IBCTokens.BTCPAYCOINS[0])
+            
             else:
                 self.ids.drop_item.text = "dvpn"
                 menu_items = [
@@ -453,7 +468,22 @@ class PlanSubscribeContent(BoxLayout):
                 ]
                 self.menu.items = menu_items
                 self.set_item("dvpn")
-                #self.menu.bind()
+    
+    def get_usd(self, coin):
+        deposit_ret = self.return_deposit_text()
+        match = re.match(r"([0-9]+.[0-9]+)", deposit_ret[0], re.I)
+        if match:
+            amt    = match.groups()[0]
+        else:
+            amt    = 0.0
+            coin   = "dvpn"
+
+        self.refresh_price(coin, cache=30)
+        self.ids.usd_price.text = '$' + str(round(float(self.price_cache[coin]["price"]) * float(amt),3))
+
+    def get_font(self):
+        Config = MeileGuiConfig()
+        return Config.resource_path(MeileColors.FONT_FACE)
             
 class ProcessingSubDialog(BoxLayout):
     moniker = StringProperty()
@@ -957,6 +987,7 @@ class PlanRow(MDGridLayout):
             yield 0.6
             self.start_payment_thread(usd)
             
+            '''
             if self.invoice_result['success']:
                 self.dialog.dismiss()
                 self.dialog = None
@@ -968,6 +999,7 @@ class PlanRow(MDGridLayout):
                 yield 0.6
 
                 on_success_subscription()
+            '''
 
         elif subscribe_dialog.pay_with == "now":
             if self.dialog:
@@ -989,6 +1021,8 @@ class PlanRow(MDGridLayout):
             yield 0.6
             self.start_payment_thread_now(usd, mu_coin)
             
+            
+            '''
             if self.invoice_result['success']:
                 self.dialog.dismiss()
                 self.dialog = None
@@ -1000,6 +1034,7 @@ class PlanRow(MDGridLayout):
                 yield 0.6
 
                 on_success_subscription()
+            '''
         else:
             MDDialog(text="[color=#FF0000]Please select a payment option[/color]").open()
 
@@ -1032,7 +1067,7 @@ class PlanRow(MDGridLayout):
         KEYNAME = CONFIG['wallet'].get('keyname', '')
 
         hwf = HandleWalletFunctions()
-        result, output = hwf.send_2plan_wallet(KEYNAME, self.plan_id, mu_coin, deposit)
+        result, output = hwf.send_2plan_wallet(KEYNAME, self.plan_id, mu_coin, int(round(float(deposit),4)*IBCTokens.SATOSHI))
         print("result", result)
         print("output", output)
 
@@ -1057,7 +1092,7 @@ class PlanRow(MDGridLayout):
                         MDFlatButton(
                             text="OK",
                             theme_text_color="Custom",
-                            text_color=self.theme_cls.primary_color,
+                            text_color=MeileColors.MEILE,
                             on_release=self.closeDialog
                         ),])
             if isinstance(output, dict) is True:
@@ -1303,7 +1338,6 @@ class PlanDetails(MDGridLayout):
     coin = StringProperty()
     
     def filter_nodes(self):
-        from fiat.stripe_pay import scrtsxx
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         
         Request = HTTPRequests.MakeRequest()

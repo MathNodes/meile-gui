@@ -1,7 +1,7 @@
 #!/bin/bash
 
 STATE="$1"
-GATEWAY=`route -n | grep 'UG[ \t]' | awk '{print $2}' | tr -d '\n'`
+GATEWAY=`route -n | grep 'UG[ \t]' | awk '{print $2}' | tail -1 | tr -d '\n'`
 PRIMARY_IFACE=`route | grep '^default' | grep -o '[^ ]*$'`
 
 if test -z "$SUDO_USER"

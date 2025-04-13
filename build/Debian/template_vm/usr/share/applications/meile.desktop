@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Meile
+Comment=A decentralized VPN client based on the Sentinel Network.
+Exec=/usr/local/bin/meile-gui
+Icon=meile
+Terminal=false
+Type=Application
+Categories=Network;Application;
+MimeType=
+

@@ -6,7 +6,10 @@ import sys
 from requests.auth import HTTPBasicAuth
 
 from adapters import HTTPRequests
-from fiat.stripe_pay import scrtsxx
+from fiat.stripe_pay.dist import scrtsxx
+from conf.meile_config import MeileGuiConfig
+from typedef.konstants import HTTParams
+
 class BTCPayDB():
     
     def connDB(self): 
@@ -35,7 +38,10 @@ class BTCPayDB():
         
     '''    
     def get_remote_btcpay_client(self):
-        SERVER_ADDRESS = scrtsxx.SERVER_ADDRESS
+        MeileConfig = MeileGuiConfig()
+        CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
+        MNAPI = CONFIG['network'].get('mnapi', HTTParams.SERVER_URL)
+        SERVER_ADDRESS = scrtsxx.SERVER_ADDRESS if "aimokoivunen" in scrtsxx.SERVER_ADDRESS else MNAPI
         API            = scrtsxx.BTCPAY_ENDPOINT
         USERNAME       = scrtsxx.USERNAME
         PASSWORD       = scrtsxx.PASSWORD

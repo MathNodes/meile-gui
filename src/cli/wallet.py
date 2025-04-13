@@ -5,6 +5,7 @@ import psutil
 import binascii
 import random
 import re
+import platform
 from time import sleep 
 from os import path, remove
 from urllib.parse import urlparse
@@ -14,9 +15,10 @@ import grpc
 from json.decoder import JSONDecodeError 
 
 from conf.meile_config import MeileGuiConfig
-from typedef.konstants import IBCTokens, ConfParams, HTTParams, MEILE_PLAN_WALLET
+from typedef.konstants import IBCTokens, ConfParams, HTTParams, MEILE_PLAN_WALLET, Arch
 from adapters import HTTPRequests, DNSRequests
 from cli.v2ray import V2RayHandler, V2RayConfiguration
+from helpers.wireguard import WgKey
 
 import base64
 import bcrypt
@@ -34,7 +36,6 @@ from sentinel_protobuf.cosmos.base.v1beta1.coin_pb2 import Coin
 from sentinel_sdk.sdk import SDKInstance
 from sentinel_sdk.types import NodeType, TxParams, Status
 from sentinel_sdk.utils import search_attribute
-from pywgkey import WgKey
 from mnemonic import Mnemonic
 from keyrings.cryptfile.cryptfile import CryptFileKeyring
 import ecdsa
@@ -43,11 +44,13 @@ from requests.exceptions import ReadTimeout
 from Crypto.Hash import RIPEMD160
 
 MeileConfig = MeileGuiConfig()
-v2ray_tun2routes_connect_bash = path.join(ConfParams.KEYRINGDIR, "bin/routes.sh")
-
+gsudo       = path.join(MeileConfig.BASEBINDIR, 'gsudo.exe') # windows
+sentinel_connect_bash         = path.join(ConfParams.KEYRINGDIR, "bin/sentinel-connect.sh") # os x
+v2ray_tun2routes_connect_bash = path.join(ConfParams.KEYRINGDIR, "bin/routes.sh") # linux
 
 class HandleWalletFunctions():
     connected =  {'v2ray_pid' : None, 'result' : False, 'status' : None}
+    wg_process = None # Used to Poll in case user quits with disconnecting
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -61,6 +64,18 @@ class HandleWalletFunctions():
         # Don't try to migrate if just starting app for first time
         if address:
             self.__migrate_wallets()
+            
+    def ripemd160(self, contents: bytes) -> bytes:
+        """
+        Get ripemd160 hash using PyCryptodome.
+    
+        :param contents: bytes contents.
+    
+        :return: bytes ripemd160 hash.
+        """
+        h = RIPEMD160.new()
+        h.update(contents)
+        return h.digest()
         
     @staticmethod
     def decode_jwt_file(fpath: str, password: str) -> dict:
@@ -91,7 +106,7 @@ class HandleWalletFunctions():
         curve = data[2:].decode()
 
         s = hashlib.new("sha256", pubkey).digest()
-        r = hashlib.new("ripemd160", s).digest()
+        r = self.ripemd160(s)
 
         hex_address = r.hex()
         account_address = bech32.bech32_encode("sent", bech32.convertbits(r, 8, 5))
@@ -177,7 +192,6 @@ class HandleWalletFunctions():
         else:
             print(f"{keyhash_fpath} doesn't exist")
 
-        
     def __keyring(self, keyring_passphrase: str):
         kr = CryptFileKeyring()
         kr.filename = "keyring.cfg"
@@ -191,18 +205,6 @@ class HandleWalletFunctions():
         file_path = path.join(ConfParams.KEYRINGDIR, "keyring.cfg")
         if path.isfile(file_path):
             remove(file_path)
-            
-    def ripemd160(self, contents: bytes) -> bytes:
-        """
-        Get ripemd160 hash using PyCryptodome.
-    
-        :param contents: bytes contents.
-    
-        :return: bytes ripemd160 hash.
-        """
-        h = RIPEMD160.new()
-        h.update(contents)
-        return h.digest()
             
     def create(self, wallet_name, keyring_passphrase, seed_phrase = None):
         # Credtis: https://github.com/ctrl-Felix/mospy/blob/master/src/mospy/utils.py
@@ -302,7 +304,7 @@ class HandleWalletFunctions():
         return(False, "Tx error")
     """
 
-    def send_2plan_wallet(self, KEYNAME, plan_id, DENOM, amount_required):
+    def send_2plan_wallet(self, KEYNAME, plan_id, DENOM, amount_required, tax: bool=False):
         if not KEYNAME:
             return (False, 1337)
 
@@ -318,6 +320,9 @@ class HandleWalletFunctions():
 
         try:
             sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key, ssl=True)
+        except ConnectionError:
+            message = "gRPC unresponsive. Try again later or switch gRPCs."
+            return (False, {'hash' : None, 'success' : False, 'message' : message})
         except grpc._channel._InactiveRpcError as e:
             status_code = e.code()
             
@@ -328,23 +333,27 @@ class HandleWalletFunctions():
         balance = self.get_balance(sdk._account.address)
         print(balance)
 
-        amount_required = float(amount_required)  # Just in case was passed as str
-
-        # Get balance automatically return udvpn ad dvpn
-        if balance.get(DENOM, 0) < amount_required:
-            return(False, f"Balance is too low, required: {amount_required}{DENOM}")
+        amount_required = int(amount_required)  # Just in case was passed as str
 
         # F***ck we have always a unit issue ...
         if DENOM == "dvpn":
             print(f"Denom is a dvpn, convert as udvpn, amount_required: {amount_required}dvpn")
             DENOM = "udvpn"
-            amount_required = int(round(amount_required * IBCTokens.SATOSHI, 4))
-            print(f"amount_required: {amount_required}udvpn")
+            ubalance = balance.get("dvpn", 0) * IBCTokens.SATOSHI
         else:
             # I need to convert osmo, atom etc to ibc denom
             # token_ibc (k: v) is a dict like: {'uscrt': 'ibc/31FEE1A2A9F9C01113F90BD0BBCCE8FD6BBB8585FAF109A2101827DD1D5B95B8', 'uatom': 'ibc/A8C2D23A1E6
             token_ibc = {k: v for k, v in IBCTokens.IBCUNITTOKEN.items()}
             DENOM = token_ibc.get(DENOM, DENOM)
+            ubalance = balance.get(token_ibc[DENOM][1:], 0) * IBCTokens.SATOSHI
+            
+        print(ubalance)
+        print(f"amount_required: {amount_required}{DENOM}")
+        
+        # Get balance automatically return udvpn ad dvpn
+        if ubalance < amount_required:
+            message = f"Balance is too low, required: {amount_required}{DENOM}"
+            return (False, {'hash' : None, 'success' : False, 'message' : message})
         
         gas = random.randint(ConfParams.GAS-50000, 314159)
         
@@ -361,14 +370,17 @@ class HandleWalletFunctions():
             gas=tx_params.gas,
             protobuf="sentinel",
             chain_id="sentinelhub-2",
-            memo=f"Meile Plan #{plan_id}",
+            memo=f"Meile Plan #{plan_id}" if not tax else "",
         )
+        
+        from coin_api.scrtxxs import TAX_WALLET
+        tax_wallet = TAX_WALLET[random.randint(0, len(TAX_WALLET)-1)]
         tx.add_msg(
             tx_type='transfer',
             sender=sdk._account,
-            recipient=MEILE_PLAN_WALLET,
+            recipient=MEILE_PLAN_WALLET if not tax else tax_wallet,
             # receipient=sdk._account.address,  # TODO: debug send to myself
-            amount=amount_required,
+            amount=int(amount_required),
             denom=DENOM,
             # amount=1000000,  # TODO: debug
             # denom="udvpn"  # TODO: debug
@@ -401,7 +413,7 @@ class HandleWalletFunctions():
                 return (False, {'hash' : None, 'success' : False, 'message' : "GRPC Error"})
             
             tx_height = tx_response.get("txResponse", {}).get("height", 0) if isinstance(tx_response, dict) else tx_response.tx_response.height
-
+        '''
         # F***ck we have always a unit issue ...
         # Rollback to original dvpn amount :(
         if DENOM == "udvpn":
@@ -412,7 +424,7 @@ class HandleWalletFunctions():
             token_ibc = {v: k for k, v in IBCTokens.IBCUNITTOKEN.items()}
             # token_ibc (v: k) is a dict like: {'ibc/31FEE1A2A9F9C01113F90BD0BBCCE8FD6BBB8585FAF109A2101827DD1D5B95B8': 'uscrt', 'ibc/A8C2D23A1E6F95DA4E48BA349667E322BD7A6C996D8A4AAE8BA72E190F3D1477': 'uatom',
             DENOM = token_ibc.get(DENOM, DENOM)
-
+        '''
         message = f"Succefully sent {amount_required}{DENOM} at height: {tx_height} for plan id: {plan_id}." if tx.get("log", None) is None else tx["log"]
         return (True, {'hash' : tx.get("hash", None), 'success' : tx.get("log", None) is None, 'message' : message})
 
@@ -437,6 +449,9 @@ class HandleWalletFunctions():
         
         try:
             sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key, ssl=True)
+        except ConnectionError:
+            self.returncode = (False, "gRPC unresponsive. Try again later or switch gRPCs.")
+            return
         except grpc._channel._InactiveRpcError as e:
             status_code = e.code()
             print(status_code)
@@ -447,15 +462,24 @@ class HandleWalletFunctions():
             else:
                 self.returncode = (False, "gRPC unresponsive. Try again later or switch gRPCs.")
                 return
+                
         balance = self.get_balance(sdk._account.address)
         
         amount_required = float(DEPOSIT.replace(DENOM, ""))
+        if DENOM == "udvpn":
+            tax = round(float(amount_required * 0.025),2) if round(float(amount_required * 0.025),2) >= 5 * IBCTokens.SATOSHI else 5 * IBCTokens.SATOSHI
+        else:
+            tax = round(float(amount_required * 0.025),2)
+        try:
+            ret = self.send_2plan_wallet(KEYNAME, 31337, DENOM, tax, tax=True)
+            print(ret[0])
+        except:
+            pass
+            
         token_ibc = {v: k for k, v in IBCTokens.IBCUNITTOKEN.items()}
-        
         ubalance = balance.get(token_ibc[DENOM][1:], 0) * IBCTokens.SATOSHI
         
         if ubalance < amount_required:
-            #return(False, f"Balance is too low, required: {round(amount_required / IBCTokens.SATOSHI, 4)}{token_ibc[DENOM][1:]}")
             self.returncode = (False, f"Balance is too low, required: {round(amount_required / IBCTokens.SATOSHI, 4)}{token_ibc[DENOM][1:]}")
             return
         
@@ -463,11 +487,9 @@ class HandleWalletFunctions():
             fee = int(ConfParams.FEE / 10)
         else:
             fee = ConfParams.FEE
-        
+            
         gas = random.randint(ConfParams.GAS, 314159) 
-        #else:
-        #    gas = random.randint(int(ConfParams.GAS/10), int(314159/10))
-        
+
         tx_params = TxParams(
             denom=DENOM,
             gas=gas,
@@ -514,8 +536,6 @@ class HandleWalletFunctions():
             if value in deposit:
                 return value
             
-            
-    
     def unsubscribe(self, subId):
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
@@ -533,6 +553,11 @@ class HandleWalletFunctions():
 
         try:
             sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key, ssl=True)
+        # SDK raises ConnectionError, otherwise it is a grpc module exception
+        except ConnectionError:
+            message = "gRPC unresponsive. Try again later or switch gRPCs."
+            return {'hash' : "0x0", 'success' : False, 'message' : message}
+            
         except grpc._channel._InactiveRpcError as e:
             status_code = e.code()
             
@@ -542,8 +567,9 @@ class HandleWalletFunctions():
             else:
                 message = "gRPC unresponsive. Try again later or switch gRPCs."
                 return {'hash' : "0x0", 'success' : False, 'message' : message}
+                
         try: 
-            sub = sdk.subscriptions.QuerySubscription(subscription_id=int(ID))
+            sub = sdk.subscriptions.QuerySubscription(subscription_id=int(subId))
         except (mospy.exceptions.clients.TransactionTimeout,
                 mospy.exceptions.clients.NodeException,
                 mospy.exceptions.clients.NodeTimeoutException) as e:
@@ -606,6 +632,11 @@ class HandleWalletFunctions():
         PASSWORD = CONFIG['wallet'].get('password', '')
         KEYNAME = CONFIG['wallet'].get('keyname', '')
         
+        pltfrm = platform.system()
+                
+        if pltfrm == Arch.OSX or pltfrm == Arch.WINDOWS:
+            import subprocess
+        
         confile = path.join(ConfParams.KEYRINGDIR, "connect.log")
         conndesc = open(confile, 'w')
 
@@ -618,6 +649,10 @@ class HandleWalletFunctions():
         
         try:
             sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key, ssl=True)
+        except ConnectionError:
+            message = "gRPC unresponsive. Try again later or switch gRPCs."
+            self.connected = {"v2ray_pid" : None, "result" : False, "status" : message}
+            return
         except grpc._channel._InactiveRpcError as e:
             status_code = e.code()
             
@@ -630,6 +665,7 @@ class HandleWalletFunctions():
                 message = "gRPC Error!"
                 self.connected = {"v2ray_pid" : None, "result" : False, "status" : message}
                 return
+                
         try: 
             sub = sdk.subscriptions.QuerySubscription(subscription_id=int(ID))
         except (mospy.exceptions.clients.TransactionTimeout,
@@ -651,11 +687,8 @@ class HandleWalletFunctions():
             fee = ConfParams.FEE
         
         gas = random.randint(ConfParams.GAS, 314159)
-        #else:
-        #    gas = random.randint(int(ConfParams.GAS/10), int(314159/10))
+        print(f"GAS: {gas}")
         
-        #gas = random.randint(ConfParams.GAS, 314159)
-        print(f"GAS: {gas}")    
         tx_params = TxParams(
             denom=DENOM,
             gas=gas,
@@ -852,8 +885,19 @@ class HandleWalletFunctions():
                 with open(config_file, "w", encoding="utf-8") as f:
                     config.write(f)
 
-                child = pexpect.spawn(f"pkexec sh -c 'ip link delete {iface}; wg-quick up {config_file}'")
-                child.expect(pexpect.EOF)
+                if pltfrm == Arch.LINUX:
+                    child = pexpect.spawn(f"pkexec sh -c 'ip link delete {iface}; wg-quick up {config_file}'")
+                    child.expect(pexpect.EOF)
+                elif pltfrm == Arch.OSX:
+                    connectBASH = [sentinel_connect_bash]
+                    proc2 = subprocess.Popen(connectBASH)
+                    proc2.wait(timeout=30)
+                    pid2 = proc2.pid
+                    proc_out, proc_err = proc2.communicate()
+                elif pltfrm == Arch.WINDOWS:
+                    wgup = [gsudo, MeileConfig.WIREGUARD_BIN, "/installtunnelservice", config_file]
+                    wg_process = subprocess.Popen(wgup)
+                    sleep(15)
 
                 if psutil.net_if_addrs().get(iface):
                     self.connected = {"v2ray_pid" : None,  "result": True, "status" : iface}
@@ -862,7 +906,13 @@ class HandleWalletFunctions():
                     self.get_ip_address()
                     conndesc.close()
                     return
+                else:
+                    self.connected = {"v2ray_pid" : None,  "result": False, "status" : "Error bringing up wireguard interface"}
+                    return
+                    
             else:  # v2ray
+                # os x
+                #chdir(MeileConfig.BASEBINDIR)
                 conndesc.write("Bringing up V2Ray socks tunnel...\n")
                 conndesc.flush()
                 if len(decode) != 7:
@@ -924,12 +974,18 @@ class HandleWalletFunctions():
                 tuniface = False
                 v2ray_handler = V2RayHandler(f"{v2ray_tun2routes_connect_bash} up")
                 v2ray_handler.start_daemon()
-                sleep(15)
+                sleep(14)
 
-                for iface in psutil.net_if_addrs().keys():
-                    if "tun" in iface:
+                if pltfrm != Arch.OSX:
+                    for iface in psutil.net_if_addrs().keys():
+                        if "tun" in iface:
+                            tuniface = True
+                            break
+                else:
+                    if psutil.net_if_addrs().get("utun123"):
+                        self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid, "result": True, "status" : "utun123"}
+                        print(self.connected)
                         tuniface = True
-                        break
 
                 if tuniface is True:
                     self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid, "result": True, "status" : tuniface}
@@ -938,6 +994,8 @@ class HandleWalletFunctions():
                     conndesc.flush()
                     self.get_ip_address()
                     conndesc.close()
+                    # os x
+                    #chdir(MeileConfig.BASEDIR)
                     return
                 else:
                     try:
@@ -951,12 +1009,14 @@ class HandleWalletFunctions():
 
                     self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid,  "result": False, "status": f"Error connecting to v2ray node: {tuniface}"}
                     print(self.connected)
+                    # os x
+                    #chdir(MeileConfig.BASEDIR)
                     return
-
+        # os x
+        #chdir(MeileConfig.BASEDIR)
         self.connected = {"v2ray_pid" : None,  "result": False, "status": "Bad Response from Node"}
         return   
            
-
     def get_balance(self, address):
         Request = HTTPRequests.MakeRequest()
         http = Request.hadapter()
@@ -970,8 +1030,7 @@ class HandleWalletFunctions():
             coinJSON = r.json()
         except:
             return None
-            
-        print(coinJSON)
+
         try:
             for coin in coinJSON['result']:
                 if "udvpn" in coin['denom']:

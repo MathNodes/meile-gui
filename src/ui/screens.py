@@ -14,7 +14,7 @@ from cli.warp import WarpHandler
 from adapters import HTTPRequests, DNSRequests
 from fiat import fiat_interface
 from cli.v2ray import V2RayHandler
-from fiat.stripe_pay import scrtsxx
+from fiat.stripe_pay.dist import scrtsxx
 from adapters.ChangeDNS import ChangeDNS
 from adapters.DNSCryptproxy import HandleDNSCryptProxy as dcp
 from helpers.helpers import format_byte_size
@@ -395,7 +395,7 @@ class MainWindow(Screen):
         Clock.schedule_once(self.build, 1)
         Clock.schedule_interval(self.update_wallet, 10)
         
-        item_height = 100
+        item_height = 50
         max_height = len(self.MenuOptions) * item_height
         
         menu_icons = ["cloud-refresh", "sort", "shield-lock", "shield-lock", "exit-to-app"]
@@ -420,12 +420,17 @@ class MainWindow(Screen):
         
         self.address = CONFIG['wallet'].get('address', None)
     def ping(self):
+        CONFIG = self.MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
+        MNAPI = CONFIG['network'].get('mnapi', HTTParams.SERVER_URL)
         UUID = Meile.app.root.get_screen(WindowNames.PRELOAD).UUID
         try:
             uuid_dict = {'uuid' : "%s" % UUID, 'os' : "l"}
             Request = HTTPRequests.MakeRequest(TIMEOUT=3)
             http = Request.hadapter()
-            ping = http.post(HTTParams.SERVER_URL + HTTParams.API_PING_ENDPOINT, json=uuid_dict)
+            if MNAPI != HTTParams.SERVER_URL:
+                ping = http.post(MNAPI + HTTParams.API_PING_ENDPOINT, json=uuid_dict)
+            else:
+                ping = http.post(HTTParams.SERVER_URL + HTTParams.API_PING_ENDPOINT, json=uuid_dict)
             if ping.status_code == 200:
                 print('ping')
             else:
@@ -768,13 +773,14 @@ class MainWindow(Screen):
     def build_meile_map(self):
 
         if not self.MeileMapBuilt:
-            self.MeileMap = MapView(zoom=2)
+            self.MeileMap = MapView(zoom=2,
+                                    background_color=get_color_from_hex(MeileColors.MAP_BG_COLOR))
             source = MapSource(url=MeileColors.ARCGIS_MAP,
                                cache_key="meile-map-canvas-dark-grey-base-2",
                                tile_size=256,
                                image_ext="png",
                                attribution="@ Meile",
-                               size_hint=(.7,1))
+                               min_zoom=1)
             #self.MeileMap.map_source = "osm"
             self.MeileMap.map_source = source
 
@@ -785,11 +791,12 @@ class MainWindow(Screen):
             self.map_widget_1 = IPAddressTextField()
             self.map_widget_2 = ConnectedNode()
             self.map_widget_3 = ProtectedLabel()
-            self.recenter     = MapCenterButton()
+            recenter     = MapCenterButton()
             
-
-            self.recenter.on_release = self.recenter_map
+            recenter.on_release = self.recenter_map
             
+            self.MeileMap.bind(lat=self.check_boundaries)
+            self.MeileMap.bind(lon=self.check_boundaries)
             
             layout.add_widget(self.MeileMap)
             layout.add_widget(self.map_widget_1)
@@ -798,20 +805,21 @@ class MainWindow(Screen):
             layout.add_widget(bw_label)
             layout.add_widget(self.quota)
             layout.add_widget(self.quota_pct)
-            layout.add_widget(self.recenter)
+            layout.add_widget(recenter)
 
             self.quota.value = 0
             self.quota_pct.text = "0%"
 
             self.carousel = Carousel(direction='right')
             self.ids.country_map.add_widget(self.carousel)
-            #self.carousel.add_widget(self.MeileMap)
             self.carousel.add_widget(layout)
             self.AddCountryNodePins(False)
             self.MeileMapBuilt = True
-
-
-
+            
+    def check_boundaries(self, instance, value):
+        if self.MeileMap.zoom == 1:
+            self.recenter_map()
+            
     def add_country_rv_data(self, NodeCountries):
         self.ids.rv.data.append(
             {
@@ -1263,7 +1271,7 @@ class MainWindow(Screen):
         
     def recenter_map(self):
         self.MeileMap.zoom = 2
-        self.MeileMap.center_on(0.0, 0.0)
+        self.MeileMap.center_on(0, 0)
         
     def get_continent_coordinates(self, c):
         loc = self.MeileLand.ContinentLatLong[c]
@@ -1475,6 +1483,9 @@ class WalletScreen(Screen):
         self.ADDRESS = ADDRESS
         print("WalletScreen, ADDRESS: %s" % self.ADDRESS)
         self.wallet_address = self.ADDRESS
+        
+        item_height = 50
+        max_height = len(self.MenuOptions) * item_height
 
         menu_icons = ["refresh-circle", "wallet-plus", "cash-multiple"]
         menu_items = [
@@ -1488,6 +1499,8 @@ class WalletScreen(Screen):
         self.menu = MDDropdownMenu(items=menu_items, 
                                    caller=self.ids.wallet_menu,
                                    width_mult=3,
+                                   position="center",
+                                   max_height=max_height,
                                    background_color=get_color_from_hex(MeileColors.BLACK))
         Clock.schedule_once(self.build)
 

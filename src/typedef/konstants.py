@@ -45,7 +45,9 @@ class HTTParams():
         "https://api.sentinelgrowthdao.com",
     ]
     MNAPI = "https://aimokoivunen.mathnodes.com"
-    MNAPIS = [MNAPI] + []
+    MNAPIS = [MNAPI] + [
+        "https://michaelfay.bluefren.net"
+    ]
     RPC = "https://rpc.mathnodes.com:443"
     # Note http://128.199.90.172:26657 is testnet ONLY!
     RPCS = [RPC] + [
@@ -83,7 +85,6 @@ class HTTParams():
     NODE_APIS = [NODE_API] +  [
                               "https://metabase.mathnodes.com/api/public/card/bdff9cda-e0b8-417e-afd0-a8736a329914/query/json",
                               "https://metabase.bluefren.xyz/api/public/card/4a891454-51da-462a-a5df-e85ca17c05d5/query/json",
-                              "https://metabase.jp.bluefren.xyz/api/public/card/feed7c25-410a-4e3a-bfe1-8a701defdc38/query/json",
                               "https://metabase.ro.mathnodes.com/api/public/card/6fd7194d-f025-4766-ba3c-3635ba6a6c00/query/json",
                               "https://noncompliant.network/api/public/card/bc75f719-db4a-44b8-9688-f5793742a203/query/json",
                               "https://hsinao.com/api/public/card/5591a83b-d076-4278-b1c2-107ed441e21e/query/json",
@@ -543,11 +544,26 @@ class IBCTokens():
     UNITTOKEN    = {'uscrt' : 'scrt', 'uatom' : 'atom' , 'uosmo' : 'osmo', 'udec' : 'dec', 'udvpn' : 'dvpn', 'tsent' : 'tsent'}
     IBCUNITTOKEN = {'uscrt' : IBCSCRT, 'uatom' : IBCATOM , 'uosmo' : IBCOSMO, 'udec' : IBCDEC, 'udvpn' : 'udvpn', 'tsent' : 'tsent'}
     mu_coins     = ["udvpn", "uscrt", "uosmo", "uatom", "udec"]
-    CSAPPMAP     = {'dec' : 'decentr', 'atom' : 'cosmos', 'scrt' : 'secret', 'osmo' : 'osmosis', 'dvpn' : 'sentinel', 'beam' : 'beam', 'firo' : 'zcoin'}
+    CSAPPMAP     = {'dec' : 'decentr',
+                    'atom' : 'cosmos', 
+                    'scrt' : 'secret', 
+                    'osmo' : 'osmosis', 
+                    'dvpn' : 'sentinel', 
+                    'beam' : 'beam', 
+                    'firo' : 'zcoin',
+                    'pivx' : 'pivx',
+                    'zec'  : 'zcash',
+                    'sol'  : 'solana',
+                    'btc'  : 'bitcoin',
+                    'xmr'  : 'monero',
+                    'ltc'  : 'litecoin',
+                    'doge' : 'dogecoin'}
+    NOWCOINS     = ["firo", "beam", "pivx", "zec", "sol"]
+    BTCPAYCOINS  = ["xmr", "btc", "ltc", "doge"]
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
-    VERSION = "v2.0.0"
+    VERSION = "v2.1.0"
     BUILD   = "1722988800718"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"
@@ -561,6 +577,7 @@ class MeileColors():
     DIALOG_BG_COLOR2         = "#181818"
     INDICATOR                = "#00DD21"
     INACTIVE_DIALOG_BG_COLOR = "#50507c"
+    MAP_BG_COLOR             = "#232227"
     ROW_HOVER                = "#39363c"
     FONT_FACE                = "../fonts/mplus-2c-bold.ttf"
     FONT_FACE_ARIAL          = "../fonts/arial-unicode-ms.ttf"

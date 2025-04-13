@@ -1,0 +1,17 @@
+#!/bin/bash
+# For Linux Virtual Machines
+
+
+# Link the glx driver libraries to appropriate spot
+DRIDIR="/usr/lib/x86_64-linux-gnu/dri/"
+VMDIR="/usr/lib/dri/"
+mapfile -t glx_drivers < <(ls -1 ${DRIDIR})
+
+# Make the DRI directory
+mkdir -p /usr/lib/dri
+
+
+# Link all files to the DRI Directory
+for drv in ${glx_drivers[@]}; do
+        ln -s ${DRIDIR}${drv} ${VMDIR}{$drv}
+done
