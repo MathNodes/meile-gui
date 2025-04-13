@@ -2276,7 +2276,7 @@ class SettingsScreen(Screen):
                 {
                     "viewclass": "IconListItem",
                     "icon": "server-security",
-                    "text": f"{i}",
+                    "text": f"{i['Name']} ({i['Country']})",
                     "height": dp(56),
                     "on_release": lambda x=f"{i}": self.set_item(x, "grpc"),
                 } for i in params.GRPCS
@@ -2409,9 +2409,16 @@ class SettingsScreen(Screen):
             
 
     def set_item(self, text_item, what: str = "rpc"):
-        getattr(self.ids, f"{what.lower()}_drop_item").set_item(text_item)
-        setattr(self, what.upper(), text_item)
-        getattr(self, f"{what.lower()}_menu").dismiss()
+        #print(text_item)
+        if what == "grpc" or what == "api":
+            text_item = json.loads(text_item.replace("'",'"'))
+            getattr(self.ids, f"{what.lower()}_drop_item").set_item(text_item['Name'])
+            setattr(self, what.upper(), text_item['url'])
+            getattr(self, f"{what.lower()}_menu").dismiss()
+        else:
+            getattr(self.ids, f"{what.lower()}_drop_item").set_item(text_item)
+            setattr(self, what.upper(), text_item)
+            getattr(self, f"{what.lower()}_menu").dismiss()
 
     def build(self):
         return self.screen
@@ -2419,6 +2426,8 @@ class SettingsScreen(Screen):
     def SaveOptions(self):
         config = self.MeileConfig.read_configuration(self.MeileConfig.CONFFILE)
         for what in ["rpc", "grpc", "api", "mnapi", "cache", "resolver1", "resolver2", "resolver3"]:
+            if what == "grpc":
+                config.set('network', what, getattr(self, what.upper()))
             config.set('network', what, getattr(self, what.upper()))
         
         what = "gb"

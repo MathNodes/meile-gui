@@ -34,18 +34,17 @@ class ConfParams():
 class HTTParams():
     # Note http://128.199.90.172:26657 is testnet ONLY!
     TIMEOUT                = 5
-    APIURL                 = "https://api.sentinel.mathnodes.com"
-    APIS_URL = [APIURL] + [
-        "https://api.ungovernable.dev",
-        "https://api.noncompliant.network",
-        "https://api.ro.mathnodes.com",
-        "https://lcd-sentinel.whispernode.com:443",
-        "https://api.sentinel.quokkastake.io",
-        "https://api.dvpn.roomit.xyz",
-        "https://sentinel-rest.publicnode.com",
-        "https://sentinel-api.validatornode.com",
-        "https://api.trinityvalidator.com",
-        "https://api.sentinelgrowthdao.com",
+    APIURL                 = {"Name" : "MathNodes", "Country" : "Global", "url" : "https://api.sentinel.mathnodes.com"}
+    APIS_URL = [APIURL,
+        {"Name" : "Ungovernable", "Country" : "Canada", "url" : "https://api.ungovernable.dev"},
+        {"Name" : "Noncompliance", "Country" : "US" , "url" : "https://api.noncompliant.network"},
+        {"Name" : "MathNodes RO", "Country" : "Romania", "url" : "https://api.ro.mathnodes.com"},
+        {"Name" : "dVPN.me", "Country" : "China" , "url" : "https://api.dvpn.me:443"},
+        {"Name" : "BlueFren", "Country" : "Singapore" , "url" : "https://api.bluefren.xyz:443"},
+        {"Name" : "BusurNodes", "Country" : "Global" , "url" : "https://api-sentinel.busurnode.com:443"},
+        {"Name" : "Sentinel DAO", "Country" : "Global" , "url" : "https://api.sentineldao.com:443"},
+        {"Name" : "Sentinel DAO", "Country" : "Global" , "url" : "https://api.sentineldao.com:443"},
+        {"Name" : "Quokka Stake", "Country" : "Germany" , "url" : "https://api.sentinel.quokkastake.io"}
     ]
     MNAPI = "https://aimokoivunen.mathnodes.com"
     MNAPIS = [MNAPI] + [
@@ -70,19 +69,14 @@ class HTTParams():
         "https://sentinel-rpc.polkachu.com:443",
         "https://rpc-sentinel.busurnode.com:443"
     ]
-    GRPC = "grpc.ungovernable.dev:443"
-    GRPCS = [GRPC] + [
-        "grpc.mathnodes.com:443",
-        "grpc.dvpn.me:443",
-        "grpc.noncompliant.network:443",
-        "grpc.ungovernable.dev:443",
-        "grpc.bluefren.xyz:443",
-        "sentinel.grpc.nodeshub.online:443",
-        "sentinel-rpc.publicnode.com:443",
-        "sentinel.grpcui.chaintools.host:443",
-        "sentinel-mainnet-grpc.autostake.com:443",
-        "grpc.dvpn.roomit.xyz:8443",
-        "aimokoivunen.mathnodes.com:9090",
+    GRPC = {"Name" : "Ungovernable", "Country" : "Canada", "url" : "grpc.ungovernable.dev:443"}
+    GRPCS =  [ GRPC, 
+        {"Name" : "MathNodes", "Country" : "Romania" , "url" : "grpc.mathnodes.com:443"},
+        {"Name" : "dVPN.me", "Country" : "China" , "url" : "grpc.dvpn.me:443"},
+        {"Name" : "Noncompliance", "Country" : "US" , "url" : "grpc.noncompliant.network:443"},
+        {"Name" : "BlueFren", "Country" : "Singapore" , "url" : "grpc.bluefren.xyz:443"},
+        {"Name" : "BusurNodes", "Country" : "Global" , "url" : "grpc-sentinel.busurnode.com:443"},
+        {"Name" : "Sentinel DAO", "Country" : "Global" , "url" : "grpc.sentineldao.com:443"}
     ]
     NODE_API = "https://ungovernable.dev/api/public/card/1643a397-ddbd-48b1-89f7-396d16606eb5/query/json"
     NODE_APIS = [NODE_API] +  [
@@ -90,7 +84,7 @@ class HTTParams():
                               "https://metabase.bluefren.xyz/api/public/card/4a891454-51da-462a-a5df-e85ca17c05d5/query/json",
                               "https://metabase.jp.bluefren.xyz/api/public/card/feed7c25-410a-4e3a-bfe1-8a701defdc38/query/json",
                               "https://metabase.ro.mathnodes.com/api/public/card/6fd7194d-f025-4766-ba3c-3635ba6a6c00/query/json",
-                              "https://noncompliant.network/api/public/card/bc75f719-db4a-44b8-9688-f5793742a203/query/json",
+                              "https://cache.noncompliance.org/api/public/card/bc75f719-db4a-44b8-9688-f5793742a203/query/json",
                               "https://hsinao.com/api/public/card/5591a83b-d076-4278-b1c2-107ed441e21e/query/json",
                               "https://cache.meile.cryptopepper.org/api/public/card/9ced889b-3532-422e-a4c2-e1ee3349342a/query/json"
                               ]
@@ -569,7 +563,7 @@ class IBCTokens():
 class TextStrings():
     dash = "-"
     VERSION = "v2.1.3"
-    BUILD = "17443469683"
+    BUILD = "17445253143"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"
     FailedHealthCheck = "Failed Sentinel Health Check"

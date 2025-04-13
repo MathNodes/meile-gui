@@ -2028,14 +2028,15 @@ WindowManager:
             id: node_moniker_text
             text: root.moniker
             font_name: root.get_font()
-            font_size: sp(24)
+            font_size: sp(20)
+            theme_text_color: "Custom"
             text_color: get_color_from_hex(MeileColors.MEILE)
             pos_hint: {"x" : 0.05, "center_y": .9}
              
         MDLabel:
             id: node_addresss_text
             text: root.naddress
-            font_size: sp(14)
+            font_size: sp(12)
             pos_hint: {"x" : 0.05, "center_y": .70}
              
         MDSlider:
