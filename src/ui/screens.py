@@ -375,7 +375,8 @@ class MainWindow(Screen):
                   'consumed' : None, 
                   'og_consumed' : None, 
                   'allocated' : None, 
-                  'expirary' : None}
+                  'expirary' : None,
+                  'deposit' : None}
     NewWallet = False
     box_color = ColorProperty('#fcb711')
     clock = None
@@ -390,7 +391,8 @@ class MainWindow(Screen):
                             "moniker" : None,
                             "allocated" : None,
                             "consumed" : None,
-                            "expires" : None}
+                            "expires" : None,
+                            "deposit" : None}
     
     NodeCarouselData = {"moniker" : None,
                         "address" : None,
@@ -482,7 +484,7 @@ class MainWindow(Screen):
             hwf = HandleWalletFunctions()
             thread = Thread(target=lambda: self.ping())
             thread.start()
-            t = Thread(target=lambda: hwf.connect(ID, naddress, proto))
+            t = Thread(target=lambda: hwf.connect(ID, naddress, proto, deposit))
             t.start()
             
             while t.is_alive():
@@ -521,6 +523,7 @@ class MainWindow(Screen):
                         self.NodeSwitch['consumed']     = self.SelectedSubscription['consumed']
                         self.NodeSwitch['og_consumed']  = self.SelectedSubscription['consumed'] 
                         self.NodeSwitch['expirary']     = self.SelectedSubscription['expires']
+                        self.NodeSwitch['deposit']      = self.SelectedSubscription['deposit']
                         
                         # TODO: Add Quota routines 
                         # Determine if node has been connected to and if so report last data usage stats
@@ -593,6 +596,7 @@ class MainWindow(Screen):
                     ID       = self.PlanID
                     naddress = self.NodeCarouselData['address']
                     proto    = self.NodeCarouselData['protocol']
+                    deposit  = "dvpn"
                     connect()
                     return
                 else:
@@ -607,6 +611,7 @@ class MainWindow(Screen):
                 ID       = self.SelectedSubscription['id']
                 naddress = self.SelectedSubscription['address']
                 proto    = self.SelectedSubscription['protocol']
+                deposit  = self.SelectedSubscription['deposit']
                 
                 connect()
                 
@@ -1817,6 +1822,7 @@ class SubscriptionScreen(MDBoxLayout):
                     mw.SelectedSubscription['allocated'] = sub[NodeKeys.FinalSubsKeys[6]]
                     mw.SelectedSubscription['consumed']  = sub[NodeKeys.FinalSubsKeys[7]]
                     mw.SelectedSubscription['expires']   = sub[NodeKeys.FinalSubsKeys[9]]
+                    mw.SelectedSubscription['deposit']   = sub[NodeKeys.FinalSubsKeys[4]]
              
             mw.clear_node_carousel()
             mw.SubCaller = False
@@ -2230,16 +2236,19 @@ class HelpScreen(Screen):
 
 class SettingsScreen(Screen):
     MeileConfig = MeileGuiConfig()
-
+    SettingsNetworkMenu = ["grpc", "api", "mnapi", "cache", "resolver1", "resolver2", "resolver3"]
+    
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
         params = HTTParams()
         cparams = ConfParams()
         
+        
+        
         config = self.MeileConfig.read_configuration(self.MeileConfig.CONFFILE)
         # Load default values
-        self.RPC       = config['network'].get('rpc', '')
+        #self.RPC       = config['network'].get('rpc', '')
         self.GRPC      = config['network'].get('grpc', '')
         self.API       = config['network'].get('api', '')
         self.MNAPI     = config['network'].get('mnapi', '')
@@ -2253,7 +2262,7 @@ class SettingsScreen(Screen):
 
         # I've tried to write a single code with the iteration of 'what' [grpc, rpc]
         # But doesn't work because the code at runtime will pass the loop value and not a copy one
-
+        '''
         self.rpc_menu = MDDropdownMenu(
             caller=self.ids.rpc_drop_item,
             items=[
@@ -2269,7 +2278,8 @@ class SettingsScreen(Screen):
             width_mult=50,
         )
         self.rpc_menu.bind()
-
+        '''
+        
         self.grpc_menu = MDDropdownMenu(
             caller=self.ids.grpc_drop_item,
             items=[
@@ -2292,7 +2302,7 @@ class SettingsScreen(Screen):
                 {
                     "viewclass": "IconListItem",
                     "icon": "server-security",
-                    "text": f"{i}",
+                    "text": f"{i['Name']} ({i['Country']})",
                     "height": dp(56),
                     "on_release": lambda x=f"{i}": self.set_item(x, "api"),
                 } for i in params.APIS_URL
@@ -2398,9 +2408,9 @@ class SettingsScreen(Screen):
         )
         self.resolver3_menu.bind()
 
-    def get_config(self, what: str = "rpc"):
+    def get_config(self, what: str = "grpc"):
         config = self.MeileConfig.read_configuration(self.MeileConfig.CONFFILE)
-        if what in ['cache', 'mnapi', 'api', 'grpc', 'rpc', 'resolver1', 'resolver2', 'resolver3']:
+        if what in self.SettingsNetworkMenu:
             getattr(self.ids, f"{what}_drop_item").set_item(config['network'][what])
             return config['network'][what]
         else:
@@ -2410,7 +2420,7 @@ class SettingsScreen(Screen):
 
     def set_item(self, text_item, what: str = "rpc"):
         #print(text_item)
-        if what == "grpc" or what == "api":
+        if what in [self.SettingsNetworkMenu[0], self.SettingsNetworkMenu[1]]:
             text_item = json.loads(text_item.replace("'",'"'))
             getattr(self.ids, f"{what.lower()}_drop_item").set_item(text_item['Name'])
             setattr(self, what.upper(), text_item['url'])
@@ -2425,7 +2435,7 @@ class SettingsScreen(Screen):
 
     def SaveOptions(self):
         config = self.MeileConfig.read_configuration(self.MeileConfig.CONFFILE)
-        for what in ["rpc", "grpc", "api", "mnapi", "cache", "resolver1", "resolver2", "resolver3"]:
+        for what in self.SettingsNetworkMenu:
             if what == "grpc":
                 config.set('network', what, getattr(self, what.upper()))
             config.set('network', what, getattr(self, what.upper()))
@@ -2452,10 +2462,7 @@ class SettingsScreen(Screen):
             toml.dump(config, file)
 
         self.set_previous_screen()
-    '''    
-    def strip_trailing_number(string):
-        return re.sub(r'\d+$', '', string)
-    '''
+
     def set_previous_screen(self):
         Meile.app.root.remove_widget(self)
         Meile.app.root.transistion = SlideTransition(direction="up")

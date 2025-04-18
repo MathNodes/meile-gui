@@ -748,6 +748,7 @@ class NodeAccordion(ButtonBehavior, MDGridLayout):
         self.mw.SelectedSubscription['allocated']  = self.content.allocated
         self.mw.SelectedSubscription['consumed']   = self.content.consumed
         self.mw.SelectedSubscription['expires']    = self.node.expires
+        self.mw.SelectedSubscription['deposit']    = self.content.deposit
         
         
 
@@ -762,6 +763,7 @@ class NodeAccordion(ButtonBehavior, MDGridLayout):
         self.mw.SelectedSubscription['allocated']   = None
         self.mw.SelectedSubscription['consumed']    = None
         self.mw.SelectedSubscription['expires']     = None
+        self.mw.SelectedSubscription['deposit']     = None
 
     def close_panel(self) -> None:
         """Method closes the panel."""

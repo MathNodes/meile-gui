@@ -625,7 +625,7 @@ class HandleWalletFunctions():
     
             
     
-    def connect(self, ID, address, type):
+    def connect(self, ID, address, type, deposit):
        
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
@@ -664,21 +664,21 @@ class HandleWalletFunctions():
                 message = "gRPC Error!"
                 self.connected = {"v2ray_pid" : None, "result" : False, "status" : message}
                 return
+            
+        regex_denom = r'^([\d\.]+)(.*)$'
+        regres = re.match(regex_denom, deposit)
         
-        try: 
-            sub = sdk.subscriptions.QuerySubscription(subscription_id=int(ID))
-        except (mospy.exceptions.clients.TransactionTimeout,
-                mospy.exceptions.clients.NodeException,
-                mospy.exceptions.clients.NodeTimeoutException) as e:
-            print(str(e))
-            conndesc.write("GRPC Error... Exiting")
-            conndesc.flush()
-            conndesc.close()
-            self.connected = {"v2ray_pid" : None,  "result": False, "status" : "GRPC Error"}
-            return
-        
-        DENOM = sub.deposit.denom if sub.deposit.denom != '' else "udvpn"
-        print(f"Sub DENOM: {DENOM}")
+        if regres:
+            denom = regres.group(2)
+
+            for k,v in IBCTokens.UNITTOKEN.items():
+                if denom == v:
+                    udenom = k
+            for k,v in IBCTokens.IBCUNITTOKEN.items():
+                if udenom == k:
+                    DENOM = v
+        else:
+            DENOM = "udvpn"
         
         if DENOM == IBCTokens.IBCUNITTOKEN['uatom']:
             fee = int(ConfParams.FEE / 10)
