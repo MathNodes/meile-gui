@@ -42,7 +42,7 @@ import sys
 from timeit import default_timer as timer
 
 from typedef.konstants import IBCTokens, HTTParams, MeileColors, NodeKeys, ConfParams
-from typedef.win import CoinsList, WindowNames
+from typedef.win import WindowNames
 from conf.meile_config import MeileGuiConfig
 from cli.wallet import HandleWalletFunctions
 from cli.sentinel import NodeTreeData
@@ -236,7 +236,7 @@ class SubscribeContent(BoxLayout):
         self.hourly     = hourly
         self.price_api = GetPriceAPI()
         self.price_cache = {}
-        self.parse_coin_deposit(CoinsList.ibc_mu_coins[0])
+        self.parse_coin_deposit(IBCTokens.ibc_coins[0])
         
         menu_items = [
             {
@@ -245,7 +245,7 @@ class SubscribeContent(BoxLayout):
                 "text": f"{i}",
                 "height": dp(56),
                 "on_release": lambda x=f"{i}": self.set_item(x),
-            } for i in CoinsList.ibc_mu_coins
+            } for i in IBCTokens.ibc_coins
         ]
         self.menu = MDDropdownMenu(
             caller=self.ids.drop_item,
@@ -255,7 +255,7 @@ class SubscribeContent(BoxLayout):
             width_mult=4,
         )
         self.menu.bind()
-        self.ids.drop_item.current_item = CoinsList.ibc_mu_coins[0]
+        self.ids.drop_item.current_item = IBCTokens.ibc_coins[0]
         self.parse_coin_deposit(self.ids.drop_item.current_item)
         self.build()
         
@@ -276,48 +276,47 @@ class SubscribeContent(BoxLayout):
         self.ids.deposit.text = self.parse_coin_deposit(text_item)
         self.get_usd()
         self.menu.dismiss()
-        
+
     def parse_coin_deposit(self, mu_coin):
         try:
             if self.price_text:
                 mu_coin_amt = re.findall(r'[0-9]+.[0-9]+' + mu_coin, self.price_text)[0]
                 if mu_coin_amt:
                     if not self.hourly:
-                        self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(mu_coin_amt.split(mu_coin)[0])),4)) + self.ids.drop_item.current_item
+                        self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(mu_coin_amt.split(mu_coin)[0])),4))
                     else: 
-                        self.ids.deposit.text = str(round(int(self.ids.slider1.value)*24*(float(mu_coin_amt.split(mu_coin)[0])),4)) + self.ids.drop_item.current_item
+                        self.ids.deposit.text = str(round(int(self.ids.slider1.value)*24*(float(mu_coin_amt.split(mu_coin)[0])),4))
                     return self.ids.deposit.text
                 else:
                     if not self.hourly:
-                        self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(self.ids.price.text.split(CoinsList.ibc_mu_coins[0])[0])),4)) + self.ids.drop_item.current_item
+                        self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(self.ids.price.text.split(IBCTokens.ibc_coins[0])[0])),4))
                     else:
-                        self.ids.deposit.text = str(round(int(self.ids.slider1.value)*24*(float(self.ids.price.text.split(CoinsList.ibc_mu_coins[0])[0])),4)) + self.ids.drop_item.current_item
+                        self.ids.deposit.text = str(round(int(self.ids.slider1.value)*24*(float(self.ids.price.text.split(IBCTokens.ibc_coins[0])[0])),4))
                     return self.ids.deposit.text
             else:
-                self.ids.deposit.text = "0.0" + CoinsList.ibc_mu_coins[0]
+                self.ids.deposit.text = "0.0"
                 return self.ids.deposit.text
         except IndexError as e:
             #print(str(e))
             try: 
                 if self.ids.price.text:
                     if not self.hourly:
-                        self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(self.ids.price.text.split(CoinsList.ibc_mu_coins[0])[0])),4)) + CoinsList.ibc_mu_coins[0]
+                        self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(self.ids.price.text.split(IBCTokens.ibc_coins[0])[0])),4)) 
                     else:
-                        self.ids.deposit.text = str(round(int(self.ids.slider1.value)*24*(float(self.ids.price.text.split(CoinsList.ibc_mu_coins[0])[0])),4)) + CoinsList.ibc_mu_coins[0]
+                        self.ids.deposit.text = str(round(int(self.ids.slider1.value)*24*(float(self.ids.price.text.split(IBCTokens.ibc_coins[0])[0])),4))
                     return self.ids.deposit.text
                 else:
-                    self.ids.deposit.text = "0.0" + CoinsList.ibc_mu_coins[0]
+                    self.ids.deposit.text = "0.0" 
                     return self.ids.deposit.text
             except ValueError as e:
                 print(str(e))
-                self.ids.deposit.text = "0.0" + CoinsList.ibc_mu_coins[0]
-                return self.ids.deposit.text
-        
+                self.ids.deposit.text = "0.0" 
+                return self.ids.deposit.text    
     def return_deposit_text(self):
         if not self.hourly:
-            return (self.ids.deposit.text, self.naddress, self.moniker, int(self.ids.slider1.value), self.hourly)
+            return (self.ids.deposit.text, self.naddress, self.moniker, int(self.ids.slider1.value), self.hourly, self.ids. drop_item.current_item)
         else:
-            return (self.ids.deposit.text, self.naddress, self.moniker, int(self.ids.slider1.value)*24, self.hourly)
+            return (self.ids.deposit.text, self.naddress, self.moniker, int(self.ids.slider1.value)*24, self.hourly, self.ids.drop_item.current_item)
     
     def return_sub_type(self):
         try: 
@@ -327,6 +326,7 @@ class SubscribeContent(BoxLayout):
                 return " GB" 
         except AttributeError:
             return " GB"   
+        
     def refresh_price(self, mu_coin: str = "dvpn", cache: int = 30):
         # Need check on cache or trought GetPrice api
         # We don't need to call the price api if the cache is younger that 30s
@@ -340,15 +340,17 @@ class SubscribeContent(BoxLayout):
             
     def get_usd(self):
         deposit_ret = self.return_deposit_text()
+        '''
         match = re.match(r"([0-9]+.[0-9]+)([a-z]+)", deposit_ret[0], re.I)
         if match:
             amt, coin = match.groups()
         else:
             amt    = 0.0
             coin   = "dvpn"
+        '''
         
-        self.refresh_price(coin, cache=30)
-        self.ids.usd_price.text = '$' + str(round(float(self.price_cache[coin]["price"]) * float(amt),3))
+        self.refresh_price(deposit_ret[-1], cache=30)
+        self.ids.usd_price.text = '$' + str(round(float(self.price_cache[deposit_ret[-1]]["price"]) * float(deposit_ret[0]),3))
 
         return True
     
@@ -383,7 +385,7 @@ class PlanSubscribeContent(BoxLayout):
                 "text": f"{i}",
                 "height": dp(56),
                 "on_release": lambda x=f"{i}": self.set_item(x),
-            } for i in CoinsList.ibc_mu_coins
+            } for i in IBCTokens.ibc_coins
         ]
         self.menu = MDDropdownMenu(
             caller=self.ids.drop_item,
@@ -393,7 +395,7 @@ class PlanSubscribeContent(BoxLayout):
             width_mult=4,
         )
         self.menu.bind()
-        self.ids.drop_item.current_item = CoinsList.ibc_mu_coins[0]
+        self.ids.drop_item.current_item = IBCTokens.ibc_coins[0]
         self.parse_coin_deposit(self.ids.drop_item.current_item)
 
     def refresh_price(self, mu_coin: str = "dvpn", cache: int = 30):
@@ -422,10 +424,10 @@ class PlanSubscribeContent(BoxLayout):
         # Save a copy, so we can edit the value without update the ui
         price_text = self.price_text
         # Parse all the coins without u-unit
-        if mu_coin.startswith("u"):
-            if mu_coin in price_text:
-                price_text = price_text.replace(mu_coin, mu_coin.lstrip('u'))
-            mu_coin = mu_coin.lstrip('u')
+        #if mu_coin.startswith("u"):
+        #    if mu_coin in price_text:
+        #        price_text = price_text.replace(mu_coin, mu_coin.lstrip('u'))
+        #    mu_coin = mu_coin.lstrip('u')
 
         self.refresh_price("dvpn", cache=30)
 
@@ -434,9 +436,9 @@ class PlanSubscribeContent(BoxLayout):
 
         month = int(self.ids.slider1.value) # Months
         if mu_coin == "dvpn":
-            value = float(price_text.rstrip(mu_coin).strip())
+            value = float(price_text.strip())
         else:
-            value = round(float(price_text.rstrip("dvpn").strip()) * self.price_cache["dvpn"]["price"] / self.price_cache[mu_coin]["price"], 8)
+            value = round(float(price_text.strip()) * self.price_cache["dvpn"]["price"] / self.price_cache[mu_coin]["price"], 8)
 
         print(f"mu_coin={mu_coin}, month={month}, value={value}, price_cache={self.price_cache}")
 
@@ -488,10 +490,10 @@ class PlanSubscribeContent(BoxLayout):
                         "text": f"{i}",
                         "height": dp(56),
                         "on_release": lambda x=f"{i}": self.set_item(x),
-                    } for i in CoinsList.ibc_mu_coins
+                    } for i in IBCTokens.ibc_coins
                 ]
                 self.menu.items = menu_items
-                self.set_item("dvpn")
+                self.set_item(IBCTokens.ibc_coins[0])
                 
                 
     def get_usd(self, coin):
@@ -974,8 +976,8 @@ class PlanRow(MDGridLayout):
         mu_coin = subscribe_dialog.ids.drop_item.current_item #need to set current item when changing payment processor i.e., firo
 
         # Parse all the coins without u-unit
-        if mu_coin.startswith("u"):
-            mu_coin = mu_coin.lstrip('u')
+        #if mu_coin.startswith("u"):
+        #    mu_coin = mu_coin.lstrip('u')
 
         # use the price caching directly from subscribe_dialog
         usd = round(float(deposit) * subscribe_dialog.price_cache[mu_coin]["price"], 5)
@@ -1344,7 +1346,7 @@ class PlanRow(MDGridLayout):
     def call_on_success_subscription(self, dt):
         if self.on_success_subscription:
             self.on_success_subscription()
-
+    '''
     def reparse_coin_deposit(self, deposit):
         for k,v in CoinsList.ibc_coins.items():
             try:
@@ -1355,7 +1357,7 @@ class PlanRow(MDGridLayout):
                 return tru_mu_deposit
             except:
                 pass
-
+    '''
     def closeDialog(self, inst):
         self.dialog.dismiss()
         self.dialog = None
@@ -1712,7 +1714,7 @@ class NodeCarousel(MDBoxLayout):
     def subscribe(self, subscribe_dialog, *kwargs):
         sub_node = subscribe_dialog.return_deposit_text()
         spdialog = ProcessingSubDialog(sub_node[2], sub_node[1], sub_node[0] )
-        deposit = self.reparse_coin_deposit(sub_node[0])
+        deposit = self.reparse_coin_deposit(sub_node[0], sub_node[-1])
         try:
             self.dialog.dismiss()
             self.dialog = None
@@ -1741,25 +1743,39 @@ class NodeCarousel(MDBoxLayout):
             print(".", end="")
             sys.stdout.flush()
             yield 0.5
-        
-        if hwf.returncode[0]:
-            self.dialog.dismiss()
-            self.dialog = MDDialog(
-                title="Successful!",
+        try: 
+            if hwf.returncode[0]:
+                self.dialog.dismiss()
+                self.dialog = MDDialog(
+                    title="Successful!",
+                    md_bg_color=get_color_from_hex(MeileColors.BLACK),
+                    buttons=[
+                            MDFlatButton(
+                                text="OK",
+                                theme_text_color="Custom",
+                                text_color=Meile.app.theme_cls.primary_color,
+                                on_release=self.closeDialogReturnToSubscriptions
+                            ),])
+                self.dialog.open()
+    
+            else:
+                self.dialog.dismiss()
+                self.dialog = MDDialog(
+                title="Error: %s" % "No wallet found!" if hwf.returncode[1] == 1337  else hwf.returncode[1],
                 md_bg_color=get_color_from_hex(MeileColors.BLACK),
                 buttons=[
                         MDFlatButton(
                             text="OK",
                             theme_text_color="Custom",
                             text_color=Meile.app.theme_cls.primary_color,
-                            on_release=self.closeDialogReturnToSubscriptions
+                            on_release=self.closeDialog
                         ),])
-            self.dialog.open()
-
-        else:
+                self.dialog.open()
+        except AttributeError as e:
+            print(str(e))
             self.dialog.dismiss()
             self.dialog = MDDialog(
-            title="Error: %s" % "No wallet found!" if hwf.returncode[1] == 1337  else hwf.returncode[1],
+            title="Error: %s" % hwf.returncode[1],
             md_bg_color=get_color_from_hex(MeileColors.BLACK),
             buttons=[
                     MDFlatButton(
@@ -1769,9 +1785,15 @@ class NodeCarousel(MDBoxLayout):
                         on_release=self.closeDialog
                     ),])
             self.dialog.open()
+    def reparse_coin_deposit(self, deposit, coin):
+        ibcaddy = self.check_ibc_denom(coin)
+        if ibcaddy == "xmr":
+            print("Paying with Monero gateway")
+        else:
+            return str(deposit) + str(ibcaddy)
             
-    def reparse_coin_deposit(self, deposit):
         
+        '''
         for k,v in CoinsList.ibc_coins.items():
             try: 
                 coin = re.findall(k,deposit)[0]
@@ -1787,8 +1809,23 @@ class NodeCarousel(MDBoxLayout):
                 return tru_mu_ibc_deposit
             except:
                 pass
+        '''
             
-    def check_ibc_denom(self, tru_mu_deposit):
+    def check_ibc_denom(self, coin):
+        if coin == "xmr":
+            return coin
+        
+        for k,val in IBCTokens.ibc_mu_coins.items():
+            if k == coin:
+                mu_coin = val
+                
+        for key,v in IBCTokens.IBCUNITTOKEN.items():
+            if key == mu_coin:
+                return v
+            
+            
+        
+        '''
         for ibc_coin in IBCTokens.IBCCOINS:
             k = ibc_coin.keys()
             v = ibc_coin.values()
@@ -1799,6 +1836,7 @@ class NodeCarousel(MDBoxLayout):
                     tru_mu_deposit = tru_mu_deposit.replace(coin, ibc)
                     print(tru_mu_deposit)
         return tru_mu_deposit     
+        '''
     
     def switch_carousel(self):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)

@@ -9,7 +9,6 @@ from ui.widgets import WalletInfoContent, SeedInfoContent, MDMapCountryButton, R
 from utils.qr import QRCode
 from cli.wallet import HandleWalletFunctions
 from conf.meile_config import MeileGuiConfig
-from typedef.win import CoinsList
 from cli.warp import WarpHandler
 from adapters import HTTPRequests, DNSRequests
 from fiat import fiat_interface
@@ -1686,10 +1685,10 @@ class WalletScreen(Screen):
 
         predir = "imgs/"
         logoDict = {}
-        for c in CoinsList.coins:
+        for c in IBCTokens.ibc_coins:
             logoDict[c] = predir + c + ".png"
 
-        for c in CoinsList.coins:
+        for c in IBCTokens.ibc_coins:
             if c == coin:
                 return self.MeileConfig.resource_path(logoDict[c])
 

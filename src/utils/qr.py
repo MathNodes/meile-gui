@@ -9,8 +9,6 @@ from os import path
 
 from conf.meile_config import MeileGuiConfig
 
-from typedef.win import CoinsList
-
 class QRCode():
     IMGDIR = None
     BASEDIR = None
@@ -22,7 +20,7 @@ class QRCode():
         self.MeileConfig = MeileGuiConfig()
 
     def generate_qr_code(self, ADDRESS):
-        DepositCoin    = CoinsList.coins[2]
+        DepositCoin    = "dvpn"
         DepositAddress = ADDRESS 
         
         coinLogo = self.MeileConfig.resource_path('utils/coinimg/' + DepositCoin + '.png')
