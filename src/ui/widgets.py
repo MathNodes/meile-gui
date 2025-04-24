@@ -219,8 +219,6 @@ class SubTypeDialog(BoxLayout):
             self.rvclass.dialog.open()
             
 class SubscribeContent(BoxLayout):
-    
-    
     price_text = StringProperty()
     moniker = StringProperty()
     naddress = StringProperty()
@@ -314,7 +312,7 @@ class SubscribeContent(BoxLayout):
                 return self.ids.deposit.text    
     def return_deposit_text(self):
         if not self.hourly:
-            return (self.ids.deposit.text, self.naddress, self.moniker, int(self.ids.slider1.value), self.hourly, self.ids. drop_item.current_item)
+            return (self.ids.deposit.text, self.naddress, self.moniker, int(self.ids.slider1.value), self.hourly, self.ids.drop_item.current_item)
         else:
             return (self.ids.deposit.text, self.naddress, self.moniker, int(self.ids.slider1.value)*24, self.hourly, self.ids.drop_item.current_item)
     
@@ -340,14 +338,6 @@ class SubscribeContent(BoxLayout):
             
     def get_usd(self):
         deposit_ret = self.return_deposit_text()
-        '''
-        match = re.match(r"([0-9]+.[0-9]+)([a-z]+)", deposit_ret[0], re.I)
-        if match:
-            amt, coin = match.groups()
-        else:
-            amt    = 0.0
-            coin   = "dvpn"
-        '''
         
         self.refresh_price(deposit_ret[-1], cache=30)
         self.ids.usd_price.text = '$' + str(round(float(self.price_cache[deposit_ret[-1]]["price"]) * float(deposit_ret[0]),3))
@@ -944,13 +934,67 @@ class PlanRow(MDGridLayout):
             print(str(e))
             self.dialog.dismiss()
             self.dialog = None
+            
+    @delayable
+    def add_wallet_2alloc(self, wallet, node, gb):
+        plan_details = {'wallet' : wallet, 'gb' : gb, 'node' : node}
+        print(plan_details)
+        SERVER_ADDRESS = scrtsxx.MEILE_PLAN_API
+        API            = "/v1/allocate"
+        USERNAME       = scrtsxx.PLANUSERNAME
+        PASSWORD       = scrtsxx.PLANPASSWORD
+        Request = HTTPRequests.MakeRequest(TIMEOUT=120)
+        http = Request.hadapter()
+        try:
+            print("Sending allocate add request...")
+            tx = http.post(SERVER_ADDRESS + API, json=plan_details, auth=HTTPBasicAuth(USERNAME, PASSWORD))
+            txJSON = tx.json()
+            if txJSON['status']:
+                self.dialog.dismiss()
+                self.dialog = None
+                self.dialog = MDDialog(
+                        title=f"{wallet} successfully added to subscription.",
+                        md_bg_color=get_color_from_hex(MeileColors.BLACK),
+                        buttons=[
+                            MDRaisedButton(
+                                text="CLOSE",
+                                theme_text_color="Custom",
+                                text_color=MeileColors.BLACK,
+                                on_release=self.closeDialog
+                            ),
+                        ],
+                    )
+                self.dialog.open()
+                yield 0.6
+            else:
+                self.dialog.dismiss()
+                self.dialog = None
+                self.dialog = MDDialog(
+                        title=f"Error processing adding wallet to plan. If the invoice was paid, please email support@mathnodes.com to gain assistance",
+                        buttons=[
+                            MDRaisedButton(
+                                text="CLOSE",
+                                theme_text_color="Custom",
+                                text_color=MeileColors.BLACK,
+                                on_release=self.closeDialog
+                            ),
+                        ],
+                    )
+                self.dialog.open()
+                yield 0.6
+        except Exception as e:
+            print(str(e))
+            self.dialog.dismiss()
+            self.dialog = None
 
     
     @delayable
-    def subscribe(self, subscribe_dialog, *kwargs):
+    def subscribe(self, subscribe_dialog, payg=False, data=None, *kwargs):
         CONFIG = MeileGuiConfig()
         conf = CONFIG.read_configuration(MeileGuiConfig.CONFFILE)
         self.ADDRESS = conf['wallet'].get("address")
+        
+        self.payg = payg
         
         if not self.ADDRESS:
             if self.dialog:
@@ -970,34 +1014,49 @@ class PlanRow(MDGridLayout):
                 )
             self.dialog.open()
             return
-
-        deposit = subscribe_dialog.ids.deposit.text
-        nnodes = subscribe_dialog.nnodes
-        mu_coin = subscribe_dialog.ids.drop_item.current_item #need to set current item when changing payment processor i.e., firo
-
+        
+        if not payg:
+            deposit = subscribe_dialog.ids.deposit.text
+            nnodes = subscribe_dialog.nnodes
+            mu_coin = subscribe_dialog.ids.drop_item.current_item 
+            
+        else:
+            deposit = data[0]
+            mu_coin = data[-1]
+            nnodes = 1
+            
+        
         # Parse all the coins without u-unit
         #if mu_coin.startswith("u"):
         #    mu_coin = mu_coin.lstrip('u')
 
         # use the price caching directly from subscribe_dialog
+        
         usd = round(float(deposit) * subscribe_dialog.price_cache[mu_coin]["price"], 5)
-
         print(f"Deposit {deposit} {mu_coin} for {nnodes} nodes. usd value is: {usd}")
+        
         # usd value must be multiplu for nnodes (?)
 
         # sub_node = subscribe_dialog.return_deposit_text()
         # deposit = self.reparse_coin_deposit(sub_node[0])
 
         # Declare method here so we can pass it as callback variable to methods
-        self.on_success_subscription = lambda: self.add_wallet_2plan(
-                                                                    wallet=self.ADDRESS,
-                                                                    plan_id=self.plan_id,
-                                                                    duration=subscribe_dialog.ids.slider1.value,
-                                                                    sub_id=self.id,
-                                                                    uuid=self.uuid,
-                                                                    amt=int(float(deposit) * IBCTokens.SATOSHI),
-                                                                    denom=mu_coin
-                                                                )
+        if not payg:
+            self.on_success_subscription = lambda: self.add_wallet_2plan(
+                                                                        wallet=self.ADDRESS,
+                                                                        plan_id=self.plan_id,
+                                                                        duration=subscribe_dialog.ids.slider1.value,
+                                                                        sub_id=self.id,
+                                                                        uuid=self.uuid,
+                                                                        amt=int(float(deposit) * IBCTokens.SATOSHI),
+                                                                        denom=mu_coin
+                                                                    )
+        else:
+            self.on_success_subscription_payg = lambda: self.add_wallet_2alloc(
+                                                                        wallet=self.ADDRESS,
+                                                                        node=data[1],
+                                                                        gb=data[3]
+                                                                    )
 
         if subscribe_dialog.pay_with == "wallet":
             self.pay_meile_plan_with_wallet(deposit, mu_coin, usd, self.on_success_subscription)
@@ -1022,19 +1081,6 @@ class PlanRow(MDGridLayout):
             yield 0.6
             self.start_payment_thread(usd*ConfParams.BTCPAYADJ)
             
-            '''
-            if self.invoice_result['success']:
-                self.dialog.dismiss()
-                self.dialog = None
-                self.dialog = MDDialog(
-                        title=f"Invoice {self.invoice_result['id']} has been marked as paid! Finishing up...",
-                        md_bg_color=get_color_from_hex(MeileColors.BLACK),
-                    )
-                self.dialog.open()
-                yield 0.6
-
-                on_success_subscription()
-            '''
         elif subscribe_dialog.pay_with == "now":
             if self.dialog:
                 self.dialog.dismiss()
@@ -1054,20 +1100,7 @@ class PlanRow(MDGridLayout):
             self.dialog.open()
             yield 0.6
             self.start_payment_thread_now(usd*ConfParams.BTCPAYADJ, mu_coin)
-            
-            '''
-            if self.invoice_result['success']:
-                self.dialog.dismiss()
-                self.dialog = None
-                self.dialog = MDDialog(
-                        title=f"Invoice {self.invoice_result['id']} has been marked as paid! Finishing up...",
-                        md_bg_color=get_color_from_hex(MeileColors.BLACK),
-                    )
-                self.dialog.open()
-                yield 0.6
 
-                on_success_subscription()
-            '''
         else:
             MDDialog(text="[color=#FF0000]Please select a payment option[/color]").open()
 
@@ -1344,8 +1377,12 @@ class PlanRow(MDGridLayout):
             Clock.schedule_once(self.call_on_success_subscription, 0.6)
             
     def call_on_success_subscription(self, dt):
-        if self.on_success_subscription:
-            self.on_success_subscription()
+        if not self.payg:
+            if self.on_success_subscription:
+                self.on_success_subscription()
+        else:
+            if self.on_success_subscription_payg:
+                self.on_success_subscription_payg()
     '''
     def reparse_coin_deposit(self, deposit):
         for k,v in CoinsList.ibc_coins.items():
@@ -1723,45 +1760,64 @@ class NodeCarousel(MDBoxLayout):
             mw.dialog.dismiss()
             mw.dialog = None
             
-        self.dialog = MDDialog(
-                title="Subscribing...",
-                type="custom",
-                content_cls=spdialog,
-                md_bg_color=get_color_from_hex(MeileColors.BLACK),
-            )
-        self.dialog.open()
-        yield 0.6
-
-        CONFIG = MeileGuiConfig.read_configuration(MeileGuiConfig, MeileGuiConfig.CONFFILE)        
-        KEYNAME = CONFIG['wallet'].get('keyname', '')
+        if sub_node[-1] == "xmr":
+            plan_sub = PlanRow("payg", 1, 1, deposit, None, None, 0, 0)
+            plan_sub.subscribe(None, payg=True, data=sub_node)
+            
+        else:        
+            self.dialog = MDDialog(
+                    title="Subscribing...",
+                    type="custom",
+                    content_cls=spdialog,
+                    md_bg_color=get_color_from_hex(MeileColors.BLACK),
+                )
+            self.dialog.open()
+            yield 0.6
+    
+            CONFIG = MeileGuiConfig.read_configuration(MeileGuiConfig, MeileGuiConfig.CONFFILE)        
+            KEYNAME = CONFIG['wallet'].get('keyname', '')
+            
+            hwf = HandleWalletFunctions()
+            t = Thread(target=lambda: hwf.subscribe(KEYNAME, sub_node[1], deposit, sub_node[3], sub_node[4]))
+            t.start()
+            
+            while t.is_alive():
+                print(".", end="")
+                sys.stdout.flush()
+                yield 0.5
+            try: 
+                if hwf.returncode[0]:
+                    self.dialog.dismiss()
+                    self.dialog = MDDialog(
+                        title="Successful!",
+                        md_bg_color=get_color_from_hex(MeileColors.BLACK),
+                        buttons=[
+                                MDFlatButton(
+                                    text="OK",
+                                    theme_text_color="Custom",
+                                    text_color=Meile.app.theme_cls.primary_color,
+                                    on_release=self.closeDialogReturnToSubscriptions
+                                ),])
+                    self.dialog.open()
         
-        hwf = HandleWalletFunctions()
-        t = Thread(target=lambda: hwf.subscribe(KEYNAME, sub_node[1], deposit, sub_node[3], sub_node[4]))
-        t.start()
-        
-        while t.is_alive():
-            print(".", end="")
-            sys.stdout.flush()
-            yield 0.5
-        try: 
-            if hwf.returncode[0]:
-                self.dialog.dismiss()
-                self.dialog = MDDialog(
-                    title="Successful!",
+                else:
+                    self.dialog.dismiss()
+                    self.dialog = MDDialog(
+                    title="Error: %s" % "No wallet found!" if hwf.returncode[1] == 1337  else hwf.returncode[1],
                     md_bg_color=get_color_from_hex(MeileColors.BLACK),
                     buttons=[
                             MDFlatButton(
                                 text="OK",
                                 theme_text_color="Custom",
                                 text_color=Meile.app.theme_cls.primary_color,
-                                on_release=self.closeDialogReturnToSubscriptions
+                                on_release=self.closeDialog
                             ),])
-                self.dialog.open()
-    
-            else:
+                    self.dialog.open()
+            except AttributeError as e:
+                print(str(e))
                 self.dialog.dismiss()
                 self.dialog = MDDialog(
-                title="Error: %s" % "No wallet found!" if hwf.returncode[1] == 1337  else hwf.returncode[1],
+                title="Error Processing subscription",
                 md_bg_color=get_color_from_hex(MeileColors.BLACK),
                 buttons=[
                         MDFlatButton(
@@ -1771,45 +1827,13 @@ class NodeCarousel(MDBoxLayout):
                             on_release=self.closeDialog
                         ),])
                 self.dialog.open()
-        except AttributeError as e:
-            print(str(e))
-            self.dialog.dismiss()
-            self.dialog = MDDialog(
-            title="Error: %s" % hwf.returncode[1],
-            md_bg_color=get_color_from_hex(MeileColors.BLACK),
-            buttons=[
-                    MDFlatButton(
-                        text="OK",
-                        theme_text_color="Custom",
-                        text_color=Meile.app.theme_cls.primary_color,
-                        on_release=self.closeDialog
-                    ),])
-            self.dialog.open()
     def reparse_coin_deposit(self, deposit, coin):
         ibcaddy = self.check_ibc_denom(coin)
         if ibcaddy == "xmr":
             print("Paying with Monero gateway")
+            return deposit
         else:
             return str(deposit) + str(ibcaddy)
-            
-        
-        '''
-        for k,v in CoinsList.ibc_coins.items():
-            try: 
-                coin = re.findall(k,deposit)[0]
-                #print(coin)
-                deposit = deposit.replace(coin, v)
-                #print(deposit)
-                mu_deposit_amt = int(float(re.findall(r'[0-9]+\.[0-9]+', deposit)[0])*CoinsList.SATOSHI)
-                #print(mu_deposit_amt)
-                tru_mu_deposit = str(mu_deposit_amt) + v
-                #print(tru_mu_deposit)
-                tru_mu_ibc_deposit = self.check_ibc_denom(tru_mu_deposit)
-                #print(tru_mu_ibc_deposit)
-                return tru_mu_ibc_deposit
-            except:
-                pass
-        '''
             
     def check_ibc_denom(self, coin):
         if coin == "xmr":
@@ -1822,21 +1846,6 @@ class NodeCarousel(MDBoxLayout):
         for key,v in IBCTokens.IBCUNITTOKEN.items():
             if key == mu_coin:
                 return v
-            
-            
-        
-        '''
-        for ibc_coin in IBCTokens.IBCCOINS:
-            k = ibc_coin.keys()
-            v = ibc_coin.values()
-            for coin,ibc in zip(k,v):
-                print(coin)
-                print(ibc)
-                if coin in tru_mu_deposit:
-                    tru_mu_deposit = tru_mu_deposit.replace(coin, ibc)
-                    print(tru_mu_deposit)
-        return tru_mu_deposit     
-        '''
     
     def switch_carousel(self):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
