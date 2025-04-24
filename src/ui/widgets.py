@@ -989,7 +989,7 @@ class PlanRow(MDGridLayout):
 
     
     @delayable
-    def subscribe(self, subscribe_dialog, payg=False, data=None, *kwargs):
+    def subscribe(self, subscribe_dialog, payg=False, payg_dialog=None, data=None, *kwargs):
         CONFIG = MeileGuiConfig()
         conf = CONFIG.read_configuration(MeileGuiConfig.CONFFILE)
         self.ADDRESS = conf['wallet'].get("address")
@@ -1018,12 +1018,14 @@ class PlanRow(MDGridLayout):
         if not payg:
             deposit = subscribe_dialog.ids.deposit.text
             nnodes = subscribe_dialog.nnodes
-            mu_coin = subscribe_dialog.ids.drop_item.current_item 
+            mu_coin = subscribe_dialog.ids.drop_item.current_item
+            usd = round(float(deposit) * subscribe_dialog.price_cache[mu_coin]["price"], 5)
             
         else:
             deposit = data[0]
             mu_coin = data[-1]
             nnodes = 1
+            usd = round(float(deposit) * payg_dialog.price_cache[mu_coin]["price"], 5)
             
         
         # Parse all the coins without u-unit
@@ -1032,7 +1034,7 @@ class PlanRow(MDGridLayout):
 
         # use the price caching directly from subscribe_dialog
         
-        usd = round(float(deposit) * subscribe_dialog.price_cache[mu_coin]["price"], 5)
+        
         print(f"Deposit {deposit} {mu_coin} for {nnodes} nodes. usd value is: {usd}")
         
         # usd value must be multiplu for nnodes (?)
@@ -1762,7 +1764,7 @@ class NodeCarousel(MDBoxLayout):
             
         if sub_node[-1] == "xmr":
             plan_sub = PlanRow("payg", 1, 1, deposit, None, None, 0, 0)
-            plan_sub.subscribe(None, payg=True, data=sub_node)
+            plan_sub.subscribe(None, payg=True, payg_dialog=subscribe_dialog, data=sub_node)
             
         else:        
             self.dialog = MDDialog(
