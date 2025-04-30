@@ -464,11 +464,11 @@ class HandleWalletFunctions():
     
         balance = self.get_balance(sdk._account.address)
         
-        amount_required = float(DEPOSIT.replace(DENOM, ""))
+        amount_required = float(DEPOSIT.replace(DENOM, "")) * IBCTokens.SATOSHI
         if DENOM == "udvpn":
-            tax = round(float(amount_required * 0.025),2) if round(float(amount_required * 0.025),2) >= 5 * IBCTokens.SATOSHI else 5 * IBCTokens.SATOSHI
+            tax = round(float(amount_required * ConfParams.SUBFEE),2) if round(float(amount_required * ConfParams.SUBFEE),2) >= 5 * IBCTokens.SATOSHI else 5 * IBCTokens.SATOSHI
         else:
-            tax = round(float(amount_required * 0.025),2)
+            tax = round(float(amount_required * ConfParams.SUBFEE),2)
         try:
             ret = self.send_2plan_wallet(KEYNAME, 31337, DENOM, tax, tax=True)
             print(ret[0])

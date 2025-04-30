@@ -30,6 +30,7 @@ class ConfParams():
     DEFAULT_SUB      = 5
     DEFAULT_SUBS     = [5 * i for i in range(1, 6)]
     BTCPAYADJ        = 1.10
+    SUBFEE           = 0.0314
 
 class HTTParams():
     # Note http://128.199.90.172:26657 is testnet ONLY!
@@ -572,7 +573,7 @@ class IBCTokens():
 class TextStrings():
     dash = "-"
     VERSION = "v2.2.0"
-    BUILD = "17452160103"
+    BUILD = "17459801333"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"
     FailedHealthCheck = "Failed Sentinel Health Check"
