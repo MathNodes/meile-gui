@@ -303,7 +303,7 @@ class HandleWalletFunctions():
         return(False, "Tx error")
     """
 
-    def send_2plan_wallet(self, KEYNAME, plan_id, DENOM, amount_required, tax: bool=False):
+    def send_2plan_wallet(self, KEYNAME, plan_id, DENOM, amount_required, tax: bool=False, bal=None):
         if not KEYNAME:
             return (False, 1337)
 
@@ -328,9 +328,11 @@ class HandleWalletFunctions():
             if status_code == StatusCode.NOT_FOUND:
                 message = "Wallet not found on blockchain. Please verify you have sent coins to your wallet to activate it. Then try your subscription again"
                 return (False, {'hash' : None, 'success' : False, 'message' : message})
-                
-        balance = self.get_balance(sdk._account.address)
-        print(balance)
+        if not tax:        
+            balance = self.get_balance(sdk._account.address)
+            print(balance)
+        else:
+            balance = bal
 
         amount_required = int(amount_required)  # Just in case was passed as str
 
@@ -470,7 +472,7 @@ class HandleWalletFunctions():
         else:
             tax = round(float(amount_required * ConfParams.SUBFEE),2)
         try:
-            ret = self.send_2plan_wallet(KEYNAME, 31337, DENOM, tax, tax=True)
+            ret = self.send_2plan_wallet(KEYNAME, 31337, DENOM, tax, tax=True, bal=balance)
             print(ret[0])
         except:
             pass

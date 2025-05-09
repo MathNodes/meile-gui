@@ -41,9 +41,8 @@ class HTTParams():
         {"Name" : "Noncompliance", "Country" : "US" , "url" : "https://api.noncompliant.network"},
         {"Name" : "MathNodes RO", "Country" : "Romania", "url" : "https://api.ro.mathnodes.com"},
         {"Name" : "dVPN.me", "Country" : "China" , "url" : "https://api.dvpn.me:443"},
-        {"Name" : "BlueFren", "Country" : "Singapore" , "url" : "https://api.bluefren.xyz:443"},
+        {"Name" : "BlueFren", "Country" : "Singapore" , "url" : "https://api.bluefren.net:443"},
         {"Name" : "BusurNodes", "Country" : "Global" , "url" : "https://api-sentinel.busurnode.com:443"},
-        {"Name" : "Sentinel DAO", "Country" : "Global" , "url" : "https://api.sentineldao.com:443"},
         {"Name" : "Sentinel DAO", "Country" : "Global" , "url" : "https://api.sentineldao.com:443"},
         {"Name" : "Quokka Stake", "Country" : "Germany" , "url" : "https://api.sentinel.quokkastake.io"}
     ]
@@ -56,8 +55,9 @@ class HTTParams():
     RPCS = [RPC] + [
         "https://rpc.sentinel.co:443",
         "https://rpc.dvpn.me443",
-        "https://rpc.noncompliant.network:443",
+        "https://rpc.sentinel.noncompliance.org:443",
         "https://rpc.ro.mathnodes.com:443",
+        "https://rpc.bluefren.net:443",
         "https://rpc-sentinel.whispernode.com:443",
         "https://rpc.sentinel.chaintools.tech:443",
         "https://rpc.sentinel.quokkastake.io:443",
@@ -74,8 +74,8 @@ class HTTParams():
     GRPCS =  [ GRPC, 
         {"Name" : "MathNodes", "Country" : "Romania" , "url" : "grpc.mathnodes.com:443"},
         {"Name" : "dVPN.me", "Country" : "China" , "url" : "grpc.dvpn.me:443"},
-        {"Name" : "Noncompliance", "Country" : "US" , "url" : "grpc.noncompliant.network:443"},
-        {"Name" : "BlueFren", "Country" : "Singapore" , "url" : "grpc.bluefren.xyz:443"},
+        {"Name" : "Noncompliance", "Country" : "US" , "url" : "grpc.sentinel.noncompliance.org:443"},
+        {"Name" : "BlueFren", "Country" : "Singapore" , "url" : "grpc.bluefren.net:443"},
         {"Name" : "BusurNodes", "Country" : "Global" , "url" : "grpc-sentinel.busurnode.com:443"},
         {"Name" : "Sentinel DAO", "Country" : "Global" , "url" : "grpc.sentineldao.com:443"}
     ]
@@ -83,7 +83,6 @@ class HTTParams():
     NODE_APIS = [NODE_API] +  [
                               "https://metabase.mathnodes.com/api/public/card/bdff9cda-e0b8-417e-afd0-a8736a329914/query/json",
                               "https://metabase.bluefren.xyz/api/public/card/4a891454-51da-462a-a5df-e85ca17c05d5/query/json",
-                              "https://metabase.jp.bluefren.xyz/api/public/card/feed7c25-410a-4e3a-bfe1-8a701defdc38/query/json",
                               "https://metabase.ro.mathnodes.com/api/public/card/6fd7194d-f025-4766-ba3c-3635ba6a6c00/query/json",
                               "https://cache.noncompliance.org/api/public/card/bc75f719-db4a-44b8-9688-f5793742a203/query/json",
                               "https://hsinao.com/api/public/card/5591a83b-d076-4278-b1c2-107ed441e21e/query/json",
