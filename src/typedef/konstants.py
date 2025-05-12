@@ -30,6 +30,7 @@ class ConfParams():
     DEFAULT_SUB      = 5
     DEFAULT_SUBS     = [5 * i for i in range(1, 6)]
     BTCPAYADJ        = 1.10
+    XMRPAYADJ        = 3.14
     SUBFEE           = 0.0314
 
 class HTTParams():
@@ -90,7 +91,7 @@ class HTTParams():
                               ]
     
     
-    PLAN_API               = "https://api.meile.mathnodes.com:10000"
+    PLAN_API               = "https://api.meile.mathnodes.com:10001"
     #APIURL                 = "http://128.199.90.172:1317"
     SERVER_URL             = "https://aimokoivunen.mathnodes.com"
     #GRPC                   = "grpc+http://128.199.90.172:9090/"
@@ -571,8 +572,8 @@ class IBCTokens():
     
 class TextStrings():
     dash = "-"
-    VERSION = "v2.2.0"
-    BUILD = "17459801333"
+    VERSION = "v2.2.0-beta1"
+    BUILD = "17470875503"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"
     FailedHealthCheck = "Failed Sentinel Health Check"
