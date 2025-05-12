@@ -243,7 +243,7 @@ class SubscribeContent(BoxLayout):
                 "text": f"{i}",
                 "height": dp(56),
                 "on_release": lambda x=f"{i}": self.set_item(x),
-            } for i in IBCTokens.ibc_coins
+            } for i in IBCTokens.ibc_coins + ['xmr']
         ]
         self.menu = MDDropdownMenu(
             caller=self.ids.drop_item,
@@ -278,12 +278,12 @@ class SubscribeContent(BoxLayout):
     def parse_coin_deposit(self, mu_coin):
         try:
             if self.price_text:
-                mu_coin_amt = re.findall(r'[0-9]+.[0-9]+' + mu_coin, self.price_text)[0]
+                mu_coin_amt = re.findall(r'([0-9]+.[0-9]+)' + mu_coin, self.price_text)[0]
                 if mu_coin_amt:
                     if not self.hourly:
-                        self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(mu_coin_amt.split(mu_coin)[0])),4))
+                        self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(mu_coin_amt)),4))
                     else: 
-                        self.ids.deposit.text = str(round(int(self.ids.slider1.value)*24*(float(mu_coin_amt.split(mu_coin)[0])),4))
+                        self.ids.deposit.text = str(round(int(self.ids.slider1.value)*24*(float(mu_coin_amt)),4))
                     return self.ids.deposit.text
                 else:
                     if not self.hourly:
@@ -299,7 +299,14 @@ class SubscribeContent(BoxLayout):
             try: 
                 if self.ids.price.text:
                     if not self.hourly:
-                        self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(self.ids.price.text.split(IBCTokens.ibc_coins[0])[0])),4)) 
+                        if mu_coin == "xmr":
+                            self.refresh_price('xmr', cache=30)
+                            mu_coin_amt = re.findall(r'([0-9]+.[0-9]+)' + IBCTokens.ibc_coins[0], self.price_text)[0]
+                            deposit_dvpn = round(int(self.ids.slider1.value)*float(mu_coin_amt),4)
+                            deposit_xmr = round((deposit_dvpn*self.price_cache[IBCTokens.ibc_coins[0]]["price"]*ConfParams.XMRPAYADJ)/self.price_cache['xmr']['price'],12)
+                            self.ids.deposit.text = str(deposit_xmr)
+                        else:    
+                            self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(self.ids.price.text.split(IBCTokens.ibc_coins[0])[0])),4)) 
                     else:
                         self.ids.deposit.text = str(round(int(self.ids.slider1.value)*24*(float(self.ids.price.text.split(IBCTokens.ibc_coins[0])[0])),4))
                     return self.ids.deposit.text
@@ -426,9 +433,9 @@ class PlanSubscribeContent(BoxLayout):
 
         month = int(self.ids.slider1.value) # Months
         if mu_coin == "dvpn":
-            value = float(price_text.strip())
+            value = float(price_text.rstrip(mu_coin).strip())
         else:
-            value = round(float(price_text.strip()) * self.price_cache["dvpn"]["price"] / self.price_cache[mu_coin]["price"], 8)
+            value = round(float(price_text.rstrip("dvpn").strip()) * self.price_cache["dvpn"]["price"] / self.price_cache[mu_coin]["price"], 8)
 
         print(f"mu_coin={mu_coin}, month={month}, value={value}, price_cache={self.price_cache}")
 
