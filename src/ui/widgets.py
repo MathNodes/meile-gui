@@ -49,7 +49,7 @@ from cli.sentinel import NodeTreeData
 from cli.btcpay import BTCPayDB
 import main.main as Meile
 from adapters import HTTPRequests
-from ui.interfaces import TXContent, ConnectionDialog
+from ui.interfaces import TXContent, ConnectionDialog, QRDialogContent
 from coin_api.get_price import GetPriceAPI
 from adapters.ChangeDNS import ChangeDNS
 from kivy.uix.recyclegridlayout import RecycleGridLayout
@@ -243,7 +243,7 @@ class SubscribeContent(BoxLayout):
                 "text": f"{i}",
                 "height": dp(56),
                 "on_release": lambda x=f"{i}": self.set_item(x),
-            } for i in IBCTokens.ibc_coins + ['xmr']
+            } for i in IBCTokens.ibc_coins #+ ['xmr']
         ]
         self.menu = MDDropdownMenu(
             caller=self.ids.drop_item,
@@ -406,7 +406,6 @@ class PlanSubscribeContent(BoxLayout):
                 "time": time.time()
             }
 
-
     def set_item(self, text_item):
         self.ids.drop_item.set_item(text_item)
         self.ids.deposit.text = self.parse_coin_deposit(text_item)
@@ -477,6 +476,20 @@ class PlanSubscribeContent(BoxLayout):
                 ]
                 self.menu.items = menu_items
                 self.set_item(IBCTokens.BTCPAYCOINS[0])
+                
+            elif pay_with == "pirate":
+                self.ids.drop_item.text = "arrr"
+                menu_items = [
+                    {
+                        "viewclass": "IconListItem",
+                        "icon": "circle-multiple",
+                        "text": f"{i}",
+                        "height": dp(56),
+                        "on_release": lambda x=f"{i}": self.set_item(x),
+                    } for i in ["arrr"]  
+                ]
+                self.menu.items = menu_items
+                self.set_item("arrr")
                 
             else:
                 self.ids.drop_item.text = "dvpn"
@@ -844,8 +857,8 @@ class PlanRow(MDGridLayout):
         self.num_of_nodes = num_of_nodes
         self.num_of_countries = num_of_countries
         self.cost = cost
-        self.logo_image = logo_image
-        self.uuid = uuid
+        self.logo_image = logo_image 
+        self.uuid = uuid 
         self.id = id
         self.plan_id = plan_id
     
@@ -883,7 +896,8 @@ class PlanRow(MDGridLayout):
                         text="SUBCRIBE",
                         theme_text_color="Custom",
                         text_color=get_color_from_hex(MeileColors.BLACK),
-                        on_release=partial(self.subscribe, subscribe_dialog)
+                        #on_release=partial(self.subscribe, subscribe_dialog=subscribe_dialog)
+                        on_release=lambda x: self.subscribe(subscribe_dialog)
                     ),
                 ],
             )
@@ -946,7 +960,7 @@ class PlanRow(MDGridLayout):
     def add_wallet_2alloc(self, wallet, node, gb):
         plan_details = {'wallet' : wallet, 'gb' : gb, 'node' : node}
         print(plan_details)
-        SERVER_ADDRESS = scrtsxx.MEILE_PLAN_API
+        SERVER_ADDRESS = HTTParams.PLAN_API
         API            = "/v1/allocate"
         USERNAME       = scrtsxx.PLANUSERNAME
         PASSWORD       = scrtsxx.PLANPASSWORD
@@ -1002,6 +1016,7 @@ class PlanRow(MDGridLayout):
         self.ADDRESS = conf['wallet'].get("address")
         
         self.payg = payg
+        print(f"self.payg: {self.payg}")
         
         if not self.ADDRESS:
             if self.dialog:
@@ -1022,7 +1037,7 @@ class PlanRow(MDGridLayout):
             self.dialog.open()
             return
         
-        if not payg:
+        if not self.payg:
             deposit = subscribe_dialog.ids.deposit.text
             nnodes = subscribe_dialog.nnodes
             mu_coin = subscribe_dialog.ids.drop_item.current_item
@@ -1050,14 +1065,14 @@ class PlanRow(MDGridLayout):
         # deposit = self.reparse_coin_deposit(sub_node[0])
 
         # Declare method here so we can pass it as callback variable to methods
-        if not payg:
+        if not self.payg:
             self.on_success_subscription = lambda: self.add_wallet_2plan(
                                                                         wallet=self.ADDRESS,
                                                                         plan_id=self.plan_id,
                                                                         duration=subscribe_dialog.ids.slider1.value,
                                                                         sub_id=self.id,
                                                                         uuid=self.uuid,
-                                                                        amt=int(float(deposit) * IBCTokens.SATOSHI),
+                                                                        amt=int(float(deposit) * IBCTokens.SATOSHI) if mu_coin in IBCTokens.ibc_coins else float(deposit),
                                                                         denom=mu_coin
                                                                     )
         else:
@@ -1066,8 +1081,28 @@ class PlanRow(MDGridLayout):
                                                                         node=data[1],
                                                                         gb=data[3]
                                                                     )
-
-        if subscribe_dialog.pay_with == "wallet":
+        if not subscribe_dialog:
+            if self.dialog:
+                self.dialog.dismiss()
+            self.dialog = None
+            self.dialog = MDDialog(
+                    title="Waiting for invoice to be paid...",
+                    md_bg_color=get_color_from_hex(MeileColors.BLACK),
+                    buttons=[
+                        MDFlatButton(
+                            text="CANCEL",
+                            theme_text_color="Custom",
+                            text_color=get_color_from_hex(MeileColors.MEILE),
+                            on_release=self.cancel_payment
+                        ),
+                    ]
+                )
+            self.dialog.open()
+            yield 0.6
+            self.start_payment_thread(usd)
+            return
+        
+        elif subscribe_dialog.pay_with == "wallet":
             self.pay_meile_plan_with_wallet(deposit, mu_coin, usd, self.on_success_subscription)
             
         elif subscribe_dialog.pay_with == "btcpay":
@@ -1089,6 +1124,47 @@ class PlanRow(MDGridLayout):
             self.dialog.open()
             yield 0.6
             self.start_payment_thread(usd*ConfParams.BTCPAYADJ)
+            
+        elif subscribe_dialog.pay_with == "pirate":
+            
+            zaddress = self.check_invoice_status_pirate(address=True)
+            
+            price_api = GetPriceAPI()
+            arrrusd = price_api.get_usd("arrr")
+            cost = usd*ConfParams.BTCPAYADJ
+            total_arrr = round(float(cost) / float(arrrusd['price']),2)
+            
+            
+            if self.dialog:
+                self.dialog.dismiss()
+                
+            self.dialog = None
+                
+            self.invoice_content = QRDialogContent()
+            self.invoice_content.ids.zaddress_field.text = zaddress
+            self.invoice_content.ids.price_field.text = f"{total_arrr} ARRR"
+
+            # Generate QR Code
+            QRcode = QRCode()
+            self.invoice_content.ids.qr_img.source = QRcode.generate_qr_code(zaddress, "arrr") 
+
+            self.dialog = MDDialog(
+                title="Waiting for invoice to be paid...",
+                type="custom",
+                content_cls=self.invoice_content,
+                md_bg_color=get_color_from_hex(MeileColors.BLACK),
+                buttons=[
+                        MDFlatButton(
+                            text="CANCEL",
+                            theme_text_color="Custom",
+                            text_color=get_color_from_hex(MeileColors.MEILE),
+                            on_release=self.cancel_payment
+                        ),
+                    ]
+            )
+            self.dialog.open()
+            yield 0.6
+            self.start_payment_thread_pirate(total_arrr)
             
         elif subscribe_dialog.pay_with == "now":
             if self.dialog:
@@ -1187,17 +1263,24 @@ class PlanRow(MDGridLayout):
             self.client = BTCPay.unpickle_btc_client(pickled_client_data)
         else:
             return (False, "No pickeled client data")
+        
+        print(self.client)
             
         buyer = {"name" : mw.address, "email" : "freqnik@mathnodes.com", "notify" : True}
+        print(f"buyer: {buyer}")
         
-        self.new_invoice = self.client.create_invoice({"price": usd,
-                                          "currency": "USD",
-                                          "token" : "XMR",
-                                          "merchantName" : "Meile dVPN",
-                                          "itemDesc" : "MathNodes Subscription Plan",
-                                          "notificationEmail" : scrtsxx.BTCPayEmail,
-                                          "transactionSpeed" : "high",
-                                          "buyer" : buyer})
+        data = {"price": usd,
+              "currency": "USD",
+              "token" : "XMR",
+              "merchantName" : "Meile dVPN",
+              "itemDesc" : "MathNodes Subscription Plan",
+              "notificationEmail" : scrtsxx.BTCPayEmail,
+              "transactionSpeed" : "high",
+              "buyer" : buyer}
+        
+        print(f"data: {data}")
+        
+        self.new_invoice = self.client.create_invoice(data)
         
         print(self.new_invoice)
         print(self.new_invoice['url'])
@@ -1309,6 +1392,31 @@ class PlanRow(MDGridLayout):
         elif self.stop_event.is_set():
             print("Payment process was canceled.")
             Clock.schedule_once(lambda dt: self.update_ui_after_payment(True), 0)
+         
+    def pay_meile_plan_with_pirate(self, arrr):
+        print(f"Method: 'pay_meile_plan_with_pirate', arrr: {arrr}")
+        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
+        buyer = mw.address
+        
+        self.zaddress_balance = 0
+        self.mempool = False
+        
+        while not self.stop_event.is_set():
+            sleep(10)
+            self.check_invoice_status_pirate(invoice=True, arrr=arrr)
+            
+            if self.invoice_result['success']:
+                self.stop_event.set()
+                Clock.schedule_once(lambda dt: self.update_ui_after_payment(False), 0)
+                print(self.invoice_result)
+                return
+        
+        if self.stop_event.is_set() and self.invoice_result['success']:
+            print("Invoice has been paid.")
+            Clock.schedule_once(lambda dt: self.update_ui_after_payment(False), 0)
+        elif self.stop_event.is_set():
+            print("Payment process was canceled.")
+            Clock.schedule_once(lambda dt: self.update_ui_after_payment(True), 0)
             
     ''' In the future the following two routines should be merged
         into one with conditional logic to check which payment
@@ -1324,6 +1432,12 @@ class PlanRow(MDGridLayout):
     def start_payment_thread_now(self, usd, coin):
         self.stop_event.clear()
         self.invoice_thread = Thread(target=lambda: self.pay_meile_plan_with_now(usd, coin))
+        self.invoice_thread.start()
+        Clock.schedule_interval(self.check_thread_status, 0.1)
+        
+    def start_payment_thread_pirate(self, arrr):
+        self.stop_event.clear()
+        self.invoice_thread = Thread(target=lambda: self.pay_meile_plan_with_pirate(arrr))
         self.invoice_thread.start()
         Clock.schedule_interval(self.check_thread_status, 0.1)
         
@@ -1365,7 +1479,64 @@ class PlanRow(MDGridLayout):
         else:
             #print(self.fetched_invoice)
             self.invoice_result = {"success" : True, "id": self.now_status['payment_id'] }
+    
         
+    def check_invoice_status_pirate(self, address=False, invoice=False, arrr=0):
+        Request = HTTPRequests.MakeRequest(TIMEOUT=120)
+        http = Request.hadapter()
+        USERNAME       = scrtsxx.PLANUSERNAME
+        PASSWORD       = scrtsxx.PLANPASSWORD
+        
+        def check_balance(conf: int):
+            try: 
+                data = {'address' : f"{self.zaddress}",
+                        'conf'    : conf}
+                print(data)
+                endpoint = '/v1/pirate/getbalance'
+                response = http.post(HTTParams.PLAN_API + endpoint, json=data, auth=HTTPBasicAuth(USERNAME, PASSWORD))
+                self.zaddress_balance = float(response.json()['result'])
+                
+                if self.zaddress_balance > 0:
+                    self.mempool = True
+                else:
+                    self.mempool = False
+                    
+            except Exception as e:
+                print(str(e))
+                
+        if address == True:
+            print("Getting new pirate chain address...")
+
+            try: 
+                endpoint = '/v1/pirate/newaddress'
+                response = http.get(HTTParams.PLAN_API + endpoint, auth=HTTPBasicAuth(USERNAME, PASSWORD))
+                self.zaddress = response.json()['result']
+                return self.zaddress
+            except Exception as e:
+                print(str(e))
+                self.zaddress = "NULL"
+                return self.zaddress
+            
+        elif invoice == True:
+            if not self.mempool:
+                print(f"Checking balance of: {self.zaddress}")
+                check_balance(0)
+                    
+            elif self.mempool and self.zaddress_balance < arrr:
+                remaining_amt = float(arrr) - float(self.zaddress_balance)
+                self.dialog.title = "Deposit detected, but not full amount... waiting for remaining balance..."
+                #self.invoice_content.ids.price_field.text = f"{remaining_amt} ARRR"
+                self.invoice_content.ids.status.text = "Deposit detected, but not full amount... waiting for remaining balance..."
+                check_balance(0)
+                
+            else:
+                self.dialog.title = "Deposit detected... waiting for confirmations..."
+                self.invoice_content.ids.status.text = "Deposit detected... waiting for confirmations..."
+                remaining_amt = float(arrr) - float(self.zaddress_balance)
+                #self.invoice_content.ids.price_field.text = f"{remaining_amt} ARRR"
+                check_balance(1)
+                if self.zaddress_balance >= arrr:
+                    self.invoice_result = {"success" : True, "id": self.zaddress_balance }
             
     def update_ui_after_payment(self, canceled):
         if canceled:
@@ -1770,7 +1941,7 @@ class NodeCarousel(MDBoxLayout):
             mw.dialog = None
             
         if sub_node[-1] == "xmr":
-            plan_sub = PlanRow("payg", 1, 1, deposit, None, None, 0, 0)
+            plan_sub = PlanRow("payg", str(1), str(1), deposit, "1.jpg", str(420), str(0), str(0))
             plan_sub.subscribe(None, payg=True, payg_dialog=subscribe_dialog, data=sub_node)
             
         else:        
@@ -1836,6 +2007,7 @@ class NodeCarousel(MDBoxLayout):
                             on_release=self.closeDialog
                         ),])
                 self.dialog.open()
+                
     def reparse_coin_deposit(self, deposit, coin):
         ibcaddy = self.check_ibc_denom(coin)
         if ibcaddy == "xmr":

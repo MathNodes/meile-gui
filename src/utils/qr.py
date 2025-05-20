@@ -1,4 +1,3 @@
-import pkg_resources
 import qrcode
 
 from PIL import Image
@@ -18,9 +17,11 @@ class QRCode():
         self.BASEDIR     = MeileGuiConfig.BASEDIR
         self.IMGDIR      = MeileGuiConfig.IMGDIR
         self.MeileConfig = MeileGuiConfig()
+        
 
-    def generate_qr_code(self, ADDRESS):
-        DepositCoin    = "dvpn"
+
+    def generate_qr_code(self, ADDRESS, coin):
+        DepositCoin    = coin
         DepositAddress = ADDRESS 
         
         coinLogo = self.MeileConfig.resource_path('utils/coinimg/' + DepositCoin + '.png')
@@ -70,4 +71,5 @@ class QRCode():
         
         background.paste(QRimg, (0,0))
         background.save(path.join(self.IMGDIR, ADDRESS + ".png"))
+        return path.join(self.IMGDIR, ADDRESS + ".png")
         

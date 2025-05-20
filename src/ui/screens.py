@@ -1699,7 +1699,7 @@ class WalletScreen(Screen):
         QRcode = QRCode()
         if not path.isfile(path.join(MeileGuiConfig.BASEDIR, "img", f"{self.ADDRESS}.png")):
             print("Generating QR Code....")
-            QRcode.generate_qr_code(self.ADDRESS)
+            QRcode.generate_qr_code(self.ADDRESS, "dvpn")
         
         img_path = path.join(MeileGuiConfig.BASEDIR, "img", f"{self.ADDRESS}.png")
         print(img_path)

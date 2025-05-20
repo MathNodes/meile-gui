@@ -564,7 +564,8 @@ class IBCTokens():
                     'btc'  : 'bitcoin',
                     'xmr'  : 'monero',
                     'ltc'  : 'litecoin',
-                    'doge' : 'dogecoin'}
+                    'doge' : 'dogecoin',
+                    'arrr' : 'pirate-chain'}
     
     NOWCOINS     = ["firo", "beam", "pivx", "zec", "sol"]
     BTCPAYCOINS  = ["xmr", "btc", "ltc", "doge"]
@@ -573,7 +574,7 @@ class IBCTokens():
 class TextStrings():
     dash = "-"
     VERSION = "v2.2.0-beta1"
-    BUILD = "17470875503"
+    BUILD = "17477093953"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"
     FailedHealthCheck = "Failed Sentinel Health Check"
