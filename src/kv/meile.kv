@@ -376,23 +376,23 @@ WindowManager:
             text_color: get_color_from_hex("#fcb711")
         MDLabel:
         
-        GridLayout:
-            padding: 1
-            cols: 2
-            row_force_default: True
-            row_default_height: 5
+        #GridLayout:
+        #    padding: 1
+        #    cols: 2
+        #    row_force_default: True
+        #    row_default_height: 5
 
-            MDLabel:
-                font_name: "Roboto-Bold"
-                text: "RPC"
-                font_size: "20sp"
-                size_hint_x: None
-                width: sp(250)
+        #    MDLabel:
+        #        font_name: "Roboto-Bold"
+        #        text: "RPC"
+        #        font_size: "20sp"
+        #        size_hint_x: None
+        #        width: sp(250)
 
-            MDDropDownItem:
-                id: rpc_drop_item
-                text: root.get_config('rpc')
-                on_release: root.rpc_menu.open()
+        #    MDDropDownItem:
+        #        id: rpc_drop_item
+        #        text: root.get_config('rpc')
+        #        on_release: root.rpc_menu.open()
 
         GridLayout:
             padding: 1
@@ -1843,7 +1843,7 @@ WindowManager:
     orientation: "vertical"
     spacing: "1sp"
     size_hint_y: None
-    height: "260sp"
+    height: "300sp"
     price_text: ""
 
     white_label: " "
@@ -1910,8 +1910,20 @@ WindowManager:
                     font_size: sp(13)
                 TooltipMDIconButton:
                     icon: "help-circle"
-                    #tooltip_text: "Pay using Pirate chain. Note: processing for ARRR payments could take up to 72 hours"
-                    tooltip_text: "Pay using FIRO & BEAM. Note: Payments takes between 5 and 10 minutes to process."
+                    tooltip_text: "Pay using FIRO,PIVX,ZEC,SOL with NOWPayments. User's browser will be opened to invoice."
+                    
+            MDBoxLayout:
+                orientation: "horizontal"
+                Check:
+                    on_active: root.on_checkbox_active("pirate", *args)
+                MDLabel:
+                    text: "Pirate Chain"
+                    size_hint: (None, 1.75)
+                    width: sp(110)
+                    font_size: sp(12)
+                TooltipMDIconButton:
+                    icon: "help-circle"
+                    tooltip_text: "Pay using Pirate Chain (ARRR)."
 
 
     MDBoxLayout:
@@ -1922,6 +1934,7 @@ WindowManager:
             max: 12
             value: 2
             on_value: root.parse_coin_deposit(root.ids.drop_item.current_item)
+            on_touch_move: root.get_usd(root.ids.drop_item.current_item)
 
         MDLabel:
             text: str(int(slider1.value)) + " Months"
@@ -2019,6 +2032,8 @@ WindowManager:
             text: root.moniker
             font_name: root.get_font()
             font_size: sp(19)
+            theme_text_color: "Custom"
+            text_color: get_color_from_hex(MeileColors.MEILE)
             pos_hint: {"x" : 0.05, "center_y": .9}
              
         MDLabel:
@@ -2595,3 +2610,38 @@ WindowManager:
         size_hint: None, None
         size: 40, 40
         pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+        
+<QRDialogContent>:
+    orientation: 'vertical'
+    spacing: "20dp"
+    padding: "20dp"
+    size_hint_y: None
+    height: "400sp"
+
+    Image:
+        id: qr_img
+        size_hint: None, None
+        size: "192dp", "192dp"
+        pos_hint: {'center_x': 0.5}
+
+    MDTextField:
+        id: zaddress_field
+        hint_text: "Address"
+        text: ''
+        readonly: True
+        selectable: True
+        mode: "rectangle"
+
+    MDTextField:
+        id: price_field
+        hint_text: "Amount"
+        text: ''
+        readonly: True
+        selectable: True
+        mode: "rectangle"
+    MDLabel:
+    	id: status
+    	text: ""
+	    theme_text_color: "Custom"
+	    text_color: get_color_from_hex(MeileColors.MEILE)
+	    font_size: "16sp"

@@ -292,7 +292,7 @@ class HandleWalletFunctions():
         return(False, "Tx error")
     """
 
-    def send_2plan_wallet(self, KEYNAME, plan_id, DENOM, amount_required, tax: bool=False):
+    def send_2plan_wallet(self, KEYNAME, plan_id, DENOM, amount_required, tax: bool=False, bal=None):
         if not KEYNAME:
             return (False, 1337)
 
@@ -318,8 +318,11 @@ class HandleWalletFunctions():
                 message = "Wallet not found on blockchain. Please verify you have sent coins to your wallet to activate it. Then try your subscription again"
                 return (False, {'hash' : None, 'success' : False, 'message' : message})
                 
-        balance = self.get_balance(sdk._account.address)
-        print(balance)
+        if not tax:        
+            balance = self.get_balance(sdk._account.address)
+            print(balance)
+        else:
+            balance = bal
 
         amount_required = int(amount_required)  # Just in case was passed as str
 
@@ -455,13 +458,17 @@ class HandleWalletFunctions():
             
         balance = self.get_balance(sdk._account.address)
         
-        amount_required = float(DEPOSIT.replace(DENOM, ""))
+        amount_required = float(DEPOSIT.replace(DENOM, "")) * IBCTokens.SATOSHI
         if DENOM == "udvpn":
-            tax = round(float(amount_required * 0.025),2) if round(float(amount_required * 0.025),2) >= 5 * IBCTokens.SATOSHI else 5 * IBCTokens.SATOSHI
+            tax = round(float(amount_required * ConfParams.SUBFEE),2) if round(float(amount_required * ConfParams.SUBFEE),2) >= 5 * IBCTokens.SATOSHI else 5 * IBCTokens.SATOSHI
         else:
-            tax = round(float(amount_required * 0.025),2)
-        ret = self.send_2plan_wallet(KEYNAME, 31337, DENOM, tax, tax=True)
-        print(ret[0])
+            tax = round(float(amount_required * ConfParams.SUBFEE),2)
+        try: 
+            ret = self.send_2plan_wallet(KEYNAME, 31337, DENOM, tax, tax=True, bal=balance)
+            print(ret[0])
+        except:
+            pass
+        
         token_ibc = {v: k for k, v in IBCTokens.IBCUNITTOKEN.items()}
         ubalance = balance.get(token_ibc[DENOM][1:], 0) * IBCTokens.SATOSHI
         
@@ -626,7 +633,7 @@ class HandleWalletFunctions():
     
             
     
-    def connect(self, ID, address, type):
+    def connect(self, ID, address, type, deposit):
        
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
@@ -662,20 +669,22 @@ class HandleWalletFunctions():
                     message = "gRPC Error!"
                     self.connected = {"v2ray_pid" : None, "result" : False, "status" : message}
                     return
-        try: 
-            sub = sdk.subscriptions.QuerySubscription(subscription_id=int(ID))
-        except (mospy.exceptions.clients.TransactionTimeout,
-                mospy.exceptions.clients.NodeException,
-                mospy.exceptions.clients.NodeTimeoutException) as e:
-            print(str(e))
-            conndesc.write("GRPC Error... Exiting")
-            conndesc.flush()
-            conndesc.close()
-            self.connected = {"v2ray_pid" : None,  "result": False, "status" : "GRPC Error"}
-            return
+                
+        regex_denom = r'^([\d\.]+)(.*)$'
+        regres = re.match(regex_denom, deposit)
+        
+        if regres:
+            denom = regres.group(2)
 
-        DENOM = sub.deposit.denom if sub.deposit.denom != '' else "udvpn"
-        print(f"Sub DENOM: {DENOM}")
+            for k,v in IBCTokens.UNITTOKEN.items():
+                if denom == v:
+                    udenom = k
+            for k,v in IBCTokens.IBCUNITTOKEN.items():
+                if udenom == k:
+                    DENOM = v
+        else:
+            DENOM = "udvpn"
+            
 
         if DENOM == IBCTokens.IBCUNITTOKEN['uatom']:
             fee = int(ConfParams.FEE / 10)

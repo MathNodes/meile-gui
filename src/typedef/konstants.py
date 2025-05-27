@@ -28,22 +28,23 @@ class ConfParams():
     DEFAULT_SUB      = 5
     DEFAULT_SUBS     = [5 * i for i in range(1, 6)]
     BTCPAYADJ        = 1.10
+    XMRPAYADJ        = 3.14
+    SUBFEE           = 0.0314
 
 class HTTParams():
     # Note http://128.199.90.172:26657 is testnet ONLY!
     TIMEOUT                = 5
-    APIURL                 = "https://api.sentinel.mathnodes.com"
-    APIS_URL = [APIURL] + [
-        "https://api.ungovernable.dev",
-        "https://api.noncompliant.network",
-        "https://api.ro.mathnodes.com",
-        "https://lcd-sentinel.whispernode.com:443",
-        "https://api.sentinel.quokkastake.io",
-        "https://api.dvpn.roomit.xyz",
-        "https://sentinel-rest.publicnode.com",
-        "https://sentinel-api.validatornode.com",
-        "https://api.trinityvalidator.com",
-        "https://api.sentinelgrowthdao.com",
+    APIURL                 = {"Name" : "MathNodes", "Country" : "Global", "url" : "https://api.sentinel.mathnodes.com"}
+    APIS_URL = [APIURL,
+        {"Name" : "Ungovernable", "Country" : "Canada", "url" : "https://api.ungovernable.dev"},
+        {"Name" : "Noncompliance", "Country" : "US" , "url" : "https://api.noncompliant.network"},
+        {"Name" : "MathNodes RO", "Country" : "Romania", "url" : "https://api.ro.mathnodes.com"},
+        {"Name" : "dVPN.me", "Country" : "China" , "url" : "https://api.dvpn.me:443"},
+        {"Name" : "BlueFren", "Country" : "Singapore" , "url" : "https://api.bluefren.net:443"},
+        {"Name" : "BusurNodes", "Country" : "Global" , "url" : "https://api-sentinel.busurnode.com:443"},
+        {"Name" : "Sentinel DAO", "Country" : "Global" , "url" : "https://api.sentineldao.com:443"},
+        {"Name" : "Sentinel DAO", "Country" : "Global" , "url" : "https://api.sentineldao.com:443"},
+        {"Name" : "Quokka Stake", "Country" : "Germany" , "url" : "https://api.sentinel.quokkastake.io"}
     ]
     MNAPI = "https://aimokoivunen.mathnodes.com"
     MNAPIS = [MNAPI] + [
@@ -54,8 +55,9 @@ class HTTParams():
     RPCS = [RPC] + [
         "https://rpc.sentinel.co:443",
         "https://rpc.dvpn.me443",
-        "https://rpc.noncompliant.network:443",
+        "https://rpc.sentinel.noncompliance.org:443",
         "https://rpc.ro.mathnodes.com:443",
+        "https://rpc.bluefren.net:443",
         "https://rpc-sentinel.whispernode.com:443",
         "https://rpc.sentinel.chaintools.tech:443",
         "https://rpc.sentinel.quokkastake.io:443",
@@ -68,33 +70,27 @@ class HTTParams():
         "https://sentinel-rpc.polkachu.com:443",
         "https://rpc-sentinel.busurnode.com:443"
     ]
-    GRPC = "grpc.ungovernable.dev:443"
-    GRPCS = [GRPC] + [
-        "grpc.mathnodes.com:443",
-        "grpc.dvpn.me:443",
-        "grpc.noncompliant.network:443",
-        "grpc.ungovernable.dev:443",
-        "grpc.bluefren.xyz:443",
-        "sentinel.grpc.nodeshub.online:443",
-        "sentinel-rpc.publicnode.com:443",
-        "sentinel.grpcui.chaintools.host:443",
-        "sentinel-mainnet-grpc.autostake.com:443",
-        "grpc.dvpn.roomit.xyz:8443",
-        "aimokoivunen.mathnodes.com:9090",
+    GRPC = {"Name" : "Ungovernable", "Country" : "Canada", "url" : "grpc.ungovernable.dev:443"}
+    GRPCS =  [GRPC, 
+        {"Name" : "MathNodes", "Country" : "Romania" , "url" : "grpc.mathnodes.com:443"},
+        {"Name" : "dVPN.me", "Country" : "China" , "url" : "grpc.dvpn.me:443"},
+        {"Name" : "Noncompliance", "Country" : "US" , "url" : "grpc.sentinel.noncompliance.org:443"},
+        {"Name" : "BlueFren", "Country" : "Singapore" , "url" : "grpc.bluefren.net:443"},
+        {"Name" : "BusurNodes", "Country" : "Global" , "url" : "grpc-sentinel.busurnode.com:443"},
+        {"Name" : "Sentinel DAO", "Country" : "Global" , "url" : "grpc.sentineldao.com:443"}
     ]
     NODE_API = "https://ungovernable.dev/api/public/card/1643a397-ddbd-48b1-89f7-396d16606eb5/query/json"
     NODE_APIS = [NODE_API] +  [
                               "https://metabase.mathnodes.com/api/public/card/bdff9cda-e0b8-417e-afd0-a8736a329914/query/json",
                               "https://metabase.bluefren.xyz/api/public/card/4a891454-51da-462a-a5df-e85ca17c05d5/query/json",
-                              "https://metabase.jp.bluefren.xyz/api/public/card/feed7c25-410a-4e3a-bfe1-8a701defdc38/query/json",
                               "https://metabase.ro.mathnodes.com/api/public/card/6fd7194d-f025-4766-ba3c-3635ba6a6c00/query/json",
-                              "https://noncompliant.network/api/public/card/bc75f719-db4a-44b8-9688-f5793742a203/query/json",
+                              "https://cache.noncompliance.org/api/public/card/bc75f719-db4a-44b8-9688-f5793742a203/query/json",
                               "https://hsinao.com/api/public/card/5591a83b-d076-4278-b1c2-107ed441e21e/query/json",
                               "https://cache.meile.cryptopepper.org/api/public/card/9ced889b-3532-422e-a4c2-e1ee3349342a/query/json"
                               ]
     
     
-    PLAN_API               = "https://api.meile.mathnodes.com:10000"
+    PLAN_API               = "https://api.meile.mathnodes.com:10001"
     #APIURL                 = "http://128.199.90.172:1317"
     SERVER_URL             = "https://aimokoivunen.mathnodes.com"
     #GRPC                   = "grpc+http://128.199.90.172:9090/"
@@ -546,6 +542,13 @@ class IBCTokens():
     UNITTOKEN    = {'uscrt' : 'scrt', 'uatom' : 'atom' , 'uosmo' : 'osmo', 'udec' : 'dec', 'udvpn' : 'dvpn', 'tsent' : 'tsent'}
     IBCUNITTOKEN = {'uscrt' : IBCSCRT, 'uatom' : IBCATOM , 'uosmo' : IBCOSMO, 'udec' : IBCDEC, 'udvpn' : 'udvpn', 'tsent' : 'tsent'}
     mu_coins     = ["udvpn", "uscrt", "uosmo", "uatom", "udec"]
+    ibc_coins    = ["dvpn", "scrt", "osmo", "atom", "dec"]
+    ibc_mu_coins  = {"tsent" : "tsent", 
+                     "dvpn"  : "udvpn", 
+                     "scrt"  : "uscrt", 
+                     "osmo"  : "uosmo", 
+                     "atom"  : "uatom", 
+                     "dec"   : "udec"}
     CSAPPMAP     = {'dec' : 'decentr',
                     'atom' : 'cosmos', 
                     'scrt' : 'secret', 
@@ -559,7 +562,8 @@ class IBCTokens():
                     'btc'  : 'bitcoin',
                     'xmr'  : 'monero',
                     'ltc'  : 'litecoin',
-                    'doge' : 'dogecoin'}
+                    'doge' : 'dogecoin',
+                    'arrr' : 'pirate-chain'}
     
     NOWCOINS     = ["firo", "beam", "pivx", "zec", "sol"]
     BTCPAYCOINS  = ["xmr", "btc", "ltc", "doge"]

@@ -109,4 +109,7 @@ class TXContent(BoxLayout):
 class ConnectionDialog(MDBoxLayout):
     pass
 
+class QRDialogContent(MDBoxLayout):
+    pass
+
 
