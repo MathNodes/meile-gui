@@ -544,7 +544,7 @@ class HandleWalletFunctions():
         KEYNAME = CONFIG['wallet'].get('keyname', '')
 
         if not KEYNAME:
-            return {'hash' : "0x0", 'success' : False, 'message' : "ERROR Retrieving Keyname"}
+            self.unsub_result = {'hash' : "0x0", 'success' : False, 'message' : "ERROR Retrieving Keyname"}
         
         self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
         self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
@@ -558,16 +558,16 @@ class HandleWalletFunctions():
         # SDK raises ConnectionError, otherwise it is a grpc module exception
         except ConnectionError:
             message = "gRPC unresponsive. Try again later or switch gRPCs."
-            return {'hash' : "0x0", 'success' : False, 'message' : message}
+            self.unsub_result = {'hash' : "0x0", 'success' : False, 'message' : message}
         except grpc._channel._InactiveRpcError as e:
             status_code = e.code()
             
             if status_code == StatusCode.NOT_FOUND:
                 message = "Wallet not found on blockchain. Please verify you have sent coins to your wallet to activate it. Then try your subscription again"
-                return {'hash' : "0x0", 'success' : False, 'message' : message}
+                self.unsub_result = {'hash' : "0x0", 'success' : False, 'message' : message}
             else:
                 message = "gRPC unresponsive. Try again later or switch gRPCs."
-                return {'hash' : "0x0", 'success' : False, 'message' : message}
+                self.unsub_result = {'hash' : "0x0", 'success' : False, 'message' : message}
         try: 
             sub = sdk.subscriptions.QuerySubscription(subscription_id=int(subId))
         except (mospy.exceptions.clients.TransactionTimeout,
@@ -575,7 +575,7 @@ class HandleWalletFunctions():
                 mospy.exceptions.clients.NodeTimeoutException) as e:
             print(str(e))
             message = "gRPC Error!"
-            return {'hash' : "0x0", 'success' : False, 'message' : message}
+            self.unsub_result = {'hash' : "0x0", 'success' : False, 'message' : message}
 
         DENOM = sub.deposit.denom
         print(f"Sub DENOM: {DENOM}")
@@ -609,7 +609,7 @@ class HandleWalletFunctions():
             else:
                 message = "Error connecting to gRPC server. Try your request again later."
 
-            return {'hash' : "0x0", 'success' : False, 'message' : message}
+            self.unsub_result = {'hash' : "0x0", 'success' : False, 'message' : message}
 
         if tx.get("log", None) is None:
             try: 
@@ -618,11 +618,11 @@ class HandleWalletFunctions():
                     mospy.exceptions.clients.NodeException,
                     mospy.exceptions.clients.NodeTimeoutException)  as e:
                 print(str(e))
-                return {'hash' : "0x0", 'success' : False, 'message' : "GRPC Error"}
+                self.unsub_result = {'hash' : "0x0", 'success' : False, 'message' : "GRPC Error"}
             tx_height = tx_response.get("txResponse", {}).get("height", 0) if isinstance(tx_response, dict) else tx_response.tx_response.height
 
         message = f"Unsubscribe from Subscription ID: {subId}, was successful at Height: {tx_height}" if tx.get("log", None) is None else tx["log"]
-        return {'hash' : tx.get("hash", "0x0"), 'success' : tx.get("log", None) is None, 'message' : message}
+        self.unsub_result = {'hash' : tx.get("hash", "0x0"), 'success' : tx.get("log", None) is None, 'message' : message}
     
             
     

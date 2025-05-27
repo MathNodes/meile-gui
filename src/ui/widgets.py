@@ -40,8 +40,9 @@ from requests.auth import HTTPBasicAuth
 import json
 import webbrowser
 import sys
+from timeit import default_timer as timer
 
-from typedef.konstants import IBCTokens, HTTParams, MeileColors, NodeKeys
+from typedef.konstants import IBCTokens, HTTParams, MeileColors, NodeKeys, ConfParams
 from typedef.win import CoinsList, WindowNames
 from conf.meile_config import MeileGuiConfig
 from cli.wallet import HandleWalletFunctions
@@ -64,6 +65,29 @@ class WalletInfoContent(BoxLayout):
         self.wallet_address = address
         self.wallet_password = password
         self.wallet_name = name
+        
+    def copy_seed_phrase(self):
+        Clipboard.copy(self.seed_phrase)
+        self.AnimateCopiedLabel()
+        
+    def AnimateCopiedLabel(self):
+        label = MDLabel(text='Seed Phrase Copied!',
+                      theme_text_color="Custom",
+                      text_color=get_color_from_hex("#fcb711"),
+                      font_size=dp(10))
+        self.ids.seed_box.add_widget(label)
+
+        anim = Animation(color=(0, 0, 0, 1), duration=.2) + Animation(color=get_color_from_hex("#fcb711"), duration=.2)
+        anim.repeat = True
+                
+        anim.start(label)
+            
+        return label
+    
+class SeedInfoContent(BoxLayout):
+    def __init__(self, seed_phrase, **kwargs):
+        super(SeedInfoContent, self).__init__(**kwargs)
+        self.seed_phrase = seed_phrase
         
     def copy_seed_phrase(self):
         Clipboard.copy(self.seed_phrase)
@@ -582,14 +606,20 @@ class NodeDetails(MDGridLayout):
         yield 0.6
         sleep(1)
 
-        Wallet = HandleWalletFunctions()
-        unsub_value = Wallet.unsubscribe(int(subId))
+        hwf = HandleWalletFunctions()
+        t = Thread(target=lambda: hwf.unsubscribe(int(subId)))
+        t.start()
+        
+        while t.is_alive():
+            print(".", end="")
+            sys.stdout.flush()
+            yield 0.5
 
         self.closeDialog(None)
 
         TXDialog = TXContent()
-        TXDialog.ids.message.text = unsub_value['message']
-        TXDialog.ids.txhash.text  = unsub_value['hash']
+        TXDialog.ids.message.text = hwf.unsub_result['message']
+        TXDialog.ids.txhash.text  = hwf.unsub_result['hash']
         
         yield 0.3
         if not self.dialog:
@@ -985,7 +1015,7 @@ class PlanRow(MDGridLayout):
                 )
             self.dialog.open()
             yield 0.6
-            self.start_payment_thread(usd)
+            self.start_payment_thread(usd*ConfParams.BTCPAYADJ)
             
             '''
             if self.invoice_result['success']:
@@ -1019,7 +1049,7 @@ class PlanRow(MDGridLayout):
                 )
             self.dialog.open()
             yield 0.6
-            self.start_payment_thread_now(usd, mu_coin)
+            self.start_payment_thread_now(usd*ConfParams.BTCPAYADJ, mu_coin)
             
             '''
             if self.invoice_result['success']:
@@ -1528,31 +1558,37 @@ class NodeCarousel(MDBoxLayout):
             gbprices = node[NodeKeys.NodesInfoKeys[2]].split(',')
             hrprices = node[NodeKeys.NodesInfoKeys[3]].split(',')
             
-            g = gbprices[0]
-            self.gb_prices = deepcopy(g)
+            #g = gbprices[0]
+            #self.gb_prices = deepcopy(g)
+            self.gb_prices = ""
+            self.hr_prices = ""
             
-            k=0
+            #k=0
             for g in gbprices:
+                '''
                 if k == 0:
                     k +=1
                     continue
                 self.gb_prices = '\n'.join([self.gb_prices,g])
+                '''
+                self.gb_prices = self.gb_prices + g.lstrip() + '\n'
                 
-            h = hrprices[0]
-            self.hr_prices = deepcopy(h)
+            #h = hrprices[0]
+            #self.hr_prices = deepcopy(h)
             
-            k=0
+            #k=0
             for h in hrprices:
+                '''
                 if k == 0:
                     k +=1
                     continue
                 self.hr_prices = '\n'.join([self.hr_prices,h])
+                '''
+                self.hr_prices = self.hr_prices + h.lstrip() + '\n'
                 
             
             self.moniker         = node[NodeKeys.NodesInfoKeys[0]]
             self.address         = node[NodeKeys.NodesInfoKeys[1]]
-            #self.gb_prices       = node[NodeKeys.NodesInfoKeys[2]]
-            #self.hr_prices       = node[NodeKeys.NodesInfoKeys[3]]
             self.download        = format_byte_size(node[NodeKeys.NodesInfoKeys[8]])+ "/s"
             self.upload          = format_byte_size(node[NodeKeys.NodesInfoKeys[9]])+ "/s"
             self.connected_peers = str(node[NodeKeys.NodesInfoKeys[10]])
@@ -1609,23 +1645,30 @@ class NodeCarousel(MDBoxLayout):
         Request = HTTPRequests.MakeRequest(TIMEOUT=2.7)
         http = Request.hadapter()
         endpoint = "/sentinel/nodes/" + naddress.lstrip().rstrip()
+        MeileConfig = MeileGuiConfig()
         try:
             '''
             Add get from config.ini for API when settings is  merged. 
             '''
             requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
-            r = http.get(HTTParams.APIURL + endpoint)
+            CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
+            API = CONFIG['network'].get('api', HTTParams.APIURL)
+            r = http.get(API + endpoint)
             remote_url = r.json()['node']['remote_url']
+            start = timer()
             r = http.get(remote_url + "/status", verify=False)
+            end = timer()
+            latency = int(round((end-start), 4)*1000
             print(remote_url)
     
-            NodeInfoJSON = r.json()
+            NodeInfoJSON = r.json() if r.status_code == 200 else {}
             NodeInfoDict = {}
             
             NodeInfoDict['connected_peers'] = NodeInfoJSON['result']['peers']
             NodeInfoDict['max_peers']       = NodeInfoJSON['result']['qos']['max_peers']
             NodeInfoDict['version']         = NodeInfoJSON['result']['version']
             NodeInfoDict['city']            = NodeInfoJSON['result']['location']['city']
+            NodeInfoDict['latency']         = latency
 
         except Exception as e:
             print(str(e))
@@ -1636,12 +1679,16 @@ class NodeCarousel(MDBoxLayout):
             self.dialog = MDDialog(
                 md_bg_color=get_color_from_hex(MeileColors.BLACK),
                 text='''
-City: %s
-Connected Peers:  %s  
-Max Peers: %s  
-Node Version: %s 
-                    ''' % (NodeInfoDict['city'], NodeInfoDict['connected_peers'],NodeInfoDict['max_peers'],NodeInfoDict['version']),
-  
+                    City: %s
+                    Connected Peers:  %s  
+                    Max Peers: %s  
+                    Node Version: %s 
+                    Latency: %sms
+                    ''' % (NodeInfoDict['city'], 
+                           NodeInfoDict['connected_peers'],
+                           NodeInfoDict['max_peers'],
+                           NodeInfoDict['version'],
+                           NodeInfoDict['latency']),
                 buttons=[
                     MDRaisedButton(
                         text="OKAY",
@@ -1677,8 +1724,8 @@ Node Version: %s
             self.dialog = None
         except:
             mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
-            self.mw.dialog.dismiss()
-            self.mw.dialog = None
+            mw.dialog.dismiss()
+            mw.dialog = None
             
         self.dialog = MDDialog(
                 title="Subscribing...",

@@ -3,7 +3,7 @@ from kivymd.uix.floatlayout import MDFloatLayout
 from kivymd.uix.tab import MDTabsBase
 from kivy.uix.screenmanager import ScreenManager
 from kivymd.uix.relativelayout import MDRelativeLayout
-from kivy.properties import  StringProperty, NumericProperty
+from kivy.properties import  StringProperty
 from kivy.uix.behaviors import FocusBehavior
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.recyclegridlayout import RecycleGridLayout
@@ -23,16 +23,6 @@ from kivymd.uix.progressbar.progressbar import MDProgressBar
 from conf.meile_config import MeileGuiConfig
 from typedef.konstants import MeileColors
 
-class Tab(MDBoxLayout, MDTabsBase):
-    pass
-
-'''
-class SubscribeContent(BoxLayout):
-    price_text = StringProperty()
-    
-    def __init_ (self, price):
-        self.price_text = price
-'''
 class ProtectedLabel(MDLabel):
     def get_font(self):
         Config = MeileGuiConfig()

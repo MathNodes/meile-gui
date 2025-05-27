@@ -27,6 +27,7 @@ class ConfParams():
     FEE              = 31416
     DEFAULT_SUB      = 5
     DEFAULT_SUBS     = [5 * i for i in range(1, 6)]
+    BTCPAYADJ        = 1.10
 
 class HTTParams():
     # Note http://128.199.90.172:26657 is testnet ONLY!
@@ -566,7 +567,7 @@ class IBCTokens():
 class TextStrings():
     dash = "-"
     VERSION = "v2.1.2"
-    BUILD = "1738660777385"
+    BUILD = "1745568852562"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"
     FailedHealthCheck = "Failed Sentinel Health Check"
@@ -612,6 +613,10 @@ class NodeKeys():
     FinalSubsKeys = [SubsInfoKeys[0], NodesInfoKeys[0],SubsInfoKeys[4],SubsInfoKeys[5], SubsInfoKeys[7], NodesInfoKeys[4], "Allocated", "Consumed", NodesInfoKeys[13],SubsInfoKeys[2],SubsInfoKeys[6]]
     NodeVersions  = [str(item).zfill(3) for item in range(70,1000)]
     Nodetypes = ['residential', 'business', 'hosting', 'edu']
+
+
+
+
 
 
 

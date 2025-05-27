@@ -55,6 +55,7 @@ global dim
 dim = Resolution().set_dimensions()
 
 Config.set('kivy','window_icon',MeileConfig.resource_path("imgs/icon.png"))
+Config.set('kivy', 'exit_on_escape', 0)
 Config.set('input', 'mouse', 'mouse,disable_multitouch')
 Config.set('graphics', 'width', dim[0])
 Config.set('graphics', 'height', dim[1])
