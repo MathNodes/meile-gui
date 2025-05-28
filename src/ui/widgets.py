@@ -1347,7 +1347,7 @@ class PlanRow(MDGridLayout):
                   "iid": int(invoiceID),
                   "pay_currency": f"{coin}",
                   "order_description": "Meile Subscription Plan",
-                  "customer_email": f"{buyer}"
+                  "customer_email": f"{buyer}@sentinel.co"
                 }
         
         #print(pdata)
@@ -1445,7 +1445,7 @@ class PlanRow(MDGridLayout):
         if self.stop_event.is_set() and not self.invoice_thread.is_alive():
             return False  # Stop checking once the thread has finished
     
-    ''' In the future the following two routines should be merged
+    ''' In the future the following three routines should be merged
         into one with conditional logic to check which payment
         processor we are using
     '''
