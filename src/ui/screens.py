@@ -1,15 +1,14 @@
 from geography.continents import OurWorld
-from ui.interfaces import Tab, LatencyContent, TooltipMDIconButton, ConnectionDialog, ProtectedLabel, IPAddressTextField, ConnectedNode, QuotaPct,BandwidthBar,BandwidthLabel, MapCenterButton
+from ui.interfaces import LatencyContent, TooltipMDIconButton, ConnectionDialog, ProtectedLabel, IPAddressTextField, ConnectedNode, QuotaPct,BandwidthBar,BandwidthLabel, MapCenterButton
 from typedef.win import WindowNames
 from cli.sentinel import  NodeTreeData
 from typedef.konstants import NodeKeys, TextStrings, MeileColors, HTTParams, IBCTokens, ConfParams
 from cli.sentinel import disconnect as Disconnect
 import main.main as Meile
-from ui.widgets import WalletInfoContent, MDMapCountryButton, RatingContent, NodeRV, NodeRV2, NodeAccordion, NodeRow, NodeDetails, PlanAccordion, PlanRow, PlanDetails, NodeCarousel, SubTypeDialog, SubscribeContent, LoadingSpinner
+from ui.widgets import WalletInfoContent, SeedInfoContent, MDMapCountryButton, RatingContent, NodeRV, NodeRV2, NodeAccordion, NodeRow, NodeDetails, PlanAccordion, PlanRow, PlanDetails, NodeCarousel, SubTypeDialog, SubscribeContent, LoadingSpinner
 from utils.qr import QRCode
 from cli.wallet import HandleWalletFunctions
 from conf.meile_config import MeileGuiConfig
-from typedef.win import CoinsList
 from cli.warp import WarpHandler
 from adapters import HTTPRequests, DNSRequests
 from fiat import fiat_interface
@@ -19,6 +18,7 @@ from adapters.ChangeDNS import ChangeDNS
 from adapters.DNSCryptproxy import HandleDNSCryptProxy as dcp
 from helpers.helpers import format_byte_size
 from helpers.bandwidth import compute_consumed_data, compute_consumed_hours, init_GetConsumedWhileConnected, GetConsumedWhileConnected
+from helpers.aes import SecureSeed
 
 from kivy.properties import BooleanProperty, StringProperty, ColorProperty,ObjectProperty, NumericProperty
 from kivy.uix.screenmanager import Screen, SlideTransition
@@ -61,6 +61,7 @@ from unidecode import unidecode
 from datetime import datetime
 import json
 from treelib.exceptions import NodeIDAbsentError
+import base64
 
 class WalletRestore(Screen):
     screemanager = ObjectProperty()
@@ -72,6 +73,7 @@ class WalletRestore(Screen):
         self.build()
 
     def build(self):
+        '''This chooses to display seed phrase box'''
         if Meile.app.manager.get_screen(WindowNames.MAIN_WINDOW).NewWallet:
             self.ids.seed.opacity = 0
             self.ids.seed_hint.opacity = 0
@@ -86,6 +88,7 @@ class WalletRestore(Screen):
         wallet_name     = unidecode(self.ids.name.ids.wallet_name.text)
         seed_phrase     = unidecode(self.ids.seed.ids.seed_phrase.text)
         
+        '''Add a conditional for seed_phrase.split(" ") and see if len == 12 or 24. Display warning if not'''
         if not wallet_name and not wallet_password:
             self.ids.wallet_name_warning.opacity = 1
             self.ids.wallet_password_warning.opacity = 1
@@ -183,6 +186,12 @@ class WalletRestore(Screen):
 
         CONFIG.write(FILE)
         FILE.close()
+        
+        ss = SecureSeed()
+        encrypted_seed = ss.encrypt_seed(seed_phrase, keyring_passphrase)
+        with open(path.join(ConfParams.KEYRINGDIR, "seed"), "wb") as f:
+            f.write(base64.b64decode(encrypted_seed))
+            
         WalletInfo = WalletInfoContent(Wallet['seed'], wallet_name, Wallet['address'], keyring_passphrase)
         self.dialog = MDDialog(
                 type="custom",
@@ -354,7 +363,8 @@ class MainWindow(Screen):
                   'consumed' : None, 
                   'og_consumed' : None, 
                   'allocated' : None, 
-                  'expirary' : None}
+                  'expirary' : None,
+                  'deposit': None}
     NewWallet = False
     box_color = ColorProperty('#fcb711')
     clock = None
@@ -369,7 +379,8 @@ class MainWindow(Screen):
                             "moniker" : None,
                             "allocated" : None,
                             "consumed" : None,
-                            "expires" : None}
+                            "expires" : None,
+                            'deposit' : None}
     
     NodeCarouselData = {"moniker" : None,
                         "address" : None,
@@ -461,7 +472,7 @@ class MainWindow(Screen):
             hwf = HandleWalletFunctions()
             thread = Thread(target=lambda: self.ping())
             thread.start()
-            t = Thread(target=lambda: hwf.connect(ID, naddress, proto))
+            t = Thread(target=lambda: hwf.connect(ID, naddress, proto, deposit))
             t.start()
             
             while t.is_alive():
@@ -499,6 +510,7 @@ class MainWindow(Screen):
                         self.NodeSwitch['consumed']     = self.SelectedSubscription['consumed']
                         self.NodeSwitch['og_consumed']  = self.SelectedSubscription['consumed'] 
                         self.NodeSwitch['expirary']     = self.SelectedSubscription['expires']
+                        self.NodeSwitch['deposit']      = self.SelectedSubscription['deposit']
                         
                         # TODO: Add Quota routines 
                         # Determine if node has been connected to and if so report last data usage stats
@@ -519,6 +531,8 @@ class MainWindow(Screen):
                         
                     self.remove_loading_widget2()
                     #print("REmove loading Widget")
+                    # Here change the Connection button to a "Disconnect" button then display dialogAdd commentMore actions
+                    self.set_protected_icon(True, Moniker)
                     self.dialog = MDDialog(
                         title="Connected!",
                         md_bg_color=get_color_from_hex(MeileColors.BLACK),
@@ -572,6 +586,7 @@ class MainWindow(Screen):
                     ID       = self.PlanID
                     naddress = self.NodeCarouselData['address']
                     proto    = self.NodeCarouselData['protocol']
+                    deposit  = "dvpn"
                     connect()
                     return
                 else:
@@ -586,6 +601,7 @@ class MainWindow(Screen):
                 ID       = self.SelectedSubscription['id']
                 naddress = self.SelectedSubscription['address']
                 proto    = self.SelectedSubscription['protocol']
+                deposit  = self.SelectedSubscription['deposit']
                 
                 connect()
                 
@@ -1416,8 +1432,6 @@ class MainWindow(Screen):
     def call_ip_get(self,result, moniker,  *kwargs):
         if result:
             self.CONNECTED = True
-            # Here change the Connection button to a "Disconnect" button
-            self.set_protected_icon(True, moniker)
         else:
             self.CONNECTED = False
             self.set_protected_icon(False, " ")
@@ -1474,12 +1488,10 @@ class WalletScreen(Screen):
     MeileConfig = None
     dialog = None
     qr_address = StringProperty()
-    MenuOptions = ["Refresh", "New Wallet", "Re-Fuel"]
+    MenuOptions = ["Refresh", "New Wallet", "Re-Fuel", "View Seed"]
 
     def __init__(self, ADDRESS,  **kwargs):
         super(WalletScreen, self).__init__()
-        #self.qr_address = self.get_qr_code_address()
-        #self.ids.qr.source = self.get_qr_code_address()
         self.ADDRESS = ADDRESS
         print("WalletScreen, ADDRESS: %s" % self.ADDRESS)
         self.wallet_address = self.ADDRESS
@@ -1487,7 +1499,7 @@ class WalletScreen(Screen):
         item_height = 50
         max_height = len(self.MenuOptions) * item_height
 
-        menu_icons = ["refresh-circle", "wallet-plus", "cash-multiple"]
+        menu_icons = ["refresh-circle", "wallet-plus", "cash-multiple", "lock-open-variant"]
         menu_items = [
             {
                 "viewclass" : "IconListItem",
@@ -1522,6 +1534,8 @@ class WalletScreen(Screen):
             self.open_dialog_new_wallet()
         elif selection == self.MenuOptions[2]:
             self.open_fiat_interface()
+        elif selection == self.MenuOptions[3]:
+            self.display_seed()
         
     def open_dialog_new_wallet(self):
         self.dialog = MDDialog(
@@ -1609,16 +1623,48 @@ class WalletScreen(Screen):
         Meile.app.root.add_widget(fiat_interface.FiatInterface(name=WindowNames.FIAT))
         Meile.app.root.transistion = SlideTransition(direction="right")
         Meile.app.root.current = WindowNames.FIAT
+        
+    def display_seed(self):
+        MeileConfig = MeileGuiConfig()
+        CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
+        keyring_passphrase = CONFIG['wallet'].get('password', '')
+        
+        ss = SecureSeed()
+        
+        if path.isfile(path.join(ConfParams.KEYRINGDIR, "seed")):
+            with open(path.join(ConfParams.KEYRINGDIR, "seed"), "rb") as f:
+                encrypted_seed= base64.b64encode(f.read()).decode()
+            
+            seedphrase = ss.decrypt_seed(encrypted_seed, keyring_passphrase)
+        else:
+            seedphrase = "NULL"
+            
+        SeedInfo = SeedInfoContent(seedphrase)
+        self.dialog = MDDialog(
+                type="custom",
+                content_cls=SeedInfo,
+                md_bg_color=get_color_from_hex(MeileColors.BLACK),
+
+                buttons=[
+                    MDRaisedButton(
+                        text="CLOSE",
+                        theme_text_color="Custom",
+                        text_color=get_color_from_hex(MeileColors.BLACK),
+                        on_release=self.closeDialog
+                    ),
+                ],
+            )
+        self.dialog.open()
 
     def return_coin_logo(self, coin):
         self.MeileConfig = MeileGuiConfig()
 
         predir = "../imgs/"
         logoDict = {}
-        for c in CoinsList.coins:
+        for c in IBCTokens.ibc_coins:
             logoDict[c] = predir + c + ".png"
 
-        for c in CoinsList.coins:
+        for c in IBCTokens.ibc_coins:
             if c == coin:
                 return self.MeileConfig.resource_path(logoDict[c])
 
@@ -1629,7 +1675,7 @@ class WalletScreen(Screen):
         QRcode = QRCode()
         if not path.isfile(path.join(MeileGuiConfig.BASEDIR, "img", f"{self.ADDRESS}.png")):
             print("Generating QR Code....")
-            QRcode.generate_qr_code(self.ADDRESS)
+            QRcode.generate_qr_code(self.ADDRESS, "dvpn")
         
         img_path = path.join(MeileGuiConfig.BASEDIR, "img", f"{self.ADDRESS}.png")
         print(img_path)
@@ -1750,6 +1796,7 @@ class SubscriptionScreen(MDBoxLayout):
                     mw.SelectedSubscription['allocated'] = sub[NodeKeys.FinalSubsKeys[6]]
                     mw.SelectedSubscription['consumed']  = sub[NodeKeys.FinalSubsKeys[7]]
                     mw.SelectedSubscription['expires']   = sub[NodeKeys.FinalSubsKeys[9]]
+                    mw.SelectedSubscription['deposit']   = sub[NodeKeys.FinalSubsKeys[4]]
              
             mw.clear_node_carousel()
             mw.SubCaller = False
@@ -2161,6 +2208,7 @@ class HelpScreen(Screen):
 
 class SettingsScreen(Screen):
     MeileConfig = MeileGuiConfig()
+    SettingsNetworkMenu = ["grpc", "api", "mnapi", "cache", "resolver1", "resolver2", "resolver3"]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -2170,7 +2218,7 @@ class SettingsScreen(Screen):
         
         config = self.MeileConfig.read_configuration(self.MeileConfig.CONFFILE)
         # Load default values
-        self.RPC       = config['network'].get('rpc', '')
+        #self.RPC       = config['network'].get('rpc', '')
         self.GRPC      = config['network'].get('grpc', '')
         self.API       = config['network'].get('api', '')
         self.MNAPI     = config['network'].get('mnapi', '')
@@ -2184,7 +2232,7 @@ class SettingsScreen(Screen):
 
         # I've tried to write a single code with the iteration of 'what' [grpc, rpc]
         # But doesn't work because the code at runtime will pass the loop value and not a copy one
-
+        '''
         self.rpc_menu = MDDropdownMenu(
             caller=self.ids.rpc_drop_item,
             items=[
@@ -2200,14 +2248,15 @@ class SettingsScreen(Screen):
             width_mult=50,
         )
         self.rpc_menu.bind()
-
+        '''
+        
         self.grpc_menu = MDDropdownMenu(
             caller=self.ids.grpc_drop_item,
             items=[
                 {
                     "viewclass": "IconListItem",
                     "icon": "server-security",
-                    "text": f"{i}",
+                    "text": f"{i['Name']} ({i['Country']})",
                     "height": dp(56),
                     "on_release": lambda x=f"{i}": self.set_item(x, "grpc"),
                 } for i in params.GRPCS
@@ -2223,7 +2272,7 @@ class SettingsScreen(Screen):
                 {
                     "viewclass": "IconListItem",
                     "icon": "server-security",
-                    "text": f"{i}",
+                    "text": f"{i['Name']} ({i['Country']})",
                     "height": dp(56),
                     "on_release": lambda x=f"{i}": self.set_item(x, "api"),
                 } for i in params.APIS_URL
@@ -2331,7 +2380,7 @@ class SettingsScreen(Screen):
 
     def get_config(self, what: str = "rpc"):
         config = self.MeileConfig.read_configuration(self.MeileConfig.CONFFILE)
-        if what in ['cache', 'mnapi', 'api', 'grpc', 'rpc', 'resolver1', 'resolver2', 'resolver3']:
+        if what in self.SettingsNetworkMenu:
             getattr(self.ids, f"{what}_drop_item").set_item(config['network'][what])
             return config['network'][what]
         else:
@@ -2340,16 +2389,24 @@ class SettingsScreen(Screen):
             
 
     def set_item(self, text_item, what: str = "rpc"):
-        getattr(self.ids, f"{what.lower()}_drop_item").set_item(text_item)
-        setattr(self, what.upper(), text_item)
-        getattr(self, f"{what.lower()}_menu").dismiss()
+        if what in [self.SettingsNetworkMenu[0], self.SettingsNetworkMenu[1]]:
+            text_item = json.loads(text_item.replace("'",'"'))
+            getattr(self.ids, f"{what.lower()}_drop_item").set_item(text_item['Name'])
+            setattr(self, what.upper(), text_item['url'])
+            getattr(self, f"{what.lower()}_menu").dismiss()
+        else:
+            getattr(self.ids, f"{what.lower()}_drop_item").set_item(text_item)
+            setattr(self, what.upper(), text_item)
+            getattr(self, f"{what.lower()}_menu").dismiss()
 
     def build(self):
         return self.screen
 
     def SaveOptions(self):
         config = self.MeileConfig.read_configuration(self.MeileConfig.CONFFILE)
-        for what in ["rpc", "grpc", "api", "mnapi", "cache", "resolver1", "resolver2", "resolver3"]:
+        for what in self.SettingsNetworkMenu:
+            if what == "grpc":
+                config.set('network', what, getattr(self, what.upper()))
             config.set('network', what, getattr(self, what.upper()))
         
         what = "gb"
@@ -2374,10 +2431,7 @@ class SettingsScreen(Screen):
             toml.dump(config, file)
 
         self.set_previous_screen()
-    '''    
-    def strip_trailing_number(string):
-        return re.sub(r'\d+$', '', string)
-    '''
+
     def set_previous_screen(self):
         Meile.app.root.remove_widget(self)
         Meile.app.root.transistion = SlideTransition(direction="up")
