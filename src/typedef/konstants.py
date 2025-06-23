@@ -565,16 +565,17 @@ class IBCTokens():
                     'xmr'  : 'monero',
                     'ltc'  : 'litecoin',
                     'doge' : 'dogecoin',
-                    'arrr' : 'pirate-chain'}
+                    'arrr' : 'pirate-chain',
+                    'dcr'  : 'decred'}
     
-    NOWCOINS     = ["firo", "beam", "pivx", "zec", "sol"]
+    NOWCOINS     = ["firo", "beam", "pivx", "zec", "dcr", "sol"]
     BTCPAYCOINS  = ["xmr", "btc", "ltc", "doge"]
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
     
 class TextStrings():
     dash = "-"
-    VERSION = "v2.2.0-beta1"
-    BUILD = "17477093953"
+    VERSION = "v2.2.0-beta4"
+    BUILD = "17506555713"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"
     FailedHealthCheck = "Failed Sentinel Health Check"
