@@ -530,6 +530,7 @@ class HTTParams():
 class IBCTokens():
     
     SATOSHI  = 1000000
+    SATOSHI_BTC = 100000000
     
     # IBC Tokens
     IBCSCRT  = 'ibc/31FEE1A2A9F9C01113F90BD0BBCCE8FD6BBB8585FAF109A2101827DD1D5B95B8'
@@ -563,15 +564,17 @@ class IBCTokens():
                     'xmr'  : 'monero',
                     'ltc'  : 'litecoin',
                     'doge' : 'dogecoin',
-                    'arrr' : 'pirate-chain'}
+                    'arrr' : 'pirate-chain',
+                    'dcr'  : 'decred',
+                    'dash' : 'dash'}
     
-    NOWCOINS     = ["firo", "beam", "pivx", "zec", "sol"]
-    BTCPAYCOINS  = ["xmr", "btc", "ltc", "doge"]
+    NOWCOINS     = ["firo", "beam", "pivx", "zec", "dcr", "sol"]
+    BTCPAYCOINS  = ["xmr", "btc", "ltc", "doge", "dash"]
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
-    VERSION = "v2.1.2"
-    BUILD = "1745568852562"
+    VERSION = "v2.2.1"
+    BUILD = "1754283526567"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"
     FailedHealthCheck = "Failed Sentinel Health Check"
@@ -617,6 +620,20 @@ class NodeKeys():
     FinalSubsKeys = [SubsInfoKeys[0], NodesInfoKeys[0],SubsInfoKeys[4],SubsInfoKeys[5], SubsInfoKeys[7], NodesInfoKeys[4], "Allocated", "Consumed", NodesInfoKeys[13],SubsInfoKeys[2],SubsInfoKeys[6]]
     NodeVersions  = [str(item).zfill(3) for item in range(70,1000)]
     Nodetypes = ['residential', 'business', 'hosting', 'edu']
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
