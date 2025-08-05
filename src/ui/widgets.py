@@ -1985,7 +1985,7 @@ class NodeCarousel(MDBoxLayout):
             except AttributeError as e:
                 self.dialog.dismiss()
                 self.dialog = MDDialog(
-                title="Error: %s" % hwf.returncode[1],
+                title="Error: %s" % "No Wallet found. Please create a wallet within the app first." if hwf.returncode[1] == 1337 else hwf.returncode[1],
                 md_bg_color=get_color_from_hex(MeileColors.BLACK),
                 buttons=[
                         MDFlatButton(
