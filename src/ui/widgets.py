@@ -1441,7 +1441,7 @@ class PlanRow(MDGridLayout):
         
     def check_invoice_status(self):
         print("Checking if invoice is paid...")
-        if self.fetched_invoice['status'] != "confirmed":
+        if self.fetched_invoice['status'] not in ["confirmed", "complete"]:
             print("invoice not yet confirmed....")
             self.fetched_invoice = self.client.get_invoice(self.btcpay_tx_id)
         else:
@@ -1981,11 +1981,25 @@ class NodeCarousel(MDBoxLayout):
                                     on_release=self.closeDialog
                                 ),])
                     self.dialog.open()
+                else:
+                    self.dialog.dismiss()
+                    self.dialog = MDDialog(
+                    title="Error: %s" % "No Wallet found. Please create a wallet within the app first." if hwf.returncode[1] == 1337 else hwf.returncode[1],
+                    md_bg_color=get_color_from_hex(MeileColors.BLACK),
+                    buttons=[
+                            MDFlatButton(
+                                text="OK",
+                                theme_text_color="Custom",
+                                text_color=Meile.app.theme_cls.primary_color,
+                                on_release=self.closeDialog
+                            ),])
+                    self.dialog.open()
     
             except AttributeError as e:
+                print(str(e))
                 self.dialog.dismiss()
                 self.dialog = MDDialog(
-                title="Error: %s" % "No Wallet found. Please create a wallet within the app first." if hwf.returncode[1] == 1337 else hwf.returncode[1],
+                title="Error Processing subscription",
                 md_bg_color=get_color_from_hex(MeileColors.BLACK),
                 buttons=[
                         MDFlatButton(
