@@ -73,7 +73,8 @@ class QRCode():
         
         if not is_ecryptfs_mounted():
             background.save(path.join(self.IMGDIR, ADDRESS + ".png"))
+            return path.join(self.IMGDIR, ADDRESS + ".png")
         else:
             hashed_address = hashlib.sha256(ADDRESS.encode()).hexdigest()
-        
-        return path.join(self.IMGDIR, hashed_address + ".png")
+            background.save(path.join(self.IMGDIR, hashed_address + ".png"))
+            return path.join(self.IMGDIR, hashed_address + ".png")
