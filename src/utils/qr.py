@@ -1,4 +1,3 @@
-import pkg_resources
 import qrcode
 
 from PIL import Image
@@ -6,7 +5,8 @@ from PIL import ImageDraw, ImageFont
 from PIL import ImageOps
 
 from os import path
-
+import hashlib
+from helpers.helpers import is_ecryptfs_mounted
 from conf.meile_config import MeileGuiConfig
 
 
@@ -70,5 +70,10 @@ class QRCode():
         draw.text(((QRimg.size[0]+15 - w)/2,QRimg.size[1]-2),DepositAddress, (0,0,0), font=robotoFont)
         
         background.paste(QRimg, (0,0))
-        background.save(path.join(self.IMGDIR, ADDRESS + ".png"))
-        return path.join(self.IMGDIR, ADDRESS + ".png")
+        
+        if not is_ecryptfs_mounted():
+            background.save(path.join(self.IMGDIR, ADDRESS + ".png"))
+        else:
+            hashed_address = hashlib.sha256(ADDRESS.encode()).hexdigest()
+        
+        return path.join(self.IMGDIR, hashed_address + ".png")
