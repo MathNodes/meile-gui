@@ -432,7 +432,8 @@ class HandleWalletFunctions():
     # This method should be renamed as: 'subscribe to node'
     def subscribe(self, KEYNAME, NODE, DEPOSIT, GB, hourly):
         if not KEYNAME:
-            return (False, 1337)
+            self.returncode = (False, 1337)
+            return
         
         print("Deposit/denom")
         print(DEPOSIT)

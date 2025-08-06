@@ -1526,9 +1526,10 @@ class PlanRow(MDGridLayout):
         
     def check_invoice_status(self):
         print("Checking if invoice is paid...")
-        if self.fetched_invoice['status'] != "confirmed":
+        if self.fetched_invoice['status'] not in ["confirmed", "complete"]:
             print("invoice not yet confirmed....")
             self.fetched_invoice = self.client.get_invoice(self.btcpay_tx_id)
+            print(self.fetched_invoice)
         else:
             print(self.fetched_invoice)
             self.invoice_result = {"success" : True, "id": self.new_invoice['id'] }
@@ -2122,7 +2123,7 @@ class NodeCarousel(MDBoxLayout):
                 else:
                     self.dialog.dismiss()
                     self.dialog = MDDialog(
-                    title="Error: %s" % "No wallet found!" if hwf.returncode[1] == 1337  else hwf.returncode[1],
+                    title="Error: %s" % "No Wallet found. Please create a wallet within the app first." if hwf.returncode[1] == 1337 else hwf.returncode[1],
                     md_bg_color=get_color_from_hex(MeileColors.BLACK),
                     buttons=[
                             MDFlatButton(
