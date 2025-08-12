@@ -285,79 +285,6 @@ class SubscribeContent(BoxLayout):
             self.menu.dismiss()
         except Exception as e:
             print(str(e))
-
-    
-    '''
-    def set_item(self, text_item):
-        self.ids.drop_item.set_item(text_item)
-        self.ids.deposit.text = self.parse_coin_deposit(text_item)
-        self.get_usd(text_item, self.ids.slider1.value) 
-        self.menu.dismiss()
-    
-    def parse_coin_deposit(self, mu_coin, callback=None):
-        try:
-            if self.price_text:
-                mu_coin_amt = re.findall(r'([0-9]+.[0-9]+)' + mu_coin, self.price_text)[0]
-                if mu_coin_amt:
-                    if not self.hourly:
-                        self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(mu_coin_amt)),4))
-                        if callback:
-                            callback(self.ids.deposit.text)
-                    else: 
-                        self.ids.deposit.text = str(round(int(self.ids.slider1.value)*24*(float(mu_coin_amt)),4))
-                        if callback:
-                            callback(self.ids.deposit.text)
-                    return self.ids.deposit.text
-                else:
-                    if not self.hourly:
-                        self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(self.ids.price.text.split(IBCTokens.ibc_coins[0])[0])),4))
-                        if callback:
-                            callback(self.ids.deposit.text)
-                    else:
-                        self.ids.deposit.text = str(round(int(self.ids.slider1.value)*24*(float(self.ids.price.text.split(IBCTokens.ibc_coins[0])[0])),4))
-                        if callback:
-                            callback(self.ids.deposit.text)
-                    return self.ids.deposit.text
-            else:
-                self.ids.deposit.text = "0.0"
-                if callback:
-                    callback(self.ids.deposit.text)
-                return self.ids.deposit.text
-        except IndexError as e:
-            #print(str(e))
-            try: 
-                if self.ids.price.text:
-                    if not self.hourly:
-                        if mu_coin == "xmr":
-                            self.refresh_price('xmr', cache=30)
-                            mu_coin_amt = re.findall(r'([0-9]+.[0-9]+)' + IBCTokens.ibc_coins[0], self.price_text)[0]
-                            deposit_dvpn = round(int(self.ids.slider1.value)*float(mu_coin_amt),4)
-                            deposit_xmr = round((deposit_dvpn*self.price_cache[IBCTokens.ibc_coins[0]]["price"]*ConfParams.XMRPAYADJ)/self.price_cache['xmr']['price'],12)
-                            self.ids.deposit.text = str(deposit_xmr)
-                            if callback:
-                                callback(self.ids.deposit.text)
-                        else:    
-                            self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(self.ids.price.text.split(IBCTokens.ibc_coins[0])[0])),4))
-                            if callback:
-                                callback(self.ids.deposit.text) 
-                    else:
-                        self.ids.deposit.text = str(round(int(self.ids.slider1.value)*24*(float(self.ids.price.text.split(IBCTokens.ibc_coins[0])[0])),4))
-                        if callback:
-                            callback(self.ids.deposit.text)
-                    return self.ids.deposit.text
-                else:
-                    self.ids.deposit.text = "0.0" 
-                    if callback:
-                        callback(self.ids.deposit.text)
-                    return self.ids.deposit.text
-            except ValueError as e:
-                print(str(e))
-                self.ids.deposit.text = "0.0" 
-                if callback:
-                    callback(self.ids.deposit.text)
-                return self.ids.deposit.text    
-            
-    '''
         
     def parse_coin_deposit(self, mu_coin, callback=None):
         try:
@@ -474,42 +401,7 @@ class SubscribeContent(BoxLayout):
             self.get_usd(mu_coin, amount)
     
         self.parse_coin_deposit(mu_coin, callback=after_deposit_updated)
-    
-    '''
-    def get_usd(self):
-        deposit_ret = self.return_deposit_text()
-        self.ids.usd_price.text = "Fetching..."
-        self.refresh_price_async(deposit_ret[-1], cache=30)
-        return True
-    
-        
-    def get_usd(self, mu_coin, amount):
-        self.ids.usd_price.text = "Fetching..."
-    
-        def update_label():
-            if mu_coin in self.price_cache:
-                try:
-                    price = self.price_cache[mu_coin]["price"]
-                    usd_value = round(price * float(amount), 3)
-                    self.ids.usd_price.text = f"${usd_value}"
-                except Exception as e:
-                    print(f"Error in update_label: {e}")
-                    self.ids.usd_price.text = "Error"
-            else:
-                self.ids.usd_price.text = "Unavailable"
-    
-        self.refresh_price_async(mu_coin, cache=30, callback=update_label)
-    
-     
-    def get_usd(self):
-        deposit_ret = self.return_deposit_text()
-        
-        self.refresh_price(deposit_ret[-1], cache=30)
-        self.ids.usd_price.text = '$' + str(round(float(self.price_cache[deposit_ret[-1]]["price"]) * float(deposit_ret[0]),3))
-
-        return True
-    '''
-        
+ 
     def get_usd(self, mu_coin, amount):
         self.ids.usd_price.text = "Fetching..."
         self.refresh_price_async(mu_coin, cache=30, callback=lambda: self.update_usd_label(mu_coin, amount))
@@ -1909,18 +1801,7 @@ class PlanRow(MDGridLayout):
         else:
             if self.on_success_subscription_payg:
                 self.on_success_subscription_payg()
-    '''
-    def reparse_coin_deposit(self, deposit):
-        for k,v in CoinsList.ibc_coins.items():
-            try:
-                coin = re.findall(k,deposit)[0]
-                deposit = deposit.replace(coin, v)
-                mu_deposit_amt = int(float(re.findall(r'[0-9]+\.[0-9]+', deposit)[0])*CoinsList.SATOSHI)
-                tru_mu_deposit = str(mu_deposit_amt) + v
-                return tru_mu_deposit
-            except:
-                pass
-    '''
+                
     def closeDialog(self, inst):
         self.dialog.dismiss()
         self.dialog = None
