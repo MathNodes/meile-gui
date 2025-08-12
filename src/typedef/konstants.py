@@ -576,8 +576,8 @@ class IBCTokens():
     
 class TextStrings():
     dash = "-"
-    VERSION = "v2.2.2"
-    BUILD = "17544458403"
+    VERSION = "v2.2.3"
+    BUILD = "17549615023"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"
     FailedHealthCheck = "Failed Sentinel Health Check"

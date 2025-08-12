@@ -1802,8 +1802,9 @@ WindowManager:
             min: 1
             max: 314
             value: 34
-            on_value: root.parse_coin_deposit(root.ids.drop_item.current_item)
-            on_touch_move: root.get_usd()
+            #on_value: root.parse_coin_deposit(root.ids.drop_item.current_item)
+            #on_touch_move: root.get_usd()
+            on_touch_move: root.update_deposit_and_usd(root.ids.drop_item.current_item)
             
         MDLabel:
             id: slider1_value
@@ -1943,8 +1944,9 @@ WindowManager:
             min: 1
             max: 12
             value: 2
-            on_value: root.parse_coin_deposit(root.ids.drop_item.current_item)
-            on_touch_move: root.get_usd(root.ids.drop_item.current_item)
+            #on_value: root.parse_coin_deposit(root.ids.drop_item.current_item)
+            #on_touch_move: root.parse_coin_deposit(root.ids.drop_item.current_item)
+            on_touch_move: root.update_deposit_and_usd(root.ids.drop_item.current_item)
 
         MDLabel:
             text: str(int(slider1.value)) + " Months"

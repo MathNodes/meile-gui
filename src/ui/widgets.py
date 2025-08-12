@@ -263,7 +263,7 @@ class SubscribeContent(BoxLayout):
             self.ids.slider1.max = 30
             self.ids.slider1.value = 7
             
-        self.get_usd() 
+        self.update_deposit_and_usd(self.ids.drop_item.current_item) 
 
     def get_font(self):
         Config = MeileGuiConfig()
@@ -271,28 +271,57 @@ class SubscribeContent(BoxLayout):
     
     def set_item(self, text_item):
         self.ids.drop_item.set_item(text_item)
-        self.ids.deposit.text = self.parse_coin_deposit(text_item)
-        self.get_usd()
-        self.menu.dismiss()
+    
+        def after_deposit_updated(deposit_text):
+            try:
+                amount = float(deposit_text)
+            except ValueError:
+                amount = 0.0
+            self.get_usd(text_item, amount)  # Use the freshly computed value
+    
+        self.parse_coin_deposit(text_item, callback=after_deposit_updated)
+    
+        try:
+            self.menu.dismiss()
+        except Exception as e:
+            print(str(e))
 
-    def parse_coin_deposit(self, mu_coin):
+    
+    '''
+    def set_item(self, text_item):
+        self.ids.drop_item.set_item(text_item)
+        self.ids.deposit.text = self.parse_coin_deposit(text_item)
+        self.get_usd(text_item, self.ids.slider1.value) 
+        self.menu.dismiss()
+    
+    def parse_coin_deposit(self, mu_coin, callback=None):
         try:
             if self.price_text:
                 mu_coin_amt = re.findall(r'([0-9]+.[0-9]+)' + mu_coin, self.price_text)[0]
                 if mu_coin_amt:
                     if not self.hourly:
                         self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(mu_coin_amt)),4))
+                        if callback:
+                            callback(self.ids.deposit.text)
                     else: 
                         self.ids.deposit.text = str(round(int(self.ids.slider1.value)*24*(float(mu_coin_amt)),4))
+                        if callback:
+                            callback(self.ids.deposit.text)
                     return self.ids.deposit.text
                 else:
                     if not self.hourly:
                         self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(self.ids.price.text.split(IBCTokens.ibc_coins[0])[0])),4))
+                        if callback:
+                            callback(self.ids.deposit.text)
                     else:
                         self.ids.deposit.text = str(round(int(self.ids.slider1.value)*24*(float(self.ids.price.text.split(IBCTokens.ibc_coins[0])[0])),4))
+                        if callback:
+                            callback(self.ids.deposit.text)
                     return self.ids.deposit.text
             else:
                 self.ids.deposit.text = "0.0"
+                if callback:
+                    callback(self.ids.deposit.text)
                 return self.ids.deposit.text
         except IndexError as e:
             #print(str(e))
@@ -305,18 +334,87 @@ class SubscribeContent(BoxLayout):
                             deposit_dvpn = round(int(self.ids.slider1.value)*float(mu_coin_amt),4)
                             deposit_xmr = round((deposit_dvpn*self.price_cache[IBCTokens.ibc_coins[0]]["price"]*ConfParams.XMRPAYADJ)/self.price_cache['xmr']['price'],12)
                             self.ids.deposit.text = str(deposit_xmr)
+                            if callback:
+                                callback(self.ids.deposit.text)
                         else:    
-                            self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(self.ids.price.text.split(IBCTokens.ibc_coins[0])[0])),4)) 
+                            self.ids.deposit.text = str(round(int(self.ids.slider1.value)*(float(self.ids.price.text.split(IBCTokens.ibc_coins[0])[0])),4))
+                            if callback:
+                                callback(self.ids.deposit.text) 
                     else:
                         self.ids.deposit.text = str(round(int(self.ids.slider1.value)*24*(float(self.ids.price.text.split(IBCTokens.ibc_coins[0])[0])),4))
+                        if callback:
+                            callback(self.ids.deposit.text)
                     return self.ids.deposit.text
                 else:
                     self.ids.deposit.text = "0.0" 
+                    if callback:
+                        callback(self.ids.deposit.text)
                     return self.ids.deposit.text
             except ValueError as e:
                 print(str(e))
                 self.ids.deposit.text = "0.0" 
+                if callback:
+                    callback(self.ids.deposit.text)
                 return self.ids.deposit.text    
+            
+    '''
+        
+    def parse_coin_deposit(self, mu_coin, callback=None):
+        try:
+            slider_val = int(self.ids.slider1.value)
+            multiplier = slider_val * 24 if self.hourly else slider_val
+    
+            # Case 1: price_text exists
+            if self.price_text:
+                try:
+                    mu_coin_amt = re.findall(r'([0-9]+.[0-9]+)' + mu_coin, self.price_text)[0]
+                    amount = float(mu_coin_amt)
+                except IndexError:
+                    amount = float(self.ids.price.text.split(IBCTokens.ibc_coins[0])[0])
+    
+                deposit = round(multiplier * amount, 4)
+                self.ids.deposit.text = str(deposit)
+                if callback:
+                    callback(self.ids.deposit.text)
+                return self.ids.deposit.text
+    
+            # Case 2: fallback to price.text
+            elif self.ids.price.text:
+                if mu_coin == "xmr":
+                    self.refresh_price('xmr', cache=30)
+                    mu_coin_amt = re.findall(r'([0-9]+.[0-9]+)' + IBCTokens.ibc_coins[0], self.price_text)[0]
+                    deposit_dvpn = round(multiplier * float(mu_coin_amt), 4)
+    
+                    deposit_xmr = round(
+                        (deposit_dvpn *
+                         self.price_cache[IBCTokens.ibc_coins[0]]["price"] *
+                         ConfParams.XMRPAYADJ) /
+                        self.price_cache['xmr']['price'], 12)
+    
+                    self.ids.deposit.text = str(deposit_xmr)
+                else:
+                    amount = float(self.ids.price.text.split(IBCTokens.ibc_coins[0])[0])
+                    deposit = round(multiplier * amount, 4)
+                    self.ids.deposit.text = str(deposit)
+    
+                if callback:
+                    callback(self.ids.deposit.text)
+                return self.ids.deposit.text
+    
+            # Case 3: fallback value
+            else:
+                self.ids.deposit.text = "0.0"
+                if callback:
+                    callback("0.0")
+                return "0.0"
+    
+        except Exception as e:
+            print(f"parse_coin_deposit error: {e}")
+            self.ids.deposit.text = "0.0"
+            if callback:
+                callback("0.0")
+            return "0.0"
+        
     def return_deposit_text(self):
         if not self.hourly:
             return (self.ids.deposit.text, self.naddress, self.moniker, int(self.ids.slider1.value), self.hourly, self.ids.drop_item.current_item)
@@ -331,18 +429,78 @@ class SubscribeContent(BoxLayout):
                 return " GB" 
         except AttributeError:
             return " GB"   
-        
-    def refresh_price(self, mu_coin: str = "dvpn", cache: int = 30):
-        # Need check on cache or trought GetPrice api
-        # We don't need to call the price api if the cache is younger that 30s
-
-        if mu_coin not in self.price_cache or time.time() - self.price_cache[mu_coin]["time"] > cache:
-            response = self.price_api.get_usd(mu_coin)
-            self.price_cache[mu_coin] = {
-                "price": float(response['price']),
-                "time": time.time()
-            }
             
+    def refresh_price_async(self, mu_coin="dvpn", cache=30, callback=None):
+        def fetch_price():
+            try:
+                if mu_coin not in self.price_cache or time.time() - self.price_cache[mu_coin]["time"] > cache:
+                    response = self.price_api.get_usd(mu_coin)
+                    price = float(response['price'])
+                    self.price_cache[mu_coin] = {
+                        "price": price,
+                        "time": time.time()
+                    }
+            except Exception as e:
+                print(f"Error fetching price for {mu_coin}: {e}")
+                Clock.schedule_once(partial(setattr, self.ids.usd_price, 'text', "Error"), 0)
+    
+            if callback:
+                Clock.schedule_once(lambda dt: callback(), 0)
+    
+        Thread(target=fetch_price, daemon=True).start()
+
+        
+    def update_usd_label(self, mu_coin, amount):
+        if mu_coin in self.price_cache:
+            try:
+                price = self.price_cache[mu_coin]["price"]
+                usd_value = round(price * float(amount), 3)
+                self.ids.usd_price.text = f"${usd_value}"
+            except Exception as e:
+                print(f"Error updating USD label: {e}")
+                self.ids.usd_price.text = "Error"
+        else:
+            self.ids.usd_price.text = "Fetching..."
+            self.refresh_price_async(mu_coin, cache=30, callback=lambda: self.update_usd_label(mu_coin, amount))
+
+    
+    # used for slider's on_touch_move            
+    def update_deposit_and_usd(self, mu_coin):
+        def after_deposit_updated(deposit_text):
+            try:
+                amount = float(deposit_text)
+            except ValueError:
+                amount = 0.0
+            self.get_usd(mu_coin, amount)
+    
+        self.parse_coin_deposit(mu_coin, callback=after_deposit_updated)
+    
+    '''
+    def get_usd(self):
+        deposit_ret = self.return_deposit_text()
+        self.ids.usd_price.text = "Fetching..."
+        self.refresh_price_async(deposit_ret[-1], cache=30)
+        return True
+    
+        
+    def get_usd(self, mu_coin, amount):
+        self.ids.usd_price.text = "Fetching..."
+    
+        def update_label():
+            if mu_coin in self.price_cache:
+                try:
+                    price = self.price_cache[mu_coin]["price"]
+                    usd_value = round(price * float(amount), 3)
+                    self.ids.usd_price.text = f"${usd_value}"
+                except Exception as e:
+                    print(f"Error in update_label: {e}")
+                    self.ids.usd_price.text = "Error"
+            else:
+                self.ids.usd_price.text = "Unavailable"
+    
+        self.refresh_price_async(mu_coin, cache=30, callback=update_label)
+    
+     
     def get_usd(self):
         deposit_ret = self.return_deposit_text()
         
@@ -350,6 +508,12 @@ class SubscribeContent(BoxLayout):
         self.ids.usd_price.text = '$' + str(round(float(self.price_cache[deposit_ret[-1]]["price"]) * float(deposit_ret[0]),3))
 
         return True
+    '''
+        
+    def get_usd(self, mu_coin, amount):
+        self.ids.usd_price.text = "Fetching..."
+        self.refresh_price_async(mu_coin, cache=30, callback=lambda: self.update_usd_label(mu_coin, amount))
+
     
 class PlanSubscribeContent(BoxLayout):
 
@@ -394,54 +558,7 @@ class PlanSubscribeContent(BoxLayout):
         self.menu.bind()
         self.ids.drop_item.current_item = IBCTokens.ibc_coins[0]
         self.parse_coin_deposit(self.ids.drop_item.current_item)
-
-    def refresh_price(self, mu_coin: str = "dvpn", cache: int = 30):
-        # Need check on cache or trought GetPrice api
-        # We don't need to call the price api if the cache is younger that 30s
-
-        if mu_coin not in self.price_cache or time.time() - self.price_cache[mu_coin]["time"] > cache:
-            response = self.price_api.get_usd(mu_coin)
-            self.price_cache[mu_coin] = {
-                "price": float(response['price']),
-                "time": time.time()
-            }
-
-    def set_item(self, text_item):
-        self.ids.drop_item.set_item(text_item)
-        self.ids.deposit.text = self.parse_coin_deposit(text_item)
-        self.get_usd(text_item)
-        try: 
-            self.menu.dismiss()
-        except TypeError as e:
-            print(str(e))
-
-    def parse_coin_deposit(self, mu_coin):
-        
-        # Save a copy, so we can edit the value without update the ui
-        price_text = self.price_text
-        # Parse all the coins without u-unit
-        #if mu_coin.startswith("u"):
-        #    if mu_coin in price_text:
-        #        price_text = price_text.replace(mu_coin, mu_coin.lstrip('u'))
-        #    mu_coin = mu_coin.lstrip('u')
-
-        self.refresh_price("dvpn", cache=30)
-
-        if mu_coin != "dvpn":
-            self.refresh_price(mu_coin, cache=30)
-
-        month = int(self.ids.slider1.value) # Months
-        if mu_coin == "dvpn":
-            value = float(price_text.rstrip(mu_coin).strip())
-        else:
-            value = round(float(price_text.rstrip("dvpn").strip()) * self.price_cache["dvpn"]["price"] / self.price_cache[mu_coin]["price"], 8)
-
-        print(f"mu_coin={mu_coin}, month={month}, value={value}, price_cache={self.price_cache}")
-
-        # display satoshis for BTC
-        self.ids.deposit.text = str(format(round(month * value, 8),'8f')) 
-        return self.ids.deposit.text
-
+        self.update_deposit_and_usd(self.ids.drop_item.current_item)
 
     def return_deposit_text(self):
         return (self.ids.deposit.text, self.nnodes)
@@ -505,18 +622,107 @@ class PlanSubscribeContent(BoxLayout):
                 self.menu.items = menu_items
                 self.set_item(IBCTokens.ibc_coins[0])
                 
+    def set_item(self, text_item):
+        self.ids.drop_item.set_item(text_item)
+    
+        def on_deposit_updated(deposit_text):
+            match = re.match(r"([0-9]+(?:\.[0-9]+)?)", deposit_text)
+            amt = match.groups()[0] if match else 0.0
+            self.get_usd(text_item, amt)
+    
+        self.parse_coin_deposit(text_item, callback=on_deposit_updated)
+    
+        try:
+            self.menu.dismiss()
+        except TypeError as e:
+            print(str(e))
                 
-    def get_usd(self, coin):
-        deposit_ret = self.return_deposit_text()
-        match = re.match(r"([0-9]+.[0-9]+)", deposit_ret[0], re.I)
-        if match:
-            amt    = match.groups()[0]
-        else:
-            amt    = 0.0
-            coin   = "dvpn"
-        
-        self.refresh_price(coin, cache=30)
-        self.ids.usd_price.text = '$' + str(round(float(self.price_cache[coin]["price"]) * float(amt),3))
+    def parse_coin_deposit(self, mu_coin, callback=None):
+        self.price_text_copy = self.price_text
+        self.selected_mu_coin = mu_coin
+        self.deposit_callback = callback
+    
+        def after_dvpn_fetched(dt):
+            if mu_coin != "dvpn":
+                self.refresh_price_async(mu_coin, cache=30, callback=self.after_both_prices_fetched)
+            else:
+                self.after_both_prices_fetched(None)
+    
+        self.refresh_price_async("dvpn", cache=30, callback=after_dvpn_fetched)
+    
+
+
+    def after_both_prices_fetched(self, dt):
+        mu_coin = self.selected_mu_coin
+        price_text = self.price_text_copy
+        month = int(self.ids.slider1.value)
+    
+        try:
+            if mu_coin == "dvpn":
+                value = float(price_text.rstrip(mu_coin).strip())
+            else:
+                value = round(
+                    float(price_text.rstrip("dvpn").strip()) *
+                    self.price_cache["dvpn"]["price"] /
+                    self.price_cache[mu_coin]["price"], 8
+                )
+    
+            deposit_text = str(format(round(month * value, 8), '8f'))
+            self.ids.deposit.text = deposit_text
+    
+            if self.deposit_callback:
+                self.deposit_callback(deposit_text)
+    
+        except KeyError as e:
+            print(f"Missing price data: {e}")
+            self.ids.deposit.text = "Error"
+            if self.deposit_callback:
+                self.deposit_callback("Error")
+
+    def refresh_price_async(self, mu_coin="dvpn", cache=30, callback=None):
+        def fetch_price():
+            if mu_coin not in self.price_cache or time.time() - self.price_cache[mu_coin]["time"] > cache:
+                try:
+                    response = self.price_api.get_usd(mu_coin)
+                    price = float(response['price'])
+                    self.price_cache[mu_coin] = {
+                        "price": price,
+                        "time": time.time()
+                    }
+                except Exception as e:
+                    print(f"Error fetching price: {e}")
+            if callback:
+                Clock.schedule_once(callback, 0)
+        Thread(target=fetch_price, daemon=True).start()
+                            
+
+    def get_usd(self, mu_coin, amount):
+        self.ids.usd_price.text = "Fetching..."
+        match = re.match(r"([0-9]+(?:\.[0-9]+)?)", amount)
+        amount = match.groups()[0] if match else 0.0
+    
+        def update_label(dt):
+            if mu_coin in self.price_cache:
+                try:
+                    price = self.price_cache[mu_coin]["price"]
+                    usd_value = round(price * float(amount), 3)
+                    self.ids.usd_price.text = f"${usd_value}"
+                except Exception as e:
+                    print(f"Error in update_label: {e}")
+                    self.ids.usd_price.text = "Error"
+            else:
+                self.ids.usd_price.text = "Unavailable"
+    
+        self.refresh_price_async(mu_coin, cache=30, callback=update_label)
+    
+    # used for slider's on_touch_move
+    def update_deposit_and_usd(self, coin):
+        def on_deposit_updated(deposit_text):
+            match = re.match(r"([0-9]+(?:\.[0-9]+)?)", deposit_text)
+            amt = match.groups()[0] if match else 0.0
+            self.get_usd(coin, amt)
+    
+        self.parse_coin_deposit(coin, callback=on_deposit_updated)
                 
     def get_font(self):
         Config = MeileGuiConfig()
@@ -1907,7 +2113,7 @@ class NodeCarousel(MDBoxLayout):
     protocol        = StringProperty()
     version         = StringProperty()
     handshake       = StringProperty()
-    health_check    = StringProperty()
+    health_check    = StringProperty("Checking...")
     isp_type        = StringProperty()
     node_formula    = StringProperty()
     votes           = StringProperty()
@@ -1948,7 +2154,8 @@ class NodeCarousel(MDBoxLayout):
             self.protocol        = node[NodeKeys.NodesInfoKeys[13]]
             self.version         = node[NodeKeys.NodesInfoKeys[14]]
             self.handshake       = str(node[NodeKeys.NodesInfoKeys[12]])
-            self.health_check    = self.GetHealthCheck(node[NodeKeys.NodesInfoKeys[1]])
+            #self.health_check    = self.GetHealthCheck(node[NodeKeys.NodesInfoKeys[1]])
+            Thread(target=self.run_health_check_async, args=(self.address,), daemon=True).start()
             self.isp_type        = node[NodeKeys.NodesInfoKeys[15]] if node[NodeKeys.NodesInfoKeys[15]] else "Unknown" 
             self.node_formula    = str(node[NodeKeys.NodesInfoKeys[18]]) if node[NodeKeys.NodesInfoKeys[18]] else "NULL"
             self.votes           = str(node[NodeKeys.NodesInfoKeys[17]]) if node[NodeKeys.NodesInfoKeys[17]] else "0"
@@ -1970,7 +2177,10 @@ class NodeCarousel(MDBoxLayout):
         elif text == "subscribe":
             return Config.resource_path(MeileColors.SUBSCRIBE_BUTTON)
             
-    
+    def run_health_check_async(self, address):
+        result = self.GetHealthCheck(address)
+        Clock.schedule_once(lambda dt: setattr(self, 'health_check', result))
+        
     def GetHealthCheck(self, address):
         try:
             Request = HTTPRequests.MakeRequest(TIMEOUT=2.7)
@@ -1978,19 +2188,15 @@ class NodeCarousel(MDBoxLayout):
             r = http.get(HTTParams.HEALTH_CHECK % address)
             health_check = r.json()['result']
             print(health_check)
-            if 'status' in health_check:
-                if health_check['status'] != 1:
-                    return "Failed"
-            if "info_fetch_error" in health_check:
+            if 'status' in health_check and health_check['status'] != 1:
                 return "Failed"
-            elif "config_exchange_error" in health_check:
+            if any(k in health_check for k in [
+                "info_fetch_error", "config_exchange_error", "location_fetch_error"
+            ]):
                 return "Failed"
-            elif "location_fetch_error" in health_check:
-                return "Failed"
-            else:
-                return "Passed"
+            return "Passed"
         except:
-            return "Error"    
+            return "Error"   
         
     def get_realtime_of_node(self, naddress):   
         
