@@ -528,6 +528,7 @@ class HTTParams():
 class IBCTokens():
     
     SATOSHI  = 1000000
+    SATOSHI_BTC = 100000000
     
     # IBC Tokens
     IBCSCRT  = 'ibc/31FEE1A2A9F9C01113F90BD0BBCCE8FD6BBB8585FAF109A2101827DD1D5B95B8'
@@ -561,13 +562,14 @@ class IBCTokens():
                     'xmr'  : 'monero',
                     'ltc'  : 'litecoin',
                     'doge' : 'dogecoin',
-                    'arrr' : 'pirate-chain'}
+                    'arrr' : 'pirate-chain',
+                    'dash' : 'dash'}
     NOWCOINS     = ["firo", "beam", "pivx", "zec", "sol"]
-    BTCPAYCOINS  = ["xmr", "btc", "ltc", "doge"]
+    BTCPAYCOINS  = ["xmr", "btc", "ltc", "doge", "dash"]
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
-    VERSION = "v2.1.3"
+    VERSION = "2.2.2"
     BUILD   = "1722988800718"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"
