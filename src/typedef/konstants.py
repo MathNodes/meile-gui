@@ -563,8 +563,23 @@ class IBCTokens():
                     'ltc'  : 'litecoin',
                     'doge' : 'dogecoin',
                     'arrr' : 'pirate-chain',
-                    'dash' : 'dash'}
-    NOWCOINS     = ["firo", "beam", "pivx", "zec", "sol"]
+                    'dash' : 'dash',
+                    'dash' : 'dash',
+                    'kmd'  : 'komodo',
+                    'dgb'  : 'digibyte',
+                    'ada'  : 'cardano',
+                    'inj'  : 'injective-protocol',
+                    'bch'  : 'bitcoin-cash',
+                    'dot'  : 'polkadot',
+                    'epic' : 'epic-cash',
+                    'xno'  : 'nano',
+                    'xaut' : 'tether-gold',
+                    'eth'  : 'ethereum'}
+    
+    NOWCOINS     = ["firo", "beam", "pivx", "zec", "dcr", "epic",
+                    "bch", "kmd", "xno", "sol", "dgb", "xaut", "eth",
+                    "ada", "inj", "dot" ]
+    
     BTCPAYCOINS  = ["xmr", "btc", "ltc", "doge", "dash"]
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
