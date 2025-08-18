@@ -566,15 +566,27 @@ class IBCTokens():
                     'doge' : 'dogecoin',
                     'arrr' : 'pirate-chain',
                     'dcr'  : 'decred',
-                    'dash' : 'dash'}
+                    'dash' : 'dash',
+                    'kmd'  : 'komodo',
+                    'dgb'  : 'digibyte',
+                    'ada'  : 'cardano',
+                    'inj'  : 'injective-protocol',
+                    'bch'  : 'bitcoin-cash',
+                    'dot'  : 'polkadot',
+                    'epic' : 'epic-cash',
+                    'xno'  : 'nano',
+                    'xaut' : 'tether-gold',
+                    'eth'  : 'ethereum'}
     
-    NOWCOINS     = ["firo", "beam", "pivx", "zec", "dcr", "sol"]
+    NOWCOINS     = ["firo", "beam", "pivx", "zec", "dcr", "epic",
+                    "bch", "kmd", "xno", "sol", "dgb", "xaut", "eth",
+                    "ada", "inj", "dot" ]
     BTCPAYCOINS  = ["xmr", "btc", "ltc", "doge", "dash"]
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
-    VERSION = "v2.2.1"
-    BUILD = "1754283526567"
+    VERSION = "v2.2.3"
+    BUILD = "1754982586486"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"
     FailedHealthCheck = "Failed Sentinel Health Check"
@@ -620,6 +632,12 @@ class NodeKeys():
     FinalSubsKeys = [SubsInfoKeys[0], NodesInfoKeys[0],SubsInfoKeys[4],SubsInfoKeys[5], SubsInfoKeys[7], NodesInfoKeys[4], "Allocated", "Consumed", NodesInfoKeys[13],SubsInfoKeys[2],SubsInfoKeys[6]]
     NodeVersions  = [str(item).zfill(3) for item in range(70,1000)]
     Nodetypes = ['residential', 'business', 'hosting', 'edu']
+
+
+
+
+
+
 
 
 
