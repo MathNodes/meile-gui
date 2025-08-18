@@ -590,8 +590,6 @@ class PlanSubscribeContent(BoxLayout):
 
     def get_usd(self, mu_coin, amount):
         self.ids.usd_price.text = "Fetching..."
-        match = re.match(r"([0-9]+(?:\.[0-9]+)?)", amount)
-        amount = match.groups()[0] if match else 0.0
     
         def update_label(dt):
             if mu_coin in self.price_cache:
