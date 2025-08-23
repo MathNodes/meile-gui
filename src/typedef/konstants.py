@@ -584,12 +584,13 @@ class IBCTokens():
                     "bch", "kmd", "xno", "sol", "dgb", "xaut", "eth",
                     "ada", "inj", "dot" ]
     BTCPAYCOINS  = ["xmr", "btc", "ltc", "doge", "dash"]
+    PRIVACYCOINS = ["arrr", "firo", "pivx"]
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
     
 class TextStrings():
     dash = "-"
-    VERSION = "v2.2.4"
-    BUILD = "17554796643"
+    VERSION = "v2.2.5"
+    BUILD = "17559240933"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"
     FailedHealthCheck = "Failed Sentinel Health Check"

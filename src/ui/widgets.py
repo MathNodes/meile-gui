@@ -495,7 +495,7 @@ class PlanSubscribeContent(BoxLayout):
                         "text": f"{i}",
                         "height": dp(56),
                         "on_release": lambda x=f"{i}": self.set_item(x),
-                    } for i in ["arrr", "firo"]  
+                    } for i in IBCTokens.PRIVACYCOINS  
                 ]
                 self.menu.items = menu_items
                 self.set_item("arrr")
@@ -1224,12 +1224,12 @@ class PlanRow(MDGridLayout):
         elif subscribe_dialog.pay_with == "pirate":
             
             
-            if mu_coin == "arrr":
+            if mu_coin in ["arrr", "pivx"]:
             
-                zaddress = self.check_invoice_status_pirate(address=True)
+                zaddress = self.check_invoice_status_pirate(address=True, coin=mu_coin)
                 
                 price_api = GetPriceAPI()
-                arrrusd = price_api.get_usd("arrr")
+                arrrusd = price_api.get_usd(mu_coin)
                 cost = usd*ConfParams.BTCPAYADJ
                 total_arrr = round(float(cost) / float(arrrusd['price']),2)
                 
@@ -1241,11 +1241,11 @@ class PlanRow(MDGridLayout):
                     
                 self.invoice_content = QRDialogContent()
                 self.invoice_content.ids.zaddress_field.text = zaddress
-                self.invoice_content.ids.price_field.text = f"{total_arrr} ARRR"
+                self.invoice_content.ids.price_field.text = f"{total_arrr} {mu_coin}"
     
                 # Generate QR Code
                 QRcode = QRCode()
-                self.invoice_content.ids.qr_img.source = QRcode.generate_qr_code(zaddress, "arrr") 
+                self.invoice_content.ids.qr_img.source = QRcode.generate_qr_code(zaddress, mu_coin) 
     
                 self.dialog = MDDialog(
                     title="Waiting for invoice to be paid...",
@@ -1263,7 +1263,7 @@ class PlanRow(MDGridLayout):
                 )
                 self.dialog.open()
                 yield 0.6
-                self.start_payment_thread_pirate(total_arrr)
+                self.start_payment_thread_pirate(total_arrr, mu_coin)
                 
             elif mu_coin == "firo":
                 zaddress = self.check_invoice_status_firo(address=True)
@@ -1532,8 +1532,8 @@ class PlanRow(MDGridLayout):
             print("Payment process was canceled.")
             Clock.schedule_once(lambda dt: self.update_ui_after_payment(True), 0)
          
-    def pay_meile_plan_with_pirate(self, arrr):
-        print(f"Method: 'pay_meile_plan_with_pirate', arrr: {arrr}")
+    def pay_meile_plan_with_pirate(self, arrr, coin):
+        print(f"Method: 'pay_meile_plan_with_pirate', {coin}: {arrr}")
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         buyer = mw.address
         
@@ -1542,7 +1542,7 @@ class PlanRow(MDGridLayout):
         
         while not self.stop_event.is_set():
             sleep(10)
-            self.check_invoice_status_pirate(invoice=True, arrr=arrr)
+            self.check_invoice_status_pirate(invoice=True, arrr=arrr, coin=coin)
             
             if self.invoice_result['success']:
                 self.stop_event.set()
@@ -1599,9 +1599,9 @@ class PlanRow(MDGridLayout):
         self.invoice_thread.start()
         Clock.schedule_interval(self.check_thread_status, 0.1)
         
-    def start_payment_thread_pirate(self, arrr):
+    def start_payment_thread_pirate(self, arrr, coin):
         self.stop_event.clear()
-        self.invoice_thread = Thread(target=lambda: self.pay_meile_plan_with_pirate(arrr))
+        self.invoice_thread = Thread(target=lambda: self.pay_meile_plan_with_pirate(arrr, coin))
         self.invoice_thread.start()
         Clock.schedule_interval(self.check_thread_status, 0.1)
     
@@ -1651,7 +1651,7 @@ class PlanRow(MDGridLayout):
             #print(self.fetched_invoice)
             self.invoice_result = {"success" : True, "id": self.now_status['payment_id'] }
           
-    def check_invoice_status_pirate(self, address=False, invoice=False, arrr=0):
+    def check_invoice_status_pirate(self, address=False, coin="arrr", invoice=False, arrr=0):
         Request = HTTPRequests.MakeRequest(TIMEOUT=120)
         http = Request.hadapter()
         USERNAME       = scrtsxx.PLANUSERNAME
@@ -1662,7 +1662,10 @@ class PlanRow(MDGridLayout):
                 data = {'address' : f"{self.zaddress}",
                         'conf'    : conf}
                 print(data)
-                endpoint = '/v1/pirate/getbalance'
+                if coin == "arrr":
+                    endpoint = '/v1/pirate/getbalance'
+                elif coin == "pivx":
+                    endpoint = '/v1/pivx/getbalance'
                 response = http.post(HTTParams.PLAN_API + endpoint, json=data, auth=HTTPBasicAuth(USERNAME, PASSWORD))
                 self.zaddress_balance = float(response.json()['result'])
                 
@@ -1678,7 +1681,10 @@ class PlanRow(MDGridLayout):
             print("Getting new pirate chain address...")
 
             try: 
-                endpoint = '/v1/pirate/newaddress'
+                if coin == "arrr":
+                    endpoint = '/v1/pirate/newaddress'
+                elif coin == "pivx":
+                    endpoint = '/v1/pivx/newaddress'
                 response = http.get(HTTParams.PLAN_API + endpoint, auth=HTTPBasicAuth(USERNAME, PASSWORD))
                 self.zaddress = response.json()['result']
                 return self.zaddress
@@ -1694,16 +1700,12 @@ class PlanRow(MDGridLayout):
                     
             elif self.mempool and self.zaddress_balance < arrr:
                 remaining_amt = float(arrr) - float(self.zaddress_balance)
-                self.dialog.title = "Deposit detected, but not full amount... waiting for remaining balance..."
-                #self.invoice_content.ids.price_field.text = f"{remaining_amt} ARRR"
-                self.invoice_content.ids.status.text = "Deposit detected, but not full amount... waiting for remaining balance..."
+                Clock.schedule_once(lambda dt: self.update_payment_ui(remaining_amt, coin))                
                 check_balance(0)
                 
             else:
-                self.dialog.title = "Deposit detected... waiting for confirmations..."
-                self.invoice_content.ids.status.text = "Deposit detected... waiting for confirmations..."
                 remaining_amt = float(arrr) - float(self.zaddress_balance)
-                #self.invoice_content.ids.price_field.text = f"{remaining_amt} ARRR"
+                Clock.schedule_once(lambda dt: self.update_payment_ui(remaining_amt, coin))
                 check_balance(1)
                 if self.zaddress_balance >= arrr:
                     self.invoice_result = {"success" : True, "id": self.zaddress_balance }
@@ -1753,26 +1755,26 @@ class PlanRow(MDGridLayout):
                     
             elif self.mempool and self.saddress_unconfirmed_balance+self.saddress_confirmed_balance < firo:  
                 remaining_amt = float(firo) - (float(self.saddress_unconfirmed_balance) + float(self.saddress_confirmed_balance))
-                Clock.schedule_once(lambda dt: self.update_payment_ui(remaining_amt))
+                Clock.schedule_once(lambda dt: self.update_payment_ui(remaining_amt, "firo"))
                 check_balance()
                 
             else:
                 remaining_amt = float(firo) - (float(self.saddress_unconfirmed_balance) + float(self.saddress_confirmed_balance))
-                Clock.schedule_once(lambda dt: self.update_payment_ui(remaining_amt))
+                Clock.schedule_once(lambda dt: self.update_payment_ui(remaining_amt, "firo"))
                 check_balance()
                 if self.saddress_confirmed_balance >= firo:
                     self.invoice_result = {"success" : True, "id": self.saddress_confirmed_balance }
     
-    def update_payment_ui(self, remaining_amt):
+    def update_payment_ui(self, remaining_amt, coin):
         if remaining_amt > 0:
             self.dialog.title = "Deposit detected, but not full amount... waiting for remaining balance..."
-            self.invoice_content.ids.price_field.text = f"{remaining_amt} firo"
+            self.invoice_content.ids.price_field.text = f"{remaining_amt} {coin}"
             self.invoice_content.ids.status.text = "Deposit detected, but not full amount... waiting for remaining balance..."
             
         else:
             self.dialog.title = "Deposit detected... waiting for confirmations..."
             self.invoice_content.ids.status.text = "Deposit detected... waiting for confirmations..."
-            self.invoice_content.ids.price_field.text = f"{remaining_amt} firo"
+            self.invoice_content.ids.price_field.text = f"{remaining_amt} {coin}"
             
     def update_ui_after_payment(self, canceled):
         if canceled:
