@@ -17,7 +17,7 @@ from json.decoder import JSONDecodeError
 from conf.meile_config import MeileGuiConfig
 from typedef.konstants import IBCTokens, ConfParams, HTTParams, MEILE_PLAN_WALLET, Arch
 from adapters import HTTPRequests, DNSRequests
-from cli.v2ray import V2RayHandler, V2RayConfiguration
+from cli.v2ray import V2RayHandler, V2RayConfiguration, V2RayFragmentConfiguration
 from helpers.wireguard import WgKey
 
 import base64
@@ -642,8 +642,9 @@ class HandleWalletFunctions():
         confile = path.join(ConfParams.KEYRINGDIR, "connect.log")
         conndesc = open(confile, 'w')
 
-        self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
-        self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
+        self.RPC      = CONFIG['network'].get('rpc', HTTParams.RPC)
+        self.GRPC     = CONFIG['network'].get('grpc', HTTParams.GRPC)
+        self.FRAGMENT = bool(int(CONFIG['network'].get('fragment',"0")))
         grpcaddr, grpcport = self.GRPC.split(":")
 
         kr = self.__keyring(PASSWORD)
@@ -947,15 +948,25 @@ class HandleWalletFunctions():
                 print("vmess_address", vmess_address)
                 print("vmess_uid", f"{uid_16}")
                 print("vmess_transport", vmess_transports[decode[-1]])
-
-                v2ray_config = V2RayConfiguration(
-                    api_port=api_port,
-                    vmess_port=vmess_port,
-                    vmess_address=vmess_address,
-                    vmess_uid=f"{uid_16}",
-                    vmess_transport=vmess_transports[decode[-1]],
-                    proxy_port=1080
-                )
+                
+                if self.FRAGMENT:
+                    v2ray_config = V2RayFragmentConfiguration(
+                        api_port=api_port,
+                        vmess_port=vmess_port,
+                        vmess_address=vmess_address,
+                        vmess_uid=f"{uid_16}",
+                        vmess_transport=vmess_transports[decode[-1]],
+                        proxy_port=1080
+                    )
+                else:
+                    v2ray_config = V2RayConfiguration(
+                        api_port=api_port,
+                        vmess_port=vmess_port,
+                        vmess_address=vmess_address,
+                        vmess_uid=f"{uid_16}",
+                        vmess_transport=vmess_transports[decode[-1]],
+                        proxy_port=1080
+                    )
                 # ConfParams.KEYRINGDIR (.meile-gui)
                 config_file = path.join(ConfParams.KEYRINGDIR, "v2ray_config.json")
                 if path.isfile(config_file) is True:

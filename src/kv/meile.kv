@@ -366,47 +366,30 @@ WindowManager:
                 with_previous: True
                 on_release: root.set_previous_screen() 
 
-<SettingsScreen>
+<SettingsScreen>:
     name: "settings"
-    MDBoxLayout:
-        orientation: "vertical"
-        padding: 50
-        spacing: 10
-
+    FloatLayout:
+    	padding: 20
+        # SETTINGS label centered at the top
         MDLabel:
-            padding: 50
-            font_name: "Roboto-Bold"
             text: "SETTINGS"
+            font_name: "Roboto-Bold"
             font_size: "30sp"
-            size_hint_y: .1
-            pos_hint: { "center_x": .9, "top": .3}
+            size_hint: None, None
+            height: sp(50)  # Set fixed height for label
+            width: sp(250)
+            pos_hint: { "center_x": 0.5, "top": 0.95}  # Center horizontally, align at the top
             theme_text_color: "Custom"
             text_color: get_color_from_hex("#fcb711")
-        MDLabel:
-        
-        #GridLayout:
-        #    padding: 1
-        #    cols: 2
-        #    row_force_default: True
-        #    row_default_height: 5
 
-        #    MDLabel:
-        #        font_name: "Roboto-Bold"
-        #        text: "RPC"
-        #        font_size: "20sp"
-        #        size_hint_x: None
-        #        width: sp(250)
-
-         #   MDDropDownItem:
-         #       id: rpc_drop_item
-         #       text: root.get_config('rpc')
-         #       on_release: root.rpc_menu.open()
-
-        GridLayout:
-            padding: 1
-            cols: 2
-            row_force_default: True
-            row_default_height: 5
+        # GRPC Section
+        BoxLayout:
+            orientation: "horizontal"
+            spacing: dp(10)
+            padding: [20,0,0,0]
+            size_hint_y: None
+            height: sp(50)
+            pos_hint: {"center_x": 0.5, "top": 0.85}  # Position it below "SETTINGS"
 
             MDLabel:
                 font_name: "Roboto-Bold"
@@ -414,17 +397,34 @@ WindowManager:
                 font_size: "20sp"
                 size_hint_x: None
                 width: sp(250)
+                valign: 'middle'
+                halign: 'left'
+                padding: [20,0,0,0]
 
             MDDropDownItem:
                 id: grpc_drop_item
                 text: root.get_config('grpc')
                 on_release: root.grpc_menu.open()
+                size_hint_y: None
+                height: sp(50)
+                valign: 'middle'
+                halign: 'left'
 
-        GridLayout:
-            padding: 1
-            cols: 2
-            row_force_default: True
-            row_default_height: 5
+        # API Section
+        BoxLayout:
+            orientation: "horizontal"
+            spacing: dp(10)
+            padding: [20,0,0,0]
+            size_hint_y: None
+            height: sp(50)
+            pos_hint: {"center_x": 0.5, "top": 0.80}  # Position below GRPC section
+            # Striping
+            #canvas.before:
+            #    Color:
+            #        rgba: get_color_from_hex('#2a2a2a')
+            #    Rectangle:
+            #        pos: self.pos
+            #        size: self.size
 
             MDLabel:
                 font_name: "Roboto-Bold"
@@ -432,17 +432,21 @@ WindowManager:
                 font_size: "20sp"
                 size_hint_x: None
                 width: sp(250)
+                padding: [20,0,0,0]
 
             MDDropDownItem:
                 id: api_drop_item
                 text: root.get_config('api')
                 on_release: root.api_menu.open()
 
-        GridLayout:
-            padding: 1
-            cols: 2
-            row_force_default: True
-            row_default_height: 5
+        # MathNodes API Section
+        BoxLayout:
+            orientation: "horizontal"
+            spacing: dp(10)
+            padding: [20,0,0,0]
+            size_hint_y: None
+            height: sp(50)
+            pos_hint: {"center_x": 0.5, "top": 0.75}
 
             MDLabel:
                 font_name: "Roboto-Bold"
@@ -450,17 +454,21 @@ WindowManager:
                 font_size: "20sp"
                 size_hint_x: None
                 width: sp(250)
+                padding: [20,0,0,0]
 
             MDDropDownItem:
                 id: mnapi_drop_item
                 text: root.get_config('mnapi')
                 on_release: root.mnapi_menu.open()
-        
-        GridLayout:
-            padding: 1
-            cols: 2
-            row_force_default: True
-            row_default_height: 5
+
+        # Cache Server Section
+        BoxLayout:
+            orientation: "horizontal"
+            spacing: dp(10)
+            padding: [20,0,0,0]
+            size_hint_y: None
+            height: sp(50)
+            pos_hint: {"center_x": 0.5, "top": 0.70}
 
             MDLabel:
                 font_name: "Roboto-Bold"
@@ -468,17 +476,21 @@ WindowManager:
                 font_size: "20sp"
                 size_hint_x: None
                 width: sp(250)
+                padding: [20,0,0,0]
 
             MDDropDownItem:
                 id: cache_drop_item
                 text: root.get_config('cache')
                 on_release: root.cache_menu.open()
-                
-        GridLayout:
-            padding: 1
-            cols: 2
-            row_force_default: True
-            row_default_height: 5
+
+        # Default Gigabytes Section
+        BoxLayout:
+            orientation: "horizontal"
+            spacing: dp(10)
+            padding: [20,0,0,0]
+            size_hint_y: None
+            height: sp(50)
+            pos_hint: {"center_x": 0.5, "top": 0.65}
 
             MDLabel:
                 font_name: "Roboto-Bold"
@@ -486,58 +498,93 @@ WindowManager:
                 font_size: "20sp"
                 size_hint_x: None
                 width: sp(250)
+                padding: [20,0,0,0]
 
             MDDropDownItem:
                 id: gb_drop_item
                 text: root.get_config('gb')
-                on_release: root.gb_menu.open()      
+                on_release: root.gb_menu.open()
 
-        GridLayout
-            padding: 1
-            rows: 1
-            cols: 4
-            row_force_default: True
-            row_default_height: 5
-            
+        # Resolvers Section (Multiple dropdowns in a row)
+        BoxLayout:
+            orientation: "horizontal"
+            spacing: dp(10)
+            padding: [20,0,0,0]
+            size_hint_y: None
+            height: sp(50)
+            pos_hint: {"center_x": 0.5, "top": 0.60}
+
             MDLabel:
                 font_name: "Roboto-Bold"
                 text: "Resolvers"
                 font_size: "20sp"
                 size_hint_x: None
                 width: sp(250)
-            
+                padding: [20,0,0,0]
+
             MDDropDownItem:
                 id: resolver1_drop_item
                 text: root.get_config('resolver1')
                 on_release: root.resolver1_menu.open()
-            
+
             MDDropDownItem:
                 id: resolver2_drop_item
                 text: root.get_config('resolver2')
                 on_release: root.resolver2_menu.open()
-            
+
             MDDropDownItem:
                 id: resolver3_drop_item
                 text: root.get_config('resolver3')
                 on_release: root.resolver3_menu.open()
-                
-        GridLayout
-            padding: 1
-            rows: 1
-            cols: 1
-            row_force_default: True
-            row_default_height: 5
-                    
+
+        # Read More Section
+        BoxLayout:
+            orientation: "horizontal"
+            spacing: dp(10)
+            padding: [20,0,0,0]
+            size_hint_y: None
+            height: sp(50)
+            pos_hint: {"center_x": 0.5, "top": 0.55}
+
             HyperlinkLabel:
                 text: "Read more"
                 url: "https://dvpn.cc/resolvers"
-            
-            
+
+        # V2Ray Fragment Section (Fixed alignment)
+        BoxLayout:
+            orientation: "horizontal"
+            spacing: dp(10)
+            padding: [20,0,0,0]
+            size_hint_y: None
+            height: dp(48)
+            pos_hint: {"center_x": 0.5, "top": 0.50}
+
+            MDLabel:
+                font_name: "Roboto-Bold"
+                text: "V2Ray Fragment"
+                font_size: "20sp"
+                size_hint: None, None
+                width: sp(250)
+                pos_hint: {"center_y": 0.5}
+                halign: "left"
+                valign: "middle"
+                padding: [20,0,0,0]
+
+            Check:
+                id: fragment
+                size_hint: None, None
+                size: dp(32), dp(32)
+                pos_hint: {"center_y": 0.5}
+                active: root.get_config('fragment')
+                on_active: root.on_checkbox_active(*args)
+
+        # Save Button
         MDRaisedButton:
             text: "SAVE"
             font_size: "18sp"
-            pos_hint: { "center_x": .9, "top": .5}
-            on_release: root.SaveOptions()   
+            pos_hint: { "center_x": .9, "top": 0.1}
+            on_release: root.SaveOptions()
+
              
 
 <WalletRestore>:

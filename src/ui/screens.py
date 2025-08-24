@@ -2256,28 +2256,12 @@ class SettingsScreen(Screen):
         self.RESOLVER2 = config['network'].get('resolver2', '')
         self.RESOLVER3 = config['network'].get('resolver3', '')
         self.GB        = config['subscription'].get('gb', '5')
+        self.FRAGMENT  = config['network'].get('fragment', '0')
         
         self.MeileConfig = MeileGuiConfig()
 
         # I've tried to write a single code with the iteration of 'what' [grpc, rpc]
         # But doesn't work because the code at runtime will pass the loop value and not a copy one
-        '''
-        self.rpc_menu = MDDropdownMenu(
-            caller=self.ids.rpc_drop_item,
-            items=[
-                {
-                    "viewclass": "IconListItem",
-                    "icon": "server-security",
-                    "text": f"{i}",
-                    "height": dp(56),
-                    "on_release": lambda x=f"{i}": self.set_item(x, "rpc"),
-                } for i in params.RPCS
-            ],
-            position="center",
-            width_mult=50,
-        )
-        self.rpc_menu.bind()
-        '''
         
         self.grpc_menu = MDDropdownMenu(
             caller=self.ids.grpc_drop_item,
@@ -2291,7 +2275,7 @@ class SettingsScreen(Screen):
                 } for i in params.GRPCS
             ],
             position="center",
-            width_mult=50,
+            width_mult=5,
         )
         self.grpc_menu.bind()
 
@@ -2307,7 +2291,7 @@ class SettingsScreen(Screen):
                 } for i in params.APIS_URL
             ],
             position="center",
-            width_mult=50,
+            width_mult=5,
         )
         self.api_menu.bind()
 
@@ -2323,7 +2307,7 @@ class SettingsScreen(Screen):
                 } for i in params.MNAPIS
             ],
             position="center",
-            width_mult=50,
+            width_mult=7,
         )
         self.mnapi_menu.bind()
         
@@ -2339,7 +2323,7 @@ class SettingsScreen(Screen):
                 } for i in params.NODE_APIS
             ],
             position="center",
-            width_mult=50,
+            width_mult=10,
         )
         self.cache_menu.bind()
         
@@ -2355,7 +2339,7 @@ class SettingsScreen(Screen):
                 } for i in cparams.DEFAULT_SUBS
             ],
             position="center",
-            width_mult=50,
+            width_mult=5,
         )
         self.gb_menu.bind()
         
@@ -2371,7 +2355,7 @@ class SettingsScreen(Screen):
                 } for i in params.RESOLVERS
             ],
             position="center",
-            width_mult=50,
+            width_mult=5,
         )
         self.resolver1_menu.bind()
         
@@ -2387,7 +2371,7 @@ class SettingsScreen(Screen):
                 } for i in params.RESOLVERS
             ],
             position="center",
-            width_mult=50,
+            width_mult=5,
         )
         self.resolver2_menu.bind()
         
@@ -2403,7 +2387,7 @@ class SettingsScreen(Screen):
                 } for i in params.RESOLVERS
             ],
             position="center",
-            width_mult=50,
+            width_mult=5,
         )
         self.resolver3_menu.bind()
 
@@ -2412,6 +2396,8 @@ class SettingsScreen(Screen):
         if what in self.SettingsNetworkMenu:
             getattr(self.ids, f"{what}_drop_item").set_item(config['network'][what])
             return config['network'][what]
+        elif what == "fragment":
+            return bool(int(config['network'].get(what, "0")))
         else:
             getattr(self.ids, f"{what}_drop_item").set_item(config['subscription'][what])
             return config['subscription'][what]
@@ -2442,6 +2428,9 @@ class SettingsScreen(Screen):
         what = "gb"
         config.set('subscription', what, str(getattr(self, what.upper())))
         
+        what = "fragment"
+        config.set('network', what, '1' if self.ids.fragment.active else '0')
+        
         with open(self.MeileConfig.CONFFILE, 'w', encoding="utf-8") as f:
             config.write(f)
             
@@ -2461,6 +2450,12 @@ class SettingsScreen(Screen):
             toml.dump(config, file)
 
         self.set_previous_screen()
+        
+    def on_checkbox_active(self, checkbox_instance, value):
+        if value:  
+            print("Fragment is CHECKED")
+        else:
+            print("Fragment is UNCHECKED")
 
     def set_previous_screen(self):
         Meile.app.root.remove_widget(self)
