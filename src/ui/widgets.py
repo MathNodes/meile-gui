@@ -2222,7 +2222,7 @@ class NodeCarousel(MDBoxLayout):
                                 text="OK",
                                 theme_text_color="Custom",
                                 text_color=Meile.app.theme_cls.primary_color,
-                                on_release=self.closeDialog
+                                on_release=self.closeDialogReturnToSubscriptions
                             ),])
                     self.dialog.open()
     
