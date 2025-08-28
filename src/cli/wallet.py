@@ -776,7 +776,7 @@ class HandleWalletFunctions():
             # data length must be 17 bytes...
             #key = base64.b64encode(bytes(0x01) + uid_16b.bytes).decode("utf-8")
             key = base64.b64encode(uid_16b).decode('utf-8')
-         # Sometime we get a random "code":4,"message":"invalid signature ...``
+        # Sometime we get a random "code":4,"message":"invalid signature ...``
         for _ in range(0, 10):  # bumped as 3 wasn't enough
             sk = ecdsa.SigningKey.from_string(sdk._account.private_key, curve=ecdsa.SECP256k1, hashfunc=hashlib.sha256)
 
@@ -892,6 +892,7 @@ class HandleWalletFunctions():
                 if pltfrm == Arch.LINUX:
                     child = pexpect.spawn(f"pkexec sh -c 'ip link delete {iface}; wg-quick up {config_file}'")
                     child.expect(pexpect.EOF)
+                    sleep(7)
                 elif pltfrm == Arch.OSX:
                     connectBASH = [sentinel_connect_bash]
                     proc2 = subprocess.Popen(connectBASH)
