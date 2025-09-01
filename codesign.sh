@@ -16,8 +16,8 @@ echo "Hard signing Meile.app..."
 codesign --force --options runtime --timestamp --sign "Developer ID Application: Pool Stats LLC (VQYLU43P5V)" /Users/freqnik/eclipse-workspace/Meile2.0/dist/Meile/Meile.app
 
 sleep 2
-echo "Signing v2ray..."
-codesign --force --options runtime --timestamp --sign "Developer ID Application: Pool Stats LLC (VQYLU43P5V)" /Users/freqnik/eclipse-workspace/Meile2.0/dist/Meile/Meile.app/Contents/Resources/bin/v2ray
+echo "Signing xray..."
+codesign --force --options runtime --timestamp --sign "Developer ID Application: Pool Stats LLC (VQYLU43P5V)" /Users/freqnik/eclipse-workspace/Meile2.0/dist/Meile/Meile.app/Contents/Resources/bin/xray
 
 sleep 2
 echo "Signing wireguard-go.."
