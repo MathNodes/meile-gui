@@ -17,4 +17,9 @@ def format_byte_size(size, decimals=2, binary_system=True):
 
 
 
- 
+def is_ecryptfs_mounted():
+    with open('/proc/mounts', 'r') as f:
+        for line in f:
+            if 'ecryptfs' in line:
+                return True
+    return False

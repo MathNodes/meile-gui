@@ -19,8 +19,8 @@ if [[ ${STATE} = "up" ]]; then
         echo ${PRIMARY_IFACE} > /home/${USER}/.meile-gui/iface
 
         # start v2ray
-        echo "Running v2ray: /home/${USER}/.meile-gui/bin/v2ray run -c /home/${USER}/.meile-gui/v2ray_config.json &"
-        /home/${USER}/.meile-gui/bin/v2ray run -c /home/${USER}/.meile-gui/v2ray_config.json &
+        echo "Running xray: /home/${USER}/.meile-gui/bin/v2ray run -c /home/${USER}/.meile-gui/v2ray_config.json &"
+        /home/${USER}/.meile-gui/bin/xray run -c /home/${USER}/.meile-gui/v2ray_config.json &
         sleep 3
         
         # get v2ray proxy IP
@@ -77,7 +77,7 @@ else
         
         # terminate the v2ray setup
         pkill -9 tun2socks
-        pkill -9 v2ray
+        pkill -9 xray
 	    sleep 5
 
         # bring down tun interface

@@ -17,7 +17,7 @@ from json.decoder import JSONDecodeError
 from conf.meile_config import MeileGuiConfig
 from typedef.konstants import IBCTokens, ConfParams, HTTParams, MEILE_PLAN_WALLET, Arch
 from adapters import HTTPRequests, DNSRequests
-from cli.v2ray import V2RayHandler, V2RayConfiguration
+from cli.v2ray import V2RayHandler, V2RayConfiguration, V2RayFragmentConfiguration
 from helpers.wireguard import WgKey
 
 import base64
@@ -304,7 +304,7 @@ class HandleWalletFunctions():
         return(False, "Tx error")
     """
 
-    def send_2plan_wallet(self, KEYNAME, plan_id, DENOM, amount_required, tax: bool=False):
+    def send_2plan_wallet(self, KEYNAME, plan_id, DENOM, amount_required, tax: bool=False, bal=None):
         if not KEYNAME:
             return (False, 1337)
 
@@ -330,8 +330,11 @@ class HandleWalletFunctions():
                 message = "Wallet not found on blockchain. Please verify you have sent coins to your wallet to activate it. Then try your subscription again"
                 return (False, {'hash' : None, 'success' : False, 'message' : message})
                 
-        balance = self.get_balance(sdk._account.address)
-        print(balance)
+        if not tax:        
+            balance = self.get_balance(sdk._account.address)
+            print(balance)
+        else:
+            balance = bal
 
         amount_required = int(amount_required)  # Just in case was passed as str
 
@@ -431,7 +434,8 @@ class HandleWalletFunctions():
     # This method should be renamed as: 'subscribe to node'
     def subscribe(self, KEYNAME, NODE, DEPOSIT, GB, hourly):
         if not KEYNAME:
-            return (False, 1337)
+            self.returncode = (False, 1337)
+            return
         
         print("Deposit/denom")
         print(DEPOSIT)
@@ -465,13 +469,13 @@ class HandleWalletFunctions():
                 
         balance = self.get_balance(sdk._account.address)
         
-        amount_required = float(DEPOSIT.replace(DENOM, ""))
+        amount_required = float(DEPOSIT.replace(DENOM, "")) * IBCTokens.SATOSHI
         if DENOM == "udvpn":
-            tax = round(float(amount_required * 0.025),2) if round(float(amount_required * 0.025),2) >= 5 * IBCTokens.SATOSHI else 5 * IBCTokens.SATOSHI
+            tax = round(float(amount_required * ConfParams.SUBFEE),2) if round(float(amount_required * ConfParams.SUBFEE),2) >= 5 * IBCTokens.SATOSHI else 5 * IBCTokens.SATOSHI
         else:
-            tax = round(float(amount_required * 0.025),2)
+            tax = round(float(amount_required * ConfParams.SUBFEE),2)
         try:
-            ret = self.send_2plan_wallet(KEYNAME, 31337, DENOM, tax, tax=True)
+            ret = self.send_2plan_wallet(KEYNAME, 31337, DENOM, tax, tax=True, bal=balance)
             print(ret[0])
         except:
             pass
@@ -542,10 +546,11 @@ class HandleWalletFunctions():
         KEYNAME = CONFIG['wallet'].get('keyname', '')
 
         if not KEYNAME:
-            return {'hash' : "0x0", 'success' : False, 'message' : "ERROR Retrieving Keyname"}
+            self.unsub_result = {'hash' : "0x0", 'success' : False, 'message' : "ERROR Retrieving Keyname"}
         
         self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
         self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
+        self.FRAGMENT = bool(int(CONFIG['network'].get('fragment',"0")))
         grpcaddr, grpcport = self.GRPC.split(":")
 
         kr = self.__keyring(PASSWORD)
@@ -556,17 +561,17 @@ class HandleWalletFunctions():
         # SDK raises ConnectionError, otherwise it is a grpc module exception
         except ConnectionError:
             message = "gRPC unresponsive. Try again later or switch gRPCs."
-            return {'hash' : "0x0", 'success' : False, 'message' : message}
+            self.unsub_result = {'hash' : "0x0", 'success' : False, 'message' : message}
             
         except grpc._channel._InactiveRpcError as e:
             status_code = e.code()
             
             if status_code == StatusCode.NOT_FOUND:
                 message = "Wallet not found on blockchain. Please verify you have sent coins to your wallet to activate it. Then try your subscription again"
-                return {'hash' : "0x0", 'success' : False, 'message' : message}
+                self.unsub_result = {'hash' : "0x0", 'success' : False, 'message' : message}
             else:
                 message = "gRPC unresponsive. Try again later or switch gRPCs."
-                return {'hash' : "0x0", 'success' : False, 'message' : message}
+                self.unsub_result = {'hash' : "0x0", 'success' : False, 'message' : message}
                 
         try: 
             sub = sdk.subscriptions.QuerySubscription(subscription_id=int(subId))
@@ -575,7 +580,7 @@ class HandleWalletFunctions():
                 mospy.exceptions.clients.NodeTimeoutException) as e:
             print(str(e))
             message = "gRPC Error!"
-            return {'hash' : "0x0", 'success' : False, 'message' : message}
+            self.unsub_result = {'hash' : "0x0", 'success' : False, 'message' : message}
         
         DENOM = sub.deposit.denom
         print(f"Sub DENOM: {DENOM}")
@@ -609,7 +614,7 @@ class HandleWalletFunctions():
             else:
                 message = "Error connecting to gRPC server. Try your request again later."
 
-            return {'hash' : "0x0", 'success' : False, 'message' : message}
+            self.unsub_result = {'hash' : "0x0", 'success' : False, 'message' : message}
 
         if tx.get("log", None) is None:
             try: 
@@ -618,15 +623,15 @@ class HandleWalletFunctions():
                     mospy.exceptions.clients.NodeException,
                     mospy.exceptions.clients.NodeTimeoutException)  as e:
                 print(str(e))
-                return {'hash' : "0x0", 'success' : False, 'message' : "GRPC Error"}
+                self.unsub_result ={'hash' : "0x0", 'success' : False, 'message' : "GRPC Error"}
             tx_height = tx_response.get("txResponse", {}).get("height", 0) if isinstance(tx_response, dict) else tx_response.tx_response.height
 
         message = f"Unsubscribe from Subscription ID: {subId}, was successful at Height: {tx_height}" if tx.get("log", None) is None else tx["log"]
-        return {'hash' : tx.get("hash", "0x0"), 'success' : tx.get("log", None) is None, 'message' : message}
+        self.unsub_result = {'hash' : tx.get("hash", "0x0"), 'success' : tx.get("log", None) is None, 'message' : message}
     
             
     
-    def connect(self, ID, address, type):
+    def connect(self, ID, address, type, deposit):
        
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
@@ -642,6 +647,7 @@ class HandleWalletFunctions():
 
         self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
         self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
+        self.FRAGMENT = bool(int(CONFIG['network'].get('fragment',"0")))
         grpcaddr, grpcport = self.GRPC.split(":")
 
         kr = self.__keyring(PASSWORD)
@@ -665,21 +671,21 @@ class HandleWalletFunctions():
                 message = "gRPC Error!"
                 self.connected = {"v2ray_pid" : None, "result" : False, "status" : message}
                 return
-                
-        try: 
-            sub = sdk.subscriptions.QuerySubscription(subscription_id=int(ID))
-        except (mospy.exceptions.clients.TransactionTimeout,
-                mospy.exceptions.clients.NodeException,
-                mospy.exceptions.clients.NodeTimeoutException) as e:
-            print(str(e))
-            conndesc.write("GRPC Error... Exiting")
-            conndesc.flush()
-            conndesc.close()
-            self.connected = {"v2ray_pid" : None,  "result": False, "status" : "GRPC Error"}
-            return
         
-        DENOM = sub.deposit.denom if sub.deposit.denom != '' else "udvpn"
-        print(f"Sub DENOM: {DENOM}")
+        regex_denom = r'^([\d\.]+)(.*)$'
+        regres = re.match(regex_denom, deposit)
+                
+        if regres:
+            denom = regres.group(2)
+
+            for k,v in IBCTokens.UNITTOKEN.items():
+                if denom == v:
+                    udenom = k
+            for k,v in IBCTokens.IBCUNITTOKEN.items():
+                if udenom == k:
+                    DENOM = v
+        else:
+            DENOM = "udvpn"
         
         if DENOM == IBCTokens.IBCUNITTOKEN['uatom']:
             fee = int(ConfParams.FEE / 10)
@@ -772,7 +778,7 @@ class HandleWalletFunctions():
             # data length must be 17 bytes...
             #key = base64.b64encode(bytes(0x01) + uid_16b.bytes).decode("utf-8")
             key = base64.b64encode(uid_16b).decode('utf-8')
-         # Sometime we get a random "code":4,"message":"invalid signature ...``
+        # Sometime we get a random "code":4,"message":"invalid signature ...``
         for _ in range(0, 10):  # bumped as 3 wasn't enough
             sk = ecdsa.SigningKey.from_string(sdk._account.private_key, curve=ecdsa.SECP256k1, hashfunc=hashlib.sha256)
 
@@ -888,6 +894,7 @@ class HandleWalletFunctions():
                 if pltfrm == Arch.LINUX:
                     child = pexpect.spawn(f"pkexec sh -c 'ip link delete {iface}; wg-quick up {config_file}'")
                     child.expect(pexpect.EOF)
+                    sleep(7)
                 elif pltfrm == Arch.OSX:
                     connectBASH = [sentinel_connect_bash]
                     proc2 = subprocess.Popen(connectBASH)
@@ -946,14 +953,24 @@ class HandleWalletFunctions():
                 print("vmess_uid", f"{uid_16}")
                 print("vmess_transport", vmess_transports[decode[-1]])
 
-                v2ray_config = V2RayConfiguration(
-                    api_port=api_port,
-                    vmess_port=vmess_port,
-                    vmess_address=vmess_address,
-                    vmess_uid=f"{uid_16}",
-                    vmess_transport=vmess_transports[decode[-1]],
-                    proxy_port=1080
-                )
+                if self.FRAGMENT:
+                    v2ray_config = V2RayFragmentConfiguration(
+                        api_port=api_port,
+                        vmess_port=vmess_port,
+                        vmess_address=vmess_address,
+                        vmess_uid=f"{uid_16}",
+                        vmess_transport=vmess_transports[decode[-1]],
+                        proxy_port=1080
+                    )
+                else:
+                    v2ray_config = V2RayConfiguration(
+                        api_port=api_port,
+                        vmess_port=vmess_port,
+                        vmess_address=vmess_address,
+                        vmess_uid=f"{uid_16}",
+                        vmess_transport=vmess_transports[decode[-1]],
+                        proxy_port=1080
+                    )
                 # ConfParams.KEYRINGDIR (.meile-gui)
                 config_file = path.join(ConfParams.KEYRINGDIR, "v2ray_config.json")
                 if path.isfile(config_file) is True:

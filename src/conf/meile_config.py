@@ -58,6 +58,7 @@ class MeileGuiConfig():
             self.CONFIG.set('subscription', 'gb', '5')
             FILE = open(self.CONFFILE, 'w')    
             self.CONFIG.write(FILE)
+            FILE.close()
         
         if not self.CONFIG.has_section('network'):
             self.CONFIG.add_section('network')
@@ -66,8 +67,10 @@ class MeileGuiConfig():
             self.CONFIG.set('network', 'api', 'https://api.sentinel.mathnodes.com')
             self.CONFIG.set('network', 'mnapi', 'https://aimokoivunen.mathnodes.com')
             self.CONFIG.set('network', 'cache', 'https://metabase.bluefren.xyz/api/public/card/4a891454-51da-462a-a5df-e85ca17c05d5/query/json')
+            self.CONFIG.set('network', 'fragment', '0')
             FILE = open(self.CONFFILE, 'w')    
             self.CONFIG.write(FILE)
+            FILE.close()
         else:
             if not self.CONFIG.has_option('network', 'grpc'):
                 self.CONFIG.set('network', 'grpc', 'grpc.ungovernable.dev:443')
@@ -83,9 +86,12 @@ class MeileGuiConfig():
                 self.CONFIG.set('network', 'resolver2', 'uncensoreddns-ipv4')
             if not self.CONFIG.has_option('network', 'resolver3'):
                 self.CONFIG.set('network', 'resolver3', 'doh-ibksturm')
+            if not self.CONFIG.has_option('network', 'fragment'):
+                self.CONFIG.set('network', 'fragment', '0')
             
             FILE = open(self.CONFFILE, 'w')    
-            self.CONFIG.write(FILE) 
+            self.CONFIG.write(FILE)
+            FILE.close() 
             
            
         return self.CONFIG

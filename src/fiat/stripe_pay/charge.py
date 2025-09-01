@@ -1,6 +1,8 @@
 import stripe
 import requests 
-import fiat.stripe_pay.scrtsxx as scrtsxx
+from fiat.stripe_pay.dist import scrtsxx 
+
+from typedef.konstants import IBCTokens
 
 stripe.api_key=scrtsxx.SECRET_KEY
 
@@ -41,7 +43,6 @@ class StripePayments():
 class HotwalletFuncs():
     def get_balance(self, address):
         APIURL = "https://api.sentinel.mathnodes.com"
-        SATOSHI = 1000000
         endpoint = "/bank/balances/" + address
         CoinDict = {'dvpn' : 0, 'scrt' : 0, 'dec'  : 0, 'atom' : 0, 'osmo' : 0}
         try:
@@ -56,15 +57,15 @@ class HotwalletFuncs():
         try:
             for coin in coinJSON['result']:
                 if "udvpn" in coin['denom']:
-                    CoinDict['dvpn'] = round(float(float(coin['amount']) / SATOSHI),4)
+                    CoinDict['dvpn'] = round(float(float(coin['amount']) / IBCTokens.SATOSHI),4)
                 elif IBCSCRT in coin['denom']:
-                    CoinDict['scrt'] = round(float(float(coin['amount']) / SATOSHI),4)
+                    CoinDict['scrt'] = round(float(float(coin['amount']) / IBCTokens.SATOSHI),4)
                 elif IBCDEC in coin['denom']:
-                    CoinDict['dec'] = round(float(float(coin['amount']) / SATOSHI),4)
+                    CoinDict['dec'] = round(float(float(coin['amount']) / IBCTokens.SATOSHI),4)
                 elif IBCATOM in coin['denom']:
-                    CoinDict['atom'] = round(float(float(coin['amount']) / SATOSHI),4)
+                    CoinDict['atom'] = round(float(float(coin['amount']) / IBCTokens.SATOSHI),4)
                 elif IBCOSMO in coin['denom']:
-                    CoinDict['osmo'] = round(float(float(coin['amount']) / SATOSHI),4)
+                    CoinDict['osmo'] = round(float(float(coin['amount']) / IBCTokens.SATOSHI),4)
         except Exception as e:
             print(str(e))
             return None
