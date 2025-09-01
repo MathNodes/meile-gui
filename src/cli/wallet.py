@@ -647,6 +647,7 @@ class HandleWalletFunctions():
 
         self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
         self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
+        self.FRAGMENT = bool(int(CONFIG['network'].get('fragment',"0")))
         grpcaddr, grpcport = self.GRPC.split(":")
 
         kr = self.__keyring(PASSWORD)
