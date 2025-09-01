@@ -14,6 +14,7 @@ class V2RayHandler():
     
     def __init__(self, script, **kwargs):
         self.v2ray_script = script
+        print(f"v2ray_script: {self.v2ray_script}")
         print(self.v2ray_script)
     
     def fork_v2ray(self):
@@ -42,7 +43,154 @@ class V2RayHandler():
         proc_out,proc_err = proc2.communicate()
         return proc2.returncode
     
-    
+@dataclass
+class V2RayFragmentConfiguration:
+    api_port: int
+
+    vmess_port: int
+    vmess_address: str
+    vmess_uid: str
+    vmess_transport: str
+
+    proxy_port: int = 1080
+
+    def get(self) -> dict:
+        return {
+            "api": {
+                "services": [
+                    "StatsService"
+                ],
+                "tag": "api"
+            },
+            "inbounds": [
+                {
+                    "listen": "127.0.0.1",
+                    "port": self.api_port,
+                    "protocol": "dokodemo-door",
+                    "settings": {
+                        "address": "127.0.0.1"
+                    },
+                    "tag": "api"
+                },
+                {
+                    "listen": "127.0.0.1",
+                    "port": self.proxy_port,
+                    "protocol": "socks",
+                    "settings": {
+                        "ip": "127.0.0.1",
+                        "udp": True
+                    },
+                    "sniffing": {
+                        "destOverride": [
+                            "http",
+                            "tls"
+                        ],
+                        "enabled": True
+                    },
+                    "tag": "proxy"
+                }
+            ],
+          "log": {
+            "loglevel": "none"
+          },
+          "outbounds": [
+            {
+              "mux": {
+                "concurrency": -1,
+                "enabled": False
+              },
+              "protocol": "vmess",
+              "settings": {
+                "vnext": [
+                  {
+                    "address": self.vmess_address,
+                    "port": self.vmess_port,
+                    "users": [
+                      {
+                        "alterId": 0,
+                        "id": self.vmess_uid,
+                        "level" : 8,
+                       "security": "chacha20-poly1305"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "streamSettings": {
+                "grpcSettings": {
+                  "authority": "",
+                  "health_check_timeout": 20,
+                  "idle_timeout": 60,
+                  "multiMode": False,
+                  "serviceName": ""
+                },
+                "network": self.vmess_transport,
+                "sockopt": {
+                  "dialerProxy": "fragment",
+                  "tcpKeepAliveIdle": 100,
+                  "tcpNoDelay": True
+                }
+              },
+              "tag": "vmess"
+            },
+            {
+              "tag": "fragment",
+              "protocol": "freedom",
+              "settings": {
+                "domainStrategy": "AsIs",
+                "fragment": {
+                  "packets": "1-3",
+                  "length": "1-3",
+                  "interval": "2-8"
+                }
+              },
+              "streamSettings": {
+                "sockopt": {
+                  "tcpKeepAliveIdle": 100,
+                  "tcpNoDelay": True
+                }
+              }
+            },
+            {
+              "protocol": "freedom",
+              "settings": {
+                "domainStrategy": "UseIP"
+              },
+              "tag": "direct"
+            },
+            {
+              "protocol": "blackhole",
+              "settings": {
+                "response": {
+                  "type": "http"
+                }
+              },
+              "tag": "block"
+            }
+          ],
+          "policy": {
+            "levels": {
+              "0": {
+                "downlinkOnly": 0,
+                "uplinkOnly": 0
+              }
+            },
+            "system": {
+              "statsOutboundDownlink": True,
+              "statsOutboundUplink": True
+            }
+          },
+          "routing": {
+            "rules": [
+              {
+                "inboundTag": ["api"],
+                "outboundTag": "api",
+                "type": "field"
+              }
+            ]
+          },
+              "stats": {}
+        }    
     
 @dataclass
 class V2RayConfiguration:

@@ -581,6 +581,7 @@ class IBCTokens():
                     "ada", "inj", "dot" ]
     
     BTCPAYCOINS  = ["xmr", "btc", "ltc", "doge", "dash"]
+    PRIVACYCOINS = ["arrr", "firo", "pivx"]
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
