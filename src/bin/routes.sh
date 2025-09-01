@@ -2,11 +2,11 @@
 STATE="$1"
 
 if [[ ${STATE} == "up" ]]; then
-	${HOME}/.meile-gui/bin/v2ray run -c ${HOME}/.meile-gui/v2ray_config.json &
+	${HOME}/.meile-gui/bin/xray run -c ${HOME}/.meile-gui/v2ray_config.json &
 	sleep 2
 	curl --preproxy socks5://localhost:1080 -v https://icanhazip.com
-	#sleep 3
 	NIC=`route get default | grep "interface" | cut -d ":" -f 2 | tr -d " "`
+	GATEWAY=`route get default | grep "gateway" | cut -d ":" -f 2 | tr -d " "`
 	${HOME}/.meile-gui/bin/tun2socks  -device utun123 -proxy socks5://127.0.0.1:1080 -interface $NIC &
 	sleep 5
 	ifconfig utun123 198.18.0.1 198.18.0.1 up
@@ -33,5 +33,5 @@ else
 	route delete -net 198.18.0.0/15 198.18.0.1
 	ifconfig utun123 198.18.0.1 198.18.0.1 down
 	pkill -9 tun2socks
-	pkill -9 v2ray
+	pkill -9 xray
 fi
