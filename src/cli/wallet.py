@@ -986,9 +986,22 @@ class HandleWalletFunctions():
 
                 tuniface = False
                 v2ray_handler = V2RayHandler(f"{v2ray_tun2routes_connect_bash} up")
-                v2ray_handler.start_daemon()
-                sleep(23)
-                
+                if not v2ray_handler.start_daemon():
+                    try:
+                        conndesc.write("Error connecting to V2Ray node...\n")
+                        conndesc.flush()
+                        v2ray_handler.v2ray_script = f"{v2ray_tun2routes_connect_bash} down"
+                        v2ray_handler.kill_daemon()
+                        conndesc.close()
+                    except Exception as e:
+                        print(str(e))
+
+                    self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid,  "result": False, "status": f"Error connecting to v2ray node: {tuniface}"}
+                    print(self.connected)
+                    # os x
+                    chdir(MeileConfig.BASEDIR)
+                    return
+                    
                 if pltfrm != Arch.OSX:
                     for iface in psutil.net_if_addrs().keys():
                         if "tun" in iface:
