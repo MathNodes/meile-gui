@@ -49,7 +49,7 @@ from cli.sentinel import NodeTreeData
 from cli.btcpay import BTCPayDB
 import main.main as Meile
 from adapters import HTTPRequests
-from ui.interfaces import TXContent, ConnectionDialog, QRDialogContent
+from ui.interfaces import TXContent, ConnectionDialog, QRDialogContent, QRDialogZanoContent
 from coin_api.get_price import GetPriceAPI
 from adapters.ChangeDNS import ChangeDNS
 from kivy.uix.recyclegridlayout import RecycleGridLayout
@@ -149,7 +149,7 @@ class RatingContent(MDBoxLayout):
 class HyperlinkLabel(ButtonBehavior, MDLabel, HoverBehavior):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.bind(size=self.update_size)
+        #self.bind(size=self.update_size)
         self.color = get_color_from_hex(MeileColors.MEILE)
         self.cursor = 'arrow'
 
@@ -1304,6 +1304,46 @@ class PlanRow(MDGridLayout):
                 self.dialog.open()
                 yield 0.6
                 self.start_payment_thread_firo(total_arrr)
+                
+            elif mu_coin in ['zano', 'fusd']:
+                zaddress = IBCTokens.ZANO_WALLET
+                
+                price_api = GetPriceAPI()
+                arrrusd = price_api.get_usd(mu_coin)
+                cost = usd*ConfParams.BTCPAYADJ
+                total_arrr = round(float(cost) / float(arrrusd['price']),4)
+                
+                if self.dialog:
+                    self.dialog.dismiss()
+                    
+                self.dialog = None
+                    
+                self.invoice_content = QRDialogZanoContent()
+                self.invoice_content.ids.zaddress_field.text = zaddress
+                self.invoice_content.ids.price_field.text = f"{total_arrr} {mu_coin}"
+                self.invoice_content.ids.comment_field.text = self.ADDRESS
+    
+                # Generate QR Code
+                QRcode = QRCode()
+                self.invoice_content.ids.qr_img.source = QRcode.generate_qr_code(zaddress, mu_coin) 
+    
+                self.dialog = MDDialog(
+                    title="Waiting for invoice to be paid...",
+                    type="custom",
+                    content_cls=self.invoice_content,
+                    md_bg_color=get_color_from_hex(MeileColors.BLACK),
+                    buttons=[
+                            MDFlatButton(
+                                text="CANCEL",
+                                theme_text_color="Custom",
+                                text_color=get_color_from_hex(MeileColors.MEILE),
+                                on_release=self.cancel_payment
+                            ),
+                        ]
+                )
+                self.dialog.open()
+                yield 0.6
+                self.start_payment_thread_zano(total_arrr, mu_coin)
             
         elif subscribe_dialog.pay_with == "now":
             if self.dialog:
@@ -1335,6 +1375,45 @@ class PlanRow(MDGridLayout):
 
         # Run Subscription method
         # self.subscribe
+        
+    ''' In the future the following two routines should be merged
+        into one with conditional logic to check which payment
+        processor we are using
+    '''
+                
+    def start_payment_thread(self, usd):
+        self.stop_event.clear()
+        self.invoice_thread = Thread(target=lambda: self.pay_meile_plan_with_btcpay(usd))
+        self.invoice_thread.start()
+        Clock.schedule_interval(self.check_thread_status, 0.1)
+        
+    def start_payment_thread_now(self, usd, coin):
+        self.stop_event.clear()
+        self.invoice_thread = Thread(target=lambda: self.pay_meile_plan_with_now(usd, coin))
+        self.invoice_thread.start()
+        Clock.schedule_interval(self.check_thread_status, 0.1)
+        
+    def start_payment_thread_pirate(self, arrr, coin):
+        self.stop_event.clear()
+        self.invoice_thread = Thread(target=lambda: self.pay_meile_plan_with_pirate(arrr, coin))
+        self.invoice_thread.start()
+        Clock.schedule_interval(self.check_thread_status, 0.1)
+    
+    def start_payment_thread_firo(self, firo):
+        self.stop_event.clear()
+        self.invoice_thread = Thread(target=lambda: self.pay_meile_plan_with_firo(firo))
+        self.invoice_thread.start()
+        Clock.schedule_interval(self.check_thread_status, 0.1)
+        
+    def start_payment_thread_zano(self, zano, coin):
+        self.stop_event.clear()
+        self.invoice_thread = Thread(target=lambda: self.pay_meile_plan_with_zano(zano, coin))
+        self.invoice_thread.start()
+        Clock.schedule_interval(self.check_thread_status, 0.1)
+        
+    def check_thread_status(self, dt):
+        if self.stop_event.is_set() and not self.invoice_thread.is_alive():
+            return False  # Stop checking once the thread has finished
 
     @delayable
     def pay_meile_plan_with_wallet(self, deposit, mu_coin, usd, on_success: callable):
@@ -1582,38 +1661,31 @@ class PlanRow(MDGridLayout):
             print("Payment process was canceled.")
             Clock.schedule_once(lambda dt: self.update_ui_after_payment(True), 0)
             
-    ''' In the future the following two routines should be merged
-        into one with conditional logic to check which payment
-        processor we are using
-    '''
-                
-    def start_payment_thread(self, usd):
-        self.stop_event.clear()
-        self.invoice_thread = Thread(target=lambda: self.pay_meile_plan_with_btcpay(usd))
-        self.invoice_thread.start()
-        Clock.schedule_interval(self.check_thread_status, 0.1)
+    def pay_meile_plan_with_zano(self, zano, coin):
+        print(f"Method: 'pay_meile_plan_with_zano', {coin} : {zano}")
+        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
+        buyer = mw.address
         
-    def start_payment_thread_now(self, usd, coin):
-        self.stop_event.clear()
-        self.invoice_thread = Thread(target=lambda: self.pay_meile_plan_with_now(usd, coin))
-        self.invoice_thread.start()
-        Clock.schedule_interval(self.check_thread_status, 0.1)
+        self.saddress_confirmed_balance = 0
+        self.mempool = False
         
-    def start_payment_thread_pirate(self, arrr, coin):
-        self.stop_event.clear()
-        self.invoice_thread = Thread(target=lambda: self.pay_meile_plan_with_pirate(arrr, coin))
-        self.invoice_thread.start()
-        Clock.schedule_interval(self.check_thread_status, 0.1)
-    
-    def start_payment_thread_firo(self, firo):
-        self.stop_event.clear()
-        self.invoice_thread = Thread(target=lambda: self.pay_meile_plan_with_firo(firo))
-        self.invoice_thread.start()
-        Clock.schedule_interval(self.check_thread_status, 0.1)
+        while not self.stop_event.is_set():
+            sleep(10)
+            self.check_invoice_status_zano(invoice=True, zano=zano, coin=coin)
+            
+            if self.invoice_result['success']:
+                self.stop_event.set()
+                Clock.schedule_once(lambda dt: self.update_ui_after_payment(False), 0)
+                print(self.invoice_result)
+                return
         
-    def check_thread_status(self, dt):
-        if self.stop_event.is_set() and not self.invoice_thread.is_alive():
-            return False  # Stop checking once the thread has finished
+        if self.stop_event.is_set() and self.invoice_result['success']:
+            print("Invoice has been paid.")
+            Clock.schedule_once(lambda dt: self.update_ui_after_payment(False), 0)
+        elif self.stop_event.is_set():
+            print("Payment process was canceled.")
+            Clock.schedule_once(lambda dt: self.update_ui_after_payment(True), 0)
+        
     
     ''' In the future the following three routines should be merged
         into one with conditional logic to check which payment
@@ -1764,6 +1836,52 @@ class PlanRow(MDGridLayout):
                 check_balance()
                 if self.saddress_confirmed_balance >= firo:
                     self.invoice_result = {"success" : True, "id": self.saddress_confirmed_balance }
+    
+    def check_invoice_status_zano(self, address=False, coin="zano", invoice=False, zano=0):
+        THRESHOLD = 0.00001
+        Request = HTTPRequests.MakeRequest(TIMEOUT=120)
+        http = Request.hadapter()
+        USERNAME       = scrtsxx.PLANUSERNAME
+        PASSWORD       = scrtsxx.PLANPASSWORD
+        
+        def check_balance():
+            try: 
+                self.zheight = None
+                data = {'address' : f"{self.ADDRESS}",
+                        'coin'    : coin}
+                print(data)    
+                endpoint = '/v1/zano/gettxs'
+                response = http.post(HTTParams.PLAN_API + endpoint, json=data, auth=HTTPBasicAuth(USERNAME, PASSWORD))
+                print(response.json())
+                self.zaddress_balance = float(response.json()['result'])
+                
+                if response.json()['height']:
+                    self.zheight = int(response.json()['height'])
+                
+                if self.zaddress_balance > 0:
+                    self.mempool = True
+                else:
+                    self.mempool = False
+                    
+            except Exception as e:
+                print(str(e))
+                
+        if invoice == True:
+            if not self.mempool:
+                print(f"Checking txs of : {IBCTokens.ZANO_WALLET}")
+                check_balance()
+                    
+            elif self.mempool and self.zaddress_balance < zano:            
+                check_balance()
+                remaining_amt = round(float(zano) - float(self.zaddress_balance),4)
+                Clock.schedule_once(lambda dt: self.update_payment_ui(remaining_amt, coin))    
+                
+            else:
+                check_balance()
+                remaining_amt = round(float(zano) - float(self.zaddress_balance),4)
+                Clock.schedule_once(lambda dt: self.update_payment_ui(remaining_amt, coin))
+                if remaining_amt <= THRESHOLD and self.zheight and self.zheight != 0:
+                    self.invoice_result = {"success" : True, "id": self.zaddress_balance }
     
     def update_payment_ui(self, remaining_amt, coin):
         if remaining_amt > 0:
