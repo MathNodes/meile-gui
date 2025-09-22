@@ -112,4 +112,6 @@ class ConnectionDialog(MDBoxLayout):
 class QRDialogContent(MDBoxLayout):
     pass
 
+class QRDialogZanoContent(MDBoxLayout):
+    pass
 

@@ -899,9 +899,22 @@ class HandleWalletFunctions():
                     child = pexpect.spawn(f"pkexec sh -c 'ip link delete {iface}; wg-quick up {config_file}'")
                     child.expect(pexpect.EOF)
                 elif pltfrm == Arch.WINDOWS:
-                    wgup = [gsudo, MeileConfig.WIREGUARD_BIN, "/installtunnelservice", config_file]
+                    chdir(MeileConfig.BASEBINDIR)
+                    wg_bat = 'wg.bat'
+                    if not path.isfile(path.join(MeileConfig.BASEBINDIR, wg_bat)):
+                        service_name = "WireGuardTunnel$wg99"
+                        batfile = open(wg_bat, 'w')
+                        batfile.write('START "" /B %s /installtunnelservice %s\n' % (MeileConfig.WIREGUARD_BIN, config_file))
+                        batfile.write('timeout /t 3\n')
+                        batfile.write('START "" /B sc config %s start= demand\n' % service_name)
+                        batfile.write('timeout /t 1\n')
+                        batfile.flush()
+                        batfile.close()
+                    #wgup = [gsudo, MeileConfig.WIREGUARD_BIN, "/installtunnelservice", config_file]
+                    wgup = [gsudo, wg_bat]
                     wg_process = subprocess.Popen(wgup)
-                    sleep(15)
+                    sleep(5)
+                    chdir(MeileConfig.BASEDIR)
                 elif pltfrm == Arch.OSX:
                     pass
                     
@@ -920,6 +933,7 @@ class HandleWalletFunctions():
                 if len(decode) != 7:
                     self.connected = {"v2ray_pid" : None,  "result": False, "status" : f"Incorrect result size: {len(decode)}"}
                     print(self.connected)
+                    chdir(MeileConfig.BASEDIR)
                     return
 
                 vmess_address = socket.inet_ntoa(decode[0:4])
@@ -998,6 +1012,7 @@ class HandleWalletFunctions():
                     print(self.connected)
                     conndesc.write("Checking network connection...\n")
                     conndesc.flush()
+                    sleep(1)
                     self.get_ip_address()
                     conndesc.close()
                     chdir(MeileConfig.BASEDIR)
