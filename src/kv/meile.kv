@@ -504,6 +504,33 @@ WindowManager:
                 id: gb_drop_item
                 text: root.get_config('gb')
                 on_release: root.gb_menu.open()
+                
+        BoxLayout:
+            orientation: "horizontal"
+            spacing: dp(10)
+            padding: [20,0,0,0]
+            size_hint_y: None
+            height: sp(50)
+            pos_hint: {"center_x": 0.5, "top": 0.60}  # Position it below "SETTINGS"
+
+            MDLabel:
+                font_name: "Roboto-Bold"
+                text: "DNS"
+                font_size: "20sp"
+                size_hint_x: None
+                width: sp(250)
+                valign: 'middle'
+                halign: 'left'
+                padding: [20,0,0,0]
+
+            MDDropDownItem:
+                id: dns_drop_item
+                text: root.get_config('dns')
+                on_release: root.dns_menu.open()
+                size_hint_y: None
+                height: sp(50)
+                valign: 'middle'
+                halign: 'left'
 
         # Resolvers Section (Multiple dropdowns in a row)
         BoxLayout:
@@ -512,7 +539,7 @@ WindowManager:
             padding: [20,0,0,0]
             size_hint_y: None
             height: sp(50)
-            pos_hint: {"center_x": 0.5, "top": 0.60}
+            pos_hint: {"center_x": 0.5, "top": 0.55}
 
             MDLabel:
                 font_name: "Roboto-Bold"
@@ -544,7 +571,7 @@ WindowManager:
             padding: [20,0,0,0]
             size_hint_y: None
             height: sp(50)
-            pos_hint: {"center_x": 0.5, "top": 0.55}
+            pos_hint: {"center_x": 0.5, "top": 0.50}
 
             HyperlinkLabel:
                 text: "Read more"
@@ -557,7 +584,7 @@ WindowManager:
             padding: [20,0,0,0]
             size_hint_y: None
             height: dp(48)
-            pos_hint: {"center_x": 0.5, "top": 0.50}
+            pos_hint: {"center_x": 0.5, "top": 0.45}
 
             MDLabel:
                 font_name: "Roboto-Bold"
