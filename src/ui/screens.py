@@ -711,11 +711,11 @@ class MainWindow(Screen):
         self.menu.dismiss()
         if selection == self.MenuOptions[0]:
             self.Refresh()
+        elif selection == self.MenuOptions[1]:
+            pass    
         elif selection == self.MenuOptions[2]:
-            self.start_warp()
-        elif selection == self.MenuOptions[3]:
             self.start_dnscrypt()
-        elif selection == self.MenuOptions[4]:
+        elif selection == self.MenuOptions[3]:
             self.disconnect_from_node()
             if self.dnscrypt:
                 dnsproxy = dcp()
@@ -1126,13 +1126,15 @@ class MainWindow(Screen):
         
     @delayable        
     def change_dns(self):
+        MeileConfig = MeileGuiConfig()
+        config = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         yield 0.6
         if self.dialog:
             self.dialog.dismiss()
         self.add_loading_popup("DNS Resolver error... Switching to Cloudflare")
         yield 0.314
         
-        ChangeDNS(dns="1.1.1.1").change_dns()
+        ChangeDNS(dns=config['network']['dns']).change_dns()
         thread = Thread(target=lambda: self.nonblock_get_ip_address(self.get_ip_address))
         thread.start()
         self.remove_loading_widget(None)
@@ -2235,7 +2237,7 @@ class HelpScreen(Screen):
 
 class SettingsScreen(Screen):
     MeileConfig = MeileGuiConfig()
-    SettingsNetworkMenu = ["grpc", "api", "mnapi", "cache", "resolver1", "resolver2", "resolver3"]
+    SettingsNetworkMenu = ["grpc", "api", "mnapi", "cache", "dns", "resolver1", "resolver2", "resolver3"]
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -2257,6 +2259,7 @@ class SettingsScreen(Screen):
         self.RESOLVER3 = config['network'].get('resolver3', '')
         self.GB        = config['subscription'].get('gb', '5')
         self.FRAGMENT  = config['network'].get('fragment', '0')
+        self.DNS       = config['network'].get('dns', '1.1.1.1')
         
         self.MeileConfig = MeileGuiConfig()
 
@@ -2326,6 +2329,22 @@ class SettingsScreen(Screen):
             width_mult=10,
         )
         self.cache_menu.bind()
+        
+        self.dns_menu = MDDropdownMenu(
+            caller=self.ids.dns_drop_item,
+            items=[
+                {
+                    "viewclass": "IconListItem",
+                    "icon": "server-security",
+                    "text": f"{i['Country']}",
+                    "height": dp(56),
+                    "on_release": lambda x=f"{i}": self.set_item(x, "dns"),
+                } for i in params.DNSSERVERS
+            ],
+            position="center",
+            width_mult=5,
+        )
+        self.dns_menu.bind()
         
         self.gb_menu = MDDropdownMenu(
             caller=self.ids.gb_drop_item,
@@ -2410,6 +2429,11 @@ class SettingsScreen(Screen):
             getattr(self.ids, f"{what.lower()}_drop_item").set_item(text_item['Name'])
             setattr(self, what.upper(), text_item['url'])
             getattr(self, f"{what.lower()}_menu").dismiss()
+        elif what == self.SettingsNetworkMenu[4]:
+            text_item = json.loads(text_item.replace("'",'"'))
+            getattr(self.ids, f"{what.lower()}_drop_item").set_item(text_item['Country'])
+            setattr(self, what.upper(), text_item['ip'])
+            getattr(self, f"{what.lower()}_menu").dismiss()
         else:
             getattr(self.ids, f"{what.lower()}_drop_item").set_item(text_item)
             setattr(self, what.upper(), text_item)
@@ -2421,9 +2445,16 @@ class SettingsScreen(Screen):
     def SaveOptions(self):
         config = self.MeileConfig.read_configuration(self.MeileConfig.CONFFILE)
         for what in self.SettingsNetworkMenu:
+            '''
             if what == "grpc":
                 config.set('network', what, getattr(self, what.upper()))
+            '''
+            
             config.set('network', what, getattr(self, what.upper()))
+            if what == "dns":
+                print(getattr(self, what.upper()))
+                dns = ChangeDNS(dns=getattr(self, what.upper()))
+                dns.change_dns()
         
         what = "gb"
         config.set('subscription', what, str(getattr(self, what.upper())))

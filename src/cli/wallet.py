@@ -906,7 +906,9 @@ class HandleWalletFunctions():
                     self.connected = {"v2ray_pid" : None,  "result": True, "status" : iface}
                     conndesc.write("Checking network connection...\n")
                     conndesc.flush()
+                    sleep(1)
                     self.get_ip_address()
+                    sleep(1)
                     conndesc.close()
                     return
                 else:
@@ -1018,7 +1020,9 @@ class HandleWalletFunctions():
                     print(self.connected)
                     conndesc.write("Checking network connection...\n")
                     conndesc.flush()
+                    sleep(1)
                     self.get_ip_address()
+                    sleep(1)
                     conndesc.close()
                     # os x
                     chdir(MeileConfig.BASEDIR)
