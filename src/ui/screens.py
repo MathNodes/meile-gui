@@ -363,7 +363,7 @@ class MainWindow(Screen):
     menu = None
     MeileLand = None
     SortOptions = ['None', "Moniker", "Price"]
-    MenuOptions = ['Refresh', 'Sort', 'WARP', 'DNSCrypt', 'Exit']
+    MenuOptions = ['Refresh', 'Sort', 'DNSCrypt', 'Exit']
     Sort = SortOptions[1]
     MeileMap = None
     MeileMapBuilt = False
