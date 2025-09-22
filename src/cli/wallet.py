@@ -1009,6 +1009,7 @@ class HandleWalletFunctions():
                     print(self.connected)
                     conndesc.write("Checking network connection...\n")
                     conndesc.flush()
+                    sleep(1)
                     self.get_ip_address()
                     conndesc.close()
                     # os x

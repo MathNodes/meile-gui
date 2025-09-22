@@ -3,7 +3,7 @@ from kivymd.uix.floatlayout import MDFloatLayout
 from kivymd.uix.tab import MDTabsBase
 from kivy.uix.screenmanager import ScreenManager
 from kivymd.uix.relativelayout import MDRelativeLayout
-from kivy.properties import  StringProperty
+from kivy.properties import StringProperty
 from kivy.uix.behaviors import FocusBehavior
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.recyclegridlayout import RecycleGridLayout
@@ -109,4 +109,7 @@ class ConnectionDialog(MDBoxLayout):
     pass
 
 class QRDialogContent(MDBoxLayout):
+    pass
+
+class QRDialogZanoContent(MDBoxLayout):
     pass

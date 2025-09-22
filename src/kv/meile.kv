@@ -2697,3 +2697,52 @@ WindowManager:
         theme_text_color: "Custom"
         text_color: get_color_from_hex(MeileColors.MEILE)
         font_size: "16sp"
+        
+<QRDialogZanoContent>:
+    orientation: 'vertical'
+    spacing: "20dp"
+    padding: "20dp"
+    size_hint_y: None
+    height: "500sp"
+
+    Image:
+        id: qr_img
+        size_hint: None, None
+        size: "192dp", "192dp"
+        pos_hint: {'center_x': 0.5}
+
+    MDTextField:
+        id: zaddress_field
+        hint_text: "Address"
+        text: ''
+        readonly: True
+        selectable: True
+        mode: "rectangle"
+
+    MDTextField:
+        id: price_field
+        hint_text: "Amount"
+        text: ''
+        readonly: True
+        selectable: True
+        mode: "rectangle"
+    MDTextField:
+        id: comment_field
+        hint_text: "Comment"
+        text: ''
+        readonly: True
+        selectable: True
+        mode: "rectangle"
+    MDLabel:
+    	id: warning_comment
+    	text: "You must use a wallet that supports adding comments, such as Zano Mobile or Zano Desktop. Add the comment above to your transaction."
+	    theme_text_color: "Custom"
+	    text_color: get_color_from_hex("f42121")
+	    font_size: "13sp"
+    MDLabel:
+    MDLabel:
+    	id: status
+    	text: ""
+	    theme_text_color: "Custom"
+	    text_color: get_color_from_hex(MeileColors.MEILE)
+	    font_size: "16sp"

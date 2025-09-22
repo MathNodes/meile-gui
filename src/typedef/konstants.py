@@ -537,6 +537,8 @@ class IBCTokens():
     IBCOSMO  = 'ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518'
     IBCUNKWN = 'ibc/9BCB27203424535B6230D594553F1659C77EC173E36D9CF4759E7186EE747E84'
     
+    ZANO_WALLET = "ZxDEXCMwvpwirJujwjZExHfKFEqNjMWdjLw5MGYXa5KxScvcsr2BNGm8TFyk4mvFAhAPtWh54tadWNgS5CxPAqXX1fpoQLkJJ"
+    
     IBCCOINS     = [{'uscrt' : IBCSCRT}, {'uatom' : IBCATOM}, {'udec' : IBCDEC}, {'uosmo' : IBCOSMO}, {'uknwn' :IBCUNKWN}]
     UNITTOKEN    = {'uscrt' : 'scrt', 'uatom' : 'atom' , 'uosmo' : 'osmo', 'udec' : 'dec', 'udvpn' : 'dvpn', 'tsent' : 'tsent'}
     IBCUNITTOKEN = {'uscrt' : IBCSCRT, 'uatom' : IBCATOM , 'uosmo' : IBCOSMO, 'udec' : IBCDEC, 'udvpn' : 'udvpn', 'tsent' : 'tsent'}
@@ -574,14 +576,16 @@ class IBCTokens():
                     'epic' : 'epic-cash',
                     'xno'  : 'nano',
                     'xaut' : 'tether-gold',
-                    'eth'  : 'ethereum'}
+                    'eth'  : 'ethereum',
+                    'zano' : 'zano',
+                    'fusd' : 'freedom-dollar'}
     
     NOWCOINS     = ["firo", "beam", "pivx", "zec", "dcr", "epic",
                     "bch", "kmd", "xno", "sol", "dgb", "xaut", "eth",
                     "ada", "inj", "dot" ]
     
     BTCPAYCOINS  = ["xmr", "btc", "ltc", "doge", "dash"]
-    PRIVACYCOINS = ["arrr", "firo", "pivx"]
+    PRIVACYCOINS = ["arrr", "firo", "pivx", "zano", "fusd"]
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
