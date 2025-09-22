@@ -386,7 +386,7 @@ WindowManager:
         BoxLayout:
             orientation: "horizontal"
             spacing: dp(10)
-            padding: [20,0,0,0]
+            padding: [20,0,0,20]
             size_hint_y: None
             height: sp(50)
             pos_hint: {"center_x": 0.5, "top": 0.85}  # Position it below "SETTINGS"
@@ -410,21 +410,20 @@ WindowManager:
                 valign: 'middle'
                 halign: 'left'
 
-        # API Section
         BoxLayout:
             orientation: "horizontal"
             spacing: dp(10)
-            padding: [20,0,0,0]
+            padding: [20,0,0,20]
             size_hint_y: None
             height: sp(50)
             pos_hint: {"center_x": 0.5, "top": 0.80}  # Position below GRPC section
             # Striping
-            #canvas.before:
-            #    Color:
-            #        rgba: get_color_from_hex('#2a2a2a')
-            #    Rectangle:
-            #        pos: self.pos
-            #        size: self.size
+            canvas.before:
+                Color:
+                    rgba: get_color_from_hex('#2a2a2a')
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
 
             MDLabel:
                 font_name: "Roboto-Bold"
@@ -439,11 +438,11 @@ WindowManager:
                 text: root.get_config('api')
                 on_release: root.api_menu.open()
 
-        # MathNodes API Section
+        
         BoxLayout:
             orientation: "horizontal"
             spacing: dp(10)
-            padding: [20,0,0,0]
+            padding: [20,0,0,20]
             size_hint_y: None
             height: sp(50)
             pos_hint: {"center_x": 0.5, "top": 0.75}
@@ -461,14 +460,21 @@ WindowManager:
                 text: root.get_config('mnapi')
                 on_release: root.mnapi_menu.open()
 
-        # Cache Server Section
+        
         BoxLayout:
             orientation: "horizontal"
             spacing: dp(10)
-            padding: [20,0,0,0]
+            padding: [20,0,0,20]
             size_hint_y: None
             height: sp(50)
             pos_hint: {"center_x": 0.5, "top": 0.70}
+            # Striping
+            canvas.before:
+                Color:
+                    rgba: get_color_from_hex('#2a2a2a')
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
 
             MDLabel:
                 font_name: "Roboto-Bold"
@@ -483,11 +489,11 @@ WindowManager:
                 text: root.get_config('cache')
                 on_release: root.cache_menu.open()
 
-        # Default Gigabytes Section
+        
         BoxLayout:
             orientation: "horizontal"
             spacing: dp(10)
-            padding: [20,0,0,0]
+            padding: [20,0,0,20]
             size_hint_y: None
             height: sp(50)
             pos_hint: {"center_x": 0.5, "top": 0.65}
@@ -508,10 +514,17 @@ WindowManager:
         BoxLayout:
             orientation: "horizontal"
             spacing: dp(10)
-            padding: [20,0,0,0]
+            padding: [20,0,0,20]
             size_hint_y: None
             height: sp(50)
-            pos_hint: {"center_x": 0.5, "top": 0.60}  # Position it below "SETTINGS"
+            pos_hint: {"center_x": 0.5, "top": 0.60} 
+            # Striping
+            canvas.before:
+                Color:
+                    rgba: get_color_from_hex('#2a2a2a')
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
 
             MDLabel:
                 font_name: "Roboto-Bold"
@@ -532,11 +545,11 @@ WindowManager:
                 valign: 'middle'
                 halign: 'left'
 
-        # Resolvers Section (Multiple dropdowns in a row)
+        
         BoxLayout:
             orientation: "horizontal"
             spacing: dp(10)
-            padding: [20,0,0,0]
+            padding: [20,0,0,20]
             size_hint_y: None
             height: sp(50)
             pos_hint: {"center_x": 0.5, "top": 0.55}
@@ -564,11 +577,11 @@ WindowManager:
                 text: root.get_config('resolver3')
                 on_release: root.resolver3_menu.open()
 
-        # Read More Section
+        
         BoxLayout:
             orientation: "horizontal"
             spacing: dp(10)
-            padding: [20,0,0,0]
+            padding: [20,0,0,20]
             size_hint_y: None
             height: sp(50)
             pos_hint: {"center_x": 0.5, "top": 0.50}
@@ -577,7 +590,7 @@ WindowManager:
                 text: "Read more"
                 url: "https://dvpn.cc/resolvers"
 
-        # V2Ray Fragment Section (Fixed alignment)
+        
         BoxLayout:
             orientation: "horizontal"
             spacing: dp(10)
@@ -585,6 +598,13 @@ WindowManager:
             size_hint_y: None
             height: dp(48)
             pos_hint: {"center_x": 0.5, "top": 0.45}
+            # Striping
+            canvas.before:
+                Color:
+                    rgba: get_color_from_hex('#2a2a2a')
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
 
             MDLabel:
                 font_name: "Roboto-Bold"
@@ -604,8 +624,15 @@ WindowManager:
                 pos_hint: {"center_y": 0.5}
                 active: root.get_config('fragment')
                 on_active: root.on_checkbox_active(*args)
-
-        # Save Button
+		
+        MDFlatButton:
+            text: "CANCEL"
+            font_size: "18sp"
+            pos_hint: { "center_x": .80, "top": 0.1}
+            theme_text_color: "Custom"
+        	text_color: get_color_from_hex(MeileColors.MEILE)
+            on_release: root.set_previous_screen()
+		
         MDRaisedButton:
             text: "SAVE"
             font_size: "18sp"
