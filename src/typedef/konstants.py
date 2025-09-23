@@ -87,6 +87,18 @@ class HTTParams():
                               "https://cache.meile.cryptopepper.org/api/public/card/9ced889b-3532-422e-a4c2-e1ee3349342a/query/json"
                               ]
     
+    DNSSERVERS = [{'Country' : 'Mexico-1'    , 'ip' : '207.248.224.71'},
+                  {'Country' : 'Mexico-2'    , 'ip' : '200.56.98.145'},
+                  {'Country' : 'U.S.-1'      , 'ip' : '75.150.197.154'},
+                  {'Country' : 'U.S.-2'      , 'ip' : '98.101.194.137'},
+                  {'Country' : 'Netherlands' , 'ip' : '46.249.39.8'},
+                  {'Country' : 'Germany'     , 'ip' : '212.185.180.3'},
+                  {'Country' : 'Japan'       , 'ip' : '153.156.93.5'},
+                  {'Country' : 'Russia'      , 'ip' : '77.88.8.8'},
+                  {'Country' : 'Indonesia'   , 'ip' : '103.184.98.227'},
+                  {'Country' : 'Cloudflare'  , 'ip' : '1.1.1.1'}
+                  ]
+    
     
     PLAN_API               = "https://api.meile.mathnodes.com:10001"
     #APIURL                 = "http://128.199.90.172:1317"
