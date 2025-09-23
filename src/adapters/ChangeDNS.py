@@ -4,6 +4,7 @@ import psutil
 from os import path, chdir
 from subprocess import Popen, TimeoutExpired, PIPE
 from conf.meile_config import MeileGuiConfig
+from helpers.winiface import get_default_interface
 
 
 class ChangeDNS:
@@ -71,9 +72,11 @@ class ChangeDNS:
             proc.wait(timeout=60)
             proc_out, proc_err = proc.communicate()
             """
-
+            
+            '''
             for interface in psutil.net_if_addrs().keys():
                 # Filter interface, tun(nnel) or w(ire)g(uard)99
+                print(interface)
                 if "tun" in interface.lower() or "wg99" in interface.lower():
                     cmd = [
                         gsudo,
@@ -87,3 +90,27 @@ class ChangeDNS:
                         print(str(e))
                     proc_out, proc_err = proc.communicate()
                     chdir(MeileConfig.BASEDIR)
+            '''
+            
+            '''
+            A more robust approach. Instead of seeing if we are tunneled,
+            just grab the primary interface and set the DNS regardless if 
+            connected to dvpn or not.
+            '''
+            
+            iface_name, ip = get_default_interface()
+            if iface_name:
+                interface = iface_name[0].nice_name
+                print(f"Default internet network interface: {interface} with IP {ip}")
+                cmd = [
+                    gsudo,
+                    f'netsh interface ipv4 set dns name="{interface}" static {self.dns}',
+                ]
+                chdir(MeileConfig.BASEBINDIR)
+                try:
+                    proc = Popen(cmd, shell=True)
+                    proc.wait(timeout=60)
+                except TimeoutExpired as e:
+                    print(str(e))
+                proc_out, proc_err = proc.communicate()
+                chdir(MeileConfig.BASEDIR)

@@ -89,6 +89,18 @@ class HTTParams():
                               "https://cache.meile.cryptopepper.org/api/public/card/9ced889b-3532-422e-a4c2-e1ee3349342a/query/json"
                               ]
     
+    DNSSERVERS = [{'Country' : 'Mexico-1'    , 'ip' : '207.248.224.71'},
+                  {'Country' : 'Mexico-2'    , 'ip' : '200.56.98.145'},
+                  {'Country' : 'U.S.-1'      , 'ip' : '75.150.197.154'},
+                  {'Country' : 'U.S.-2'      , 'ip' : '98.101.194.137'},
+                  {'Country' : 'Netherlands' , 'ip' : '46.249.39.8'},
+                  {'Country' : 'Germany'     , 'ip' : '212.185.180.3'},
+                  {'Country' : 'Japan'       , 'ip' : '153.156.93.5'},
+                  {'Country' : 'Russia'      , 'ip' : '77.88.8.8'},
+                  {'Country' : 'Indonesia'   , 'ip' : '103.184.98.227'},
+                  {'Country' : 'Cloudflare'  , 'ip' : '1.1.1.1'}
+                  ]
+    
     
     PLAN_API               = "https://api.meile.mathnodes.com:10001"
     #APIURL                 = "http://128.199.90.172:1317"
@@ -590,8 +602,8 @@ class IBCTokens():
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
-    VERSION = "v2.3.0"
-    BUILD = "1756774291236"
+    VERSION = "v2.3.2"
+    BUILD = "1758668860395"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"
     FailedHealthCheck = "Failed Sentinel Health Check"
@@ -637,6 +649,9 @@ class NodeKeys():
     FinalSubsKeys = [SubsInfoKeys[0], NodesInfoKeys[0],SubsInfoKeys[4],SubsInfoKeys[5], SubsInfoKeys[7], NodesInfoKeys[4], "Allocated", "Consumed", NodesInfoKeys[13],SubsInfoKeys[2],SubsInfoKeys[6]]
     NodeVersions  = [str(item).zfill(3) for item in range(70,1000)]
     Nodetypes = ['residential', 'business', 'hosting', 'edu']
+
+
+
 
 
 
