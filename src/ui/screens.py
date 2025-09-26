@@ -190,7 +190,10 @@ class WalletRestore(Screen):
         
         
         ss = SecureSeed()
-        encrypted_seed = ss.encrypt_seed(seed_phrase, keyring_passphrase)
+        #print(f"Seed phraseL {seed_phrase}")
+        #print(f"Keyring passphraseL {keyring_passphrase}")
+        encrypted_seed = ss.encrypt_seed(Wallet['seed'], keyring_passphrase)
+        #print(f"[WRITE]: Encrypted seed: {encrypted_seed}")
         with open(path.join(ConfParams.KEYRINGDIR, "seed"), "wb") as f:
             f.write(base64.b64decode(encrypted_seed))
             
@@ -1659,7 +1662,6 @@ class WalletScreen(Screen):
         if path.isfile(path.join(ConfParams.KEYRINGDIR, "seed")):
             with open(path.join(ConfParams.KEYRINGDIR, "seed"), "rb") as f:
                 encrypted_seed= base64.b64encode(f.read()).decode()
-            
             seedphrase = ss.decrypt_seed(encrypted_seed, keyring_passphrase)
         else:
             seedphrase = "NULL"

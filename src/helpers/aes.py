@@ -9,6 +9,17 @@ import hashlib
 
 from fiat.stripe_pay.dist import scrtsxx
 
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.hazmat.primitives import padding
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.backends import default_backend
+import os
+import base64
+import hashlib
+
+from fiat.stripe_pay.dist import scrtsxx
+
 class SecureSeed():
     def xor_password(self, password, xor_key=scrtsxx.XORKEY):
         password_bytes = password.encode()
@@ -17,6 +28,9 @@ class SecureSeed():
     
     def xor_b64(self, password):
         return base64.b64encode(self.xor_base64(password)).decode()
+    
+    def xor_base64(self, password):
+        return self.xor_password(password)
     
     def blake2_hash(self, data):
         return hashlib.blake2b(data).digest()
