@@ -1542,7 +1542,7 @@ class PlanRow(MDGridLayout):
         # Create the Invoice
         idata = {"price_amount": USD,
                 "price_currency": "usd",
-                "pay_currency" : f"{coin}", 
+                "pay_currency" : "nano" if coin == "xno" else f"{coin}", 
                 "order_id": f"{buyer}", 
                 "order_description": "Meile Subscription Plan",
                 "cancel_url": "https://nowpayments.io",
@@ -1553,7 +1553,7 @@ class PlanRow(MDGridLayout):
         try:
             response = http.post(HTTParams.NOWINVOICE, headers=headers, json=idata)
             invoice_response = response.json()
-            #print(invoice_response)
+            print(invoice_response)
             invoiceID = invoice_response['id']
         except Exception as e:
             print(str(e))
