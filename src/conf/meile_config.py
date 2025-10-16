@@ -6,16 +6,31 @@ import subprocess
 import sys
 
 from time import sleep 
+import plistlib
+from pathlib import Path
+
+#from cli.wg import WireguardInterface
 
 
 class MeileGuiConfig():
-    BASEDIR            = path.join(path.expanduser('~'), '.meile-gui')
-    BASEBINDIR         = path.join(BASEDIR, 'bin')
-    WIREGUARD_BIN      = path.join(BASEBINDIR, "WireGuard", "wireguard.exe")
-    WG_BIN             = path.join(BASEBINDIR, "WireGuard", "wg.exe")
-    CONFFILE           = path.join(BASEDIR, 'config.ini')
-    IMGDIR             = path.join(BASEDIR, 'img')
-    CONFIG             = configparser.ConfigParser()
+    BASEDIR                       = path.join(path.expanduser('~'), '.meile-gui')
+    BASEBINDIR                    = path.join(BASEDIR, 'bin')
+    WIREGUARD_BIN                 = path.join(BASEBINDIR, "WireGuard", "wireguard.exe")
+    WG_BIN                        = path.join(BASEBINDIR, "WireGuard", "wg.exe")
+    CONFFILE                      = path.join(BASEDIR, 'config.ini')
+    IMGDIR                        = path.join(BASEDIR, 'img')
+    CONFIG                        = configparser.ConfigParser()
+    WIREGUARD_CONF_PATH           = Path.home() / ".meile-gui" / "wg99.conf"
+    XRAY_CONF_PATH                = Path.home() / ".meile-gui" / "v2ray_config.json"
+    WIREGUARD_BIN_PATH            = Path.home() / ".meile-gui" / "bin" / "wg-quick"
+    XRAY_BIN_PATH                 = Path.home() / ".meile-gui" / "bin" / "xray"
+    TUN2SOCKS_BIN_PATH            = Path.home() / ".meile-gui" / "bin" / "tun2socks"
+    WG_LAUNCHDAEMON_LABEL         = "app.meile.wireguard"
+    XRAY_LAUNCHDAEMON_LABEL       = "app.meile.xray"
+    TUN2SOCKS_LAUNCHDAEMON_LABEL  = "app.meile.tun2socks"
+    WG_LAUNCHDAEMON_PATH          = Path("/Library/LaunchDaemons") / f"{WG_LAUNCHDAEMON_LABEL}.plist"
+    XRAY_LAUNCHDAEMON_PATH        = Path("/Library/LaunchDaemons") / f"{XRAY_LAUNCHDAEMON_LABEL}.plist"
+    TUN2SOCKS_LAUNCHDAEMON_PATH   = Path("/Library/LaunchDaemons") / f"{TUN2SOCKS_LAUNCHDAEMON_LABEL}.plist"
     
     def resource_path(self, relative_path):
         """ Get absolute path to resource, works for dev and for PyInstaller """
@@ -69,6 +84,77 @@ class MeileGuiConfig():
             if path.exists(to_path):
                 shutil.rmtree(to_path)
             shutil.copytree(from_path, to_path)
+            
+    def is_plist_exists(self):
+        
+        wg_plist_content = {
+            "Label": self.WG_LAUNCHDAEMON_LABEL,
+            "ProgramArguments": [
+                str(self.WIREGUARD_BIN_PATH),
+                "up",
+                str(self.WIREGUARD_CONF_PATH)
+            ],
+            "RunAtLoad": True,
+            "KeepAlive": True,
+            "StandardOutPath": "/var/log/wireguard-wg99.log",
+            "StandardErrorPath": "/var/log/wireguard-wg99.err",
+            "EnableTransactions": True,
+            "AbandonProcessGroup": True,
+        }
+        
+        xray_plist_content = {
+            "Label": self.XRAY_LAUNCHDAEMON_LABEL,
+            "ProgramArguments": [
+                str(self.XRAY_BIN_PATH),
+                "run",
+                "-c",
+                str(self.XRAY_CONF_PATH)
+            ],
+            "RunAtLoad": True,
+            "KeepAlive": True,
+            "StandardOutPath": "/var/log/xray.log",
+            "StandardErrorPath": "/var/log/xray.err",
+            "EnableTransactions": True,
+            "AbandonProcessGroup": True,
+        }
+        
+        nic_cmd = "route get default | grep 'interface' | cut -d ':' -f 2 | tr -d ' '"
+        nic = subprocess.check_output(nic_cmd, shell=True, text=True).strip()
+        
+        tun2socks_plist_content = {
+            "Label": self.TUN2SOCKS_LAUNCHDAEMON_LABEL,
+            "ProgramArguments": [
+                str(self.TUN2SOCKS_BIN_PATH),
+                "-device",
+                "utun123",
+                "-proxy",
+                "socks5://127.0.0.1:1080",
+                "-interface",
+                f"{nic}"
+            ],
+            "RunAtLoad": True,
+            "KeepAlive": True,
+            "StandardOutPath": "/var/log/tun2socks.log",
+            "StandardErrorPath": "/var/log/tun2socks.err",
+            "EnableTransactions": True,
+            "AbandonProcessGroup": True,
+        }
+        
+        if path.isfile(self.WG_LAUNCHDAEMON_PATH) and path.isfile(self.XRAY_LAUNCHDAEMON_PATH) and path.isfile(self.TUN2SOCKS_LAUNCHDAEMON_PATH):
+            print("EXISTS")
+            return True
+        else:
+            print("WRITING network plists....")
+            with open(path.join(self.BASEDIR, f"{self.WG_LAUNCHDAEMON_LABEL}.plist"), "wb") as f:
+                plistlib.dump(wg_plist_content, f)
+            with open(path.join(self.BASEDIR, f"{self.XRAY_LAUNCHDAEMON_LABEL}.plist"), "wb") as f:
+                plistlib.dump(xray_plist_content, f)
+            with open(path.join(self.BASEDIR, f"{self.TUN2SOCKS_LAUNCHDAEMON_LABEL}.plist"), "wb") as f:
+                plistlib.dump(tun2socks_plist_content, f)
+            return False
+            
+            
+            
     def rewrite_bin(self):
         self.update_bin(self.resource_path("bin"), self.BASEBINDIR)
         
@@ -143,6 +229,10 @@ class MeileGuiConfig():
             FILE = open(self.CONFFILE, 'w')    
             self.CONFIG.write(FILE) 
             FILE.close()
+            
+            # MacOS
+            #wgnic = WireguardInterface()
+            #wgnic.is_wg_plist_exists()
             
            
         return self.CONFIG

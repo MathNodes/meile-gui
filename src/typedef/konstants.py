@@ -605,8 +605,8 @@ class IBCTokens():
     
 class TextStrings():
     dash = "-"
-    VERSION = "v2.3.2"
-    BUILD = "17585678023"
+    VERSION = "v2.3.3"
+    BUILD = "17605738623"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"
     FailedHealthCheck = "Failed Sentinel Health Check"
@@ -621,6 +621,8 @@ class MeileColors():
     INACTIVE_DIALOG_BG_COLOR = "#50507c"
     MAP_BG_COLOR             = "#232227"
     ROW_HOVER                = "#39363c"
+    DOWNLOAD                 = "#2fe548"
+    UPLOAD                   = "#2fa1e5"
     FONT_FACE                = "fonts/mplus-2c-bold.ttf"
     FONT_FACE_ARIAL          = "fonts/arial-unicode-ms.ttf"
     QR_FONT_FACE             = "fonts/Roboto-BoldItalic.ttf"

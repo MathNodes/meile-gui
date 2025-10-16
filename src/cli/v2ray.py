@@ -75,6 +75,7 @@ class V2RayHandler:
     def __init__(self, script_path, **kwargs):
         self.script_path = script_path
         self.processes = []
+        self.MeileConfig = MeileGuiConfig()
         
     def run_privileged_script(self, commands):
         script_content = "#!/bin/bash\n"
@@ -136,6 +137,7 @@ class V2RayHandler:
     def start_daemon(self):
         print("Starting v2ray service...")
         
+        '''
         xray_cmd = f"{os.environ['HOME']}/.meile-gui/bin/xray run -c {os.environ['HOME']}/.meile-gui/v2ray_config.json > /dev/null 2>&1 &"
         self.run_cmd(xray_cmd, background=True)
         time.sleep(1)
@@ -168,6 +170,14 @@ class V2RayHandler:
             "ifconfig utun123 198.18.0.1 198.18.0.1 up",
             "sleep 1"
         ]
+        '''
+        privileged_commands = ["launchctl bootstrap system /Library/LaunchDaemons/app.meile.xray.plist"]
+        privileged_commands.append("sleep 3")
+        privileged_commands.append("curl --preproxy socks5://localhost:1080 -s https://icanhazip.com")
+        privileged_commands.append("sleep 1")
+        privileged_commands.append("launchctl bootstrap system /Library/LaunchDaemons/app.meile.tun2socks.plist")
+        privileged_commands.append("sleep 2")
+        privileged_commands.append("ifconfig utun123 198.18.0.1 198.18.0.1 up")
         
         networks = ["1.0.0.0/8", "2.0.0.0/7", "4.0.0.0/6", "8.0.0.0/5", 
                    "16.0.0.0/4", "32.0.0.0/3", "64.0.0.0/2", "128.0.0.0/1", "198.18.0.0/15"]
@@ -178,6 +188,13 @@ class V2RayHandler:
         if not self.run_privileged_script(privileged_commands):
             print("Failed to execute privileged commands")
             return False
+        
+        #sentinel_xray_connect_bash = os.path.join(self.MeileConfig.BASEBINDIR, "sentinel-xray-connect.sh")
+        #connectBASH = [sentinel_xray_connect_bash]
+        #proc2 = subprocess.Popen(connectBASH)
+        #proc2.wait(timeout=30)
+        #pid2 = proc2.pid
+        #proc_out, proc_err = proc2.communicate()
         
         return True
     
@@ -191,8 +208,8 @@ class V2RayHandler:
             privileged_commands.append(f"route delete -net {network} 198.18.0.1")
         
         privileged_commands.append("ifconfig utun123 198.18.0.1 198.18.0.1 down")
-        privileged_commands.append("pkill -9 tun2socks")
-        privileged_commands.append("pkill -9 xray")
+        privileged_commands.append("launchctl bootout system /Library/LaunchDaemons/app.meile.xray.plist")
+        privileged_commands.append("launchctl bootout system /Library/LaunchDaemons/app.meile.tun2socks.plist")
 
         self.run_privileged_script(privileged_commands)
         

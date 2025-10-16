@@ -188,7 +188,6 @@ WindowManager:
     text_color: get_color_from_hex(MeileColors.MEILE)
     font_name: root.get_font()
     
-    
 
 <IPAddressTextField@MDTextField>
     id: new_ip
@@ -256,6 +255,31 @@ WindowManager:
             border: [int(min(self.width * (self.value / float(self.max)) if self.max else 0, sp(4)))] * 4
             pos: self.x, self.center_y -sp(2)
             size: self.width * (self.value / float(self.max)) if self.max else 0, sp(4)
+
+
+<DownloadLabel>
+    font_size: "100sp"
+    pos_hint: {"x" : .63, "center_y": .1}                
+    opacity: .75
+    #font_style: "H6"
+    text: "0MB↓"
+    markup: True
+    theme_text_color: "Custom"
+    text_color: get_color_from_hex(MeileColors.DOWNLOAD)
+    font_name: root.get_font()
+
+            
+<UploadLabel>
+    font_size: "100sp"
+    pos_hint: {"x" : .63, "center_y": .04}                
+    opacity: .75
+    #font_style: "H6"
+    text: "0MB↑"
+    markup: True
+    theme_text_color: "Custom"
+    text_color: get_color_from_hex(MeileColors.UPLOAD)
+    font_name: root.get_font()
+        
     
 <QuotaPct@MDLabel>
     id: quota_pct

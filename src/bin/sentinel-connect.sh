@@ -5,7 +5,7 @@ PASSWORD="$2"
 osascript - "$CLICMD" "$PASSWORD"  <<EOF
 
     on run argv
-        do shell script ("${HOME}/.meile-gui/bin/wg-quick up ${HOME}/.meile-gui/wg99.conf ") without altering line endings with administrator privileges        
+        do shell script ("launchctl bootstrap system /Library/LaunchDaemons/app.meile.wireguard.plist") without altering line endings with administrator privileges        
     end run
 
 EOF

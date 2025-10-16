@@ -897,6 +897,8 @@ class HandleWalletFunctions():
                     proc2.wait(timeout=30)
                     pid2 = proc2.pid
                     proc_out, proc_err = proc2.communicate()
+                    #subprocess.run(["sudo", "launchctl", "load", str(LAUNCHDAEMON_PATH)], check=True)
+                    sleep(3)
                 elif pltfrm == Arch.WINDOWS:
                     wgup = [gsudo, MeileConfig.WIREGUARD_BIN, "/installtunnelservice", config_file]
                     wg_process = subprocess.Popen(wgup)
