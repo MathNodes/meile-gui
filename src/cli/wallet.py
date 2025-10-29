@@ -34,6 +34,7 @@ import mospy
 from mospy import Transaction
 from sentinel_protobuf.cosmos.base.v1beta1.coin_pb2 import Coin
 from sentinel_sdk.sdk import SDKInstance
+#from sentinel_sdk.types import NodeType, TxParams, Status, Price
 from sentinel_sdk.types import NodeType, TxParams, Status
 from sentinel_sdk.utils import search_attribute
 from mnemonic import Mnemonic
@@ -499,13 +500,22 @@ class HandleWalletFunctions():
             fee_amount=fee
         )
         
+        # figure out what goes in Price()
+        '''
+        price = Price(
+            denom=DENOM
+            base_value=TBD
+            quote_value=TBD)
+        
+        '''
         tx = sdk.nodes.SubscribeToNode(
             node_address=NODE,
             gigabytes=0 if hourly else GB,
             hours=GB if hourly else 0,
-            denom=DENOM,
+            #max_price=price,
             tx_params=tx_params,
         )
+        
         
         if tx.get("log", None) is not None:
             print(tx["log"])
@@ -1064,7 +1074,7 @@ class HandleWalletFunctions():
             return None
             
         try:
-            for coin in coinJSON['result']:
+            for coin in coinJSON['balances']:
                 if "udvpn" in coin['denom']:
                 #if "tsent" in coin['denom']:
                     CoinDict['dvpn'] = round(float(float(coin['amount']) /IBCTokens.SATOSHI),4)

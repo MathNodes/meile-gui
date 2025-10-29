@@ -120,7 +120,7 @@ class HTTParams():
     API_PLANS_ADD          = "/v1/add"
     API_PLANS_NODES        = "/v1/nodes/%s" # variable is plan uuid
     SESSIONS_API_URL       = '/sentinel/accounts/%s/sessions'
-    BALANCES_ENDPOINT      = "/bank/balances/"
+    BALANCES_ENDPOINT      = "/cosmos/bank/v1beta1/balances/"
     ICANHAZURL             = "https://icanhazip.com"
     ICANHAZDNS             = "icanhazip.com"
     IFCONFIGDNS            = "ifconfig.co"
@@ -605,8 +605,8 @@ class IBCTokens():
     
 class TextStrings():
     dash = "-"
-    VERSION = "v2.3.3"
-    BUILD = "17605738623"
+    VERSION = "v2.4.0"
+    BUILD = "17617168703"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"
     FailedHealthCheck = "Failed Sentinel Health Check"
