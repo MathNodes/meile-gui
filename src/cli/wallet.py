@@ -19,6 +19,7 @@ from typedef.konstants import IBCTokens, ConfParams, HTTParams, MEILE_PLAN_WALLE
 from adapters import HTTPRequests, DNSRequests
 from cli.v2ray import V2RayHandler, V2RayConfiguration, V2RayFragmentConfiguration
 from helpers.wireguard import WgKey
+from helpers.helpers import resolve_address
 
 import base64
 import bcrypt
@@ -794,16 +795,22 @@ class HandleWalletFunctions():
         else:  # NodeType.V2RAY
             # [from golang] uid, err = uuid.GenerateRandomBytes(16)
             uid_16 = uuid.uuid4()
-            uid_bytes = uid_16.bytes
-            uid_16b = bytearray([0x01]) + uid_bytes
+            #uid_bytes = uid_16.bytes
+            #uid_b64 = base64.b64encode(uid_bytes).decode('utf-8')
+            #uid_bytes = uid_16.bytes
+            #print(f"Length of bUUID: {len(uid_bytes)}")
+            #uid_16b = bytearray([0x01]) + uid_bytes
             
             # Creates a bytearray not a byte string
             # [from golang] key = base64.StdEncoding.EncodeToString(append([]byte{0x01}, uid...))
             # data length must be 17 bytes...
             #key = base64.b64encode(bytes(0x01) + uid_16b.bytes).decode("utf-8")
-            key = base64.b64encode(uid_16b).decode('utf-8')
-            data = {'uuid' : key}
+            #key = base64.b64encode(uid_bytes).decode('utf-8')
+            #data = {'uuid' : key}
             #data_bytes = base64.b64encode(json.dumps(data).encode('utf-8'))
+            #data = {'uuid': uid_b64}
+            #data = {'uuid': uid_b64}
+            data = {'uuid': list(uid_16.bytes)}
             data_bytes = json.dumps(data).encode('utf-8')
         # Sometime we get a random "code":4,"message":"invalid signature ...``
         for _ in range(0, 10):  # bumped as 3 wasn't enough
@@ -813,12 +820,15 @@ class HandleWalletFunctions():
             bige_session = int(session_id).to_bytes(8, byteorder="big")
             msg = bige_session + data_bytes  # Combining session_id and data
             signature = sk.sign(msg)
+            
             payload = {
                 "data" : base64.b64encode(data_bytes).decode("utf-8"),
                 "id" : int(session_id),
                 "pub_key": pub_key,
                 "signature": base64.b64encode(signature).decode("utf-8"),
             }
+        
+                
             print(f"\nPayload: {json.dumps(payload, indent=4)}")
             conndesc.write("Fetching credentials from node...\n")
             conndesc.flush()
@@ -968,27 +978,19 @@ class HandleWalletFunctions():
                 conndesc.write("Bringing up V2Ray socks tunnel...\n")
                 conndesc.flush()
                 decode = json.loads(decode)
-                print(decode)
-                if len(decode) != 7:
-                    self.connected = {"v2ray_pid" : None,  "result": False, "status" : f"Incorrect result size: {len(decode)}"}
-                    print(self.connected)
-                    return
+                #print(decode)
+                
+                proxy_protocol = ["vless", "vmess"]
+                transport_protocol = ["gun","grpc","http","mkcp","quic","tcp","websocket"]
+                #transport_security = ["none", "tls"]
+                
+                vmess_address = resolve_address(response['result']['addrs'][0])
+                vmess_port = int(decode['metadata'][0]['port'])
+                pp = proxy_protocol[decode['metadata'][0]['proxy_protocol']-1]
+                #tp = transport_protocol[decode['metadata'][0]['transport_protocol']-1]
+                tp = transport_protocol[1]
+                #ts = transport_security[decode['metadata'][0]['transport_security']-1]
 
-                vmess_address = socket.inet_ntoa(decode[0:4])
-                vmess_port = (decode[4] & -1) << 8 | decode[5] & -1
-                vmess_transports = {  # Could be a simple array :)
-                    0x01: "tcp",
-                    0x02: "mkcp",
-                    0x03: "websocket",
-                    0x04: "http",
-                    0x05: "domainsocket",
-                    0x06: "quic",
-                    0x07: "gun",
-                    0x08: "grpc",
-                }
-
-                # [from golang] apiPort, err := netutil.GetFreeTCPPort()
-                # https://gist.github.com/gabrielfalcao/20e567e188f588b65ba2
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 sock.bind(('', 0))
                 api_port = sock.getsockname()[1]
@@ -998,7 +1000,8 @@ class HandleWalletFunctions():
                 print("vmess_port", vmess_port)
                 print("vmess_address", vmess_address)
                 print("vmess_uid", f"{uid_16}")
-                print("vmess_transport", vmess_transports[decode[-1]])
+                print("vmess_transport", tp)
+                print("proxy_protocol", pp)
                 
                 if self.FRAGMENT:
                     v2ray_config = V2RayFragmentConfiguration(
@@ -1006,8 +1009,9 @@ class HandleWalletFunctions():
                         vmess_port=vmess_port,
                         vmess_address=vmess_address,
                         vmess_uid=f"{uid_16}",
-                        vmess_transport=vmess_transports[decode[-1]],
-                        proxy_port=1080
+                        vmess_transport=tp,
+                        proxy_port=1080,
+                        proxy_protocol=pp
                     )
                 else:
                     v2ray_config = V2RayConfiguration(
@@ -1015,8 +1019,9 @@ class HandleWalletFunctions():
                         vmess_port=vmess_port,
                         vmess_address=vmess_address,
                         vmess_uid=f"{uid_16}",
-                        vmess_transport=vmess_transports[decode[-1]],
-                        proxy_port=1080
+                        vmess_transport=tp,
+                        proxy_port=1080,
+                        proxy_protocol=pp
                     )
                 # ConfParams.KEYRINGDIR (.meile-gui)
                 config_file = path.join(ConfParams.KEYRINGDIR, "v2ray_config.json")

@@ -226,6 +226,7 @@ class V2RayFragmentConfiguration:
     vmess_address: str
     vmess_uid: str
     vmess_transport: str
+    proxy_protocol: str
 
     proxy_port: int = 1080
 
@@ -274,7 +275,7 @@ class V2RayFragmentConfiguration:
                 "concurrency": -1,
                 "enabled": False
               },
-              "protocol": "vmess",
+              "protocol": self.proxy_protocol,
               "settings": {
                 "vnext": [
                   {
@@ -285,7 +286,7 @@ class V2RayFragmentConfiguration:
                         "alterId": 0,
                         "id": self.vmess_uid,
                         "level" : 8,
-                       "security": "chacha20-poly1305"
+                        "security": "chacha20-poly1305"
                       }
                     ]
                   }
@@ -364,7 +365,7 @@ class V2RayFragmentConfiguration:
               }
             ]
           },
-              "stats": {}
+          "stats": {}
         }
 
         
@@ -378,6 +379,7 @@ class V2RayConfiguration:
     vmess_address: str
     vmess_uid: str
     vmess_transport: str
+    proxy_protocol: str
 
     proxy_port: int = 1080
 
@@ -422,7 +424,7 @@ class V2RayConfiguration:
             },
             "outbounds": [
                 {
-                    "protocol": "vmess",
+                    "protocol": self.proxy_protocol,
                     "settings": {
                         "vnext": [
                             {
