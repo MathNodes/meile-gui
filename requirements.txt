@@ -27,12 +27,13 @@ ecdsa==0.18.0
 ed25519-blake2b==1.4
 exceptiongroup==1.2.0
 future==0.18.2
-google-api-core==2.11.1
+google-api-core==2.28.1
 google-api-python-client==2.92.0
 google-auth==2.21.0
 google-auth-httplib2==0.1.0
-googleapis-common-protos==1.59.1
-grpcio==1.62.1
+google-cloud-core==2.5.0
+googleapis-common-protos==1.71.0
+grpcio==1.71.0
 h11==0.14.0
 hdwallets==0.1.2
 httpcore==1.0.4
@@ -61,11 +62,13 @@ netifaces==0.11.0
 pefile==2023.2.7
 pexpect==4.8.0
 Pillow==9.2.0
-protobuf==4.23.4
+proto-plus==1.26.1
+protobuf==6.33.0
 psutil==5.9.4
 ptyprocess==0.7.0
 py-sr25519-bindings==0.2.0
-pyarmor=8.5.12
+pyarmor==8.5.12
+pyarmor.cli.core==6.5.3
 pyasn1==0.5.0
 pyasn1-modules==0.3.0
 pycparser==2.21
@@ -75,8 +78,11 @@ Pygments==2.13.0
 pyinstaller==5.5
 pyinstaller-hooks-contrib==2022.10
 PyNaCl==1.5.0
+pyobjc-core==12.0
+pyobjc-framework-Cocoa==12.0
 pyparsing==3.1.0
 python-dateutil==2.8.2
+qrcode==8.2
 referencing==0.29.1
 requests==2.28.1
 rpds-py==0.8.10
@@ -84,8 +90,8 @@ rsa==4.9
 safe-pysha3==1.0.4
 screeninfo==0.8.1
 SecretStorage==3.3.3
-sentinel_protobuf==0.3.3
-sentinel_sdk==0.0.5
+sentinel_protobuf==0.4.3
+sentinel_sdk @ file:///Users/freqnik/git/MathNodes/sentinel-python-sdk/dist/sentinel_sdk-0.1.0-py3-none-any.whl#sha256=f2857a00ee9283a9c91088d9d6833b333eca6c8872f571d68d6def089a455b80
 six==1.16.0
 sniffio==1.3.1
 stripe==4.2.0
