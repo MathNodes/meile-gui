@@ -638,8 +638,9 @@ class HandleWalletFunctions():
     
             
     
-    def connect(self, ID, address, type, deposit):
+    def connect(self, ID, address, type, deposit, plan: bool = False):
        
+        
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
         KEYNAME = CONFIG['wallet'].get('keyname', '')
@@ -710,6 +711,7 @@ class HandleWalletFunctions():
         )
         
         # End active sessions if any. INACTIVE_PENDING is moot
+        '''
         sessions = sdk.sessions.QuerySessionsForSubscription(int(ID))
         for session in sessions:
             if session.status == Status.ACTIVE.value:
@@ -728,8 +730,12 @@ class HandleWalletFunctions():
                     self.connected = {"v2ray_pid" : None,  "result": False, "status" : "GRPC Error"}
                     return
                 print(tx_response)
-        
-        tx = sdk.sessions.StartSession(subscription_id=int(ID), address=address, tx_params=tx_params)
+        '''
+        if plan:
+            tx = sdk.subscriptions.StartSession(subscription_id=int(ID), address=address, tx_params=tx_params)
+        else:
+            self.connected = {"v2ray_pid" : None,  "result": False, "status" : "Not Implemented"}
+            return
         conndesc.write("Creating new session...\n")
         conndesc.flush()
         # Will need to handle log responses with friendly UI response in case of session create error
@@ -739,7 +745,7 @@ class HandleWalletFunctions():
             return
        
         try: 
-            tx_response = sdk.sessions.wait_for_tx(tx["hash"], timeout=25)
+            tx_response = sdk.subscriptions.wait_for_tx(tx["hash"], timeout=25)
         except (mospy.exceptions.clients.TransactionTimeout,
                 mospy.exceptions.clients.NodeException,
                 mospy.exceptions.clients.NodeTimeoutException)  as e:
@@ -749,24 +755,32 @@ class HandleWalletFunctions():
             conndesc.close()
             self.connected = {"v2ray_pid" : None,  "result": False, "status" : "GRPC Error"}
             return
+        print(tx_response)
         
-        session_id = search_attribute(tx_response, "sentinel.session.v2.EventStart", "id")
+        session_id = search_attribute(tx_response, "sentinel.subscription.v3.EventCreateSession", "session_id")
 
+        '''
         from_event = {
-            "subscription_id": search_attribute(tx_response, "sentinel.session.v2.EventStart", "subscription_id"),
-            "address": search_attribute(tx_response, "sentinel.session.v2.EventStart", "address"),
-            "node_address": search_attribute(tx_response, "sentinel.session.v2.EventStart", "node_address"),
+            "subscription_id": search_attribute(tx_response, "sentinel.subscription.v3.EventCreateSession", "subscription_id"),
+            "address": search_attribute(tx_response, "sentinel.subscription.v3.EventCreateSession", "acc_address"),
+            "node_address": search_attribute(tx_response, "sentinel.subscription.v3.EventCreateSession", "node_address"),
         }
+        '''
         
         # Sanity Check. Not needed
         #assert from_event["subscription_id"] == ID and from_event["address"] == sdk._account.address and from_event["node_address"] == address
        
-        sleep(1.5)  # Wait a few seconds....
+        sleep(0.2)  # Wait a few seconds....
         # The sleep is required because the session_id could not be fetched from the node / rpc
 
         node = sdk.nodes.QueryNode(address)
         # Again sanity check. Not needed unless the blockchain is foobar'ed
         #assert node.address == address
+        
+        # Get Client PubKey
+        pub_key_bytes = sdk._account.public_key.key
+        pub_key_b64 = base64.b64encode(pub_key_bytes).decode("utf-8")  # Base64 encode
+        pub_key = f"secp256k1:{pub_key_b64}"
         
         if type == "WireGuard":
             # [from golang] wgPrivateKey, err = wireguardtypes.NewPrivateKey()
@@ -774,6 +788,9 @@ class HandleWalletFunctions():
             wgkey = WgKey()
             # The private key should be used by the wireguard client
             key = wgkey.pubkey
+            data = {'public_key' : key}
+            #data_bytes = base64.b64encode(json.dumps(data).encode('utf-8'))
+            data_bytes = json.dumps(data).encode('utf-8')
         else:  # NodeType.V2RAY
             # [from golang] uid, err = uuid.GenerateRandomBytes(16)
             uid_16 = uuid.uuid4()
@@ -785,24 +802,29 @@ class HandleWalletFunctions():
             # data length must be 17 bytes...
             #key = base64.b64encode(bytes(0x01) + uid_16b.bytes).decode("utf-8")
             key = base64.b64encode(uid_16b).decode('utf-8')
+            data = {'uuid' : key}
+            #data_bytes = base64.b64encode(json.dumps(data).encode('utf-8'))
+            data_bytes = json.dumps(data).encode('utf-8')
         # Sometime we get a random "code":4,"message":"invalid signature ...``
         for _ in range(0, 10):  # bumped as 3 wasn't enough
             sk = ecdsa.SigningKey.from_string(sdk._account.private_key, curve=ecdsa.SECP256k1, hashfunc=hashlib.sha256)
 
             # Uint64ToBigEndian
             bige_session = int(session_id).to_bytes(8, byteorder="big")
-
-            signature = sk.sign(bige_session)
+            msg = bige_session + data_bytes  # Combining session_id and data
+            signature = sk.sign(msg)
             payload = {
-                "key": key,
+                "data" : base64.b64encode(data_bytes).decode("utf-8"),
+                "id" : int(session_id),
+                "pub_key": pub_key,
                 "signature": base64.b64encode(signature).decode("utf-8"),
             }
-            print(payload)
+            print(f"\nPayload: {json.dumps(payload, indent=4)}")
             conndesc.write("Fetching credentials from node...\n")
             conndesc.flush()
             try:
                 response = requests.post(
-                    f"{node.remote_url}/accounts/{sdk._account.address}/sessions/{session_id}",
+                    f"https://{node.remote_addrs[0]}/",
                     json=payload,
                     headers={"Content-Type": "application/json; charset=utf-8"},
                     verify=False,
@@ -834,7 +856,7 @@ class HandleWalletFunctions():
 
             sleep(random.uniform(0.5, 1))
             # Continue iteration only for code == 4 (invalid signature)
-            if response.json()["error"]["code"] != 4:
+            if response.json()["error"]["code"] != 2:
                 break
 
         if response.ok is False:
@@ -844,19 +866,31 @@ class HandleWalletFunctions():
 
         response = response.json()
         if response.get("success", True) is True:
-            decode = base64.b64decode(response["result"])
+            response_dict = response["result"]
+            decode = base64.b64decode(response_dict['data']).decode('utf-8')
+            print(f"\nDecode: {decode}")
+            print(f"\nlength: {len(decode)}")
 
             if type == "WireGuard":
-                if len(decode) != 58:
+                if len(decode) < 100:
                     self.connected = {"v2ray_pid" : None,  "result": False, "status" : f"Incorrect result size: {len(decode)}"}
                     print(self.connected)
                     return
+                decode = json.loads(decode)
                 conndesc.write("Bringing up dVPN tunnel...\n")
                 conndesc.flush()
-                ipv4_address = socket.inet_ntoa(decode[0:4]) + "/32"
-                ipv6_address = socket.inet_ntop(socket.AF_INET6, decode[4:20]) + "/128"
-                host = socket.inet_ntoa(decode[20:24])
-                port = (decode[24] & -1) << 8 | decode[25] & -1
+                #ipv4_address = socket.inet_ntoa(decode[0:4]) + "/32"
+                ipv4_address = decode['addrs'][0]
+                #ipv6_address = socket.inet_ntop(socket.AF_INET6, decode[4:20]) + "/128"
+                if len(decode['addrs']) > 1:
+                    ipv6_address = decode['addrs'][1]
+                else:
+                    ipv6_address = ""
+                    
+                # Here should check if client is using ipv6. This will give ipv4
+                host = response['result']['addrs'][0]
+                #port = (decode[24] & -1) << 8 | decode[25] & -1
+                port = decode['metadata'][0]['port']
                 peer_endpoint = f"{host}:{port}"
 
                 print("ipv4_address", ipv4_address)
@@ -865,7 +899,8 @@ class HandleWalletFunctions():
                 print("port", port)
                 print("peer_endpoint", peer_endpoint)
 
-                public_key = base64.b64encode(decode[26:58]).decode("utf-8")
+                #public_key = base64.b64encode(decode[26:58]).decode("utf-8")
+                public_key = decode['metadata'][0]['public_key']
                 print("public_key", public_key)
 
                 config = configparser.ConfigParser()
@@ -881,7 +916,7 @@ class HandleWalletFunctions():
                 config.set("Interface", "Address", ",".join([ipv4_address, ipv6_address]))
                 config.set("Interface", "ListenPort", f"{listen_port}")
                 config.set("Interface", "PrivateKey", wgkey.privkey)
-                config.set("Interface", "DNS", ",".join(["10.8.0.1","127.0.0.1", "1.0.0.1","1.1.1.1"]))  # TODO: 8.8.8.8 (?)
+                config.set("Interface", "DNS", ",".join(["127.0.0.1", "1.0.0.1","1.1.1.1"]))  # TODO: 8.8.8.8 (?)
                 config.add_section("Peer")
                 config.set("Peer", "PublicKey", public_key)
                 config.set("Peer", "Endpoint", peer_endpoint)
@@ -932,6 +967,8 @@ class HandleWalletFunctions():
                 chdir(MeileConfig.BASEBINDIR) 
                 conndesc.write("Bringing up V2Ray socks tunnel...\n")
                 conndesc.flush()
+                decode = json.loads(decode)
+                print(decode)
                 if len(decode) != 7:
                     self.connected = {"v2ray_pid" : None,  "result": False, "status" : f"Incorrect result size: {len(decode)}"}
                     print(self.connected)
