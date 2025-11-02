@@ -784,41 +784,20 @@ class HandleWalletFunctions():
         pub_key = f"secp256k1:{pub_key_b64}"
         
         if type == "WireGuard":
-            # [from golang] wgPrivateKey, err = wireguardtypes.NewPrivateKey()
-            # [from golang] key = wgPrivateKey.Public().String()
             wgkey = WgKey()
-            # The private key should be used by the wireguard client
             key = wgkey.pubkey
             data = {'public_key' : key}
-            #data_bytes = base64.b64encode(json.dumps(data).encode('utf-8'))
             data_bytes = json.dumps(data).encode('utf-8')
         else:  # NodeType.V2RAY
-            # [from golang] uid, err = uuid.GenerateRandomBytes(16)
             uid_16 = uuid.uuid4()
-            #uid_bytes = uid_16.bytes
-            #uid_b64 = base64.b64encode(uid_bytes).decode('utf-8')
-            #uid_bytes = uid_16.bytes
-            #print(f"Length of bUUID: {len(uid_bytes)}")
-            #uid_16b = bytearray([0x01]) + uid_bytes
-            
-            # Creates a bytearray not a byte string
-            # [from golang] key = base64.StdEncoding.EncodeToString(append([]byte{0x01}, uid...))
-            # data length must be 17 bytes...
-            #key = base64.b64encode(bytes(0x01) + uid_16b.bytes).decode("utf-8")
-            #key = base64.b64encode(uid_bytes).decode('utf-8')
-            #data = {'uuid' : key}
-            #data_bytes = base64.b64encode(json.dumps(data).encode('utf-8'))
-            #data = {'uuid': uid_b64}
-            #data = {'uuid': uid_b64}
             data = {'uuid': list(uid_16.bytes)}
             data_bytes = json.dumps(data).encode('utf-8')
-        # Sometime we get a random "code":4,"message":"invalid signature ...``
+ 
         for _ in range(0, 10):  # bumped as 3 wasn't enough
             sk = ecdsa.SigningKey.from_string(sdk._account.private_key, curve=ecdsa.SECP256k1, hashfunc=hashlib.sha256)
 
-            # Uint64ToBigEndian
             bige_session = int(session_id).to_bytes(8, byteorder="big")
-            msg = bige_session + data_bytes  # Combining session_id and data
+            msg = bige_session + data_bytes  
             signature = sk.sign(msg)
             
             payload = {
@@ -923,7 +902,7 @@ class HandleWalletFunctions():
                 sock.close()
 
                 config.add_section("Interface")
-                config.set("Interface", "Address", ",".join([ipv4_address, ipv6_address]))
+                config.set("Interface", "Address", ",".join([ipv4_address, ipv6_address]) if ipv6_address else ipv4_address)
                 config.set("Interface", "ListenPort", f"{listen_port}")
                 config.set("Interface", "PrivateKey", wgkey.privkey)
                 config.set("Interface", "DNS", ",".join(["127.0.0.1", "1.0.0.1","1.1.1.1"]))  # TODO: 8.8.8.8 (?)
