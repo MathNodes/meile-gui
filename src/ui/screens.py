@@ -384,6 +384,7 @@ class MainWindow(Screen):
     
     SubCaller = False
     PlanID = None
+    PlanConnect = False
 
 
 
@@ -490,7 +491,7 @@ class MainWindow(Screen):
             hwf = HandleWalletFunctions()
             thread = Thread(target=lambda: self.ping())
             thread.start()
-            t = Thread(target=lambda: hwf.connect(ID, naddress, proto, deposit))
+            t = Thread(target=lambda: hwf.connect(ID, naddress, proto, deposit, plan=PlanConnect))
             t.start()
             
             while t.is_alive():
@@ -605,6 +606,7 @@ class MainWindow(Screen):
                     naddress = self.NodeCarouselData['address']
                     proto    = self.NodeCarouselData['protocol']
                     deposit  = "dvpn"
+                    PlanConnect = True
                     connect()
                     return
                 else:
