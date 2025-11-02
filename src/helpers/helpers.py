@@ -1,4 +1,5 @@
-
+import socket
+import ipaddress
 
 def format_byte_size(size, decimals=2, binary_system=True):
     if binary_system:
@@ -14,6 +15,16 @@ def format_byte_size(size, decimals=2, binary_system=True):
             return ("%." + str(decimals) + "f %s") % (size, unit)
         size /= step
     return ("%." + str(decimals) + "f %s") % (size, largest_unit)
+
+
+def resolve_address(addr):
+    try:
+        # Check if addr is already a valid IP
+        ip = ipaddress.ip_address(addr)
+        return str(ip)  # it's already an IP
+    except ValueError:
+        # Not an IP, treat as hostname
+        return socket.gethostbyname(addr)
 
 
 
