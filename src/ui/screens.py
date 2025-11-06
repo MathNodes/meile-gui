@@ -2177,7 +2177,8 @@ class PlanScreen(MDBoxLayout):
                 plan = p
                 break
 
-
+        #print(f"Plan: {plan}")
+        #print(f"data: {data}")
         # In the future cost should be both in dvpn and euro (fuck usd)
         # Can use coin_api to get dvpn price and translate cost
         item = PlanAccordion(
@@ -2188,7 +2189,7 @@ class PlanScreen(MDBoxLayout):
                 cost=str(round(float(data['plan_price'] / IBCTokens.SATOSHI),2)) + data['plan_denom'],
                 logo_image=data['logo'],
                 uuid=data['uuid'],
-                id=str(data['subscription_id']),
+                id=str(plan['subscription_id']) if plan else str(0),
                 plan_id=str(data['plan_id'])
             ),
             content=PlanDetails(

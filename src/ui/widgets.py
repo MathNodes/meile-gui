@@ -957,6 +957,8 @@ class PlanRow(MDGridLayout):
         self.uuid = uuid 
         self.id = id
         self.plan_id = plan_id
+        
+        print(f"uuid: {self.uuid}, id: {self.id}, plan_id: {self.plan_id}")
     
         self.invoice_result = {"success" : False, "id": None }
     def get_font(self):
