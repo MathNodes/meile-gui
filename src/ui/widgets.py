@@ -1530,7 +1530,7 @@ class PlanRow(MDGridLayout):
         # Create the Invoice
         idata = {"price_amount": USD,
                 "price_currency": "usd",
-                "pay_currency" : f"{coin}", 
+                "pay_currency" : "nano" if coin == "xno" else f"{coin}", 
                 "order_id": f"{buyer}", 
                 "order_description": "Meile Subscription Plan",
                 "cancel_url": "https://nowpayments.io",
@@ -1551,7 +1551,7 @@ class PlanRow(MDGridLayout):
         # Create the payment request from Invoice ID    
         pdata = {
                   "iid": int(invoiceID),
-                  "pay_currency": f"{coin}",
+                  "pay_currency": "nano" if coin == "xno" else f"{coin}",
                   "order_description": "Meile Subscription Plan",
                   "customer_email": f"{buyer}@sentinel.co"
                 }

@@ -117,7 +117,7 @@ class HTTParams():
     API_PLANS_ADD          = "/v1/add"
     API_PLANS_NODES        = "/v1/nodes/%s" # variable is plan uuid
     SESSIONS_API_URL       = '/sentinel/accounts/%s/sessions'
-    BALANCES_ENDPOINT      = "/bank/balances/"
+    BALANCES_ENDPOINT      = "/cosmos/bank/v1beta1/balances/"
     ICANHAZURL             = "https://icanhazip.com"
     ICANHAZDNS             = "icanhazip.com"
     IFCONFIGDNS            = "ifconfig.co"
@@ -617,6 +617,8 @@ class MeileColors():
     INACTIVE_DIALOG_BG_COLOR = "#50507c"
     MAP_BG_COLOR             = "#232227"
     ROW_HOVER                = "#39363c"
+    DOWNLOAD                 = "#2fe548"
+    UPLOAD                   = "#2fa1e5"
     FONT_FACE                = "../fonts/mplus-2c-bold.ttf"
     FONT_FACE_ARIAL          = "../fonts/arial-unicode-ms.ttf"
     QR_FONT_FACE             = "../fonts/Roboto-BoldItalic.ttf"

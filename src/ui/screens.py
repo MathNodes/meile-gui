@@ -1,5 +1,5 @@
 from geography.continents import OurWorld
-from ui.interfaces import LatencyContent, TooltipMDIconButton, ConnectionDialog, ProtectedLabel, IPAddressTextField, ConnectedNode, QuotaPct,BandwidthBar,BandwidthLabel, MapCenterButton
+from ui.interfaces import LatencyContent, TooltipMDIconButton, ConnectionDialog, ProtectedLabel, IPAddressTextField, ConnectedNode, QuotaPct,BandwidthBar,BandwidthLabel, MapCenterButton, UploadLabel, DownloadLabel
 from typedef.win import WindowNames
 from cli.sentinel import  NodeTreeData
 from typedef.konstants import NodeKeys, TextStrings, MeileColors, HTTParams, IBCTokens, ConfParams
@@ -17,7 +17,7 @@ from fiat.stripe_pay.dist import scrtsxx
 from adapters.ChangeDNS import ChangeDNS
 from adapters.DNSCryptproxy import HandleDNSCryptProxy as dcp
 from helpers.helpers import format_byte_size
-from helpers.bandwidth import compute_consumed_data, compute_consumed_hours, init_GetConsumedWhileConnected, GetConsumedWhileConnected
+from helpers.bandwidth import compute_consumed_data, compute_consumed_hours, init_GetConsumedWhileConnected, GetConsumedWhileConnected, GetTotalDataWhileConnected
 from helpers.aes import SecureSeed
 
 from kivy.properties import BooleanProperty, StringProperty, ColorProperty,ObjectProperty, NumericProperty
@@ -187,7 +187,7 @@ class WalletRestore(Screen):
         FILE.close()
         
         ss = SecureSeed()
-        encrypted_seed = ss.encrypt_seed(seed_phrase, keyring_passphrase)
+        encrypted_seed = ss.encrypt_seed(Wallet['seed'], keyring_passphrase)
         with open(path.join(ConfParams.KEYRINGDIR, "seed"), "wb") as f:
             f.write(base64.b64decode(encrypted_seed))
             
@@ -230,7 +230,7 @@ class PreLoadWindow(Screen):
         self.NodeTree = NodeTreeData(None)
 
         self.GenerateUUID()
-        self.CreateWarpConfig()
+        #self.CreateWarpConfig()
         self.CopyBin()
 
         chdir(MeileGuiConfig.BASEDIR)
@@ -260,19 +260,6 @@ class PreLoadWindow(Screen):
         MeileConfig = MeileGuiConfig()
         MeileConfig.copy_bin_dir()
 
-    def CreateWarpConfig(self):
-        MeileConfig = MeileGuiConfig()
-        CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
-
-        if 'warp' in CONFIG:
-            return
-        else:
-            CONFIG['warp'] = {}
-            CONFIG['warp']['registered'] = str(0)
-        with open(MeileGuiConfig.CONFFILE,'w') as FILE:
-            CONFIG.write(FILE)
-        FILE.close()
-
     def GenerateUUID(self):
         MeileConfig = MeileGuiConfig()
         CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
@@ -289,24 +276,6 @@ class PreLoadWindow(Screen):
     def get_logo(self):
         Config = MeileGuiConfig()
         return Config.resource_path(MeileColors.LOGO_HD)
-
-    @mainthread
-    def add_loading_popup(self, title_text):
-        self.dialog = None
-        self.dialog = MDDialog(
-            title=title_text,
-            md_bg_color=get_color_from_hex(MeileColors.BLACK),
-            buttons=[
-                MDFlatButton(
-                    text="OKAY",
-                    theme_text_color="Custom",
-                    text_color=Meile.app.theme_cls.primary_color,
-                    on_release=self.quit_meile,
-                ),
-                ]
-        )
-        self.dialog.open()
-
 
     @delayable
     def update_status_text(self, t, dt):
@@ -390,6 +359,7 @@ class MainWindow(Screen):
     SubCaller = False
     PlanID = None
     dnscrypt = False
+    PlanConnect = False
 
 
 
@@ -471,7 +441,7 @@ class MainWindow(Screen):
             hwf = HandleWalletFunctions()
             thread = Thread(target=lambda: self.ping())
             thread.start()
-            t = Thread(target=lambda: hwf.connect(ID, naddress, proto, deposit))
+            t = Thread(target=lambda: hwf.connect(ID, naddress, proto, deposit, plan=PlanConnect))
             t.start()
             
             while t.is_alive():
@@ -527,7 +497,7 @@ class MainWindow(Screen):
                             self.setQuotaClock(ID, naddress, False)
                     
                         
-                        
+                    self.setTotalBytesClock()
                     self.remove_loading_widget2()
                     #print("REmove loading Widget")
                     # Here change the Connection button to a "Disconnect" button then display dialogAdd commentMore actions
@@ -586,6 +556,7 @@ class MainWindow(Screen):
                     naddress = self.NodeCarouselData['address']
                     proto    = self.NodeCarouselData['protocol']
                     deposit  = "dvpn"
+                    PlanConnect = True
                     connect()
                     return
                 else:
@@ -616,7 +587,26 @@ class MainWindow(Screen):
                 print("No Clock... Yet")
             self.clock = None
             
-            
+    def setTotalBytesClock(self):
+        self.clockBytes = Clock.create_trigger(self.GetUpDownBytes,10)
+        try:
+            self.clockBytes()
+        except:
+            pass
+        return True
+    
+    def GetUpDownBytes(self, dt):
+        data_bytes = GetTotalDataWhileConnected()
+        print(f"data bytes: {data_bytes}")
+        self.upload_widget.text = f"{data_bytes['sent']}↑"
+        self.download_widget.text = f"{data_bytes['rcvd']}↓"
+        print(self.upload_widget.text)
+        print(self.download_widget.text)
+        try:
+            self.clockBytes()
+        except:
+            pass
+        return True        
        
          
     def setQuotaClock(self,ID, naddress, hourly):
@@ -803,16 +793,24 @@ class MainWindow(Screen):
             self.MeileMap.map_source = source
 
             layout = FloatLayout(size_hint=(1,1))
-            bw_label          = BandwidthLabel()
-            self.quota        = BandwidthBar()
-            self.quota_pct    = QuotaPct()
-            self.map_widget_1 = IPAddressTextField()
-            self.map_widget_2 = ConnectedNode()
-            self.map_widget_3 = ProtectedLabel()
-            recenter     = MapCenterButton()
+            bw_label             = BandwidthLabel()
+            self.quota           = BandwidthBar()
+            self.quota_pct       = QuotaPct()
+            self.map_widget_1    = IPAddressTextField()
+            self.map_widget_2    = ConnectedNode()
+            self.map_widget_3    = ProtectedLabel()
+            self.upload_widget   = UploadLabel()
+            self.download_widget = DownloadLabel()
+            recenter             = MapCenterButton()
             
             recenter.on_release = self.recenter_map
             
+            self.upload_widget.font_name = self.upload_widget.get_font()
+            self.upload_widget.font_size = "30sp"
+            self.upload_widget.text = f"0MB↑"
+            self.download_widget.font_name = self.upload_widget.get_font()
+            self.download_widget.font_size = "30sp"
+            self.download_widget.text = f"0MB↓"
             self.MeileMap.bind(lat=self.check_boundaries)
             self.MeileMap.bind(lon=self.check_boundaries)
             
@@ -824,6 +822,8 @@ class MainWindow(Screen):
             layout.add_widget(self.quota)
             layout.add_widget(self.quota_pct)
             layout.add_widget(recenter)
+            layout.add_widget(self.upload_widget)
+            layout.add_widget(self.download_widget)
 
             self.quota.value = 0
             self.quota_pct.text = "0%"
@@ -2129,7 +2129,7 @@ class PlanScreen(MDBoxLayout):
                 cost=str(round(float(data['plan_price'] / IBCTokens.SATOSHI),2)) + data['plan_denom'],
                 logo_image=data['logo'],
                 uuid=data['uuid'],
-                id=str(data['subscription_id']),
+                id=str(plan['subscription_id']) if plan else str(0),
                 plan_id=str(data['plan_id'])
             ),
             content=PlanDetails(
