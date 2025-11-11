@@ -33,8 +33,7 @@ class ChangeDNS:
                 DEBIAN = False
             
             if not DEBIAN:
-                CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
-                custom_dns = CONFIG['network']['dns']
+                custom_dns = self.dns
                 resolv_file = path.join(MeileConfig.BASEDIR, "dns")
                 
                 dns_file = open(resolv_file, "w")
@@ -57,9 +56,7 @@ class ChangeDNS:
                 proc_out, proc_err = proc.communicate()
             
             else:
-            
-                CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
-                custom_dns = CONFIG['network']['dns']
+                custom_dns = self.dns
                 interfaces = list(psutil.net_if_addrs().keys())
                 print("Interface names:", interfaces)
                 
@@ -75,11 +72,20 @@ class ChangeDNS:
                     tmp.write("set -euo pipefail\n\n")
 
                     dns_quoted = shlex.quote(str(custom_dns))
-                    resolver_cmd = "systemd-resolve" if shutil.which("systemd-resolve") else "resolvectl"   
+                    resolver_cmd = None
+                    if shutil.which("systemd-resolve"):
+                        resolver_cmd = "systemd-resolve"
+                        cmd_template = "{resolver_cmd} --set-dns={dns} -i {iface}"
+                    elif shutil.which("resolvectl"):
+                        resolver_cmd = "resolvectl"
+                        cmd_template = "{resolver_cmd} dns {iface} {dns}"
+                    else:
+                        return   
                     for k, iface in enumerate(non_loopback_interfaces):
                         iface_quoted = shlex.quote(iface)
+                        dns_quoted = shlex.quote(str(custom_dns))
                         tmp.write(f"# iface[{k}] = {iface}\n")
-                        tmp.write(f"{resolver_cmd} --set-dns={dns_quoted} -i {iface_quoted}\n\n")
+                        tmp.write(f"{cmd_template.format(resolver_cmd=resolver_cmd, iface=iface_quoted, dns=dns_quoted)}\n")
 
                     tmp.flush()
                     tmp.close()
@@ -91,12 +97,12 @@ class ChangeDNS:
                 except subprocess.CalledProcessError as exc:
                     print(f"Command failed: {exc}")
                     return
-                finally:
-                    if tmp is not None:
-                        try:
-                            script_path.unlink(missing_ok=True)
-                        except Exception:
-                            pass
+                #finally:
+                #    if tmp is not None:
+                #        try:
+                #            script_path.unlink(missing_ok=True)
+                #        except Exception:
+                #            pass
                 
         elif pltfrm == "Darwin":
             # sudo /usr/sbin/networksetup -listnetworkserviceorder

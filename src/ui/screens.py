@@ -2233,6 +2233,7 @@ class SettingsScreen(Screen):
         self.GB        = config['subscription'].get('gb', '5')
         self.FRAGMENT  = config['network'].get('fragment', '0')
         self.DNS       = config['network'].get('dns', '1.1.1.1')
+        self.CONFIGDNS = config['network'].get('dns', '1.1.1.1')
         
         self.MeileConfig = MeileGuiConfig()
 
@@ -2423,9 +2424,9 @@ class SettingsScreen(Screen):
             '''
             config.set('network', what, getattr(self, what.upper()))
             if what == "dns":
-                print(getattr(self, what.upper()))
-                dns = ChangeDNS(dns=getattr(self, what.upper()))
-                dns.change_dns()
+                if self.CONFIGDNS != getattr(self, what.upper()):
+                    dns = ChangeDNS(dns=getattr(self, what.upper()))
+                    dns.change_dns()
         
         what = "gb"
         config.set('subscription', what, str(getattr(self, what.upper())))
