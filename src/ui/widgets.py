@@ -2279,11 +2279,13 @@ class NodeCarousel(MDBoxLayout):
         sub_node = subscribe_dialog.return_deposit_text()
         spdialog = ProcessingSubDialog(sub_node[2], sub_node[1], sub_node[0] )
         deposit = self.reparse_coin_deposit(sub_node[0], sub_node[-1])
+        
+        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
+        mw.SubCaller = True
         try:
             self.dialog.dismiss()
             self.dialog = None
         except:
-            mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
             mw.dialog.dismiss()
             mw.dialog = None
             
@@ -2312,6 +2314,16 @@ class NodeCarousel(MDBoxLayout):
                 print(".", end="")
                 sys.stdout.flush()
                 yield 0.5
+            self.dialog.dismiss()
+            mw.connect_routine(node=sub_node[1], 
+                               protocol=self.protocol,
+                               sub_deposit=deposit,
+                               units=sub_node[3],
+                               hourly=sub_node[4],
+                               price = hwf.price)
+            
+            
+            '''    
             try: 
                 if hwf.returncode[0]:
                     self.dialog.dismiss()
@@ -2354,7 +2366,8 @@ class NodeCarousel(MDBoxLayout):
                             on_release=self.closeDialog
                         ),])
                 self.dialog.open()
-                
+            '''
+                    
     def reparse_coin_deposit(self, deposit, coin):
         ibcaddy = self.check_ibc_denom(coin)
         if ibcaddy == "xmr":

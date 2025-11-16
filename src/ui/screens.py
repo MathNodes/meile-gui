@@ -470,8 +470,16 @@ class MainWindow(Screen):
             pass
             
     
-    def connect_routine(self):
-        print(f"Selected Subscription: {self.SelectedSubscription}")
+    def connect_routine(self, 
+                        node: str = "", 
+                        protocol: str = "WireGuard",
+                        sub_deposit: str = "0dvpn",
+                        units: int = 0,
+                        hourly: bool = False,
+                        price: dict = {},
+                        ):
+        
+        
         
         @delayable
         def connect():
@@ -491,8 +499,24 @@ class MainWindow(Screen):
             hwf = HandleWalletFunctions()
             thread = Thread(target=lambda: self.ping())
             thread.start()
-            t = Thread(target=lambda: hwf.connect(ID, naddress, proto, deposit, plan=PlanConnect))
-            t.start()
+            if not self.SubCaller:
+                t = Thread(target=lambda: hwf.connect(ID, 
+                                                      naddress, 
+                                                      proto, 
+                                                      deposit, 
+                                                      plan=PlanConnect))
+                t.start()
+            else:
+                t = Thread(target=lambda: hwf.connect(0, 
+                                                      node, 
+                                                      protocol, 
+                                                      sub_deposit,
+                                                      price=price, 
+                                                      plan=False, 
+                                                      units=units, 
+                                                      hourly=hourly))
+                t.start()
+                self.SubCaller = False
             
             while t.is_alive():
                 yield 0.0314
@@ -517,9 +541,17 @@ class MainWindow(Screen):
                 if hwf.connected['result']:
                     print("CONNECTED!!!")
                     self.CONNECTED = True
+                    Moniker = self.NodeCarouselData['moniker']
                     
+                    '''
                     if self.PlanID:
                         Moniker = self.NodeCarouselData['moniker']
+                    
+                    # TODO:    
+                    # All this in the conditional is no longer needed as we don't have subscriptions anymore
+                    # need to redo bandwidth meter as well
+                    # can probably use setTotalBytesClock() instead for gigabyte sessions
+                    # will need one for timed sessions as well
                     else:
                         Moniker                         = self.SelectedSubscription['moniker']
                         self.NodeSwitch['moniker']      = self.SelectedSubscription['moniker']
@@ -546,7 +578,7 @@ class MainWindow(Screen):
                             self.setQuotaClock(ID, naddress, True)
                         else:
                             self.setQuotaClock(ID, naddress, False)
-                            
+                    '''        
                         
                     self.setTotalBytesClock()
                     self.remove_loading_widget2()
@@ -587,7 +619,7 @@ class MainWindow(Screen):
                 print(str(e))
                 self.remove_loading_widget2()
                 self.dialog = MDDialog(
-                    title="Something went wrong. Not connected: User cancelled",
+                    title="Something went wrong. Not connected: User cancelled or timed out",
                     md_bg_color=get_color_from_hex(MeileColors.BLACK),
                     buttons=[
                             MDFlatButton(
@@ -600,23 +632,45 @@ class MainWindow(Screen):
         
         if self.ids.connect_button.source == self.return_connect_button("c"):
             #print(self.NodeCarouselData)
-            if self.NodeCarouselData['moniker']:
-                if self.PlanID:
-                    ID       = self.PlanID
-                    naddress = self.NodeCarouselData['address']
-                    proto    = self.NodeCarouselData['protocol']
-                    deposit  = "dvpn"
-                    PlanConnect = True
-                    connect()
-                    return
-                else:
-                    self.SubCaller = True
-                    nc = NodeCarousel(node=None)
-                    nc.subscribe_to_node(self.NodeCarouselData['gb_prices'],
-                                         self.NodeCarouselData['hr_prices'],
-                                         self.NodeCarouselData['address'],
-                                         self.NodeCarouselData['moniker'])
+            #if self.NodeCarouselData['moniker']:
+            if self.PlanID:
+                ID       = self.PlanID
+                naddress = self.NodeCarouselData['address']
+                proto    = self.NodeCarouselData['protocol']
+                deposit  = "dvpn"
+                PlanConnect = True
+                connect()
+                return
+            elif self.SubCaller:
+                print("Calling for a session subscription")
+                connect()
                     
+            else:
+                self.remove_loading_widget2()
+                self.dialog = MDDialog(
+                    title="No plan selected. Select a plan before trying to connect.",
+                    md_bg_color=get_color_from_hex(MeileColors.BLACK),
+                    buttons=[
+                            MDFlatButton(
+                                text="OK",
+                                theme_text_color="Custom",
+                                text_color=get_color_from_hex(MeileColors.MEILE),
+                                on_release=partial(self.call_ip_get, False, "")
+                            ),])
+                self.dialog.open()
+                return 
+                '''
+                
+                self.SubCaller = True
+                nc = NodeCarousel(node=None)
+                nc.subscribe_to_node(self.NodeCarouselData['gb_prices'],
+                                     self.NodeCarouselData['hr_prices'],
+                                     self.NodeCarouselData['address'],
+                                     self.NodeCarouselData['moniker'])
+                '''
+                    
+            # not needed since we are no longer processing subscriptions
+            '''       
             if self.SelectedSubscription['id'] and self.SelectedSubscription['address'] and self.SelectedSubscription['protocol']:
                 ID       = self.SelectedSubscription['id']
                 naddress = self.SelectedSubscription['address']
@@ -629,6 +683,8 @@ class MainWindow(Screen):
             else:
                 # TODO
                 print("Something went wrong")
+            '''
+            
         else:
             self.disconnect_from_node()
             try: 
@@ -1214,11 +1270,14 @@ class MainWindow(Screen):
                 
             #self.warp_disconnect(None)
             self.dialog = None
+            # Edit since everything will be done from NodeCarousel
+            rating_dialog = RatingContent(self.NodeCarouselData['moniker'], self.NodeCarouselData['address'])
+            '''
             if self.PlanID:
                 rating_dialog = RatingContent(self.NodeCarouselData['moniker'], self.NodeCarouselData['address'])
             else:
                 rating_dialog = RatingContent(self.NodeSwitch['moniker'], self.NodeSwitch['node'])
-            
+            '''
             self.dialog = MDDialog(
                 title="Node Rating",
                 md_bg_color=get_color_from_hex(MeileColors.BLACK),

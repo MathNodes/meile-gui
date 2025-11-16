@@ -29,12 +29,14 @@ import configparser
 import socket
 import bech32
 from bip_utils import Bip39SeedGenerator, Bip44, Bip44Coins
-from sentinel_protobuf.sentinel.subscription.v2.msg_pb2 import MsgCancelRequest, MsgCancelResponse
+#from sentinel_protobuf.sentinel.subscription.v2.msg_pb2 import MsgCancelRequest, MsgCancelResponse
 
 import mospy
 from mospy import Transaction
 from sentinel_protobuf.cosmos.base.v1beta1.coin_pb2 import Coin
+from sentinel_protobuf.sentinel.types.v1.price_pb2 import Price
 from sentinel_sdk.sdk import SDKInstance
+
 #from sentinel_sdk.types import NodeType, TxParams, Status, Price
 from sentinel_sdk.types import NodeType, TxParams, Status
 from sentinel_sdk.utils import search_attribute
@@ -433,6 +435,7 @@ class HandleWalletFunctions():
 
     # This method should be renamed as: 'subscribe to node'
     def subscribe(self, KEYNAME, NODE, DEPOSIT, GB, hourly):
+        self.returncode = (False, 1337)
         if not KEYNAME:
             self.returncode = (False, 1337)
             return
@@ -487,6 +490,37 @@ class HandleWalletFunctions():
             self.returncode = (False, f"Balance is too low, required: {round(amount_required / IBCTokens.SATOSHI, 4)}{token_ibc[DENOM][1:]}")
             return
         
+        result = sdk.nodes.QueryNode(address=NODE)
+        
+        k = 0
+        for gb_price in result.gigabyte_prices:
+            if DENOM == gb_price.denom:
+                break
+            else:
+                k += 1
+        
+        if k > len(result.gigabyte_prices) - 1:
+            self.returncode = (False, f"No proper denomination found!")
+            return
+        
+        if hourly:
+            price_denom = result.hourly_prices[k].denom
+            base_value = result.hourly_prices[k].base_value
+            quote_value = result.hourly_prices[k].quote_value
+        else:
+            price_denom = result.gigabyte_prices[k].denom
+            base_value = result.gigabyte_prices[k].base_value
+            quote_value = result.gigabyte_prices[k].quote_value
+            
+        self.price = {"denom" : price_denom,
+                 "base_value" : base_value,
+                 "quote_value" : quote_value}
+        
+        self.returncode = (True, f"Success")
+        
+        #self.connect(0, NODE, TYPE, DEPOSIT, price=price, plan = False, gb=GB, hourly=hourly)
+        
+        '''
         if DENOM == IBCTokens.IBCUNITTOKEN['uatom']:
             fee = int(ConfParams.FEE / 10)
         else:
@@ -502,13 +536,13 @@ class HandleWalletFunctions():
         )
         
         # figure out what goes in Price()
-        '''
+        
         price = Price(
             denom=DENOM
             base_value=TBD
             quote_value=TBD)
         
-        '''
+        
         tx = sdk.nodes.SubscribeToNode(
             node_address=NODE,
             gigabytes=0 if hourly else GB,
@@ -543,11 +577,13 @@ class HandleWalletFunctions():
 
         self.returncode = (False, "Tx error")
         return
+        '''
         
     def DetermineDenom(self, deposit):
         for key,value in IBCTokens.IBCUNITTOKEN.items():
             if value in deposit:
                 return value
+    
             
     def unsubscribe(self, subId):
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
@@ -639,9 +675,9 @@ class HandleWalletFunctions():
     
             
     
-    def connect(self, ID, address, type, deposit, plan: bool = False):
+    def connect(self, ID, address, type, deposit, price: dict = {}, plan: bool = False, units: int = 0, hourly: bool = False):
        
-        
+        print(f"connect() deposit: {deposit}")
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
         KEYNAME = CONFIG['wallet'].get('keyname', '')
@@ -686,13 +722,17 @@ class HandleWalletFunctions():
         
         if regres:
             denom = regres.group(2)
+            print(f"connect() denom: {denom}")
 
-            for k,v in IBCTokens.UNITTOKEN.items():
-                if denom == v:
-                    udenom = k
-            for k,v in IBCTokens.IBCUNITTOKEN.items():
-                if udenom == k:
-                    DENOM = v
+            if denom in list(IBCTokens.UNITTOKEN.keys()) + list(IBCTokens.IBCUNITTOKEN.values()):
+                DENOM = denom
+            else:
+                for k,v in IBCTokens.UNITTOKEN.items():
+                    if denom == v:
+                        udenom = k
+                for k,v in IBCTokens.IBCUNITTOKEN.items():
+                    if udenom == k:
+                        DENOM = v
         else:
             DENOM = "udvpn"
         
@@ -735,8 +775,18 @@ class HandleWalletFunctions():
         if plan:
             tx = sdk.subscriptions.StartSession(subscription_id=int(ID), address=address, tx_params=tx_params)
         else:
-            self.connected = {"v2ray_pid" : None,  "result": False, "status" : "Not Implemented"}
-            return
+            sprice = Price(denom=str(price['denom']),
+                           base_value=str(price['base_value']),
+                           quote_value=str(price['quote_value'])
+                           )
+            
+            
+            tx = sdk.nodes.SubscribeToNode(node_address=address, 
+                                           price=sprice, 
+                                           gigabytes=0 if hourly else int(units),
+                                           hours=int(units) if hourly else 0,
+                                           tx_params=tx_params)
+            
         conndesc.write("Creating new session...\n")
         conndesc.flush()
         # Will need to handle log responses with friendly UI response in case of session create error
@@ -758,7 +808,10 @@ class HandleWalletFunctions():
             return
         print(tx_response)
         
-        session_id = search_attribute(tx_response, "sentinel.subscription.v3.EventCreateSession", "session_id")
+        
+        session_id = search_attribute(tx_response,
+                                      "sentinel.subscription.v3.EventCreateSession" if plan else "sentinel.node.v3.EventCreateSession", 
+                                      "session_id")
 
         '''
         from_event = {
