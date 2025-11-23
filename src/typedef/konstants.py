@@ -31,7 +31,7 @@ class ConfParams():
     DEFAULT_SUBS     = [5 * i for i in range(1, 6)]
     BTCPAYADJ        = 1.10
     XMRPAYADJ        = 3.14
-    SUBFEE           = 0.0314
+    SUBFEE           = 0.042069
 
 class HTTParams():
     # Note http://128.199.90.172:26657 is testnet ONLY!
@@ -120,7 +120,7 @@ class HTTParams():
     API_PLANS_ADD          = "/v1/add"
     API_PLANS_NODES        = "/v1/nodes/%s" # variable is plan uuid
     SESSIONS_API_URL       = '/sentinel/accounts/%s/sessions'
-    BALANCES_ENDPOINT      = "/bank/balances/"
+    BALANCES_ENDPOINT      = "/cosmos/bank/v1beta1/balances/"
     ICANHAZURL             = "https://icanhazip.com"
     ICANHAZDNS             = "icanhazip.com"
     IFCONFIGDNS            = "ifconfig.co"
@@ -605,8 +605,8 @@ class IBCTokens():
     
 class TextStrings():
     dash = "-"
-    VERSION = "v2.3.3"
-    BUILD = "17605738623"
+    VERSION = "v2.4.3"
+    BUILD = "17632579303"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"
     FailedHealthCheck = "Failed Sentinel Health Check"

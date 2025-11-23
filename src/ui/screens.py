@@ -59,7 +59,7 @@ from os import path, chdir, remove
 from threading import Thread
 import threading
 from unidecode import unidecode
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 from treelib.exceptions import NodeIDAbsentError
 import base64
@@ -384,6 +384,7 @@ class MainWindow(Screen):
     
     SubCaller = False
     PlanID = None
+    PlanConnect = False
 
 
 
@@ -469,8 +470,16 @@ class MainWindow(Screen):
             pass
             
     
-    def connect_routine(self):
-        print(f"Selected Subscription: {self.SelectedSubscription}")
+    def connect_routine(self, 
+                        node: str = "", 
+                        protocol: str = "WireGuard",
+                        sub_deposit: str = "0dvpn",
+                        units: int = 0,
+                        hourly: bool = False,
+                        price: dict = {},
+                        ):
+        
+        
         
         @delayable
         def connect():
@@ -490,8 +499,24 @@ class MainWindow(Screen):
             hwf = HandleWalletFunctions()
             thread = Thread(target=lambda: self.ping())
             thread.start()
-            t = Thread(target=lambda: hwf.connect(ID, naddress, proto, deposit))
-            t.start()
+            if not self.SubCaller:
+                t = Thread(target=lambda: hwf.connect(ID, 
+                                                      naddress, 
+                                                      proto, 
+                                                      deposit, 
+                                                      plan=PlanConnect))
+                t.start()
+            else:
+                t = Thread(target=lambda: hwf.connect(0, 
+                                                      node, 
+                                                      protocol, 
+                                                      sub_deposit,
+                                                      price=price, 
+                                                      plan=False, 
+                                                      units=units, 
+                                                      hourly=hourly))
+                t.start()
+                self.SubCaller = False
             
             while t.is_alive():
                 yield 0.0314
@@ -516,9 +541,17 @@ class MainWindow(Screen):
                 if hwf.connected['result']:
                     print("CONNECTED!!!")
                     self.CONNECTED = True
+                    Moniker = self.NodeCarouselData['moniker']
                     
+                    '''
                     if self.PlanID:
                         Moniker = self.NodeCarouselData['moniker']
+                    
+                    # TODO:    
+                    # All this in the conditional is no longer needed as we don't have subscriptions anymore
+                    # need to redo bandwidth meter as well
+                    # can probably use setTotalBytesClock() instead for gigabyte sessions
+                    # will need one for timed sessions as well
                     else:
                         Moniker                         = self.SelectedSubscription['moniker']
                         self.NodeSwitch['moniker']      = self.SelectedSubscription['moniker']
@@ -545,7 +578,13 @@ class MainWindow(Screen):
                             self.setQuotaClock(ID, naddress, True)
                         else:
                             self.setQuotaClock(ID, naddress, False)
-                            
+                    '''
+                    
+                    if hourly:
+                        self.setQuotaClock(units, True)
+                    else:
+                        self.setQuotaClock(units, False)
+                                
                         
                     self.setTotalBytesClock()
                     self.remove_loading_widget2()
@@ -586,7 +625,7 @@ class MainWindow(Screen):
                 print(str(e))
                 self.remove_loading_widget2()
                 self.dialog = MDDialog(
-                    title="Something went wrong. Not connected: User cancelled",
+                    title="Something went wrong. Not connected: User cancelled or timed out",
                     md_bg_color=get_color_from_hex(MeileColors.BLACK),
                     buttons=[
                             MDFlatButton(
@@ -599,22 +638,45 @@ class MainWindow(Screen):
         
         if self.ids.connect_button.source == self.return_connect_button("c"):
             #print(self.NodeCarouselData)
-            if self.NodeCarouselData['moniker']:
-                if self.PlanID:
-                    ID       = self.PlanID
-                    naddress = self.NodeCarouselData['address']
-                    proto    = self.NodeCarouselData['protocol']
-                    deposit  = "dvpn"
-                    connect()
-                    return
-                else:
-                    self.SubCaller = True
-                    nc = NodeCarousel(node=None)
-                    nc.subscribe_to_node(self.NodeCarouselData['gb_prices'],
-                                         self.NodeCarouselData['hr_prices'],
-                                         self.NodeCarouselData['address'],
-                                         self.NodeCarouselData['moniker'])
+            #if self.NodeCarouselData['moniker']:
+            if self.PlanID:
+                ID       = self.PlanID
+                naddress = self.NodeCarouselData['address']
+                proto    = self.NodeCarouselData['protocol']
+                deposit  = "dvpn"
+                PlanConnect = True
+                connect()
+                return
+            elif self.SubCaller:
+                print("Calling for a session subscription")
+                connect()
                     
+            else:
+                self.remove_loading_widget2()
+                self.dialog = MDDialog(
+                    title="No plan selected. Select a plan before trying to connect.",
+                    md_bg_color=get_color_from_hex(MeileColors.BLACK),
+                    buttons=[
+                            MDFlatButton(
+                                text="OK",
+                                theme_text_color="Custom",
+                                text_color=get_color_from_hex(MeileColors.MEILE),
+                                on_release=partial(self.call_ip_get, False, "")
+                            ),])
+                self.dialog.open()
+                return 
+                '''
+                
+                self.SubCaller = True
+                nc = NodeCarousel(node=None)
+                nc.subscribe_to_node(self.NodeCarouselData['gb_prices'],
+                                     self.NodeCarouselData['hr_prices'],
+                                     self.NodeCarouselData['address'],
+                                     self.NodeCarouselData['moniker'])
+                '''
+                    
+            # not needed since we are no longer processing subscriptions
+            '''       
             if self.SelectedSubscription['id'] and self.SelectedSubscription['address'] and self.SelectedSubscription['protocol']:
                 ID       = self.SelectedSubscription['id']
                 naddress = self.SelectedSubscription['address']
@@ -627,6 +689,8 @@ class MainWindow(Screen):
             else:
                 # TODO
                 print("Something went wrong")
+            '''
+            
         else:
             self.disconnect_from_node()
             try: 
@@ -658,71 +722,62 @@ class MainWindow(Screen):
         return True
         
          
-    def setQuotaClock(self,ID, naddress, hourly):
+    def setQuotaClock(self,units, hourly):
         if hourly:
             # Need first call to report initial values to update UI, then set clock to reoccur. 
-            self.connected_quota(self.PersistentBandwidth[ID]['allocated'],
-                                 self.PersistentBandwidth[ID]['consumed'],
-                                 None)
+            self.connected_quota(units, 0, hourly, None)
             
             self.clock = Clock.create_trigger(partial(self.connected_quota,
-                                                    self.PersistentBandwidth[ID]['allocated'],
-                                                    self.PersistentBandwidth[ID]['consumed']),120)
+                                                    units,
+                                                    self.consumed),120)
             self.clock()
             return True
         
         BytesDict = init_GetConsumedWhileConnected()
         print(BytesDict)
-        self.UpdateQuotaForNode(self.NodeSwitch['id'],
-                                self.NodeSwitch['node'],
+        self.UpdateQuotaForNode(units,
                                 BytesDict,
                                 None)
         
         self.clock = Clock.create_trigger(partial(self.UpdateQuotaForNode,
-                                                  self.NodeSwitch['id'],
-                                                  self.NodeSwitch['node'],
+                                                  units,
                                                   BytesDict),120)
 
         self.clock()
         
-    def connected_quota(self, allocated, consumed, dt):
+    def connected_quota(self, allocated, consumed, hourly, dt):
               
         if self.CONNECTED:
             #allocated = float(allocated.replace('GB',''))
-            if "hrs" in allocated:
-                allocated_str         = deepcopy(allocated)
-                allocated             = float(allocated.split('hrs')[0].rstrip().lstrip())
-                consumed              = compute_consumed_hours(allocated_str,self.NodeSwitch['expirary'])
-                self.quota_pct.text   = str(round(float(float(consumed/allocated)*100),2)) + "%"
-                self.quota.value      = round(float(float(consumed/allocated)*100),2)
+            if hourly:
+                self.allocated        = float(allocated)
+                expiration            = datetime.now() + timedelta(hours=allocated)
+                formatted_expiration  = expiration.strftime('%Y-%m-%d %H:%M:%S')
+                self.consumed         = compute_consumed_hours(self.allocated,formatted_expiration)
+                self.quota_pct.text   = str(round(float(float(self.consumed/self.allocated)*100),2)) + "%"
+                self.quota.value      = round(float(float(self.consumed/self.allocated)*100),2)
                 try: 
                     self.clock()
                 except Exception as e:
-                    print("Error running clock()")
                     return False 
             else:
-                allocated = compute_consumed_data(allocated)
-                consumed  = compute_consumed_data(consumed)
-                self.quota_pct.text = str(round(float(float(consumed/allocated)*100),2)) + "%"
-                return round(float(float(consumed/allocated)*100),3)
+                self.allocated = allocated
+                self.consumed  = compute_consumed_data(consumed)
+                self.quota_pct.text = str(round(float(float(self.consumed/self.allocated)*100),2)) + "%"
+                return round(float(float(self.consumed/self.allocated)*100),3)
         else:
             self.quota_pct.text = "0.00%"
             self.quota.value    = 0
             return float(0)
         
     # Used solely for data subscriptions    
-    def UpdateQuotaForNode(self, ID, naddress, BytesDict, dt):
+    def UpdateQuotaForNode(self,units, BytesDict, dt):
         try:
-            print("%s: Getting Quota: " % ID, end= ' ')
-            startConsumption = self.PersistentBandwidth[ID]['og_consumed']
-            self.PersistentBandwidth[ID]['consumed'] = GetConsumedWhileConnected(compute_consumed_data(startConsumption),BytesDict)
-            
-            self.quota.value = self.connected_quota(self.PersistentBandwidth[ID]['allocated'],
-                                                    self.PersistentBandwidth[ID]['consumed'],
-                                                    None)
-            print("%s,%s - %s%%" % (self.PersistentBandwidth[ID]['consumed'],
-                                  startConsumption,
-                                  self.quota.value))
+            consumed = GetConsumedWhileConnected(compute_consumed_data("0GB"),BytesDict)
+            self.quota.value = self.connected_quota(units, consumed, False, None)
+            print("%s,%sGB - %s%%" % (consumed,
+                                    units,
+                                    self.quota.value))
         except Exception as e:
             print(str(e))
             print("Error getting bandwidth!")
@@ -1212,11 +1267,14 @@ class MainWindow(Screen):
                 
             #self.warp_disconnect(None)
             self.dialog = None
+            # Edit since everything will be done from NodeCarousel
+            rating_dialog = RatingContent(self.NodeCarouselData['moniker'], self.NodeCarouselData['address'])
+            '''
             if self.PlanID:
                 rating_dialog = RatingContent(self.NodeCarouselData['moniker'], self.NodeCarouselData['address'])
             else:
                 rating_dialog = RatingContent(self.NodeSwitch['moniker'], self.NodeSwitch['node'])
-            
+            '''
             self.dialog = MDDialog(
                 title="Node Rating",
                 md_bg_color=get_color_from_hex(MeileColors.BLACK),
@@ -2175,7 +2233,8 @@ class PlanScreen(MDBoxLayout):
                 plan = p
                 break
 
-
+        #print(f"Plan: {plan}")
+        #print(f"data: {data}")
         # In the future cost should be both in dvpn and euro (fuck usd)
         # Can use coin_api to get dvpn price and translate cost
         item = PlanAccordion(
@@ -2186,7 +2245,7 @@ class PlanScreen(MDBoxLayout):
                 cost=str(round(float(data['plan_price'] / IBCTokens.SATOSHI),2)) + data['plan_denom'],
                 logo_image=data['logo'],
                 uuid=data['uuid'],
-                id=str(data['subscription_id']),
+                id=str(plan['subscription_id']) if plan else str(0),
                 plan_id=str(data['plan_id'])
             ),
             content=PlanDetails(
