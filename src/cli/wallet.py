@@ -66,8 +66,8 @@ class HandleWalletFunctions():
         address = CONFIG['wallet'].get('address', None)
         
         # Don't try to migrate if just starting app for first time
-        if address:
-            self.__migrate_wallets()
+        #if address:
+        #    self.__migrate_wallets()
         
     @staticmethod
     def decode_jwt_file(fpath: str, password: str) -> dict:
