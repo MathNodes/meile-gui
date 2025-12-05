@@ -20,7 +20,7 @@ def compute_consumed_data(consumed):
 
 def compute_consumed_hours(allocated, expirary_date):
         
-    allocated       = allocated.split('hrs')[0].rstrip().lstrip()
+    #allocated       = allocated.split('hrs')[0].rstrip().lstrip()
     now             = datetime.now()
     #expirary_date   = datetime.strptime(expirary_date,'%b %d %Y, %I:%M %p')
     try:

@@ -385,6 +385,7 @@ class MainWindow(Screen):
     SubCaller = False
     PlanID = None
     PlanConnect = False
+    HourlyFirstRun = True
 
 
 
@@ -693,12 +694,17 @@ class MainWindow(Screen):
             
         else:
             self.disconnect_from_node()
+            self.HourlyFirstRun = True
             try: 
                 self.clock.cancel()
             except:
                 print("No Clock... Yet")
             self.clock = None
-            
+            try: 
+                self.clockBytes.cancel()
+            except:
+                print("No Clock Bytes... Yet")
+            self.clockBytes = None
             
     def setTotalBytesClock(self):
         self.clockBytes = Clock.create_trigger(self.GetUpDownBytes,10)
@@ -729,7 +735,8 @@ class MainWindow(Screen):
             
             self.clock = Clock.create_trigger(partial(self.connected_quota,
                                                     units,
-                                                    self.consumed),120)
+                                                    0,
+                                                    hourly),120)
             self.clock()
             return True
         
@@ -751,8 +758,10 @@ class MainWindow(Screen):
             #allocated = float(allocated.replace('GB',''))
             if hourly:
                 self.allocated        = float(allocated)
-                expiration            = datetime.now() + timedelta(hours=allocated)
-                formatted_expiration  = expiration.strftime('%Y-%m-%d %H:%M:%S')
+                if self.HourlyFirstRun:
+                    self.expiration       = datetime.now() + timedelta(hours=self.allocated)
+                    self.HourlyFirstRun   = False
+                formatted_expiration  = self.expiration.strftime('%Y-%m-%d %H:%M:%S')
                 self.consumed         = compute_consumed_hours(self.allocated,formatted_expiration)
                 self.quota_pct.text   = str(round(float(float(self.consumed/self.allocated)*100),2)) + "%"
                 self.quota.value      = round(float(float(self.consumed/self.allocated)*100),2)
@@ -2357,6 +2366,7 @@ class SettingsScreen(Screen):
         self.GB        = config['subscription'].get('gb', '5')
         self.FRAGMENT  = config['network'].get('fragment', '0')
         self.DNS       = config['network'].get('dns', '1.1.1.1')
+        self.CONFIGDNS = config['network'].get('dns', '1.1.1.1')
         
         self.MeileConfig = MeileGuiConfig()
 
@@ -2549,9 +2559,9 @@ class SettingsScreen(Screen):
             
             config.set('network', what, getattr(self, what.upper()))
             if what == "dns":
-                print(getattr(self, what.upper()))
-                dns = ChangeDNS(dns=getattr(self, what.upper()))
-                dns.change_dns()
+                if self.CONFIGDNS != getattr(self, what.upper()):
+                    dns = ChangeDNS(dns=getattr(self, what.upper()))
+                    dns.change_dns()
         
         what = "gb"
         config.set('subscription', what, str(getattr(self, what.upper())))

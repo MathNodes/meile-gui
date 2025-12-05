@@ -489,9 +489,14 @@ class HandleWalletFunctions():
         if ubalance < amount_required:
             self.returncode = (False, f"Balance is too low, required: {round(amount_required / IBCTokens.SATOSHI, 4)}{token_ibc[DENOM][1:]}")
             return
-        
-        result = sdk.nodes.QueryNode(address=NODE)
-        
+        try:
+            result = sdk.nodes.QueryNode(address=NODE)
+        except (mospy.exceptions.clients.TransactionTimeout,
+                mospy.exceptions.clients.NodeException,
+                mospy.exceptions.clients.NodeTimeoutException) as e:
+            print(str(e))
+            message = "gRPC Error!"
+            return(False, message)
         k = 0
         for gb_price in result.gigabyte_prices:
             if DENOM == gb_price.denom:
@@ -518,73 +523,15 @@ class HandleWalletFunctions():
         
         self.returncode = (True, f"Success")
         
-        #self.connect(0, NODE, TYPE, DEPOSIT, price=price, plan = False, gb=GB, hourly=hourly)
-        
-        '''
-        if DENOM == IBCTokens.IBCUNITTOKEN['uatom']:
-            fee = int(ConfParams.FEE / 10)
-        else:
-            fee = ConfParams.FEE
-            
-        gas = random.randint(ConfParams.GAS, 314159)
-        
-        tx_params = TxParams(
-            denom=DENOM,
-            gas=gas,
-            gas_multiplier=ConfParams.GASADJUSTMENT,
-            fee_amount=fee
-        )
-        
-        # figure out what goes in Price()
-        
-        price = Price(
-            denom=DENOM
-            base_value=TBD
-            quote_value=TBD)
-        
-        
-        tx = sdk.nodes.SubscribeToNode(
-            node_address=NODE,
-            gigabytes=0 if hourly else GB,
-            hours=GB if hourly else 0,
-            #max_price=price,
-            tx_params=tx_params,
-        )
-        
-        
-        if tx.get("log", None) is not None:
-            print(tx["log"])
-            self.returncode = (False, tx["log"])
-            return
-
-        if tx.get("hash", None) is not None:
-            try: 
-                tx_response = sdk.nodes.wait_for_tx(tx["hash"], timeout=25)
-            except (mospy.exceptions.clients.TransactionTimeout,
-                    mospy.exceptions.clients.NodeException,
-                    mospy.exceptions.clients.NodeTimeoutException)  as e:
-                print(str(e))
-                self.returncode = (False, str(e).split(":")[-1])
-                return
-            
-            print(tx_response)
-            subscription_id = search_attribute(
-                tx_response, "sentinel.node.v2.EventCreateSubscription", "id"
-            )
-            if subscription_id:
-                self.returncode = (True, subscription_id)
-                return
-
-        self.returncode = (False, "Tx error")
-        return
-        '''
         
     def DetermineDenom(self, deposit):
         for key,value in IBCTokens.IBCUNITTOKEN.items():
             if value in deposit:
                 return value
-    
             
+            
+    # subscriptions are deprecated
+    '''        
     def unsubscribe(self, subId):
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
@@ -673,7 +620,7 @@ class HandleWalletFunctions():
         message = f"Unsubscribe from Subscription ID: {subId}, was successful at Height: {tx_height}" if tx.get("log", None) is None else tx["log"]
         self.unsub_result = {'hash' : tx.get("hash", "0x0"), 'success' : tx.get("log", None) is None, 'message' : message}
     
-            
+     '''       
     
     def connect(self, ID, address, type, deposit, price: dict = {}, plan: bool = False, units: int = 0, hourly: bool = False):
        
@@ -773,19 +720,42 @@ class HandleWalletFunctions():
                 print(tx_response)
         '''
         if plan:
-            tx = sdk.subscriptions.StartSession(subscription_id=int(ID), address=address, tx_params=tx_params)
+            try:
+                tx = sdk.subscriptions.StartSession(subscription_id=int(ID), address=address, tx_params=tx_params)
+            except RpcError as rpc_error:
+                details = rpc_error.details()
+                print("details", details)
+                print("code", rpc_error.code()) 
+                print("debug_error_string", rpc_error.debug_error_string()) 
+                conndesc.write("GRPC Error... Exiting")
+                conndesc.flush()
+                conndesc.close()
+                self.connected = {"v2ray_pid" : None,  "result": False, "status" : details}
+                print(self.connected)
+                return
         else:
             sprice = Price(denom=str(price['denom']),
                            base_value=str(price['base_value']),
                            quote_value=str(price['quote_value'])
                            )
             
-            
-            tx = sdk.nodes.SubscribeToNode(node_address=address, 
-                                           price=sprice, 
-                                           gigabytes=0 if hourly else int(units),
-                                           hours=int(units) if hourly else 0,
-                                           tx_params=tx_params)
+            try:
+                tx = sdk.nodes.SubscribeToNode(node_address=address, 
+                                               price=sprice, 
+                                               gigabytes=0 if hourly else int(units),
+                                               hours=int(units) if hourly else 0,
+                                               tx_params=tx_params)
+            except RpcError as rpc_error:
+                details = rpc_error.details()
+                print("details", details)
+                print("code", rpc_error.code()) 
+                print("debug_error_string", rpc_error.debug_error_string()) 
+                conndesc.write("GRPC Error... Exiting")
+                conndesc.flush()
+                conndesc.close()
+                self.connected = {"v2ray_pid" : None,  "result": False, "status" : details}
+                print(self.connected)
+                return
             
         conndesc.write("Creating new session...\n")
         conndesc.flush()
