@@ -17,7 +17,7 @@ class V2RayHandler():
     v2ray_script = None
     v2ray_pid    = None
     tunproc      = "tun2socks.exe"
-    v2rayproc    = "v2ray.exe"
+    v2rayproc    = "xray.exe"
     CREATE_NO_WINDOW = 0x08000000
     CREATE_NEW_CONSOLE = 0x00000010
     
@@ -30,9 +30,12 @@ class V2RayHandler():
         v2ray_daemon_cmd = 'cmd.exe /c start cmd.exe /k gsudo.exe %s' %(self.v2ray_script)
         #v2ray_daemon_cmd = 'gsudo.exe %s' %(self.v2ray_script)
         v2ray_srvc_proc = Popen(v2ray_daemon_cmd, shell=True,stdout=PIPE,stderr=PIPE)
-        sleep(10)
+        sleep(5)
         print("PID: %s" % v2ray_srvc_proc.pid)
         hwnd = win32gui.FindWindow(None, f'C:\\Windows\\system32\\cmd.exe')
+        print(hwnd)
+        #win32gui.SetForegroundWindow(hwnd)
+        #hwnd = win32gui.GetForegroundWindow()
         print(hwnd)
         win32gui.ShowWindow(hwnd,win32con.SW_HIDE)
         self.v2ray_pid = v2ray_srvc_proc.pid
@@ -60,10 +63,11 @@ class V2RayHandler():
         
         batfile = open(routes_bat, 'w')
         
-        batfile.write('CD "%s"\n' % path.join(self.MeileConfig.BASEBINDIR, "V2Ray"))
+        #batfile.write('CD "%s"\n' % path.join(self.MeileConfig.BASEBINDIR, "V2Ray"))
+        batfile.write('CD "%s"\n' % self.MeileConfig.BASEBINDIR)
         batfile.write('START "" /B %s run -c %s\n' % (self.v2rayproc, path.join(self.MeileConfig.BASEDIR, "v2ray_config.json")))
         batfile.write('timeout /t 1\n')
-        batfile.write('CD "%s"\n' % self.MeileConfig.BASEBINDIR)
+        #batfile.write('CD "%s"\n' % self.MeileConfig.BASEBINDIR)
         batfile.write('START "" /B %s -device tun://tun00 -proxy socks5://127.0.0.1:1080"\n' % self.tunproc)
         #v2ray = [path.join(self.MeileConfig.BASEBINDIR, "V2Ray", self.v2rayproc), "run", "-c",path.join(self.MeileConfig.BASEDIR, "v2ray_config.json")]
         #Popen(v2ray, shell=False)
@@ -109,7 +113,7 @@ class V2RayHandler():
         batfile.write('netsh interface set interface name="tun00" disable\n')
         batfile.write('timeout /t 3\n')
         batfile.write('TASKKILL /F /IM tun2socks.exe\n')
-        batfile.write('TASKKILL /F /IM v2ray.exe\n')
+        batfile.write('TASKKILL /F /IM xray.exe\n')
         batfile.write('TASKKILL /F /IM cmd.exe\n')
         batfile.flush()
         batfile.close()
@@ -140,6 +144,7 @@ class V2RayFragmentConfiguration:
     vmess_address: str
     vmess_uid: str
     vmess_transport: str
+    proxy_protocol: str
 
     proxy_port: int = 1080
 
@@ -188,7 +193,7 @@ class V2RayFragmentConfiguration:
                 "concurrency": -1,
                 "enabled": False
               },
-              "protocol": "vmess",
+              "protocol": self.proxy_protocol,
               "settings": {
                 "vnext": [
                   {
@@ -289,6 +294,7 @@ class V2RayConfiguration:
     vmess_address: str
     vmess_uid: str
     vmess_transport: str
+    proxy_protocol: str
 
     proxy_port: int = 1080
 
@@ -333,7 +339,7 @@ class V2RayConfiguration:
             },
             "outbounds": [
                 {
-                    "protocol": "vmess",
+                    "protocol": self.proxy_protocol,
                     "settings": {
                         "vnext": [
                             {

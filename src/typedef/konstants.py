@@ -29,7 +29,7 @@ class ConfParams():
     DEFAULT_SUBS     = [5 * i for i in range(1, 6)]
     BTCPAYADJ        = 1.10
     XMRPAYADJ        = 3.14
-    SUBFEE           = 0.0314
+    SUBFEE           = 0.042069
 
 class HTTParams():
     # Note http://128.199.90.172:26657 is testnet ONLY!
@@ -119,7 +119,7 @@ class HTTParams():
     API_PLANS_ADD          = "/v1/add"
     API_PLANS_NODES        = "/v1/nodes/%s" # variable is plan uuid
     SESSIONS_API_URL       = '/sentinel/accounts/%s/sessions'
-    BALANCES_ENDPOINT      = "/bank/balances/"
+    BALANCES_ENDPOINT      = "/cosmos/bank/v1beta1/balances/"
     ICANHAZURL             = "https://icanhazip.com"
     ICANHAZDNS             = "icanhazip.com"
     IFCONFIGDNS            = "ifconfig.co"
@@ -602,8 +602,8 @@ class IBCTokens():
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
-    VERSION = "v2.3.2"
-    BUILD = "1758668860395"
+    VERSION = "v2.4.5"
+    BUILD = "1764205776948"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"
     FailedHealthCheck = "Failed Sentinel Health Check"
@@ -618,6 +618,8 @@ class MeileColors():
     INACTIVE_DIALOG_BG_COLOR = "#50507c"
     MAP_BG_COLOR             = "#232227"
     ROW_HOVER                = "#39363c"
+    DOWNLOAD                 = "#2fe548"
+    UPLOAD                   = "#2fa1e5"
     FONT_FACE                = "fonts/mplus-2c-bold.ttf"
     FONT_FACE_ARIAL          = "fonts/arial-unicode-ms.ttf"
     QR_FONT_FACE             = "fonts/Roboto-BoldItalic.ttf"
@@ -649,6 +651,33 @@ class NodeKeys():
     FinalSubsKeys = [SubsInfoKeys[0], NodesInfoKeys[0],SubsInfoKeys[4],SubsInfoKeys[5], SubsInfoKeys[7], NodesInfoKeys[4], "Allocated", "Consumed", NodesInfoKeys[13],SubsInfoKeys[2],SubsInfoKeys[6]]
     NodeVersions  = [str(item).zfill(3) for item in range(70,1000)]
     Nodetypes = ['residential', 'business', 'hosting', 'edu']
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

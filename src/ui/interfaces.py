@@ -27,6 +27,16 @@ class ProtectedLabel(MDLabel):
     def get_font(self):
         Config = MeileGuiConfig()
         return Config.resource_path(MeileColors.QR_FONT_FACE)
+    
+class DownloadLabel(MDLabel):
+    def get_font(self):
+        Config = MeileGuiConfig()
+        return Config.resource_path(MeileColors.FONT_FACE)
+    
+class UploadLabel(MDLabel):
+    def get_font(self):
+        Config = MeileGuiConfig()
+        return Config.resource_path(MeileColors.FONT_FACE)
 
 class MapCenterButton(MDIconButton, MDTooltip):
     pass
