@@ -751,6 +751,13 @@ class MainWindow(Screen):
             self.ids.doh.opacity = 0
              
     def build(self, dt):
+        MeileConfig = MeileGuiConfig()
+        CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
+        
+        self.address = CONFIG['wallet'].get('address', None)
+        if not self.address:
+            self.create_new_wallet()
+        
         # Check to build Map
         self.build_meile_map()
 
@@ -760,6 +767,29 @@ class MainWindow(Screen):
         print("Running: nonblock_get_ip_address()")
         thread = Thread(target=lambda: self.nonblock_get_ip_address(self.get_ip_address, True))
         thread.start() 
+        
+    def create_new_wallet(self):
+        hwf = HandleWalletFunctions()
+        
+        wallet_info = hwf.generate_random_strings()
+        wallet_data = hwf.create(wallet_info[0], wallet_info[1])
+        
+        MeileConfig = MeileGuiConfig()
+        CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
+        
+        FILE = open(MeileGuiConfig.CONFFILE,'w')
+
+        CONFIG.set('wallet', 'keyname', wallet_info[0])
+        CONFIG.set('wallet', 'address', wallet_data['address'])
+        CONFIG.set('wallet', 'password', wallet_info[1].replace('%','%%'))
+
+        CONFIG.write(FILE)
+        FILE.close()
+        
+        ss = SecureSeed()
+        encrypted_seed = ss.encrypt_seed(wallet_data['seed'], wallet_info[1])
+        with open(path.join(ConfParams.KEYRINGDIR, "seed"), "wb") as f:
+            f.write(base64.b64decode(encrypted_seed))
 
     def build_country_tree(self):
 
@@ -1469,14 +1499,18 @@ class MainWindow(Screen):
             
     def set_protected_icon(self, setbool, moniker):
         
-        if setbool:
-            self.map_widget_2.text = moniker
-            self.map_widget_3.text = "PROTECTED"
-            self.ids.connect_button.source = self.return_connect_button("d")
-        else:
-            self.map_widget_2.text = moniker
-            self.map_widget_3.text = "UNPROTECTED"
-            self.ids.connect_button.source = self.return_connect_button("c")
+        try: 
+            if setbool:
+                self.map_widget_2.text = moniker
+                self.map_widget_3.text = "PROTECTED"
+                self.ids.connect_button.source = self.return_connect_button("d")
+            else:
+                self.map_widget_2.text = moniker
+                self.map_widget_3.text = "UNPROTECTED"
+                self.ids.connect_button.source = self.return_connect_button("c")
+        except Exception as e:
+            print(str(e))
+            return
             
     @mainthread
     def remove_loading_widget(self, dt):
@@ -1706,13 +1740,14 @@ class WalletScreen(Screen):
             self.atom_text = str(CoinDict['atom']) + " atom"
             self.osmo_text = str(CoinDict['osmo']) + " osmo"
             self.dvpn_text = str(CoinDict['dvpn']) + " dvpn"
+            self.nam_text  = str(CoinDict['nam'])  + " nam"
             #self.dvpn_text = str(CoinDict['tsent']) + " tsent"
             data = [ 
                 { "logo" : self.return_coin_logo("dvpn"), "text" : self.dvpn_text },
                 { "logo" : self.return_coin_logo("scrt"), "text" : self.scrt_text },
                 { "logo" : self.return_coin_logo("atom"), "text" : self.atom_text },
                 { "logo" : self.return_coin_logo("osmo"), "text" : self.osmo_text },
-                { "logo" : self.return_coin_logo("dec"), "text" : self.dec_text }
+                { "logo" : self.return_coin_logo("nam"),  "text" : self.nam_text }
                 ]
 
             recycle_view = self.ids.rv
@@ -1723,6 +1758,7 @@ class WalletScreen(Screen):
             self.atom_text = str("0.0") + " atom"
             self.osmo_text = str("0.0") + " osmo"
             self.dvpn_text = str("0.0") + " dvpn"
+            self.nam_text  = str("0.0") + " nam"
             #self.dvpn_text = str("0.0") + " tsent"
             
             
