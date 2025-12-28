@@ -2315,13 +2315,26 @@ class NodeCarousel(MDBoxLayout):
                 sys.stdout.flush()
                 yield 0.5
             self.dialog.dismiss()
-            mw.connect_routine(node=sub_node[1], 
-                               protocol=self.protocol,
-                               sub_deposit=deposit,
-                               units=sub_node[3],
-                               hourly=sub_node[4],
-                               price = hwf.price)
-            
+            if hwf.returncode[0]:
+                mw.connect_routine(node=sub_node[1], 
+                                   protocol=self.protocol,
+                                   sub_deposit=deposit,
+                                   units=sub_node[3],
+                                   hourly=sub_node[4],
+                                   price = hwf.price)
+            else:
+                self.dialog = MDDialog(
+                    title="Error Processing subscription: %s" % hwf.returncode[1],
+                    md_bg_color=get_color_from_hex(MeileColors.BLACK),
+                    buttons=[
+                            MDFlatButton(
+                                text="OK",
+                                theme_text_color="Custom",
+                                text_color=Meile.app.theme_cls.primary_color,
+                                on_release=self.closeDialog
+                            ),])
+                self.dialog.open()
+                
             
             '''    
             try: 
