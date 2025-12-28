@@ -1606,16 +1606,18 @@ class MainWindow(Screen):
             self.close_sub_window()
             
     def set_protected_icon(self, setbool, moniker):
-        
-        if setbool:
-            self.map_widget_2.text = moniker
-            self.map_widget_3.text = "PROTECTED"
-            self.ids.connect_button.source = self.return_connect_button("d")
-        else:
-            self.map_widget_2.text = moniker
-            self.map_widget_3.text = "UNPROTECTED"
-            self.ids.connect_button.source = self.return_connect_button("c")
-            
+        try: 
+            if setbool:
+                self.map_widget_2.text = moniker
+                self.map_widget_3.text = "PROTECTED"
+                self.ids.connect_button.source = self.return_connect_button("d")
+            else:
+                self.map_widget_2.text = moniker
+                self.map_widget_3.text = "UNPROTECTED"
+                self.ids.connect_button.source = self.return_connect_button("c")
+        except Exception as e:
+            print(str(e))
+            return    
     @mainthread
     def remove_loading_widget(self, dt):
         try:
