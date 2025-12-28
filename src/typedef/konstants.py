@@ -550,24 +550,24 @@ class IBCTokens():
     IBCATOM  = 'ibc/A8C2D23A1E6F95DA4E48BA349667E322BD7A6C996D8A4AAE8BA72E190F3D1477'
     IBCDEC   = 'ibc/B1C0DDB14F25279A2026BC8794E12B259F8BDA546A3C5132CCAEE4431CE36783'
     IBCOSMO  = 'ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518'
+    IBCNAM   = 'ibc/700A05A54B68723DAD9A7C97B39C5DDAB5E34B621A3400482C737E54456BDCD7'
     IBCUNKWN = 'ibc/9BCB27203424535B6230D594553F1659C77EC173E36D9CF4759E7186EE747E84'
     
     ZANO_WALLET = "ZxDEXCMwvpwirJujwjZExHfKFEqNjMWdjLw5MGYXa5KxScvcsr2BNGm8TFyk4mvFAhAPtWh54tadWNgS5CxPAqXX1fpoQLkJJ"
     
-    IBCCOINS     = [{'uscrt' : IBCSCRT}, {'uatom' : IBCATOM}, {'udec' : IBCDEC}, {'uosmo' : IBCOSMO}, {'uknwn' :IBCUNKWN}]
-    UNITTOKEN    = {'uscrt' : 'scrt', 'uatom' : 'atom' , 'uosmo' : 'osmo', 'udec' : 'dec', 'udvpn' : 'dvpn', 'tsent' : 'tsent'}
-    IBCUNITTOKEN = {'uscrt' : IBCSCRT, 'uatom' : IBCATOM , 'uosmo' : IBCOSMO, 'udec' : IBCDEC, 'udvpn' : 'udvpn', 'tsent' : 'tsent'}
-    mu_coins     = ["udvpn", "uscrt", "uosmo", "uatom", "udec"]
-    ibc_coins    = ["dvpn", "scrt", "osmo", "atom", "dec"]
+    IBCCOINS     = [{'uscrt' : IBCSCRT}, {'uatom' : IBCATOM}, {'uosmo' : IBCOSMO}, {'uknwn' :IBCUNKWN}, {'unam' : IBCNAM}]
+    UNITTOKEN    = {'uscrt' : 'scrt', 'uatom' : 'atom' , 'uosmo' : 'osmo', 'udvpn' : 'dvpn', 'unam' : 'nam', 'tsent' : 'tsent'}
+    IBCUNITTOKEN = {'uscrt' : IBCSCRT, 'uatom' : IBCATOM , 'uosmo' : IBCOSMO, 'unam' : IBCNAM, 'udvpn' : 'udvpn', 'tsent' : 'tsent'}
+    mu_coins     = ["udvpn", "uscrt", "uosmo", "uatom", "unam"]
+    ibc_coins    = ["dvpn", "scrt", "osmo", "atom", "nam"]
     ibc_mu_coins  = {"tsent" : "tsent", 
                      "dvpn"  : "udvpn", 
                      "scrt"  : "uscrt", 
                      "osmo"  : "uosmo", 
                      "atom"  : "uatom", 
-                     "dec"   : "udec"}
+                     "nam"   : "unam"}
     
-    CSAPPMAP     = {'dec' : 'decentr',
-                    'atom' : 'cosmos', 
+    CSAPPMAP     = {'atom' : 'cosmos', 
                     'scrt' : 'secret', 
                     'osmo' : 'osmosis', 
                     'dvpn' : 'sentinel', 
@@ -594,19 +594,20 @@ class IBCTokens():
                     'xaut' : 'tether-gold',
                     'eth'  : 'ethereum',
                     'zano' : 'zano',
-                    'fusd' : 'freedom-dollar'}
+                    'fusd' : 'freedom-dollar',
+                    'nam'  : 'namada'}
     
     NOWCOINS     = ["firo", "beam", "pivx", "zec", "dcr", "epic",
                     "bch", "kmd", "xno", "sol", "dgb", "xaut", "eth",
                     "ada", "inj", "dot" ]
-    BTCPAYCOINS  = ["xmr", "btc", "ltc", "doge", "dash"]
+    BTCPAYCOINS  = ["xmr", "btc", "ltc", "zec", "doge", "dash"]
     PRIVACYCOINS = ["arrr", "firo", "pivx", "zano", "fusd"]
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
     
 class TextStrings():
     dash = "-"
-    VERSION = "v2.4.3"
-    BUILD = "17632579303"
+    VERSION = "v2.4.7"
+    BUILD = "17668881373"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"
     FailedHealthCheck = "Failed Sentinel Health Check"
