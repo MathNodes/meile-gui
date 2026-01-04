@@ -208,8 +208,8 @@ class V2RayHandler:
             privileged_commands.append(f"route delete -net {network} 198.18.0.1")
         
         privileged_commands.append("ifconfig utun123 198.18.0.1 198.18.0.1 down")
-        privileged_commands.append("launchctl bootout system /Library/LaunchDaemons/app.meile.xray.plist")
-        privileged_commands.append("launchctl bootout system /Library/LaunchDaemons/app.meile.tun2socks.plist")
+        privileged_commands.append("launchctl bootout system /Library/LaunchDaemons/app.meile.xray.plist ; launchctl bootout system /Library/LaunchDaemons/app.meile.tun2socks.plist")
+        #privileged_commands.append("launchctl bootout system /Library/LaunchDaemons/app.meile.tun2socks.plist")
 
         self.run_privileged_script(privileged_commands)
         
