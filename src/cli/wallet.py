@@ -29,11 +29,12 @@ import configparser
 import socket
 import bech32
 from bip_utils import Bip39SeedGenerator, Bip44, Bip44Coins
-from sentinel_protobuf.sentinel.subscription.v2.msg_pb2 import MsgCancelRequest, MsgCancelResponse
+#from sentinel_protobuf.sentinel.subscription.v2.msg_pb2 import MsgCancelRequest, MsgCancelResponse
 
 import mospy
 from mospy import Transaction
 from sentinel_protobuf.cosmos.base.v1beta1.coin_pb2 import Coin
+from sentinel_protobuf.sentinel.types.v1.price_pb2 import Price
 from sentinel_sdk.sdk import SDKInstance
 from sentinel_sdk.types import NodeType, TxParams, Status
 from sentinel_sdk.utils import search_attribute
@@ -43,6 +44,7 @@ import ecdsa
 import hashlib
 from requests.exceptions import ReadTimeout
 from Crypto.Hash import RIPEMD160
+import string
 
 MeileConfig = MeileGuiConfig()
 gsudo       = path.join(MeileConfig.BASEBINDIR, 'gsudo.exe') # windows
@@ -233,6 +235,13 @@ class HandleWalletFunctions():
             'address': account_address,
             'seed': seed_phrase
         }
+        
+    def generate_random_strings(self):
+        characters = string.ascii_letters + string.digits
+        length = random.randint(10, 53)
+        wallet_name = ''.join(random.choices(characters, k=length))
+        password = ''.join(random.choices(characters, k=length))
+        return (wallet_name, password)
         
     # May implement in the future    
     """
@@ -432,8 +441,8 @@ class HandleWalletFunctions():
         message = f"Succefully sent {amount_required}{DENOM} at height: {tx_height} for plan id: {plan_id}." if tx.get("log", None) is None else tx["log"]
         return (True, {'hash' : tx.get("hash", None), 'success' : tx.get("log", None) is None, 'message' : message})
 
-    # This method should be renamed as: 'subscribe to node'
     def subscribe(self, KEYNAME, NODE, DEPOSIT, GB, hourly):
+        self.returncode = (False, 1337)
         if not KEYNAME:
             self.returncode = (False, 1337)
             return
@@ -454,12 +463,12 @@ class HandleWalletFunctions():
         
         try:
             sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key, ssl=True)
+        # SDK raises ConnectionError, otherwise it is a grpc module exception
         except ConnectionError:
             self.returncode = (False, "gRPC unresponsive. Try again later or switch gRPCs.")
             return
         except grpc._channel._InactiveRpcError as e:
             status_code = e.code()
-            print(status_code)
             
             if status_code == StatusCode.NOT_FOUND:
                 self.returncode = (False, "Wallet not found on blockchain. Please verify you have sent coins to your wallet to activate it. Then try your subscription again")
@@ -467,7 +476,7 @@ class HandleWalletFunctions():
             else:
                 self.returncode = (False, "gRPC unresponsive. Try again later or switch gRPCs.")
                 return
-                
+    
         balance = self.get_balance(sdk._account.address)
         
         amount_required = float(DEPOSIT.replace(DENOM, "")) * IBCTokens.SATOSHI
@@ -480,7 +489,7 @@ class HandleWalletFunctions():
             print(ret[0])
         except:
             pass
-            
+        
         token_ibc = {v: k for k, v in IBCTokens.IBCUNITTOKEN.items()}
         ubalance = balance.get(token_ibc[DENOM][1:], 0) * IBCTokens.SATOSHI
         
@@ -488,59 +497,48 @@ class HandleWalletFunctions():
             self.returncode = (False, f"Balance is too low, required: {round(amount_required / IBCTokens.SATOSHI, 4)}{token_ibc[DENOM][1:]}")
             return
         
-        if DENOM == IBCTokens.IBCUNITTOKEN['uatom']:
-            fee = int(ConfParams.FEE / 10)
-        else:
-            fee = ConfParams.FEE
-            
-        gas = random.randint(ConfParams.GAS, 314159) 
-
-        tx_params = TxParams(
-            denom=DENOM,
-            gas=gas,
-            gas_multiplier=ConfParams.GASADJUSTMENT,
-            fee_amount=fee
-        )
+        try:
+            result = sdk.nodes.QueryNode(address=NODE)
+        except (mospy.exceptions.clients.TransactionTimeout,
+                mospy.exceptions.clients.NodeException,
+                mospy.exceptions.clients.NodeTimeoutException) as e:
+            print(str(e))
+            message = "gRPC Error!"
+            return(False, message)
         
-        tx = sdk.nodes.SubscribeToNode(
-            node_address=NODE,
-            gigabytes=0 if hourly else GB,
-            hours=GB if hourly else 0,
-            denom=DENOM,
-            tx_params=tx_params,
-        )
+        k = 0
+        for gb_price in result.gigabyte_prices:
+            if DENOM == gb_price.denom:
+                break
+            else:
+                k += 1
         
-        if tx.get("log", None) is not None:
-            print(tx["log"])
-            self.returncode = (False, tx["log"])
+        if k > len(result.gigabyte_prices) - 1:
+            self.returncode = (False, f"No proper denomination found!")
             return
-
-        if tx.get("hash", None) is not None:
-            try: 
-                tx_response = sdk.nodes.wait_for_tx(tx["hash"], timeout=25)
-            except (mospy.exceptions.clients.TransactionTimeout,
-                    mospy.exceptions.clients.NodeException,
-                    mospy.exceptions.clients.NodeTimeoutException)  as e:
-                print(str(e))
-                self.returncode = (False, str(e).split(":")[-1])
-                return 
+        
+        if hourly:
+            price_denom = result.hourly_prices[k].denom
+            base_value = result.hourly_prices[k].base_value
+            quote_value = result.hourly_prices[k].quote_value
+        else:
+            price_denom = result.gigabyte_prices[k].denom
+            base_value = result.gigabyte_prices[k].base_value
+            quote_value = result.gigabyte_prices[k].quote_value
             
-            print(tx_response)
-            subscription_id = search_attribute(
-                tx_response, "sentinel.node.v2.EventCreateSubscription", "id"
-            )
-            if subscription_id:
-                self.returncode = (True, subscription_id)
-                return
-
-        self.returncode = (False, "Tx error")
-        return
+        self.price = {"denom" : price_denom,
+                 "base_value" : base_value,
+                 "quote_value" : quote_value}
+        
+        self.returncode = (True, f"Success")
         
     def DetermineDenom(self, deposit):
         for key,value in IBCTokens.IBCUNITTOKEN.items():
             if value in deposit:
                 return value
-            
+    
+    # subscriptions are deprecated in v12
+    '''        
     def unsubscribe(self, subId):
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
@@ -631,8 +629,9 @@ class HandleWalletFunctions():
         self.unsub_result = {'hash' : tx.get("hash", "0x0"), 'success' : tx.get("log", None) is None, 'message' : message}
     
             
-    
-    def connect(self, ID, address, type, deposit, plan: bool = False ):
+    '''
+            
+    def connect(self, ID, address, type, deposit, price: dict = {}, plan: bool = False, units: int = 0, hourly: bool = False):
        
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
@@ -679,13 +678,17 @@ class HandleWalletFunctions():
                 
         if regres:
             denom = regres.group(2)
+            print(f"connect() denom: {denom}")
 
-            for k,v in IBCTokens.UNITTOKEN.items():
-                if denom == v:
-                    udenom = k
-            for k,v in IBCTokens.IBCUNITTOKEN.items():
-                if udenom == k:
-                    DENOM = v
+            if denom in list(IBCTokens.UNITTOKEN.keys()) + list(IBCTokens.IBCUNITTOKEN.values()):
+                DENOM = denom
+            else:
+                for k,v in IBCTokens.UNITTOKEN.items():
+                    if denom == v:
+                        udenom = k
+                for k,v in IBCTokens.IBCUNITTOKEN.items():
+                    if udenom == k:
+                        DENOM = v
         else:
             DENOM = "udvpn"
         
@@ -705,10 +708,44 @@ class HandleWalletFunctions():
         )
         
         if plan:
-            tx = sdk.subscriptions.StartSession(subscription_id=int(ID), address=address, tx_params=tx_params)
+            try:
+                tx = sdk.subscriptions.StartSession(subscription_id=int(ID), address=address, tx_params=tx_params)
+            except RpcError as rpc_error:
+                details = rpc_error.details()
+                print("details", details)
+                print("code", rpc_error.code()) 
+                print("debug_error_string", rpc_error.debug_error_string()) 
+                conndesc.write("GRPC Error... Exiting")
+                conndesc.flush()
+                conndesc.close()
+                self.connected = {"v2ray_pid" : None,  "result": False, "status" : details}
+                print(self.connected)
+                return
         else:
-            self.connected = {"v2ray_pid" : None,  "result": False, "status" : "Not Implemented"}
-            return
+            sprice = Price(denom=str(price['denom']),
+                           base_value=str(price['base_value']),
+                           quote_value=str(price['quote_value'])
+                           )
+            
+            
+            try:
+                tx = sdk.nodes.SubscribeToNode(node_address=address, 
+                                               price=sprice, 
+                                               gigabytes=0 if hourly else int(units),
+                                               hours=int(units) if hourly else 0,
+                                               tx_params=tx_params)
+            except RpcError as rpc_error:
+                details = rpc_error.details()
+                print("details", details)
+                print("code", rpc_error.code()) 
+                print("debug_error_string", rpc_error.debug_error_string()) 
+                conndesc.write("GRPC Error... Exiting")
+                conndesc.flush()
+                conndesc.close()
+                self.connected = {"v2ray_pid" : None,  "result": False, "status" : details}
+                print(self.connected)
+                return
+            
         conndesc.write("Creating new session...\n")
         conndesc.flush()
         # Will need to handle log responses with friendly UI response in case of session create error
@@ -729,7 +766,9 @@ class HandleWalletFunctions():
             self.connected = {"v2ray_pid" : None,  "result": False, "status" : "GRPC Error"}
             return
         
-        session_id = search_attribute(tx_response, "sentinel.subscription.v3.EventCreateSession", "session_id")
+        session_id = search_attribute(tx_response,
+                                      "sentinel.subscription.v3.EventCreateSession" if plan else "sentinel.node.v3.EventCreateSession", 
+                                      "session_id")
         
         sleep(0.3)  # Wait a few seconds....
         # The sleep is required because the session_id could not be fetched from the node / rpc
@@ -1025,7 +1064,7 @@ class HandleWalletFunctions():
         Request = HTTPRequests.MakeRequest()
         http = Request.hadapter()
         endpoint = HTTParams.BALANCES_ENDPOINT + address
-        CoinDict = {'dvpn' : 0, 'scrt' : 0, 'dec'  : 0, 'atom' : 0, 'osmo' : 0}
+        CoinDict = {'dvpn' : 0, 'scrt' : 0, 'dec'  : 0, 'atom' : 0, 'osmo' : 0, 'nam' : 0}
         #CoinDict = {'tsent' : 0, 'scrt' : 0, 'dec'  : 0, 'atom' : 0, 'osmo' : 0}
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         self.API = CONFIG['network'].get('api', HTTParams.APIURL)
@@ -1039,16 +1078,19 @@ class HandleWalletFunctions():
             for coin in coinJSON['balances']:
                 if "udvpn" in coin['denom']:
                 #if "tsent" in coin['denom']:
-                    CoinDict['dvpn'] = round(float(float(coin['amount']) /IBCTokens.SATOSHI),4)
+                    CoinDict['dvpn'] = round(float(float(coin['amount']) /IBCTokens.SATOSHI),6)
                     #CoinDict['tsent'] = round(float(float(coin['amount']) /IBCTokens.SATOSHI),4)
                 elif IBCTokens.IBCSCRT in coin['denom']:
-                    CoinDict['scrt'] = round(float(float(coin['amount']) /IBCTokens.SATOSHI),4)
+                    CoinDict['scrt'] = round(float(float(coin['amount']) /IBCTokens.SATOSHI),6)
                 elif IBCTokens.IBCDEC in coin['denom']:
-                    CoinDict['dec'] = round(float(float(coin['amount']) /IBCTokens.SATOSHI),4)
+                    CoinDict['dec'] = round(float(float(coin['amount']) /IBCTokens.SATOSHI),6)
                 elif IBCTokens.IBCATOM in coin['denom']:
-                    CoinDict['atom'] = round(float(float(coin['amount']) /IBCTokens.SATOSHI),4)
+                    CoinDict['atom'] = round(float(float(coin['amount']) /IBCTokens.SATOSHI),6)
                 elif IBCTokens.IBCOSMO in coin['denom']:
-                    CoinDict['osmo'] = round(float(float(coin['amount']) /IBCTokens.SATOSHI),4)
+                    CoinDict['osmo'] = round(float(float(coin['amount']) /IBCTokens.SATOSHI),6)
+                elif IBCTokens.IBCNAM in coin['denom']:
+                    CoinDict['nam'] = round(float(float(coin['amount']) /IBCTokens.SATOSHI),6)
+
         except Exception as e:
             print(str(e))
             return None

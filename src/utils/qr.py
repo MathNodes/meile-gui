@@ -71,7 +71,7 @@ class QRCode():
         
         background.paste(QRimg, (0,0))
         
-        if not is_ecryptfs_mounted():
+        if not is_ecryptfs_mounted() or coin == "dvpn":
             background.save(path.join(self.IMGDIR, ADDRESS + ".png"))
             return path.join(self.IMGDIR, ADDRESS + ".png")
         else:

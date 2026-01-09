@@ -2271,11 +2271,13 @@ class NodeCarousel(MDBoxLayout):
         sub_node = subscribe_dialog.return_deposit_text()
         spdialog = ProcessingSubDialog(sub_node[2], sub_node[1], sub_node[0] )
         deposit = self.reparse_coin_deposit(sub_node[0], sub_node[-1])
+        
+        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
+        mw.SubCaller = True
         try:
             self.dialog.dismiss()
             self.dialog = None
         except:
-            mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
             mw.dialog.dismiss()
             mw.dialog = None
         
@@ -2304,49 +2306,29 @@ class NodeCarousel(MDBoxLayout):
                 print(".", end="")
                 sys.stdout.flush()
                 yield 0.5
-            #returncode = hwf.subscribe(KEYNAME, sub_node[1], deposit, sub_node[3], sub_node[4])
-            try:
-                if hwf.returncode[0]:
-                    self.dialog.dismiss()
-                    self.dialog = MDDialog(
-                        title="Successful!",
-                        md_bg_color=get_color_from_hex(MeileColors.BLACK),
-                        buttons=[
-                                MDFlatButton(
-                                    text="OK",
-                                    theme_text_color="Custom",
-                                    text_color=Meile.app.theme_cls.primary_color,
-                                    on_release=self.closeDialog
-                                ),])
-                    self.dialog.open()
-                else:
-                    self.dialog.dismiss()
-                    self.dialog = MDDialog(
-                    title="Error: %s" % "No Wallet found. Please create a wallet within the app first." if hwf.returncode[1] == 1337 else hwf.returncode[1],
+            
+            self.dialog.dismiss()
+            if hwf.returncode[0]:
+                mw.connect_routine(node=sub_node[1], 
+                                   protocol=self.protocol,
+                                   sub_deposit=deposit,
+                                   units=sub_node[3],
+                                   hourly=sub_node[4],
+                                   price = hwf.price)
+            else:
+                self.dialog = MDDialog(
+                    title="Error Processing subscription: %s" % hwf.returncode[1],
                     md_bg_color=get_color_from_hex(MeileColors.BLACK),
                     buttons=[
                             MDFlatButton(
                                 text="OK",
                                 theme_text_color="Custom",
                                 text_color=Meile.app.theme_cls.primary_color,
-                                on_release=self.closeDialogReturnToSubscriptions
+                                on_release=self.closeDialog
                             ),])
-                    self.dialog.open()
-    
-            except AttributeError as e:
-                print(str(e))
-                self.dialog.dismiss()
-                self.dialog = MDDialog(
-                title="Error Processing subscription",
-                md_bg_color=get_color_from_hex(MeileColors.BLACK),
-                buttons=[
-                        MDFlatButton(
-                            text="OK",
-                            theme_text_color="Custom",
-                            text_color=Meile.app.theme_cls.primary_color,
-                            on_release=self.closeDialog
-                        ),])
                 self.dialog.open()
+            
+            
             
     def reparse_coin_deposit(self, deposit, coin):
         ibcaddy = self.check_ibc_denom(coin)
