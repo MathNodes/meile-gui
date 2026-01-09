@@ -24,7 +24,6 @@ from requests.auth import HTTPBasicAuth
 import stripe
 import time
 from stripe.error import CardError
-from fiat.stripe_pay.charge import HotwalletFuncs as HandleWalletFunctions
 import fiat.stripe_pay.charge as Charge
 from fiat.stripe_pay.dist import scrtsxx
 
@@ -35,6 +34,7 @@ from conf.meile_config import MeileGuiConfig
 import main.main as Meile
 from adapters import HTTPRequests
 from coin_api.get_price import GetPriceAPI
+from cli.wallet import HandleWalletFunctions
 
 HotWalletAddress = scrtsxx.WALLET_ADDRESS
 
@@ -51,11 +51,13 @@ class FiatInterface(Screen):
     policy = False
     my_wallet_address = None
     DVPNOptions = [1000,2000,5000,10000]
-    DECOptions  = [1000,2000,3000,5000]
+    #DECOptions  = [1000,2000,3000,5000]
     SCRTOptions = [5,10,15,30]
-    TokenOptions = ['dvpn', 'dec', 'scrt']
+    OSMOOptions = [10,20,30,40]
+    ATOMOptions = [1,2,4,8]
+    TokenOptions = ['dvpn', 'scrt', 'atom', 'osmo']
     SelectedCoin = TokenOptions[0]
-    CoinOptions = {'dvpn' : DVPNOptions, 'dec' : DECOptions, 'scrt' : SCRTOptions}
+    CoinOptions = {'dvpn' : DVPNOptions, 'osmo' : OSMOOptions, 'atom' : ATOMOptions, 'scrt' : SCRTOptions}
     #CoinGeckoAPI = {'scrt' : 'secret', 'dvpn' : 'sentinel', 'dec' : 'decentr'}
     idvpn = 0
     CONFIG = None
@@ -67,8 +69,10 @@ class FiatInterface(Screen):
         self.price_cache = {}
         self.CoinOptions = self.DynamicCoinOptions()
         self.DVPNOptions = self.CoinOptions['dvpn']
-        self.DECOptions  = self.CoinOptions['dec']
+        #self.DECOptions  = self.CoinOptions['osmo']
         self.SCRTOptions = self.CoinOptions['scrt']
+        self.ATOMOptions = self.CoinOptions['atom']
+        self.OSMOOptions = self.CoinOptions['osmo']
         self.set_token_qty(str(self.DVPNOptions[0]))
         
         
@@ -179,7 +183,7 @@ class FiatInterface(Screen):
     def DynamicCoinOptions(self):
         MAX_SPEND = 25
         coins = self.TokenOptions
-        CoinOptions = {coins[0] : None, coins[1] : None, coins[2] : None}
+        CoinOptions = {coins[0] : None, coins[1] : None, coins[2] : None, coins[3] : None}
         
         Request = HTTPRequests.MakeRequest()
         http = Request.hadapter()
@@ -231,8 +235,10 @@ class FiatInterface(Screen):
                 CoinOptions[coins[0]] = Options
             elif c == coins[1]:
                 CoinOptions[coins[1]] = Options
-            else:
+            elif c == coins[2]:
                 CoinOptions[coins[2]] = Options
+            else:
+                CoinOptions[coins[3]] = Options
                 
         return CoinOptions
         
@@ -371,9 +377,11 @@ class FiatInterface(Screen):
             if token == self.TokenOptions[0]:
                 payment_status = StripeInstance.create_payment_charge(stripe_token, str(round((self.get_token_price(token)*self.DVPNOptions[self.idvpn])+self.GetSurchargeAmount(),2)))
             elif token == self.TokenOptions[1]:
-                payment_status = StripeInstance.create_payment_charge(stripe_token, str(round((self.get_token_price(token)*self.DECOptions[self.idvpn])+self.GetSurchargeAmount(),2)))
-            else:
                 payment_status = StripeInstance.create_payment_charge(stripe_token, str(round((self.get_token_price(token)*self.SCRTOptions[self.idvpn])+self.GetSurchargeAmount(),2)))
+            elif token == self.TokenOptions[2]:
+                payment_status = StripeInstance.create_payment_charge(stripe_token, str(round((self.get_token_price(token)*self.ATOMOptions[self.idvpn])+self.GetSurchargeAmount(),2)))
+            else:
+                payment_status = StripeInstance.create_payment_charge(stripe_token, str(round((self.get_token_price(token)*self.OSMOOptions[self.idvpn])+self.GetSurchargeAmount(),2)))
         except Exception as e:
             print(str(e))
             self.ProcessingDialog("Error Processing Payment. Your card has not been charged: %s" % str(e), True, False)
@@ -452,12 +460,12 @@ class FiatInterface(Screen):
         
         if token == self.TokenOptions[0]:
             coin_qty = self.DVPNOptions[self.idvpn]
-            
         elif token == self.TokenOptions[1]:
-            coin_qty = self.DECOptions[self.idvpn]
-            
-        else:
             coin_qty = self.SCRTOptions[self.idvpn]
+        elif token == self.TokenOptions[2]:
+            coin_qty = self.ATOMOptions[self.idvpn]
+        else:
+            coin_qty = self.OSMOOptions[self.idvpn]
             
         MeileConfig = MeileGuiConfig()
         CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
@@ -514,24 +522,6 @@ class FiatInterface(Screen):
                 "text": f"{i}",
                 "height": dp(56),
                 "on_release": lambda x=f"{i}": self.set_token_qty(x),
-            } for i in self.DECOptions
-            ]
-            self.menu_dvpn_qty = MDDropdownMenu(
-                caller=self.ids.dvpn_qty_menu,
-                items=menu_items,
-                position="center",
-                width_mult=4,
-            )
-            self.menu_dvpn_qty.bind()
-            self.ids.dvpn_qty_menu.text = str(self.DECOptions[0])
-            self.set_token_qty(str(self.DECOptions[0]))
-        else:
-            menu_items = [
-            {
-                "viewclass": "OneLineListItem",
-                "text": f"{i}",
-                "height": dp(56),
-                "on_release": lambda x=f"{i}": self.set_token_qty(x),
             } for i in self.SCRTOptions
             ]
             self.menu_dvpn_qty = MDDropdownMenu(
@@ -543,6 +533,43 @@ class FiatInterface(Screen):
             self.menu_dvpn_qty.bind()
             self.ids.dvpn_qty_menu.text = str(self.SCRTOptions[0])
             self.set_token_qty(str(self.SCRTOptions[0]))
+            
+        elif text_item == self.TokenOptions[2]:
+            menu_items = [
+            {
+                "viewclass": "OneLineListItem",
+                "text": f"{i}",
+                "height": dp(56),
+                "on_release": lambda x=f"{i}": self.set_token_qty(x),
+            } for i in self.ATOMOptions
+            ]
+            self.menu_dvpn_qty = MDDropdownMenu(
+                caller=self.ids.dvpn_qty_menu,
+                items=menu_items,
+                position="center",
+                width_mult=4,
+            )
+            self.menu_dvpn_qty.bind()
+            self.ids.dvpn_qty_menu.text = str(self.ATOMOptions[0])
+            self.set_token_qty(str(self.ATOMOptions[0]))
+        else:
+            menu_items = [
+            {
+                "viewclass": "OneLineListItem",
+                "text": f"{i}",
+                "height": dp(56),
+                "on_release": lambda x=f"{i}": self.set_token_qty(x),
+            } for i in self.OSMOOptions
+            ]
+            self.menu_dvpn_qty = MDDropdownMenu(
+                caller=self.ids.dvpn_qty_menu,
+                items=menu_items,
+                position="center",
+                width_mult=4,
+            )
+            self.menu_dvpn_qty.bind()
+            self.ids.dvpn_qty_menu.text = str(self.OSMOOptions[0])
+            self.set_token_qty(str(self.OSMOOptions[0]))
         self.set_token_price(self.SelectedCoin, None)
             
     def set_token_qty(self, text_item):
@@ -559,9 +586,11 @@ class FiatInterface(Screen):
         if token == self.TokenOptions[0]:
             self.idvpn = self.DVPNOptions.index(int(text_item))
         elif token == self.TokenOptions[1]:
-            self.idvpn = self.DECOptions.index(int(text_item))
-        else:
             self.idvpn = self.SCRTOptions.index(int(text_item))
+        elif token == self.TokenOptions[2]:
+            self.idvpn = self.ATOMOptions.index(int(text_item))
+        else:
+            self.idvpn = self.OSMOOptions.index(int(text_item))
         
         print("Index: %s" % self.idvpn)
         
@@ -570,17 +599,21 @@ class FiatInterface(Screen):
         if token == self.TokenOptions[0]:
             self.ids.coin_qty.text = "QTY: " + str(self.DVPNOptions[self.idvpn]) + " " + self.TokenOptions[0]
         elif token == self.TokenOptions[1]:
-            self.ids.coin_qty.text = "QTY: " + str(self.DECOptions[self.idvpn]) + " " + self.TokenOptions[1]
+            self.ids.coin_qty.text = "QTY: " + str(self.SCRTOptions[self.idvpn]) + " " + self.TokenOptions[1]
+        elif token == self.TokenOptions[2]:
+            self.ids.coin_qty.text = "QTY: " + str(self.ATOMOptions[self.idvpn]) + " " + self.TokenOptions[1]
         else:
-            self.ids.coin_qty.text = "QTY: " + str(self.SCRTOptions[self.idvpn]) + " " + self.TokenOptions[2]
+            self.ids.coin_qty.text = "QTY: " + str(self.OSMOOptions[self.idvpn]) + " " + self.TokenOptions[2]
     
     def get_token_qty(self, token):
         if token == self.TokenOptions[0]:
             return self.DVPNOptions[self.idvpn]
         elif token == self.TokenOptions[1]:
-            return self.DECOptions[self.idvpn]
-        else:
             return self.SCRTOptions[self.idvpn]
+        elif token == self.TokenOptions[2]:
+            return self.ATOMOptions[self.idvpn]
+        else:
+            return self.OSMOOptions[self.idvpn]
              
     def set_month(self, text_item):
         self.ids.month_list.set_item(text_item)
