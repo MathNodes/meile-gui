@@ -45,6 +45,7 @@ import hashlib
 from requests.exceptions import ReadTimeout
 from Crypto.Hash import RIPEMD160
 import string
+from treelib import  Tree
 
 MeileConfig = MeileGuiConfig()
 gsudo       = path.join(MeileConfig.BASEBINDIR, 'gsudo.exe') # windows
@@ -630,13 +631,46 @@ class HandleWalletFunctions():
     
             
     '''
+    def get_random_node_addresses(self, node_tree: Tree, count: int = 8) -> list:
+        
+        node_level_nodes = []
+        
+        for node in node_tree.NodeTree.all_nodes():
+            depth = node_tree.NodeTree.depth(node)
+            print(f"Depth: {depth}")
+            if depth == 2:
+                node_level_nodes.append(node)
+        
+        
+        sample_size = min(count, len(node_level_nodes))
+        random_nodes = random.sample(node_level_nodes, sample_size)
+        print(f"Random Nodes: {random_nodes}")
+        
+        addresses = []
+        for node in random_nodes:
+            if node.data and isinstance(node.data, dict) and 'Address' in node.data:
+                addresses.append(node.data['Address'])
+        
+        print(f"Nodes for ring sessions: {addresses}")    
+        return addresses
             
-    def connect(self, ID, address, type, deposit, price: dict = {}, plan: bool = False, units: int = 0, hourly: bool = False):
+    def connect(self, 
+                ID, 
+                address, 
+                type, 
+                deposit,
+                NodeTree: Tree = None, 
+                price: dict = {}, 
+                plan: bool = False, 
+                units: int = 0, 
+                hourly: bool = False,
+                ):
        
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         PASSWORD = CONFIG['wallet'].get('password', '')
         KEYNAME = CONFIG['wallet'].get('keyname', '')
         DNS = CONFIG['network'].get('dns', '1.1.1.1')
+        RINGSESSIONS = bool(int(CONFIG['network'].get('ringsessions', '0')))
         
         pltfrm = platform.system()
                 
@@ -707,9 +741,43 @@ class HandleWalletFunctions():
             fee_amount=fee
         )
         
+        conndesc.write("Creating new session(s)...\n")
+        conndesc.flush()
+        
         if plan:
             try:
-                tx = sdk.subscriptions.StartSession(subscription_id=int(ID), address=address, tx_params=tx_params)
+                if not RINGSESSIONS:
+                    tx = sdk.subscriptions.StartSession(subscription_id=int(ID), address=address, tx_params=tx_params)
+                else:
+                    addresses = self.get_random_node_addresses(NodeTree, count=8)
+                    rand_index = random.randint(0, len(addresses))
+                    addresses.insert(rand_index, address)
+                    k = 1
+                    for addr in addresses:
+                        conndesc.write(f"Creating ring session {k}...\n")
+                        conndesc.flush()
+
+                        if addr == address:
+                            tx = sdk.subscriptions.StartSession(
+                                subscription_id=int(ID), 
+                                address=addr,
+                                next_sequence = True if k > 1 else False, 
+                                tx_params=tx_params
+                            )
+                            print(tx)
+                        else:
+                            tx_temp = sdk.subscriptions.StartSession(
+                                subscription_id=int(ID), 
+                                address=addr,
+                                next_sequence = True if k > 1 else False, 
+                                tx_params=tx_params
+                            )
+                            print(tx_temp)
+
+                        print(f"Sequence after tx: {sdk.subscriptions._account.next_sequence}")
+                        sleep(0.1)
+                        k += 1
+                    
             except RpcError as rpc_error:
                 details = rpc_error.details()
                 print("details", details)
@@ -746,8 +814,6 @@ class HandleWalletFunctions():
                 print(self.connected)
                 return
             
-        conndesc.write("Creating new session...\n")
-        conndesc.flush()
         # Will need to handle log responses with friendly UI response in case of session create error
         if tx.get("log", None) is not None:
             self.connected = {"v2ray_pid" : None,  "result": False, "status" : tx["log"]}

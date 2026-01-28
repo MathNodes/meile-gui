@@ -632,12 +632,38 @@ WindowManager:
                 valign: "middle"
                 padding: [20,0,0,0]
 
-            Check:
+            Check2:
                 id: fragment
                 size_hint: None, None
                 size: dp(32), dp(32)
                 pos_hint: {"center_y": 0.5}
                 active: root.get_config('fragment')
+                
+        BoxLayout:
+            orientation: "horizontal"
+            spacing: dp(10)
+            padding: [20,0,0,20]
+            size_hint_y: None
+            height: dp(48)
+            pos_hint: {"center_x": 0.5, "top": 0.40}
+
+            MDLabel:
+                font_name: "Roboto-Bold"
+                text: "Ring Sessions"
+                font_size: "20sp"
+                size_hint: None, None
+                width: sp(250)
+                pos_hint: {"center_y": 0.5}
+                halign: "left"
+                valign: "middle"
+                padding: [20,0,0,0]
+
+            Check2:
+                id: ring_sessions
+                size_hint: None, None
+                size: dp(32), dp(32)
+                pos_hint: {"center_y": 0.5}
+                active: root.get_config('ringsessions')
                 on_active: root.on_checkbox_active(*args)
 		
 		MDFlatButton:
@@ -2716,6 +2742,10 @@ WindowManager:
 
 <Check@MDCheckbox>:
     group: 'group'
+    size_hint: None, None
+    size: sp(48), sp(48)
+
+<Check2@MDCheckbox>:
     size_hint: None, None
     size: sp(48), sp(48)
     

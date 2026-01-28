@@ -452,7 +452,8 @@ class MainWindow(Screen):
                 t = Thread(target=lambda: hwf.connect(ID, 
                                                       naddress, 
                                                       proto, 
-                                                      deposit, 
+                                                      deposit,
+                                                      NodeTree = self.NodeTree, 
                                                       plan=PlanConnect))
                 t.start()
             else:
@@ -2265,6 +2266,7 @@ class SettingsScreen(Screen):
         self.FRAGMENT  = config['network'].get('fragment', '0')
         self.DNS       = config['network'].get('dns', '1.1.1.1')
         self.CONFIGDNS = config['network'].get('dns', '1.1.1.1')
+        self.RINGSESSIONS = config['network'].get('ringsessions', '0')
         
         self.MeileConfig = MeileGuiConfig()
 
@@ -2422,6 +2424,8 @@ class SettingsScreen(Screen):
             return config['network'][what]
         elif what == "fragment":
             return bool(int(config['network'].get(what, "0")))
+        elif what == "ringsessions":
+            return bool(int(config['network'].get(what, "0")))
         else:
             getattr(self.ids, f"{what}_drop_item").set_item(config['subscription'][what])
             return config['subscription'][what]
@@ -2465,6 +2469,9 @@ class SettingsScreen(Screen):
         what = "fragment"
         config.set('network', what, '1' if self.ids.fragment.active else '0')
         
+        what = "ringsessions"
+        config.set('network', what, '1' if self.ids.ring_sessions.active else '0')
+        
         with open(self.MeileConfig.CONFFILE, 'w', encoding="utf-8") as f:
             config.write(f)
             
@@ -2487,9 +2494,9 @@ class SettingsScreen(Screen):
         
     def on_checkbox_active(self, checkbox_instance, value):
         if value:  
-            print("Fragment is CHECKED")
+            print("Ring Sessions is CHECKED")
         else:
-            print("Fragment is UNCHECKED")
+            print("Ring Sessions is UNCHECKED")
 
     def set_previous_screen(self):
         Meile.app.root.remove_widget(self)
