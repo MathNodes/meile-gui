@@ -957,29 +957,30 @@ WindowManager:
         rows: 3
         size_hint_x: 1
         MDGridLayout:
-            cols: 7
+            cols: 6
             height: 25
             adaptive_height: True
             padding: [15, 25, 0, 25]
     
             MDLabel:
-                text: "Plan"
+                text: "          Plan"
                 bold: True
                 size_hint_x: 2.9
+                halign: "center"
                 
     
             MDLabel:
-                text: "Nodes"
+                text: "    Nodes"
                 bold: True
                 size_hint_x: 1.1
             
             MDLabel:
-                text: "Countries"
+                text: "   Countries"
                 bold: True
                 size_hint_x: 1.5
     
             MDLabel:
-                text: "Cost"
+                text: "    Cost"
                 bold: True
                 size_hint_x: 1.4
     
@@ -1003,10 +1004,10 @@ WindowManager:
             padding: [15, 25, 0, 25]        
             MDLabel:
                 height: sp(35)
-                font_size: sp(13)
+                font_size: sp(15)
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex(MeileColors.WHITE) 
-                text: "In order to use plans that you subscribe to, click on the subscribed plan to expand it. This will select the plan. Click 'filter nodes' to find the online nodes on the plan. They will be available in the countires on the left bar. Navigate to your desired node, click on it, and then press connect."
+                text: "In order to use plans that you subscribe to, click on the subscribed plan to expand it. This will select the plan and automatically filter the nodes on the left bar which are on the plan (i.e., connectible). Navigate to your desired node, click on it, and then press connect."
                 
         #MDGridLayout:
         #    cols: 1
@@ -1179,7 +1180,7 @@ WindowManager:
             
 <PlanDetails>:
     rows: 3
-    cols: 6
+    cols: 5
     height: 90
 
     MDLabel
@@ -1204,13 +1205,13 @@ WindowManager:
         text: "[b]Coin[/b]"
         markup: True
         
-    TooltipMDIconButton:
-        icon: "table-filter"
-        tooltip_text: "Filter Nodes"
-        size_hint_x: .25
-        theme_text_color: "Custom"
-        text_color: app.theme_cls.primary_color
-        on_release: root.filter_nodes()
+    #TooltipMDIconButton:
+    #    icon: "table-filter"
+    #    tooltip_text: "Filter Nodes"
+    #    size_hint_x: .25
+    #    theme_text_color: "Custom"
+    #    text_color: app.theme_cls.primary_color
+    #    on_release: root.filter_nodes()
     
     MDLabel
         text: root.uuid
@@ -1220,27 +1221,27 @@ WindowManager:
     MDLabel
         text: root.id
         markup: True
-        font_size: sp(10)
+        font_size: sp(13)
     MDLabel
         text: root.expires
         markup: True
-        font_size: sp(11)
+        font_size: sp(13)
         size_hint_x: 1.3
     MDLabel
         text: root.deposit
         markup: True
-        font_size: sp(11)
+        font_size: sp(13)
     MDLabel
         text: root.coin
         markup: True
-        font_size: sp(11)
+        font_size: sp(13)
         
     MDLabel
     MDLabel
     MDLabel
     MDLabel
     MDLabel
-    MDLabel
+    
     
 <NodeDetails>:
     rows: 2
