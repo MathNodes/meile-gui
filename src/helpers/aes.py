@@ -18,6 +18,9 @@ class SecureSeed():
     def xor_b64(self, password):
         return base64.b64encode(self.xor_base64(password)).decode()
     
+    def xor_base64(self, password):
+        return self.xor_password(password)
+    
     def blake2_hash(self, data):
         return hashlib.blake2b(data).digest()
     

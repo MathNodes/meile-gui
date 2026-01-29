@@ -1,6 +1,7 @@
 from datetime import timedelta, datetime
 import psutil
 import re
+from . helpers import format_byte_size
 
 def compute_consumed_data(consumed):
     if "GB" in consumed:
@@ -19,7 +20,7 @@ def compute_consumed_data(consumed):
 
 def compute_consumed_hours(allocated, expirary_date):
         
-    allocated       = allocated.split('hrs')[0].rstrip().lstrip()
+    #allocated       = allocated.split('hrs')[0].rstrip().lstrip()
     now             = datetime.now()
     #expirary_date   = datetime.strptime(expirary_date,'%b %d %Y, %I:%M %p')
     try:
@@ -93,3 +94,31 @@ def GetConsumedWhileConnected(sConsumed, Bytes):
             
     print("Total Data: %s" % total_data, end=' ')
     return total_data
+
+def GetTotalDataWhileConnected():
+    try: 
+        bytes_sent =  int(psutil.net_io_counters(pernic=True)['wg99'].bytes_sent)
+        bytes_recvd = int(psutil.net_io_counters(pernic=True)['wg99'].bytes_recv)
+        
+        bytes_sent = format_byte_size(bytes_sent, binary_system=False)
+        bytes_recvd = format_byte_size(bytes_recvd, binary_system=False)
+        
+        return {'sent' : bytes_sent, "rcvd" : bytes_recvd}
+    except KeyError:
+        # Find V2Ray Tunnel (tun2socks) interface
+        for iface in psutil.net_if_addrs().keys():
+            if "tun" in iface:
+                IFACE = iface
+                print(IFACE)
+                break
+        try:     
+            bytes_sent = int(psutil.net_io_counters(pernic=True)[IFACE].bytes_sent)
+            bytes_recvd = int(psutil.net_io_counters(pernic=True)[IFACE].bytes_recv)
+            
+            bytes_sent = format_byte_size(bytes_sent, binary_system=False)
+            bytes_recvd = format_byte_size(bytes_recvd, binary_system=False)
+            
+            return {'sent' : bytes_sent, "rcvd" : bytes_recvd}
+        except Exception as e:
+            print(str(e))
+            return {'sent': 0, 'rcvd' : 0}

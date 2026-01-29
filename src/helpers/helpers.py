@@ -1,4 +1,5 @@
-
+import socket
+import ipaddress
 
 def format_byte_size(size, decimals=2, binary_system=True):
     if binary_system:
@@ -15,6 +16,31 @@ def format_byte_size(size, decimals=2, binary_system=True):
         size /= step
     return ("%." + str(decimals) + "f %s") % (size, largest_unit)
 
+def resolve_address(addr):
+    try:
+        # Check if addr is already a valid IP
+        ip = ipaddress.ip_address(addr)
+        return str(ip)  # it's already an IP
+    except ValueError:
+        # Not an IP, treat as hostname
+        return socket.gethostbyname(addr)
+
+def natural_gateway(ip_with_prefix: str) -> str:
+
+    iface = ipaddress.ip_interface(ip_with_prefix)
+    net = iface.network
+
+    if net.num_addresses > 1:
+        gw = ipaddress.ip_address(int(net.network_address) + 1)
+        return str(gw)
+
+    if iface.version == 4:
+        net24 = ipaddress.ip_network(f"{iface.ip.exploded}/24", strict=False)
+        gw = ipaddress.ip_address(int(net24.network_address) + 1)
+        return str(gw)
+    else:
+        net64 = ipaddress.ip_network(f"{iface.ip.exploded}/64", strict=False)
+        return str(ipaddress.ip_address(int(net64.network_address) + 1))
 
 
 def is_ecryptfs_mounted():

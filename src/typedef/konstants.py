@@ -29,7 +29,7 @@ class ConfParams():
     DEFAULT_SUBS     = [5 * i for i in range(1, 6)]
     BTCPAYADJ        = 1.10
     XMRPAYADJ        = 3.14
-    SUBFEE           = 0.0314
+    SUBFEE           = 0.042069
 
 class HTTParams():
     # Note http://128.199.90.172:26657 is testnet ONLY!
@@ -117,7 +117,7 @@ class HTTParams():
     API_PLANS_ADD          = "/v1/add"
     API_PLANS_NODES        = "/v1/nodes/%s" # variable is plan uuid
     SESSIONS_API_URL       = '/sentinel/accounts/%s/sessions'
-    BALANCES_ENDPOINT      = "/bank/balances/"
+    BALANCES_ENDPOINT      = "/cosmos/bank/v1beta1/balances/"
     ICANHAZURL             = "https://icanhazip.com"
     ICANHAZDNS             = "icanhazip.com"
     IFCONFIGDNS            = "ifconfig.co"
@@ -548,22 +548,22 @@ class IBCTokens():
     IBCDEC   = 'ibc/B1C0DDB14F25279A2026BC8794E12B259F8BDA546A3C5132CCAEE4431CE36783'
     IBCOSMO  = 'ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518'
     IBCUNKWN = 'ibc/9BCB27203424535B6230D594553F1659C77EC173E36D9CF4759E7186EE747E84'
+    IBCNAM   = 'ibc/700A05A54B68723DAD9A7C97B39C5DDAB5E34B621A3400482C737E54456BDCD7'
     
     ZANO_WALLET = "ZxDEXCMwvpwirJujwjZExHfKFEqNjMWdjLw5MGYXa5KxScvcsr2BNGm8TFyk4mvFAhAPtWh54tadWNgS5CxPAqXX1fpoQLkJJ"
     
-    IBCCOINS     = [{'uscrt' : IBCSCRT}, {'uatom' : IBCATOM}, {'udec' : IBCDEC}, {'uosmo' : IBCOSMO}, {'uknwn' :IBCUNKWN}]
-    UNITTOKEN    = {'uscrt' : 'scrt', 'uatom' : 'atom' , 'uosmo' : 'osmo', 'udec' : 'dec', 'udvpn' : 'dvpn', 'tsent' : 'tsent'}
-    IBCUNITTOKEN = {'uscrt' : IBCSCRT, 'uatom' : IBCATOM , 'uosmo' : IBCOSMO, 'udec' : IBCDEC, 'udvpn' : 'udvpn', 'tsent' : 'tsent'}
-    mu_coins     = ["udvpn", "uscrt", "uosmo", "uatom", "udec"]
-    ibc_coins    = ["dvpn", "scrt", "osmo", "atom", "dec"]
+    IBCCOINS     = [{'uscrt' : IBCSCRT}, {'uatom' : IBCATOM}, {'uosmo' : IBCOSMO}, {'uknwn' :IBCUNKWN}, {'unam' : IBCNAM}]
+    UNITTOKEN    = {'uscrt' : 'scrt', 'uatom' : 'atom' , 'uosmo' : 'osmo', 'udvpn' : 'dvpn', 'unam' : 'nam', 'tsent' : 'tsent'}
+    IBCUNITTOKEN = {'uscrt' : IBCSCRT, 'uatom' : IBCATOM , 'uosmo' : IBCOSMO, 'unam' : IBCNAM, 'udvpn' : 'udvpn', 'tsent' : 'tsent'}
+    mu_coins     = ["udvpn", "uscrt", "uosmo", "uatom", "unam"]
+    ibc_coins    = ["dvpn", "scrt", "osmo", "atom", "nam"]
     ibc_mu_coins  = {"tsent" : "tsent", 
                      "dvpn"  : "udvpn", 
                      "scrt"  : "uscrt", 
                      "osmo"  : "uosmo", 
                      "atom"  : "uatom", 
-                     "dec"   : "udec"}
-    CSAPPMAP     = {'dec' : 'decentr',
-                    'atom' : 'cosmos', 
+                     "nam"   : "unam"}
+    CSAPPMAP     = {'atom' : 'cosmos', 
                     'scrt' : 'secret', 
                     'osmo' : 'osmosis', 
                     'dvpn' : 'sentinel', 
@@ -590,13 +590,14 @@ class IBCTokens():
                     'xaut' : 'tether-gold',
                     'eth'  : 'ethereum',
                     'zano' : 'zano',
-                    'fusd' : 'freedom-dollar'}
+                    'fusd' : 'freedom-dollar',
+                    'nam'  : 'namada'}
     
     NOWCOINS     = ["firo", "beam", "pivx", "zec", "dcr", "epic",
                     "bch", "kmd", "xno", "sol", "dgb", "xaut", "eth",
                     "ada", "inj", "dot" ]
     
-    BTCPAYCOINS  = ["xmr", "btc", "ltc", "doge", "dash"]
+    BTCPAYCOINS  = ["xmr", "btc", "zec", "ltc", "doge", "dash"]
     PRIVACYCOINS = ["arrr", "firo", "pivx", "zano", "fusd"]
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
@@ -617,6 +618,8 @@ class MeileColors():
     INACTIVE_DIALOG_BG_COLOR = "#50507c"
     MAP_BG_COLOR             = "#232227"
     ROW_HOVER                = "#39363c"
+    DOWNLOAD                 = "#2fe548"
+    UPLOAD                   = "#2fa1e5"
     FONT_FACE                = "../fonts/mplus-2c-bold.ttf"
     FONT_FACE_ARIAL          = "../fonts/arial-unicode-ms.ttf"
     QR_FONT_FACE             = "../fonts/Roboto-BoldItalic.ttf"
