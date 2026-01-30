@@ -1783,7 +1783,7 @@ class PlanRow(MDGridLayout):
                 check_balance(1)
                 if self.zaddress_balance >= arrr:
                     self.invoice_result = {"success" : True, "id": self.zaddress_balance }
-                    
+    '''                
     def check_invoice_status_firo(self, address=False, invoice=False, firo=0):
         Request = HTTPRequests.MakeRequest(TIMEOUT=120)
         http = Request.hadapter()
@@ -1838,7 +1838,121 @@ class PlanRow(MDGridLayout):
                 check_balance()
                 if self.saddress_confirmed_balance >= firo:
                     self.invoice_result = {"success" : True, "id": self.saddress_confirmed_balance }
+    '''
+                    
+    def check_invoice_status_firo(self, address=False, invoice=False, firo=0):
+        Request = HTTPRequests.MakeRequest(TIMEOUT=120)
+        http = Request.hadapter()
+        USERNAME = scrtsxx.PLANUSERNAME
+        PASSWORD = scrtsxx.PLANPASSWORD
     
+        def check_balance():
+            try: 
+                data = {'address': f"{self.saddress}"}
+                print(data)
+                endpoint = '/v1/firo/getsparkbalance'
+                response = http.post(
+                    HTTParams.PLAN_API + endpoint,
+                    json=data,
+                    auth=HTTPBasicAuth(USERNAME, PASSWORD)
+                )
+                if response.status_code == 200:
+                    self.saddress_unconfirmed_balance = float(
+                        float(response.json()['result']['unconfirmedBalance: ']) / IBCTokens.SATOSHI_BTC
+                    )
+                    self.saddress_confirmed_balance = float(
+                        float(response.json()['result']['availableBalance: ']) / IBCTokens.SATOSHI_BTC
+                    )
+                    print(f"Unconfirmed: {self.saddress_unconfirmed_balance}, "
+                          f"Confirmed: {self.saddress_confirmed_balance}")
+                if self.saddress_unconfirmed_balance > 0 or self.saddress_confirmed_balance > 0:
+                    self.mempool = True
+                elif self.saddress_unconfirmed_balance == 0 and self.saddress_confirmed_balance == 0:
+                    self.mempool = False
+    
+            except Exception as e:
+                print(str(e))
+    
+        def check_instantlock(amount):
+            """
+            Check if a transaction with the given amount has instantlock enabled.
+            Returns True if instantlock is True, False otherwise.
+            """
+            try:
+                data = {'amount': amount}
+                endpoint = '/v1/firo/getsparktxs'
+                response = http.post(
+                    HTTParams.PLAN_API + endpoint,
+                    json=data,
+                    auth=HTTPBasicAuth(USERNAME, PASSWORD)
+                )
+                if response.status_code == 200:
+                    result = response.json()
+                    if result.get('success') and result.get('instantlock'):
+                        return True
+                return False
+            except Exception as e:
+                print(f"Error checking instantlock: {str(e)}")
+                return False
+    
+        if address == True:
+            print("Getting new firo spark address...")
+            try: 
+                endpoint = '/v1/firo/newsparkaddress'
+                response = http.get(
+                    HTTParams.PLAN_API + endpoint,
+                    auth=HTTPBasicAuth(USERNAME, PASSWORD)
+                )
+                if response.status_code == 200:
+                    self.saddress = response.json()['result'][0]
+                    return self.saddress
+            except Exception as e:
+                print(str(e))
+                self.saddress = "NULL"
+                return self.saddress
+    
+        elif invoice == True:
+            if not self.mempool:
+                print(f"Checking balance of: {self.saddress}")
+                check_balance()
+    
+            elif self.mempool:
+                # Calculate total balance (confirmed + unconfirmed)
+                total_balance = (
+                    float(self.saddress_unconfirmed_balance) + 
+                    float(self.saddress_confirmed_balance)
+                )
+    
+                if total_balance < firo:
+                    # Not enough balance yet, update UI with remaining amount
+                    remaining_amt = float(firo) - total_balance
+                    Clock.schedule_once(
+                        lambda dt: self.update_payment_ui(remaining_amt, "firo")
+                    )
+                    check_balance()
+                else:
+                    # Total balance meets or exceeds required amount
+                    # Check if the transaction has instantlock
+                    remaining_amt = float(firo) - total_balance
+                    Clock.schedule_once(
+                        lambda dt: self.update_payment_ui(remaining_amt, "firo")
+                    )
+    
+                    # Use total_balance to check instantlock status
+                    # (accounts for users sending a little extra)
+                    if check_instantlock(total_balance):
+                        print(f"InstantLock confirmed for amount: {total_balance}")
+                        self.invoice_result = {
+                            "success": True,
+                            "id": total_balance
+                        }
+                    else:
+                        # InstantLock not yet confirmed, keep checking
+                        print("No instantLock")
+                        check_balance()
+                        if self.saddress_confirmed_balance >= firo:
+                            self.invoice_result = {"success" : True, "id": self.saddress_confirmed_balance }
+        
     def check_invoice_status_zano(self, address=False, coin="zano", invoice=False, zano=0):
         THRESHOLD = 0.00001
         Request = HTTPRequests.MakeRequest(TIMEOUT=120)
