@@ -2035,14 +2035,23 @@ class PlanAccordion(ButtonBehavior, MDGridLayout):
             self.remove_widget(self.children[0])
             self.close_panel()
             self.dispatch("on_close")
-
+    @delayable
     def on_open(self, *args):
         """Called when a panel is opened."""
         self.mw.PlanID = self.content.id
+        t = Thread(target=lambda: self.filter_nodes())
+        t.start()
+        
+        while t.is_alive():
+            print(".", end="")
+            yield 0.5
+        
+        self.mw.refresh_country_recycler()
 
     def on_close(self, *args):
         """Called when a panel is closed."""
         self.mw.PlanID = None
+        self.mw.restore_results()
 
     def close_panel(self) -> None:
         """Method closes the panel."""
@@ -2096,6 +2105,19 @@ class PlanAccordion(ButtonBehavior, MDGridLayout):
         if self.content:
             self.content.y = dp(72)
             self.add_widget(self.content)
+            
+    def filter_nodes(self):
+        
+        try: 
+            Request = HTTPRequests.MakeRequest()
+            http = Request.hadapter()
+            req = http.get(HTTParams.PLAN_API + HTTParams.API_PLANS_NODES % self.content.uuid, auth=HTTPBasicAuth(scrtsxx.PLANUSERNAME, scrtsxx.PLANPASSWORD))
+        
+            plan_nodes_data = req.json() if req.status_code == 200 else None
+                
+            self.mw.NodeTree.search(key=NodeKeys.NodesInfoKeys[1], value=plan_nodes_data, perfect_match=True, is_list=True)
+        except:
+            pass
 
 
 class NodeCarousel(MDBoxLayout):

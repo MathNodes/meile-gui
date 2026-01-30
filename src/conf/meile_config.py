@@ -114,6 +114,7 @@ class MeileGuiConfig():
             self.CONFIG.set('network', 'cache', 'https://metabase.bluefren.xyz/api/public/card/4a891454-51da-462a-a5df-e85ca17c05d5/query/json')
             self.CONFIG.set('network', 'fragment', '1')
             self.CONFIG.set('network', 'dns', '1.1.1.1')
+            self.CONFIG.set('network', 'ringsessions', '0')
             FILE = open(self.CONFFILE, 'w')    
             self.CONFIG.write(FILE)
             FILE.close()
@@ -138,7 +139,9 @@ class MeileGuiConfig():
                 self.CONFIG.set('network', 'fragment', '1')
             if not self.CONFIG.has_option('network', 'dns'):
                 self.CONFIG.set('network', 'dns', '1.1.1.1')
-            
+            if not self.CONFIG.has_option('network', 'ringsessions'):
+                self.CONFIG.set('network', 'ringsessions', '0')
+                
             FILE = open(self.CONFFILE, 'w')    
             self.CONFIG.write(FILE) 
             FILE.close()
