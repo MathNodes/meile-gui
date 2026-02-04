@@ -1507,6 +1507,7 @@ class PlanRow(MDGridLayout):
                 self.stop_event.set()
                 Clock.schedule_once(lambda dt: self.update_ui_after_payment(False), 0)
                 print(self.invoice_result)
+                self.invoice_result = {"success" : False, "id": None }
                 return
         
         if self.stop_event.is_set() and self.invoice_result['success']:
@@ -1594,6 +1595,7 @@ class PlanRow(MDGridLayout):
                 self.stop_event.set()
                 Clock.schedule_once(lambda dt: self.update_ui_after_payment(False), 0)
                 print(self.invoice_result)
+                self.invoice_result = {"success" : False, "id": None }
                 return
 
         if self.stop_event.is_set() and self.invoice_result['success']:
@@ -1619,6 +1621,7 @@ class PlanRow(MDGridLayout):
                 self.stop_event.set()
                 Clock.schedule_once(lambda dt: self.update_ui_after_payment(False), 0)
                 print(self.invoice_result)
+                self.invoice_result = {"success" : False, "id": None }
                 return
         
         if self.stop_event.is_set() and self.invoice_result['success']:
@@ -1644,6 +1647,7 @@ class PlanRow(MDGridLayout):
                 self.stop_event.set()
                 Clock.schedule_once(lambda dt: self.update_ui_after_payment(False), 0)
                 print(self.invoice_result)
+                self.invoice_result = {"success" : False, "id": None }
                 return
         
         if self.stop_event.is_set() and self.invoice_result['success']:
@@ -1669,6 +1673,7 @@ class PlanRow(MDGridLayout):
                 self.stop_event.set()
                 Clock.schedule_once(lambda dt: self.update_ui_after_payment(False), 0)
                 print(self.invoice_result)
+                self.invoice_result = {"success" : False, "id": None }
                 return
         
         if self.stop_event.is_set() and self.invoice_result['success']:
@@ -1922,7 +1927,8 @@ class PlanRow(MDGridLayout):
                         print("No instantLock")
                         check_balance()
                         if self.saddress_confirmed_balance >= firo:
-                            self.invoice_result = {"success" : True, "id": self.saddress_confirmed_balance }                                
+                            self.invoice_result = {"success" : True, "id": self.saddress_confirmed_balance }         
+                                                   
     def check_invoice_status_zano(self, address=False, coin="zano", invoice=False, zano=0):
         THRESHOLD = 0.00001
         Request = HTTPRequests.MakeRequest(TIMEOUT=120)
