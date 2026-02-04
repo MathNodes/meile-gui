@@ -1320,7 +1320,7 @@ class PlanRow(MDGridLayout):
                     
                 self.dialog = None
                     
-                self.invoice_content = QRDialogZanoContent()
+                self.invoice_content = QRDialogContent()
                 self.invoice_content.ids.zaddress_field.text = zaddress
                 self.invoice_content.ids.price_field.text = f"{total_arrr} {mu_coin}"
                 self.invoice_content.ids.comment_field.text = self.ADDRESS
@@ -1363,7 +1363,6 @@ class PlanRow(MDGridLayout):
                 self.invoice_content = QRDialogZanoContent()
                 self.invoice_content.ids.zaddress_field.text = zaddress
                 self.invoice_content.ids.price_field.text = f"{total_arrr} {mu_coin}"
-                self.invoice_content.ids.comment_field.text = self.ADDRESS
     
                 # Generate QR Code
                 QRcode = QRCode()
