@@ -1346,6 +1346,46 @@ class PlanRow(MDGridLayout):
                 self.dialog.open()
                 yield 0.6
                 self.start_payment_thread_zano(total_arrr, mu_coin)
+                
+            elif mu_coin in ['zsd', 'zeph']:
+                zaddress = self.check_invoice_status_zephyr(address=True)
+                
+                price_api = GetPriceAPI()
+                arrrusd = price_api.get_usd(mu_coin)
+                cost = usd*ConfParams.BTCPAYADJ
+                total_arrr = round(float(cost) / float(arrrusd['price']),4)
+                
+                if self.dialog:
+                    self.dialog.dismiss()
+                    
+                self.dialog = None
+                    
+                self.invoice_content = QRDialogZanoContent()
+                self.invoice_content.ids.zaddress_field.text = zaddress
+                self.invoice_content.ids.price_field.text = f"{total_arrr} {mu_coin}"
+                self.invoice_content.ids.comment_field.text = self.ADDRESS
+    
+                # Generate QR Code
+                QRcode = QRCode()
+                self.invoice_content.ids.qr_img.source = QRcode.generate_qr_code(zaddress, mu_coin) 
+    
+                self.dialog = MDDialog(
+                    title="Waiting for invoice to be paid...",
+                    type="custom",
+                    content_cls=self.invoice_content,
+                    md_bg_color=get_color_from_hex(MeileColors.BLACK),
+                    buttons=[
+                            MDFlatButton(
+                                text="CANCEL",
+                                theme_text_color="Custom",
+                                text_color=get_color_from_hex(MeileColors.MEILE),
+                                on_release=self.cancel_payment
+                            ),
+                        ]
+                )
+                self.dialog.open()
+                yield 0.6
+                self.start_payment_thread_zephyr(total_arrr, mu_coin)
             
         elif subscribe_dialog.pay_with == "now":
             if self.dialog:
@@ -1410,6 +1450,12 @@ class PlanRow(MDGridLayout):
     def start_payment_thread_zano(self, zano, coin):
         self.stop_event.clear()
         self.invoice_thread = Thread(target=lambda: self.pay_meile_plan_with_zano(zano, coin))
+        self.invoice_thread.start()
+        Clock.schedule_interval(self.check_thread_status, 0.1)
+        
+    def start_payment_thread_zephyr(self, zeph, coin):
+        self.stop_event.clear()
+        self.invoice_thread = Thread(target=lambda: self.pay_meile_plan_with_zephyr(zeph, coin))
         self.invoice_thread.start()
         Clock.schedule_interval(self.check_thread_status, 0.1)
         
@@ -1517,6 +1563,7 @@ class PlanRow(MDGridLayout):
                 self.stop_event.set()
                 Clock.schedule_once(lambda dt: self.update_ui_after_payment(False), 0)
                 print(self.invoice_result)
+                self.invoice_result = {"success" : False, "id": None }
                 return
         
         if self.stop_event.is_set() and self.invoice_result['success']:
@@ -1604,6 +1651,7 @@ class PlanRow(MDGridLayout):
                 self.stop_event.set()
                 Clock.schedule_once(lambda dt: self.update_ui_after_payment(False), 0)
                 print(self.invoice_result)
+                self.invoice_result = {"success" : False, "id": None }
                 return
         
         if self.stop_event.is_set() and self.invoice_result['success']:
@@ -1615,8 +1663,6 @@ class PlanRow(MDGridLayout):
          
     def pay_meile_plan_with_pirate(self, arrr, coin):
         print(f"Method: 'pay_meile_plan_with_pirate', {coin}: {arrr}")
-        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
-        buyer = mw.address
         
         self.zaddress_balance = 0
         self.mempool = False
@@ -1629,6 +1675,7 @@ class PlanRow(MDGridLayout):
                 self.stop_event.set()
                 Clock.schedule_once(lambda dt: self.update_ui_after_payment(False), 0)
                 print(self.invoice_result)
+                self.invoice_result = {"success" : False, "id": None }
                 return
         
         if self.stop_event.is_set() and self.invoice_result['success']:
@@ -1640,8 +1687,6 @@ class PlanRow(MDGridLayout):
               
     def pay_meile_plan_with_firo(self, firo):
         print(f"Method: 'pay_meile_plan_with_pirate', firo: {firo}")
-        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
-        buyer = mw.address
         
         self.saddress_confirmed_balance = 0
         self.mempool = False
@@ -1654,6 +1699,7 @@ class PlanRow(MDGridLayout):
                 self.stop_event.set()
                 Clock.schedule_once(lambda dt: self.update_ui_after_payment(False), 0)
                 print(self.invoice_result)
+                self.invoice_result = {"success" : False, "id": None }
                 return
         
         if self.stop_event.is_set() and self.invoice_result['success']:
@@ -1665,8 +1711,6 @@ class PlanRow(MDGridLayout):
             
     def pay_meile_plan_with_zano(self, zano, coin):
         print(f"Method: 'pay_meile_plan_with_zano', {coin} : {zano}")
-        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
-        buyer = mw.address
         
         self.saddress_confirmed_balance = 0
         self.mempool = False
@@ -1679,6 +1723,31 @@ class PlanRow(MDGridLayout):
                 self.stop_event.set()
                 Clock.schedule_once(lambda dt: self.update_ui_after_payment(False), 0)
                 print(self.invoice_result)
+                self.invoice_result = {"success" : False, "id": None }
+                return
+        
+        if self.stop_event.is_set() and self.invoice_result['success']:
+            print("Invoice has been paid.")
+            Clock.schedule_once(lambda dt: self.update_ui_after_payment(False), 0)
+        elif self.stop_event.is_set():
+            print("Payment process was canceled.")
+            Clock.schedule_once(lambda dt: self.update_ui_after_payment(True), 0)
+            
+    def pay_meile_plan_with_zephyr(self, zeph, coin):
+        print(f"Method: 'pay_meile_plan_with_zeph', {coin}: {zeph}")
+        
+        self.zaddress_balance = 0
+        self.mempool = False
+        
+        while not self.stop_event.is_set():
+            sleep(10)
+            self.check_invoice_status_zephyr(invoice=True, zeph=zeph, coin=coin)
+            
+            if self.invoice_result['success']:
+                self.stop_event.set()
+                Clock.schedule_once(lambda dt: self.update_ui_after_payment(False), 0)
+                print(self.invoice_result)
+                self.invoice_result = {"success" : False, "id": None }
                 return
         
         if self.stop_event.is_set() and self.invoice_result['success']:
@@ -1998,6 +2067,89 @@ class PlanRow(MDGridLayout):
                 Clock.schedule_once(lambda dt: self.update_payment_ui(remaining_amt, coin))
                 if remaining_amt <= THRESHOLD and self.zheight and self.zheight != 0:
                     self.invoice_result = {"success" : True, "id": self.zaddress_balance }
+                    
+    def check_invoice_status_zephyr(self, address=False, coin="zsd", invoice=False, zeph=0):
+        Request = HTTPRequests.MakeRequest(TIMEOUT=120)
+        http = Request.hadapter()
+        USERNAME = scrtsxx.PLANUSERNAME
+        PASSWORD = scrtsxx.PLANPASSWORD
+    
+        def check_balance(conf: int):
+            try:
+                data = {
+                    'index': self.zephyr_index,
+                    'amount': zeph,
+                    'asset': coin.upper()
+                }
+                print(data)
+    
+                endpoint = '/v1/zephyr/getbalance'
+                response = http.post(
+                    HTTParams.PLAN_API + endpoint,
+                    json=data,
+                    auth=HTTPBasicAuth(USERNAME, PASSWORD)
+                )
+    
+                result = response.json()
+                self.zephyr_success = result.get('success', False)
+                self.zephyr_confirmations = result.get('confirmations', 0)
+                self.zephyr_difference = result.get('difference', zeph)
+    
+                if self.zephyr_confirmations == 0 and self.zephyr_difference < zeph:
+                    self.mempool = True
+                else:
+                    self.mempool = False
+    
+            except Exception as e:
+                print(str(e))
+    
+        if address == True:
+            print("Getting new Zephyr address...")
+    
+            try:
+                endpoint = '/v1/zephyr/newaddress'
+                response = http.get(
+                    HTTParams.PLAN_API + endpoint,
+                    auth=HTTPBasicAuth(USERNAME, PASSWORD)
+                )
+                result = response.json()
+    
+                if result.get('success'):
+                    self.zephyr_address = result['address']
+                    self.zephyr_index = result['index']
+                    return self.zephyr_address
+                else:
+                    self.zephyr_address = "NULL"
+                    self.zephyr_index = None
+                    return self.zephyr_address
+    
+            except Exception as e:
+                print(str(e))
+                self.zephyr_address = "NULL"
+                self.zephyr_index = None
+                return self.zephyr_address
+    
+        elif invoice == True:
+            if not self.mempool:
+                print(f"Checking balance of index: {self.zephyr_index}")
+                check_balance(0)
+    
+            elif self.mempool and not self.zephyr_success:
+                remaining_amt = self.zephyr_difference
+                Clock.schedule_once(lambda dt: self.update_payment_ui(remaining_amt, coin))
+                check_balance(0)
+    
+            else:
+                remaining_amt = self.zephyr_difference
+                Clock.schedule_once(lambda dt: self.update_payment_ui(remaining_amt, coin))
+                check_balance(1)
+    
+                if self.zephyr_success and self.zephyr_confirmations >= 1:
+                    self.invoice_result = {
+                        "success": True,
+                        "id": self.zephyr_index,
+                        "confirmations": self.zephyr_confirmations
+                    }
     
     def update_payment_ui(self, remaining_amt, coin):
         if remaining_amt > 0:

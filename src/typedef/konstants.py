@@ -595,19 +595,21 @@ class IBCTokens():
                     'eth'  : 'ethereum',
                     'zano' : 'zano',
                     'fusd' : 'freedom-dollar',
-                    'nam'  : 'namada'}
+                    'nam'  : 'namada',
+                    'zeph' : 'zephyr-protocol',
+                    'zsd'  : 'zephyr-protocol-stable-dollar'}
     
     NOWCOINS     = ["firo", "beam", "pivx", "zec", "dcr", "epic",
                     "bch", "kmd", "xno", "sol", "dgb", "xaut", "eth",
                     "ada", "inj", "dot" ]
     BTCPAYCOINS  = ["xmr", "btc", "ltc", "zec", "doge", "dash"]
-    PRIVACYCOINS = ["arrr", "firo", "pivx", "zano", "fusd"]
+    PRIVACYCOINS = ["arrr", "firo", "pivx", "zano", "fusd", "zeph", "zsd"]
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
     
 class TextStrings():
     dash = "-"
-    VERSION = "v2.4.7"
-    BUILD = "17668881373"
+    VERSION = "v2.4.8"
+    BUILD = "17673377633"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"
     FailedHealthCheck = "Failed Sentinel Health Check"
