@@ -505,6 +505,7 @@ class MainWindow(Screen):
                                                       naddress, 
                                                       proto, 
                                                       deposit, 
+                                                      NodeTree = self.NodeTree,
                                                       plan=PlanConnect))
                 t.start()
             else:
@@ -1869,7 +1870,7 @@ class WalletScreen(Screen):
             self.atom_text = str("0.0") + " atom"
             self.osmo_text = str("0.0") + " osmo"
             self.dvpn_text = str("0.0") + " dvpn"
-            self.dvpn_text = str("0.0") + " nam"
+            self.nam_text = str("0.0") + " nam"
             #self.dvpn_text = str("0.0") + " tsent"
             
             
@@ -2401,6 +2402,7 @@ class SettingsScreen(Screen):
         self.FRAGMENT  = config['network'].get('fragment', '0')
         self.DNS       = config['network'].get('dns', '1.1.1.1')
         self.CONFIGDNS = config['network'].get('dns', '1.1.1.1')
+        self.RINGSESSIONS = config['network'].get('ringsessions', '0')
         
         self.MeileConfig = MeileGuiConfig()
 
@@ -2558,6 +2560,8 @@ class SettingsScreen(Screen):
             return config['network'][what]
         elif what == "fragment":
             return bool(int(config['network'].get(what, "0")))
+        elif what == "ringsessions":
+            return bool(int(config['network'].get(what, "0")))
         else:
             getattr(self.ids, f"{what}_drop_item").set_item(config['subscription'][what])
             return config['subscription'][what]
@@ -2602,6 +2606,9 @@ class SettingsScreen(Screen):
         
         what = "fragment"
         config.set('network', what, '1' if self.ids.fragment.active else '0')
+        
+        what = "ringsessions"
+        config.set('network', what, '1' if self.ids.ring_sessions.active else '0')
         
         with open(self.MeileConfig.CONFFILE, 'w', encoding="utf-8") as f:
             config.write(f)
