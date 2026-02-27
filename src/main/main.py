@@ -1,3 +1,10 @@
+import sys
+from ctypes import windll, c_int64
+
+# MUST be before any kivy imports
+if sys.platform == "win32":
+    windll.user32.SetProcessDpiAwarenessContext(c_int64(-4))
+
 from ui.interfaces import WindowManager
 from ui.screens import MainWindow,  PreLoadWindow, WalletRestore
 from typedef.win import WindowNames
@@ -19,6 +26,7 @@ class MyMainApp(MDApp):
     def __init__(self,**kwargs):
         super(MyMainApp,self).__init__(**kwargs)
         from kivy.core.window import Window
+        from kivy.metrics import Metrics
         
         global MeileConfig
         self.icon = MeileConfig.resource_path("imgs/icon.png")
@@ -30,7 +38,15 @@ class MyMainApp(MDApp):
         if Window.left != dim[2] and Window.top != dim[3]:
             Window.left = dim[2]
             Window.top  = dim[3]
-          
+        
+        dpi = Window.dpi
+        density = dpi / 96.0
+        Window._density = density
+        Metrics.density = density
+
+        print(f"Fixed: DPI={dpi}, density={density}, "
+              f"Window._density={Window._density}")
+        
     def build(self):
         global MeileConfig
         kv = Builder.load_file(MeileConfig.resource_path("kv/meile.kv"))

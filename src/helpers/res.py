@@ -27,8 +27,13 @@ class Resolution():
         dim.append(m.width)
         dim.append(m.height)
         
-        w = int(m.width*self.scalar)
-        h = int(w*(1/self.DAR))       
+        if m.width > 1080:
+            w = 1441
+            h = 905
+        else:    
+            w = int(m.width*self.scalar)
+            h = int(w*(1/self.DAR))
+                   
         l = int((dim[0] - w)/2)
         t = int((dim[1] - h)/2)
         
