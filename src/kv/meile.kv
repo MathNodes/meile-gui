@@ -2839,3 +2839,30 @@ WindowManager:
 	    theme_text_color: "Custom"
 	    text_color: get_color_from_hex(MeileColors.MEILE)
 	    font_size: "16sp"
+	    
+<QRDialogV2RayContent>:
+    orientation: 'vertical'
+    spacing: "20dp"
+    padding: "20dp"
+    size_hint_y: None
+    height: "300sp"
+
+    Image:
+        id: qr_img
+        size_hint: None, None
+        size: "192dp", "192dp"
+        pos_hint: {'center_x': 0.5}
+
+    MDTextField:
+        id: uri
+        hint_text: "URI"
+        text: ''
+        readonly: True
+        selectable: True
+        mode: "rectangle"
+    MDLabel:
+    	id: warning_comment
+    	text: "Scan the QR code or import the URI string into the V2RayNG mobile app. You must do this within 5 minutes of receiving this dialog."
+	    theme_text_color: "Custom"
+	    text_color: get_color_from_hex("f42121")
+	    font_size: "13sp"

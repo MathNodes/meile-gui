@@ -29,7 +29,8 @@ class ConfParams():
     DEFAULT_SUBS     = [5 * i for i in range(1, 6)]
     BTCPAYADJ        = 1.10
     XMRPAYADJ        = 3.14
-    SUBFEE           = 0.042069
+    SUBFEE           = 0.1
+    SUBFEEMULT       = 10
 
 class HTTParams():
     # Note http://128.199.90.172:26657 is testnet ONLY!
@@ -593,18 +594,20 @@ class IBCTokens():
                     'eth'  : 'ethereum',
                     'zano' : 'zano',
                     'fusd' : 'freedom-dollar',
-                    'nam'  : 'namada'}
+                    'nam'  : 'namada',
+                    'zeph' : 'zephyr-protocol',
+                    'zsd'  : 'zephyr-protocol-stable-dollar'}
     
     NOWCOINS     = ["firo", "beam", "pivx", "zec", "dcr", "epic",
                     "bch", "kmd", "xno", "sol", "dgb", "xaut", "eth",
                     "ada", "inj", "dot" ]
     BTCPAYCOINS  = ["xmr", "btc", "zec", "ltc", "doge", "dash"]
-    PRIVACYCOINS = ["arrr", "firo", "pivx", "zano", "fusd"]
+    PRIVACYCOINS = ["arrr", "firo", "pivx", "zano", "fusd", "zeph", "zsd"]
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
-    VERSION = "v2.4.6"
-    BUILD = "1765070619880"
+    VERSION = "v2.5.1"
+    BUILD = "1772188513047"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"
     FailedHealthCheck = "Failed Sentinel Health Check"
@@ -652,6 +655,31 @@ class NodeKeys():
     FinalSubsKeys = [SubsInfoKeys[0], NodesInfoKeys[0],SubsInfoKeys[4],SubsInfoKeys[5], SubsInfoKeys[7], NodesInfoKeys[4], "Allocated", "Consumed", NodesInfoKeys[13],SubsInfoKeys[2],SubsInfoKeys[6]]
     NodeVersions  = [str(item).zfill(3) for item in range(70,1000)]
     Nodetypes = ['residential', 'business', 'hosting', 'edu']
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

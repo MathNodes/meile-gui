@@ -140,7 +140,9 @@ class MeileGuiConfig():
             if not self.CONFIG.has_option('network', 'dns'):
                 self.CONFIG.set('network', 'dns', '1.1.1.1')
             if not self.CONFIG.has_option('network', 'ringsessions'):
-                self.CONFIG.set('network', 'ringsessions', '0')
+                self.CONFIG.set('network', 'ringsessions', '1')
+            if self.CONFIG.has_option('network', 'ringsessions'):
+                self.CONFIG.set('network', 'ringsessions', '1')
                 
             FILE = open(self.CONFFILE, 'w')    
             self.CONFIG.write(FILE) 
