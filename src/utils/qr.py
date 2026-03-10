@@ -70,6 +70,9 @@ class QRCode():
         draw.text(((QRimg.size[0]+15 - w)/2,QRimg.size[1]-2),DepositAddress, (0,0,0), font=robotoFont)
         
         background.paste(QRimg, (0,0))
-        background.save(path.join(self.IMGDIR, ADDRESS + ".png"))
-        return path.join(self.IMGDIR, ADDRESS + ".png")
-        
+        if ADDRESS.startswith(("vmess", "vless")):
+            background.save(path.join(self.IMGDIR, ADDRESS[:5] + ".png"))
+            return path.join(self.IMGDIR, ADDRESS[0:5] + ".png")
+        else:
+            background.save(path.join(self.IMGDIR, ADDRESS + ".png"))
+            return path.join(self.IMGDIR, ADDRESS + ".png")
