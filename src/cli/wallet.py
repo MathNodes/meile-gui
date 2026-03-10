@@ -482,21 +482,19 @@ class HandleWalletFunctions():
         
         amount_required = float(DEPOSIT.replace(DENOM, "")) * IBCTokens.SATOSHI
         if DENOM == "udvpn":
-            tax = round(float(amount_required * ConfParams.SUBFEE),2) if round(float(amount_required * ConfParams.SUBFEE),2) >= 5 * IBCTokens.SATOSHI else 5 * IBCTokens.SATOSHI
+            tax = round(float(amount_required * ConfParams.SUBFEE),2) if round(float(amount_required * ConfParams.SUBFEE),2) >= ConfParams.SUBFEEMULT * IBCTokens.SATOSHI else ConfParams.SUBFEEMULT * IBCTokens.SATOSHI
         else:
             tax = round(float(amount_required * ConfParams.SUBFEE),2)
         try:
+            token_ibc = {v: k for k, v in IBCTokens.IBCUNITTOKEN.items()}
+            ubalance = balance.get(token_ibc[DENOM][1:], 0) * IBCTokens.SATOSHI
+            if amount_required + tax >= (ubalance + IBCTokens.SATOSHI):
+                self.returncode = (False, f"Balance is too low, required: {round((amount_required + tax) / IBCTokens.SATOSHI, 6)}{token_ibc[DENOM][1:]}")
+                return
             ret = self.send_2plan_wallet(KEYNAME, 31337, DENOM, tax, tax=True, bal=balance)
             print(ret[0])
         except:
             pass
-        
-        token_ibc = {v: k for k, v in IBCTokens.IBCUNITTOKEN.items()}
-        ubalance = balance.get(token_ibc[DENOM][1:], 0) * IBCTokens.SATOSHI
-        
-        if ubalance < amount_required:
-            self.returncode = (False, f"Balance is too low, required: {round(amount_required / IBCTokens.SATOSHI, 4)}{token_ibc[DENOM][1:]}")
-            return
         
         try:
             result = sdk.nodes.QueryNode(address=NODE)
@@ -1017,16 +1015,17 @@ class HandleWalletFunctions():
                 conndesc.write("Bringing up V2Ray socks tunnel...\n")
                 conndesc.flush()
                 decode = json.loads(decode)
-
+                print(decode)
+                
                 proxy_protocol = ["vless", "vmess"]
-                transport_protocol = ["gun","grpc","http","mkcp","quic","tcp","websocket"]
+                transport_protocol = ["domainsocket","gun","grpc","http","mkcp","quic","tcp","websocket"]
                 #transport_security = ["none", "tls"]
                 
                 vmess_address = resolve_address(response['result']['addrs'][0])
                 vmess_port = int(decode['metadata'][0]['port'])
                 pp = proxy_protocol[decode['metadata'][0]['proxy_protocol']-1]
-                #tp = transport_protocol[decode['metadata'][0]['transport_protocol']-1]
-                tp = transport_protocol[1]
+                tp = transport_protocol[decode['metadata'][0]['transport_protocol']-1]
+                #tp = transport_protocol[1]
                 #ts = transport_security[decode['metadata'][0]['transport_security']-1]
 
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

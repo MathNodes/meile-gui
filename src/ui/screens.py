@@ -1,5 +1,5 @@
 from geography.continents import OurWorld
-from ui.interfaces import LatencyContent, TooltipMDIconButton, ConnectionDialog, ProtectedLabel, IPAddressTextField, ConnectedNode, QuotaPct,BandwidthBar,BandwidthLabel, MapCenterButton, UploadLabel, DownloadLabel
+from ui.interfaces import LatencyContent, TooltipMDIconButton, ConnectionDialog, ProtectedLabel, IPAddressTextField, ConnectedNode, QuotaPct,BandwidthBar,BandwidthLabel, MapCenterButton, UploadLabel, DownloadLabel,QRDialogV2RayContent
 from typedef.win import WindowNames
 from cli.sentinel import  NodeTreeData
 from typedef.konstants import NodeKeys, TextStrings, MeileColors, HTTParams, IBCTokens, ConfParams
@@ -19,6 +19,7 @@ from adapters.DNSCryptproxy import HandleDNSCryptProxy as dcp
 from helpers.helpers import format_byte_size
 from helpers.bandwidth import compute_consumed_data, compute_consumed_hours, init_GetConsumedWhileConnected, GetConsumedWhileConnected, GetTotalDataWhileConnected
 from helpers.aes import SecureSeed
+from helpers.v2ray import generate_v2ray_uri
 
 from kivy.properties import BooleanProperty, StringProperty, ColorProperty,ObjectProperty, NumericProperty
 from kivy.uix.screenmanager import Screen, SlideTransition
@@ -503,20 +504,47 @@ class MainWindow(Screen):
                     #print("REmove loading Widget")
                     # Here change the Connection button to a "Disconnect" button then display dialogAdd commentMore actions
                     self.set_protected_icon(True, Moniker)
-                    self.dialog = MDDialog(
-                        title="Connected!",
-                        md_bg_color=get_color_from_hex(MeileColors.BLACK),
-                        buttons=[
-                                MDFlatButton(
-                                    text="OK",
-                                    theme_text_color="Custom",
-                                    text_color=get_color_from_hex(MeileColors.MEILE),
-                                    on_release=partial(self.call_ip_get,
-                                                       True,
-                                                       Moniker
-                                                       )
-                                ),])
-                    self.dialog.open()
+                    if "V2Ray" in [proto, protocol]:
+                        uri = generate_v2ray_uri(path.join(ConfParams.KEYRINGDIR,"v2ray_config.json"))
+                        connected_content = QRDialogV2RayContent()
+                        connected_content.ids.uri.text = uri
+                        QRcode = QRCode()
+                        connected_content.ids.qr_img.source = QRcode.generate_qr_code(uri, "meile")
+                        
+                        self.dialog = MDDialog(
+                            title="Connected!",
+                            type="custom",
+                            content_cls=connected_content,
+                            md_bg_color=get_color_from_hex(MeileColors.BLACK),
+                            buttons=[
+                                    MDRaisedButton(
+                                        text="OK",
+                                        theme_text_color="Custom",
+                                        text_color=get_color_from_hex(MeileColors.BLACK),
+                                        on_release=partial(self.call_ip_get,
+                                                           True,
+                                                           Moniker
+                                                           )
+                                    ),
+                                ]
+                        )
+                        self.dialog.open()
+                        
+                    else:
+                        self.dialog = MDDialog(
+                            title="Connected!",
+                            md_bg_color=get_color_from_hex(MeileColors.BLACK),
+                            buttons=[
+                                    MDFlatButton(
+                                        text="OK",
+                                        theme_text_color="Custom",
+                                        text_color=get_color_from_hex(MeileColors.MEILE),
+                                        on_release=partial(self.call_ip_get,
+                                                           True,
+                                                           Moniker
+                                                           )
+                                    ),])
+                        self.dialog.open()
                     
                 else:
                     self.remove_loading_widget2()
@@ -561,6 +589,7 @@ class MainWindow(Screen):
                 return
             elif self.SubCaller:
                 print("Calling for a session subscription")
+                proto = None
                 connect()
                     
             else:

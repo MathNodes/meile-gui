@@ -123,3 +123,6 @@ class QRDialogContent(MDBoxLayout):
 
 class QRDialogZanoContent(MDBoxLayout):
     pass
+
+class QRDialogV2RayContent(MDBoxLayout):
+    pass

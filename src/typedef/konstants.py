@@ -29,7 +29,8 @@ class ConfParams():
     DEFAULT_SUBS     = [5 * i for i in range(1, 6)]
     BTCPAYADJ        = 1.10
     XMRPAYADJ        = 3.14
-    SUBFEE           = 0.042069
+    SUBFEE           = 0.1
+    SUBFEEMULT       = 10
 
 class HTTParams():
     # Note http://128.199.90.172:26657 is testnet ONLY!
@@ -602,8 +603,8 @@ class IBCTokens():
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
-    VERSION = "2.2.2"
-    BUILD   = "1722988800718"
+    VERSION = "v2.5.2"
+    BUILD = "17729291383"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"
     FailedHealthCheck = "Failed Sentinel Health Check"

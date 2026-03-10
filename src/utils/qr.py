@@ -71,10 +71,17 @@ class QRCode():
         
         background.paste(QRimg, (0,0))
         
-        if not is_ecryptfs_mounted() or coin == "dvpn":
+        if ADDRESS.startswith(("vmess", "vless")):
+            background.save(path.join(self.IMGDIR, ADDRESS[:5] + ".png"))
+            return path.join(self.IMGDIR, ADDRESS[0:5] + ".png")
+        elif not is_ecryptfs_mounted() or coin == "dvpn":
             background.save(path.join(self.IMGDIR, ADDRESS + ".png"))
             return path.join(self.IMGDIR, ADDRESS + ".png")
         else:
             hashed_address = hashlib.sha256(ADDRESS.encode()).hexdigest()
             background.save(path.join(self.IMGDIR, hashed_address + ".png"))
             return path.join(self.IMGDIR, hashed_address + ".png")
+
+        background.save(path.join(self.IMGDIR, ADDRESS + ".png"))
+        return path.join(self.IMGDIR, ADDRESS + ".png")
+        
