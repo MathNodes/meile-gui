@@ -1,5 +1,5 @@
 from geography.continents import OurWorld
-from ui.interfaces import LatencyContent, TooltipMDIconButton, ConnectionDialog, ProtectedLabel, IPAddressTextField, ConnectedNode, QuotaPct,BandwidthBar,BandwidthLabel, MapCenterButton, UploadLabel, DownloadLabel,QRDialogV2RayContent
+from ui.interfaces import LatencyContent, TooltipMDIconButton, ConnectionDialog, ProtectedLabel, IPAddressTextField, ProtocolTextField, ConnectedNode, QuotaPct,BandwidthBar,BandwidthLabel, MapCenterButton, UploadLabel, DownloadLabel,QRDialogV2RayContent, TimeLabel
 from typedef.win import WindowNames
 from cli.sentinel import  NodeTreeData
 from typedef.konstants import NodeKeys, TextStrings, MeileColors, HTTParams, IBCTokens, ConfParams
@@ -42,7 +42,7 @@ from kivymd.uix.boxlayout import MDBoxLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivymd.uix.anchorlayout import MDAnchorLayout
 from kivymd.uix.label.label import MDLabel
-
+from kivy.animation import Animation
 from kivy.app import App
 
 import requests
@@ -51,7 +51,7 @@ import sys
 import copy
 from copy import deepcopy
 import re
-from time import sleep
+from time import sleep, time
 from functools import partial
 from shutil import rmtree
 from os import path,geteuid, chdir, remove
@@ -362,7 +362,9 @@ class MainWindow(Screen):
     dnscrypt = False
     PlanConnect = False
     HourlyFirstRun = True
-
+    location_marker = None
+    is_running = False
+    start_time = 0
 
 
     def __init__(self, node_tree, **kwargs):
@@ -504,6 +506,7 @@ class MainWindow(Screen):
                     #print("REmove loading Widget")
                     # Here change the Connection button to a "Disconnect" button then display dialogAdd commentMore actions
                     self.set_protected_icon(True, Moniker)
+                    self.toggle_time_widget()
                     if "V2Ray" in [proto, protocol]:
                         uri = generate_v2ray_uri(path.join(ConfParams.KEYRINGDIR,"v2ray_config.json"))
                         connected_content = QRDialogV2RayContent()
@@ -545,6 +548,8 @@ class MainWindow(Screen):
                                                            )
                                     ),])
                         self.dialog.open()
+                        
+                    
                     
                 else:
                     self.remove_loading_widget2()
@@ -610,6 +615,7 @@ class MainWindow(Screen):
         else:
             self.disconnect_from_node()
             self.HourlyFirstRun = True
+            self.reset_stopwatch()
             try: 
                 self.clock.cancel()
             except:
@@ -621,6 +627,71 @@ class MainWindow(Screen):
             except:
                 print("No Clock Bytes... Yet")
             self.clockBytes = None
+        
+    def toggle_time_widget(self):
+            if not self.is_running:
+                self.start_stopwatch()
+            else:
+                self.stop_stopwatch()
+                
+    def start_stopwatch(self):
+        self.is_running = True
+        if self.start_time == 0:
+            self.start_time = time()
+        Clock.schedule_interval(self.update_time, 1.0)
+        
+        
+    def stop_stopwatch(self):
+        self.is_running = False
+        Clock.unschedule(self.update_time)
+        
+    def update_time(self, dt):
+        if self.is_running:
+            self.elapsed_time = time() - self.start_time
+            self.time_widget.text = self.format_time(self.elapsed_time)
+        return True
+    
+    def format_time(self, seconds):
+        td = timedelta(seconds=int(seconds))
+        hours = td.seconds // 3600
+        minutes = (td.seconds % 3600) // 60
+        secs = td.seconds % 60
+        return f"{hours:02d}:{minutes:02d}:{secs:02d}"      
+                  
+    def reset_stopwatch(self):
+        self.is_running = False
+        self.start_time = 0
+        self.elapsed_time = 0
+        self.time_widget.text = '00:00:00'
+        Clock.unschedule(self.update_time)
+        
+    def qrcode_connection_sharing(self):
+        if path.isfile(path.join(ConfParams.KEYRINGDIR,"v2ray_config.json")):
+            uri = generate_v2ray_uri(path.join(ConfParams.KEYRINGDIR,"v2ray_config.json"))
+        else:
+            uri = "NULL. Start a V2Ray connection in Meile first."
+            
+        connected_content = QRDialogV2RayContent()
+        connected_content.ids.uri.text = uri
+        QRcode = QRCode()
+        connected_content.ids.qr_img.source = QRcode.generate_qr_code(uri, "meile")
+        
+        self.dialog = MDDialog(
+            title="Connection Sharing",
+            type="custom",
+            content_cls=connected_content,
+            md_bg_color=get_color_from_hex(MeileColors.BLACK),
+            buttons=[
+                    MDRaisedButton(
+                        text="OK",
+                        theme_text_color="Custom",
+                        text_color=get_color_from_hex(MeileColors.BLACK),
+                        on_release=self.closeDialog
+                    ),
+                ]
+        )
+        self.dialog.open()
+        
             
     def setTotalBytesClock(self):
         self.clockBytes = Clock.create_trigger(self.GetUpDownBytes,10)
@@ -857,6 +928,8 @@ class MainWindow(Screen):
             self.map_widget_1    = IPAddressTextField()
             self.map_widget_2    = ConnectedNode()
             self.map_widget_3    = ProtectedLabel()
+            self.map_widget_4    = ProtocolTextField()
+            self.time_widget     = TimeLabel()
             self.upload_widget   = UploadLabel()
             self.download_widget = DownloadLabel()
             recenter             = MapCenterButton()
@@ -876,12 +949,15 @@ class MainWindow(Screen):
             layout.add_widget(self.map_widget_1)
             layout.add_widget(self.map_widget_2)
             layout.add_widget(self.map_widget_3)
+            layout.add_widget(self.map_widget_4)
             layout.add_widget(bw_label)
             layout.add_widget(self.quota)
             layout.add_widget(self.quota_pct)
             layout.add_widget(recenter)
             layout.add_widget(self.upload_widget)
             layout.add_widget(self.download_widget)
+            layout.add_widget(self.time_widget)
+            
 
             self.quota.value = 0
             self.quota_pct.text = "0%"
@@ -1160,6 +1236,7 @@ class MainWindow(Screen):
                     self.LatLong.append(loc[1])
             if not startup:        
                 self.zoom_country_map()
+                self.add_location_marker()
             return True
         except Exception as e:
             print(str(e))
@@ -1503,16 +1580,59 @@ class MainWindow(Screen):
             self.remove_loading_widget(None)
             self.close_sub_window()
             
+    def add_location_marker(self):
+        self.remove_location_marker()
+        Config = MeileGuiConfig()
+        
+        with open(path.join(ConfParams.KEYRINGDIR, 'ip-api.json'), 'r') as f:
+            data = f.read()
+            
+        ifJSON = json.loads(data)
+        if not ifJSON:
+            return False
+        
+        self.location_marker = MapMarkerPopup(lat=self.LatLong[0], lon=self.LatLong[1], source=Config.resource_path(MeileColors.LOC_MARKER))
+        self.location_marker.add_widget(MDMapCountryButton(text='%s, %s' %(ifJSON['city'], ifJSON['country']),
+                                                   theme_text_color="Custom",
+                                                   md_bg_color=get_color_from_hex(MeileColors.BLACK),
+                                                   text_color=(1,1,1,1),
+                                                   ))
+        
+        anim = (
+            Animation(opacity=0.4, duration=0.8, t='in_out_sine') +
+            Animation(opacity=1.0, duration=0.8, t='in_out_sine')
+        )
+        anim.repeat = True
+        anim.start(self.location_marker)
+        
+
+        self.Markers.append(self.location_marker)
+        self.MeileMap.add_marker(self.location_marker)
+    
+    def remove_location_marker(self):
+        if self.location_marker:
+            self.MeileMap.remove_marker(self.location_marker)
+            self.Markers.remove(self.Markers[-1])
+            
     def set_protected_icon(self, setbool, moniker):
         
         try: 
             if setbool:
                 self.map_widget_2.text = moniker
                 self.map_widget_3.text = "PROTECTED"
+                anim = (
+                    Animation(opacity=0.2, duration=0.8, t='in_out_sine') +
+                    Animation(opacity=1.0, duration=0.8, t='in_out_sine')
+                )
+                anim.repeat = True
+                anim.start(self.map_widget_3)
+                self.map_widget_4.text = self.NodeCarouselData['protocol']
                 self.ids.connect_button.source = self.return_connect_button("d")
             else:
                 self.map_widget_2.text = moniker
                 self.map_widget_3.text = "UNPROTECTED"
+                Animation.cancel_all(self.map_widget_3)
+                self.map_widget_4.text = ""
                 self.ids.connect_button.source = self.return_connect_button("c")
         except Exception as e:
             print(str(e))
@@ -1544,6 +1664,14 @@ class MainWindow(Screen):
         else:
             button_path = "../imgs/DisconnectButton.png"
             return MeileConfig.resource_path(button_path)
+        
+    def closeDialog(self, inst):
+        try:
+            self.dialog.dismiss()
+            self.dialog = None
+        except:
+            print("Dialog is NONE")
+            return
         
 class WalletScreen(Screen):
     text = StringProperty()

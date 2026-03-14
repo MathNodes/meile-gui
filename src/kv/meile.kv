@@ -143,6 +143,13 @@ WindowManager:
                         text_color: get_color_from_hex(MeileColors.MEILE)
                         on_release: root.switch_to_plan_window()
                         
+                	ToolTipMDIconButton:
+                        tooltip_text: "Connection Sharing"
+                        icon: "qrcode"
+                        theme_text_color: "Custom"
+                        text_color: get_color_from_hex(MeileColors.MEILE)
+                        on_release: root.qrcode_connection_sharing()
+                        
                     ToolTipMDIconButton:
                         tooltip_text: "Settings"
                         icon: "cog-outline"
@@ -171,10 +178,10 @@ WindowManager:
 
 <ProtectedLabel@MDLabel>
     id: protected
-    font_size: sp(26)
-    pos_hint: {"x" : .4, "center_y": .975}                
+    #font_size: sp(60)
+    pos_hint: {"x" : .375, "center_y": .975}                
     opacity: .75
-    font_style: "H6"
+    font_style: "H4"
     text: "UNPROTECTED"
     theme_text_color: "Custom"
     text_color: get_color_from_hex(MeileColors.MEILE)
@@ -196,8 +203,10 @@ WindowManager:
     text_color_focus: '#fcb711'
     text_color_normal: '#fcb711'
     #hint_text: 'IP Address:'
-    #fill_color_normal: get_color_from_hex("#121212")
-    #fill_color_focus: get_color_from_hex("#000000")  
+    fill_color_normal: (0,0,0,0)
+    fill_color_focus: (0,0,0,0)  
+    line_color_normal: '#fcb711'
+    line_color_focus: '#fcb711' 
     #fill_color_normal: 0,0,0,0
     #fill_color_focus: 0,0,0,0
     
@@ -212,11 +221,38 @@ WindowManager:
     opacity: .5
     icon_left: "laptop"
     text_color_focus: '#fcb711'
-    text_color_normal: '#fcb711'                
+    text_color_normal: '#fcb711'   
+    fill_color_normal: 0, 0, 0, 0
+    fill_color_focus: 0, 0, 0, 0
+    line_color_normal: '#fcb711'
+    line_color_focus: '#fcb711'             
     #hint_text_color_normal: '#fcb711'
     #hint_text_color_focus: '#fcb711'
     #fill_color_normal: get_color_from_hex("#121212")
     #fill_color_focus: get_color_from_hex("#000000")
+    
+<ProtocolTextField@TextInput>
+    id: protocol_label
+    mode: "round"
+    size_hint_x: .15
+    size_hint_y: .05
+    pos_hint: {"x" : 0.80, "center_y": .1}
+    readonly: True
+    opacity: .5
+    icon_left: "security-network"
+    text: ""
+    hint_text: 'Protocol'
+    font_size: sp(12)
+    foreground_color: 0.988, 0.718, 0.067, 1
+    background_color: 0, 0, 0, 0
+    background_normal: ''
+    background_active: ''
+    text_color_focus: '#fcb711'
+    text_color_normal: '#fcb711'   
+    fill_color_normal: 0, 0, 0, 0
+    fill_color_focus: 0, 0, 0, 0
+    line_color_normal: '#fcb711'
+    line_color_focus: '#fcb711'
 
 <BandwidthLabel@MDLabel>    
     text: "Bandwidth"
@@ -270,6 +306,29 @@ WindowManager:
     markup: True
     theme_text_color: "Custom"
     text_color: get_color_from_hex(MeileColors.UPLOAD)
+    font_name: root.get_font()
+    
+        
+<TimeLabel>
+    font_size: "100sp"
+    pos_hint: {"x" : .84, "center_y": .04}                
+    opacity: .75
+    #font_style: "H6"
+    text: "00:00:00"
+    markup: True
+    theme_text_color: "Custom"
+    text_color: get_color_from_hex(MeileColors.MEILE)
+    font_name: root.get_font()
+    
+<TimeLabel>
+    font_size: "100sp"
+    pos_hint: {"x" : .84, "center_y": .04}                
+    opacity: .75
+    #font_style: "H6"
+    text: "00:00:00"
+    markup: True
+    theme_text_color: "Custom"
+    text_color: get_color_from_hex(MeileColors.MEILE)
     font_name: root.get_font()
     
 <QuotaPct@MDLabel>
@@ -954,8 +1013,8 @@ WindowManager:
     size_hint_x: .99
     pos_hint: {"center_x": 0.5}
     MDGridLayout:
-        rows: 3
-        size_hint_x: 1
+        rows: 5
+        size_hint_x: .9
         MDGridLayout:
             cols: 6
             height: 25
@@ -998,41 +1057,81 @@ WindowManager:
                 on_release: root.set_previous_screen()
                 
         MDGridLayout:
-            cols: 1
+        	cols: 1
+        	rows: 4
             height: sp(25)
             adaptive_height: True
             padding: [15, 25, 0, 25]        
-            MDLabel:
-                height: sp(35)
-                font_size: sp(15)
-                theme_text_color: "Custom"
-                text_color: get_color_from_hex(MeileColors.WHITE) 
-                text: "In order to use plans that you subscribe to, click on the subscribed plan to expand it. This will select the plan and automatically filter the nodes on the left bar which are on the plan (i.e., connectible). Navigate to your desired node, click on it, and then press connect."
+	        MDLabel:
+	        	height: sp(35)
+	            font_size: sp(15)
+	            theme_text_color: "Custom"
+	        	text_color: get_color_from_hex(MeileColors.WHITE) 
+	        	text: "In order to use plans that you subscribe to, click on the subscribed plan to expand it. This will select the plan and automatically filter the nodes on the left bar which are on the plan (i.e., connectible). Navigate to your desired node, click on it, and then press connect."
+        	MDLabel:
+        	MDLabel:
+        	
+    	MDGridLayout:
+        	cols: 1
+            height: sp(25)
+            adaptive_height: True
+            padding: [15, 25, 0, 25]        
+	        MDLabel:
+	        	height: sp(35)
+	            font_size: sp(14)
+	            theme_text_color: "Custom"
+	        	text_color: get_color_from_hex(MeileColors.WHITE) 
+	        	text: ""
+    	MDGridLayout:
+        	cols: 2
+            height: sp(25)
+            adaptive_height: True
+            padding: [15, 25, 0, 25] 
+            AsyncImage:
+                source: "../imgs/plans_basic.png" 
+                size_hint: 1, None
+                size: dp(215), dp(396)
+                pos_hint: {"center_x": 0.5}
+                allow_stretch: True
+                keep_ratio: True
+                padding: [15, 10, 15, 10]
+            AsyncImage:
+                source: "../imgs/plans_premium.png" 
+                size_hint: 1, None
+                size: dp(225), dp(396)
+                pos_hint: {"center_x": 0.5}
+                allow_stretch: True
+                keep_ratio: True
+                padding: [15, 10, 15, 10]
                 
-        #MDGridLayout:
-        #    cols: 1
-        #    height: sp(25)
-        #    adaptive_height: True
-        #    padding: [15, 25, 0, 25]        
-        #    MDLabel:
-        #        height: sp(35)
-        #        font_size: sp(14)
-        #        theme_text_color: "Custom"
-        #        text_color: get_color_from_hex(MeileColors.WHITE) 
-        #        text: ""
-                
-        RecycleView:
+        #RecycleView:
+        #    do_scroll_y: True
+        #    size_hint_x: 1
+        #    size_hint_y: None
+        #    height: sp(200)
+        #    MDBoxLayout:
+        #        size_hint_y: None
+        #        size_hint_x: 1
+        #        adaptive_height: True
+        #        orientation: "vertical"
+        #        padding: [10, 10, 10, 50]
+        #        spacing: 10
+        #    	id: rv
+        ScrollView:
             do_scroll_y: True
+            do_scroll_x: False
             size_hint_x: 1
+            size_hint_y: None
+            height: sp(400)
+            bar_width: dp(10)
             MDBoxLayout:
+                id: rv
                 size_hint_y: None
                 size_hint_x: 1
-                adaptive_height: True
-    
+                height: self.minimum_height
                 orientation: "vertical"
                 padding: [10, 10, 10, 50]
-                spacing: 10
-                id: rv   
+                spacing: 10   
         
 <NodeScreen>:
     size_hint_x: .95
@@ -1085,6 +1184,8 @@ WindowManager:
 <PlanRow>:
     rows: 2
     cols: 6
+    size_hint_y: None
+    height: self.minimum_height
     AsyncImage:
         size_hint_x: .1
         width: 100
@@ -1181,8 +1282,10 @@ WindowManager:
 <PlanDetails>:
     rows: 3
     cols: 5
-    height: 90
-
+    height: 90 # different on oses
+	size_hint_y: None
+    #height: self.minimum_height
+    
     MDLabel
         text: "[b]UUID[/b]"
         markup: True
@@ -1308,12 +1411,10 @@ WindowManager:
 
 <PlanAccordion>:
     rows: 2
-    #md_bg_color: get_color_from_hex("#1C1D1B")
     md_bg_color: get_color_from_hex(MeileColors.DIALOG_BG_COLOR2)
     radius: [5, 5, 5, 5]
-
-    height: 50
-    adaptive_height: True
+    size_hint_y: None
+    height: self.minimum_height
     
     
 <NodeCarousel>:
@@ -2878,7 +2979,7 @@ WindowManager:
         mode: "rectangle"
     MDLabel:
     	id: warning_comment
-    	text: "Scan the QR code or import the URI string into the V2RayNG mobile app. You must do this within 5 minutes of receiving this dialog."
+    	text: 'Scan the QR code or import the URI string into the V2RayNG mobile app. You must do this before you disconnect in Meile. https://dvpn.my/v2ray'
 	    theme_text_color: "Custom"
-	    text_color: get_color_from_hex("f42121")
+	    text_color: get_color_from_hex(MeileColors.MEILE)
 	    font_size: "13sp"
