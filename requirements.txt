@@ -52,7 +52,7 @@ kivy-deps.glew==0.3.1
 kivy-deps.sdl2==0.6.0
 Kivy-Garden==0.1.5
 kivy-garden.mapview==1.0.6
-kivymd==1.1.1
+kivymd==1.2.0
 kivyoav==0.42
 mapview==1.0.6
 mnemonic==0.21

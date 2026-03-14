@@ -2119,22 +2119,9 @@ class PlanAccordion(ButtonBehavior, MDGridLayout):
 
     def finish_init(self, dt):    
         self.add_widget(self.node)        
-
+    '''    
     def on_release(self):
-        '''TODO:
-        in first logic statement populate a MainScreen dictionary
-        with current node address and ID.
-        THis will be used when the user clicks on the subscription
-        which expands it's contents, the MainScreen dictionary
-        will be used to connect to subscription when the user
-        clicks "Connect"
-        Second logic statement (else) should reset the MainScreen
-        dictionary to prior state.
-        
-        Use:
-        content.node_address
-        content.sub_id
-        '''
+
         if len(self.children) == 1:
             self.add_widget(self.content)
             self.open_panel()
@@ -2143,6 +2130,15 @@ class PlanAccordion(ButtonBehavior, MDGridLayout):
             self.remove_widget(self.children[0])
             self.close_panel()
             self.dispatch("on_close")
+    '''
+    def on_release(self):
+        if len(self.children) == 1:
+            self.open_panel()
+            self.dispatch("on_open")
+        else:
+            self.close_panel()
+            self.dispatch("on_close")
+            
     @delayable
     def on_open(self, *args):
         """Called when a panel is opened."""
@@ -2160,7 +2156,7 @@ class PlanAccordion(ButtonBehavior, MDGridLayout):
         """Called when a panel is closed."""
         self.mw.PlanID = None
         self.mw.restore_results()
-
+    '''
     def close_panel(self) -> None:
         """Method closes the panel."""
 
@@ -2177,7 +2173,8 @@ class PlanAccordion(ButtonBehavior, MDGridLayout):
         )
         anim.bind(on_complete=self._disable_anim)
         anim.start(self)
-
+        
+    
     def open_panel(self, *args) -> None:
         """Method opens a panel."""
 
@@ -2195,17 +2192,72 @@ class PlanAccordion(ButtonBehavior, MDGridLayout):
         # anim.bind(on_complete=self._add_content)
         anim.bind(on_complete=self._disable_anim)
         anim.start(self)
-
+    '''
+    def close_panel(self) -> None:
+        if self._anim_playing:
+            return
+    
+        self._anim_playing = True
+        self._state = "close"
+    
+        # Store the target height BEFORE removing
+        target_h = self.node.height
+    
+        anim = Animation(
+            height=target_h,
+            d=self.closing_time,
+            t=self.closing_transition,
+        )
+        anim.bind(on_complete=self._on_close_complete)
+        anim.start(self)    
+        
+    def _on_close_complete(self, *args):
+        self._anim_playing = False
+        # Remove content AFTER animation finishes
+        if self.content in self.children:
+            self.remove_widget(self.content)
+    
+    def open_panel(self, *args) -> None:
+        if self._anim_playing:
+            return
+    
+        self._anim_playing = True
+        self._state = "open"
+    
+        # Add content first so we can measure it
+        if self.content not in self.children:
+            self.add_widget(self.content)
+    
+        # Current node height + content height
+        target_h = self.node.height + self.content.height
+    
+        # Temporarily keep current height so animation works
+        current_h = self.node.height
+        self.height = current_h
+    
+        anim = Animation(
+            height=target_h,
+            d=self.opening_time,
+            t=self.opening_transition,
+        )
+        anim.bind(on_complete=self._disable_anim)
+        anim.start(self)
+        
+    
     def get_state(self) -> str:
         """Returns the state of panel. Can be `close` or `open` ."""
 
         return self._state
-
+    '''
     def add_widget(self, widget, index=0, canvas=None):
         if isinstance(widget, NodeDetails):
             self.height = widget.height
         return super().add_widget(widget)
-
+    '''
+    def add_widget(self, widget, index=0, canvas=None):
+        # Don't override height here — let the animation handle it
+        return super().add_widget(widget, index=index, canvas=canvas)
+    
     def _disable_anim(self, *args):
         self._anim_playing = False
 

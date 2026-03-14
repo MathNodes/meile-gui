@@ -606,8 +606,8 @@ class IBCTokens():
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
-    VERSION = "v2.5.1"
-    BUILD = "1772188513047"
+    VERSION = "v2.5.3"
+    BUILD = "17734519923"
     RootTag = "SENTINEL"
     PassedHealthCheck = "Passed Sentinel Health Check"
     FailedHealthCheck = "Failed Sentinel Health Check"
@@ -628,6 +628,7 @@ class MeileColors():
     FONT_FACE_ARIAL          = "fonts/arial-unicode-ms.ttf"
     QR_FONT_FACE             = "fonts/Roboto-BoldItalic.ttf"
     MAP_MARKER               = "imgs/location_pin.png"
+    LOC_MARKER               = "imgs/location_marker.png"
     LOGO                     = "imgs/logo.png"
     LOGO_HD                  = "imgs/logo_hd.png"
     LOGO_TEXT                = "imgs/logo_text.png"
