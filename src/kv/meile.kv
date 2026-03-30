@@ -52,19 +52,33 @@ WindowManager:
     MDBoxLayout:
         orientation: 'vertical'
         md_bg_color: get_color_from_hex("#121212")
-        MDFloatLayout:
-            size_hint_y: .1
-                
+
+        # ── Top Bar ──
+        MDBoxLayout:
+            orientation: 'horizontal'
+            size_hint_y: None
+            height: dp(56)
+            padding: [dp(8), 0, dp(8), 0]
+
+            # Left: logo icon
             Image:
                 source: root.get_logo()
                 size_hint: None, None
-                height: sp(50)
-                pos_hint: {'x' : .0001, 'center_y' : .5}
+                size: dp(50), dp(50)
+                pos_hint: {'center_y': .5}
+
+            # Left: logo text
             Image:
                 source: root.get_logo_text()
+                size_hint_x: None
+                width: dp(150)
                 size_hint_y: .6
-                size_hint_x: .6
-                pos_hint: {'x' : -.19, 'center_y' : .5}
+                pos_hint: {'center_y': .5}
+
+            # Spacer pushes right-side icons to the end
+            Widget:
+                size_hint_x: 1
+
             ToolTipMDIconButton:
                 id: doh
                 opacity: 0
@@ -73,7 +87,8 @@ WindowManager:
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex(MeileColors.INDICATOR)
                 on_release: root.menu_open()
-                pos_hint: {'x' : .90, 'center_y' : .5}
+                pos_hint: {'center_y': .5}
+
             ToolTipMDIconButton:
                 id: settings_menu
                 tooltip_text: "Menu"
@@ -81,90 +96,104 @@ WindowManager:
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex(MeileColors.MEILE)
                 on_release: root.menu_open()
-                pos_hint: {'x' : .95, 'center_y' : .5}
-        
+                pos_hint: {'center_y': .5}
+
+        # ── Main Content ──
         MDBoxLayout:
             id: country_map
             orientation: "horizontal"
+
+            # Left sidebar
             MDBoxLayout:
                 orientation: "vertical"
-                size_hint: (.25, 1)
-                MDFloatLayout:
-                    size_hint: None,.175
+                size_hint_x: .25
+
+                # ── Connect button + Search area ──
+                MDBoxLayout:
+                    orientation: 'vertical'
+                    size_hint_y: None
+                    height: dp(110)
+                    padding: [dp(8), dp(16), dp(8), dp(4)]
+                    spacing: dp(4)
+
+                    # Connect button — own row, centered, large
                     TooltipMDFlatButton:
-                        #tooltip_text: "Connect to Node"
-                        #md_bg_color: get_color_from_hex("#121212")
-                        pos_hint: {'x' : 1, 'y': .6}
+                        size_hint: None, None
+                        size: dp(70), dp(40)
+                        pos_hint: {'center_x': .2}
                         on_release: root.connect_routine()
-                        opacity: 1
                         Image:
                             id: connect_button
-                            size_hint: 3,3
+                            size_hint: 2.2, 2.2
+                            pos: self.parent.pos
+                            size: self.parent.size
                             source: root.return_connect_button("c")
-                            
-                            
-                    MDTextField:
-                        opacity: 1
-                        id: search_box
-                        hint_text: "key: , value:"
-                        icon_right: "magnify"
-                        pos_hint: {'x' : .1, 'y': 0}
-                        size_hint_x: 3.8
-                        size_hint_y: .6
-                        font_size: sp(12)
-                        on_text_validate: root.on_enter_search()
-                                        
-                    ToolTipMDIconButton:
-                        tooltip_text: "Clear"
-                        pos_hint: {'x' : 3.7, 'y': .145}
-                        on_release: root.restore_results()
-                        icon: "restore"
-                        theme_text_color: "Custom"
-                        text_color: get_color_from_hex(MeileColors.MEILE)
+
+                    # Search row: text field + clear button
+                    MDBoxLayout:
+                        orientation: 'horizontal'
+                        size_hint_y: None
+                        height: dp(48)
+                        spacing: dp(4)
+
+                        MDTextField:
+                            id: search_box
+                            hint_text: "key: , value:"
+                            icon_right: "magnify"
+                            size_hint_x: 1
+                            font_size: sp(12)
+                            on_text_validate: root.on_enter_search()
+
+                        ToolTipMDIconButton:
+                            tooltip_text: "Clear"
+                            on_release: root.restore_results()
+                            icon: "restore"
+                            size_hint_x: None
+                            width: dp(48)
+                            theme_text_color: "Custom"
+                            text_color: get_color_from_hex(MeileColors.MEILE)
+
+                # ── Node list ──
                 NodeRV:
-                    md_bg_color: get_color_from_hex("#121212")    
+                    md_bg_color: get_color_from_hex("#121212")
                     id: rv
-                    size_hint: (1,.9)
-                MDBoxLayout:    
-                    size_hint: (1,.1)
-                    height: 50
-                    spacing: 6
-                    
+                    size_hint_y: 1  # fills remaining vertical space
+
+                # ── Bottom toolbar ──
+                MDBoxLayout:
+                    orientation: 'horizontal'
+                    size_hint_y: None
+                    height: dp(48)
+                    spacing: dp(6)
+
                     ToolTipMDIconButton:
                         tooltip_text: "Wallet"
                         icon: "wallet-outline"
                         theme_text_color: "Custom"
                         text_color: get_color_from_hex(MeileColors.MEILE)
                         on_release: root.build_wallet_interface()
-    
-                    #ToolTipMDIconButton:
-                    #    tooltip_text: "Subscriptions"
-                    #    icon: "book-open-outline"
-                    #    theme_text_color: "Custom"
-                    #    text_color: get_color_from_hex(MeileColors.MEILE)
-                    #    on_release: root.switch_to_sub_window()
-                        
+
                     ToolTipMDIconButton:
                         tooltip_text: "Plans"
                         icon: "ballot-outline"
                         theme_text_color: "Custom"
                         text_color: get_color_from_hex(MeileColors.MEILE)
                         on_release: root.switch_to_plan_window()
-                        
-                	ToolTipMDIconButton:
+
+                    ToolTipMDIconButton:
                         tooltip_text: "Connection Sharing"
                         icon: "qrcode"
                         theme_text_color: "Custom"
                         text_color: get_color_from_hex(MeileColors.MEILE)
                         on_release: root.qrcode_connection_sharing()
-                        
+
                     ToolTipMDIconButton:
                         tooltip_text: "Settings"
                         icon: "cog-outline"
                         theme_text_color: "Custom"
                         text_color: get_color_from_hex(MeileColors.MEILE)
                         on_release: root.build_settings_screen_interface()
-    
+
                     ToolTipMDIconButton:
                         tooltip_text: "Help"
                         icon: "help-circle-outline"
@@ -2962,7 +2991,52 @@ WindowManager:
         mode: "rectangle"
     MDLabel:
     	id: warning_comment
-    	text: 'Scan the QR code or import the URI string into the V2RayNG mobile app. You must do this before you disconnect in Meile. https://dvpn.my/v2ray'
+    	text: ""
 	    theme_text_color: "Custom"
 	    text_color: get_color_from_hex(MeileColors.MEILE)
 	    font_size: "13sp"
+
+<ShareTypeDialog>
+    orientation: "vertical"
+    spacing: "1sp"
+    size_hint_y: None
+    height: "130sp"
+    price_text: ""
+    naddress: " "
+    moniker: " "
+    deposit: " "
+    MDFloatLayout:
+        MDLabel:
+            id: sub_type
+            text: "Select Protocol"
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "20sp"
+            text_color: get_color_from_hex(MeileColors.MEILE)
+            pos_hint: {"x" : 0, "top" : 1.35}
+        MDLabel:
+            id: bandwidth_text
+            text: "Wireguard"
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "14sp"
+            text_color: get_color_from_hex("#ffffff")
+            pos_hint: {"x" : 0, "top" : 1}        
+        Check:
+        	group: 'proto'
+        	on_active: root.select_share_type(self, self.active, "wg")
+            pos_hint: {"x": .5, "y" : .30}
+        MDLabel:
+        	pos_hint: {"x" : 0, "top" : .9}
+        MDLabel:
+            id: hourly_text
+            text: "V2Ray"
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "14sp"
+            text_color: get_color_from_hex("#ffffff")
+            pos_hint: {"x" : 0, "top" : .7}    
+        Check:
+        	group: 'proto'
+        	on_active: root.select_share_type(self, self.active, "v2")
+            pos_hint: {"x": .5, "y" : .025}	
