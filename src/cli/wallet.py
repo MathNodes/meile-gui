@@ -638,6 +638,232 @@ class HandleWalletFunctions():
         print(f"Nodes for ring sessions: {addresses}")    
         return addresses     
     
+    def fetch_credentials(self, address, session_id, type, conndesc, renew_sdk: bool = False):
+        if renew_sdk:
+            CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
+            PASSWORD = CONFIG['wallet'].get('password', '')
+            KEYNAME = CONFIG['wallet'].get('keyname', '')
+            self.GRPC     = CONFIG['network'].get('grpc', HTTParams.GRPC)
+            grpcaddr, grpcport = self.GRPC.split(":")
+            kr = self.__keyring(PASSWORD)
+            private_key = kr.get_password("meile-gui", KEYNAME)
+            try:
+                self.sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key, ssl=True)
+            except ConnectionError:
+                message = "gRPC unresponsive. Try again later or switch gRPCs."
+                self.connected = {"v2ray_pid" : None, 
+                                  "result" : False, 
+                                  "status" : message, 
+                                  "session_id" : None}
+                return
+            except grpc._channel._InactiveRpcError as e:
+                status_code = e.code()
+                
+                if status_code == StatusCode.NOT_FOUND:
+                    message = "Wallet not found on blockchain. Please verify you have sent coins to your wallet to activate it. Then try your subscription again"
+                    self.connected = {"v2ray_pid" : None,  
+                                      "result": False, 
+                                      "status" : message, 
+                                      "session_id" : None}
+                    print(self.connected)
+                    return
+                else:
+                    message = "gRPC Error!"
+                    self.connected = {"v2ray_pid" : None, 
+                                      "result" : False, 
+                                      "status" : message, 
+                                      "session_id" : None}
+                    return
+                
+        
+            
+        node = self.sdk.nodes.QueryNode(address)
+    
+        for _ in range(0, 10):
+            pub_key_bytes = self.sdk._account.public_key.key
+            pub_key_b64 = base64.b64encode(pub_key_bytes).decode("utf-8")
+            pub_key = f"secp256k1:{pub_key_b64}"
+        
+            if type == "WireGuard":
+                wgkey = WgKey()
+                key = wgkey.pubkey
+                data = {'public_key': key}
+                data_bytes = json.dumps(data).encode('utf-8')
+            else:  # NodeType.V2RAY
+                self.uid_16 = uuid.uuid4()
+                data = {'uuid': list(self.uid_16.bytes)}
+                data_bytes = json.dumps(data).encode('utf-8')
+        
+            sk = ecdsa.SigningKey.from_string(
+                self.sdk._account.private_key,
+                curve=ecdsa.SECP256k1,
+                hashfunc=hashlib.sha256
+            )
+        
+            bige_session = int(session_id).to_bytes(8, byteorder="big")
+            msg = bige_session + data_bytes
+            signature = sk.sign(msg)
+        
+            payload = {
+                "data": base64.b64encode(data_bytes).decode("utf-8"),
+                "id": int(session_id),
+                "pub_key": pub_key,
+                "signature": base64.b64encode(signature).decode("utf-8"),
+            }
+        
+            print(f"\nPayload: {json.dumps(payload, indent=4)}")
+            conndesc.write("Fetching credentials from node...\n")
+            conndesc.flush()
+            try:
+                response = requests.post(
+                    f"https://{node.remote_addrs[0]}/",
+                    json=payload,
+                    headers={
+                        "Content-Type": "application/json; charset=utf-8"
+                    },
+                    verify=False,
+                    timeout=17
+                )
+            except (
+                ReadTimeout, ConnectionError, ConnectionRefusedError
+            ) as e:
+                print(str(e))
+                status = ("Timeout while trying to fetch credentials "
+                          "from node...Exiting\n")
+                conndesc.write(status)
+                conndesc.flush()
+                conndesc.close()
+                self.connected = {
+                    "v2ray_pid": None,
+                    "result": False,
+                    "status": status
+                }
+                print(self.connected)
+                return None, None, None
+            except NewConnectionError as e:
+                print(str(e))
+                status = ("Timeout while trying to fetch credentials "
+                          "from node...Exiting\n")
+                conndesc.write(status)
+                conndesc.flush()
+                conndesc.close()
+                self.connected = {
+                    "v2ray_pid": None,
+                    "result": False,
+                    "status": status
+                }
+                print(self.connected)
+                return None, None, None
+    
+            print(response, response.text)
+    
+            if response.ok is True:
+                break
+    
+            sleep(random.uniform(0.5, 1))
+            # Continue iteration only for code == 4 (invalid signature)
+            if response.json()["error"]["code"] != 2:
+                break
+    
+        if response.ok is False:
+            self.connected = {
+                "v2ray_pid": None,
+                "result": False,
+                "status": response.text
+            }
+            print(self.connected)
+            return None, None, None
+    
+        response = response.json()
+        if response.get("success", True) is True:
+            response_dict = response["result"]
+            decode = base64.b64decode(
+                response_dict['data']
+            ).decode('utf-8')
+            print(f"\nDecode: {decode}")
+            print(f"\nlength: {len(decode)}")
+    
+            wgkey_out = wgkey if type == "WireGuard" else None
+            return response, decode, wgkey_out
+    
+        return None, None, None
+    
+    def write_wireguard_config(self, response, decode, wgkey, conndesc, iface):
+        if len(decode) < 100:
+            self.connected = {
+                "v2ray_pid": None,
+                "result": False,
+                "status": f"Incorrect result size: {len(decode)}"
+            }
+            print(self.connected)
+            return None
+    
+        decode = json.loads(decode)
+        conndesc.write("Bringing up dVPN tunnel...\n")
+        conndesc.flush()
+    
+        ipv4_address = decode['addrs'][0]
+        if len(decode['addrs']) > 1:
+            ipv6_address = decode['addrs'][1]
+        else:
+            ipv6_address = ""
+    
+        # Here should check if client is using ipv6.
+        # This will give ipv4
+        host = response['result']['addrs'][0]
+        port = decode['metadata'][0]['port']
+        peer_endpoint = f"{host}:{port}"
+    
+        print("ipv4_address", ipv4_address)
+        print("ipv6_address", ipv6_address)
+        print("host", host)
+        print("port", port)
+        print("peer_endpoint", peer_endpoint)
+    
+        public_key = decode['metadata'][0]['public_key']
+        print("public_key", public_key)
+    
+        config = configparser.ConfigParser()
+        config.optionxform = str
+    
+        # [from golang] listenPort, err := netutil.GetFreeUDPPort()
+        sock = socket.socket()
+        sock.bind(('', 0))
+        listen_port = sock.getsockname()[1]
+        sock.close()
+    
+        address = (
+            ",".join([ipv4_address, ipv6_address])
+            if ipv6_address
+            else ipv4_address
+        )
+    
+        config.add_section("Interface")
+        config.set("Interface", "Address", address)
+        config.set("Interface", "ListenPort", f"{listen_port}")
+        config.set("Interface", "PrivateKey", wgkey.privkey)
+        config.set(
+            "Interface", "DNS",
+            ",".join(["127.0.0.1", "1.0.0.1", "1.1.1.1"])
+        )
+    
+        config.add_section("Peer")
+        config.set("Peer", "PublicKey", public_key)
+        config.set("Peer", "Endpoint", peer_endpoint)
+        config.set("Peer", "AllowedIPs", ",".join(["0.0.0.0/0", "::/0"]))
+        config.set("Peer", "PersistentKeepalive", "25")
+    
+        
+        config_file = path.join(ConfParams.KEYRINGDIR, f"{iface}.conf")
+    
+        if path.isfile(config_file) is True:
+            remove(config_file)
+    
+        with open(config_file, "w", encoding="utf-8") as f:
+            config.write(f)
+    
+        return config_file
+    
     def connect(self, 
                 ID, 
                 address, 
@@ -669,24 +895,33 @@ class HandleWalletFunctions():
         private_key = kr.get_password("meile-gui", KEYNAME)
         
         try:
-            sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key, ssl=True)
+            self.sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key, ssl=True)
         except ConnectionError:
             message = "gRPC unresponsive. Try again later or switch gRPCs."
-            self.connected = {"v2ray_pid" : None, "result" : False, "status" : message}
+            self.connected = {"v2ray_pid" : None, 
+                              "result" : False, 
+                              "status" : message, 
+                              "session_id" : None}
             return
         except grpc._channel._InactiveRpcError as e:
             status_code = e.code()
             
             if status_code == StatusCode.NOT_FOUND:
                 message = "Wallet not found on blockchain. Please verify you have sent coins to your wallet to activate it. Then try your subscription again"
-                self.connected = {"v2ray_pid" : None,  "result": False, "status" : message}
+                self.connected = {"v2ray_pid" : None,  
+                                  "result": False, 
+                                  "status" : message, 
+                                  "session_id" : None}
                 print(self.connected)
                 return
             else:
-                    message = "gRPC Error!"
-                    self.connected = {"v2ray_pid" : None, "result" : False, "status" : message}
-                    return
-                
+                message = "gRPC Error!"
+                self.connected = {"v2ray_pid" : None, 
+                                  "result" : False, 
+                                  "status" : message, 
+                                  "session_id" : None}
+                return
+            
         regex_denom = r'^([\d\.]+)(.*)$'
         regres = re.match(regex_denom, deposit)
         
@@ -754,7 +989,7 @@ class HandleWalletFunctions():
         if plan:
             try:
                 if not RINGSESSIONS:
-                    tx = sdk.subscriptions.StartSession(subscription_id=int(ID), address=address, tx_params=tx_params)
+                    tx = self.sdk.subscriptions.StartSession(subscription_id=int(ID), address=address, tx_params=tx_params)
                 else:
                     addresses = self.get_random_node_addresses(NodeTree, count=8)
                     rand_index = random.randint(0, len(addresses))
@@ -765,7 +1000,7 @@ class HandleWalletFunctions():
                         conndesc.flush()
 
                         if addr == address:
-                            tx = sdk.subscriptions.StartSession(
+                            tx = self.sdk.subscriptions.StartSession(
                                 subscription_id=int(ID), 
                                 address=addr,
                                 next_sequence = True if k > 1 else False, 
@@ -773,7 +1008,7 @@ class HandleWalletFunctions():
                             )
                             print(tx)
                         else:
-                            tx_temp = sdk.subscriptions.StartSession(
+                            tx_temp = self.sdk.subscriptions.StartSession(
                                 subscription_id=int(ID), 
                                 address=addr,
                                 next_sequence = True if k > 1 else False, 
@@ -781,7 +1016,7 @@ class HandleWalletFunctions():
                             )
                             print(tx_temp)
 
-                        print(f"Sequence after tx: {sdk.subscriptions._account.next_sequence}")
+                        print(f"Sequence after tx: {self.sdk.subscriptions._account.next_sequence}")
                         sleep(0.1)
                         k += 1
             except RpcError as rpc_error:
@@ -792,7 +1027,10 @@ class HandleWalletFunctions():
                 conndesc.write("GRPC Error... Exiting")
                 conndesc.flush()
                 conndesc.close()
-                self.connected = {"v2ray_pid" : None,  "result": False, "status" : details}
+                self.connected = {"v2ray_pid" : None,  
+                                  "result": False, 
+                                  "status" : details, 
+                                  "session_id" : None}
                 print(self.connected)
                 return
         else:
@@ -803,7 +1041,7 @@ class HandleWalletFunctions():
             
             
             try:
-                tx = sdk.nodes.SubscribeToNode(node_address=address, 
+                tx = self.sdk.nodes.SubscribeToNode(node_address=address, 
                                                price=sprice, 
                                                gigabytes=0 if hourly else int(units),
                                                hours=int(units) if hourly else 0,
@@ -816,18 +1054,24 @@ class HandleWalletFunctions():
                 conndesc.write("GRPC Error... Exiting")
                 conndesc.flush()
                 conndesc.close()
-                self.connected = {"v2ray_pid" : None,  "result": False, "status" : details}
+                self.connected = {"v2ray_pid" : None,  
+                                  "result": False, 
+                                  "status" : details, 
+                                  "session_id" : None}
                 print(self.connected)
                 return
         
         # Will need to handle log responses with friendly UI response in case of session create error
         if tx.get("log", None) is not None:
-            self.connected = {"v2ray_pid" : None,  "result": False, "status" : tx["log"]}
+            self.connected = {"v2ray_pid" : None,  
+                              "result": False, 
+                              "status" : tx["log"], 
+                              "session_id" : None}
             print(self.connected)
             return
        
         try: 
-            tx_response = sdk.subscriptions.wait_for_tx(tx["hash"], timeout=25)
+            tx_response = self.sdk.subscriptions.wait_for_tx(tx["hash"], timeout=25)
         except (mospy.exceptions.clients.TransactionTimeout,
                 mospy.exceptions.clients.NodeException,
                 mospy.exceptions.clients.NodeTimeoutException)  as e:
@@ -835,14 +1079,30 @@ class HandleWalletFunctions():
             conndesc.write("GRPC Error... Exiting")
             conndesc.flush()
             conndesc.close()
-            self.connected = {"v2ray_pid" : None,  "result": False, "status" : "GRPC Error"}
+            self.connected = {"v2ray_pid" : None,  
+                              "result": False, 
+                              "status" : "GRPC Error", 
+                              "session_id" : None}
             return
         print(tx_response)
         session_id = search_attribute(tx_response,
                                       "sentinel.subscription.v3.EventCreateSession" if plan else "sentinel.node.v3.EventCreateSession", 
                                       "session_id")
+
+        '''
+        from_event = {
+            "subscription_id": search_attribute(tx_response, "sentinel.subscription.v3.EventCreateSession", "subscription_id"),
+            "address": search_attribute(tx_response, "sentinel.subscription.v3.EventCreateSession", "acc_address"),
+            "node_address": search_attribute(tx_response, "sentinel.subscription.v3.EventCreateSession", "node_address"),
+        }
+        '''
         
-        sleep(0.4)  # Wait a few seconds....
+        # Sanity Check. Not needed
+        #assert from_event["subscription_id"] == ID and from_event["address"] == sdk._account.address and from_event["node_address"] == address
+       
+        sleep(0.2)  # Wait a few seconds....
+        # The sleep is required because the session_id could not be fetched from the node / rpc
+        '''
         node = sdk.nodes.QueryNode(address)
         
         # Get Client PubKey
@@ -987,141 +1247,197 @@ class HandleWalletFunctions():
 
                 with open(config_file, "w", encoding="utf-8") as f:
                     config.write(f)
-                if pltfrm == Arch.LINUX:
-                    child = pexpect.spawn(f"pkexec sh -c 'ip link delete {iface}; wg-quick up {config_file}'")
-                    child.expect(pexpect.EOF)
-                elif pltfrm == Arch.WINDOWS:
-                    chdir(MeileConfig.BASEBINDIR)
-                    wg_bat = 'wg.bat'
-                    if not path.isfile(path.join(MeileConfig.BASEBINDIR, wg_bat)):
-                        service_name = "WireGuardTunnel$wg99"
-                        batfile = open(wg_bat, 'w')
-                        batfile.write('START "" /B %s /installtunnelservice %s\n' % (MeileConfig.WIREGUARD_BIN, config_file))
-                        batfile.write('timeout /t 1\n')
-                        batfile.write('START "" /B sc config %s start= demand\n' % service_name)
-                        batfile.write('timeout /t 2\n')
-                        batfile.flush()
-                        batfile.close()
-                    #wgup = [gsudo, MeileConfig.WIREGUARD_BIN, "/installtunnelservice", config_file]
-                    wgup = [gsudo, wg_bat]
-                    wg_process = subprocess.Popen(wgup)
-                    sleep(4)
-                    chdir(MeileConfig.BASEDIR)
-                elif pltfrm == Arch.OSX:
-                    pass
+        '''
+        response, decode, wgkey = self.fetch_credentials(
+             address, session_id, type, conndesc
+        )
+        
+        if response is None or decode is None:
+            status = "Node response is null. Terminating..."
+            self.connected = {"v2ray_pid" : None,  
+                              "result": False, 
+                              "status" : status, 
+                              "session_id" : session_id}
+            print(self.connected)
+            return
+        
+        if type == "WireGuard":
+            iface = "wg99"
+            config_file = self.write_wireguard_config(
+                response, decode, wgkey, conndesc, iface
+            )
+            
+            if config_file is None:
+                status = "Error writing WireGuard config. Terminating..."
+                self.connected = {"v2ray_pid" : None,  
+                                  "result": False, 
+                                  "status" : status, 
+                                  "session_id" : session_id}
+                print(self.connected)
+                return
+            
+            
                     
-
-                if psutil.net_if_addrs().get(iface):
-                    self.connected = {"v2ray_pid" : None,  "result": True, "status" : iface}
-                    conndesc.write("Checking network connection...\n")
-                    conndesc.flush()
-                    sleep(2)
-                    self.get_ip_address()
-                    sleep(2)
-                    conndesc.close()
-                    return
-            else:  # v2ray
-                chdir(MeileConfig.BASEBINDIR)
-                conndesc.write("Bringing up V2Ray socks tunnel...\n")
-                conndesc.flush()
-                decode = json.loads(decode)
-                print(decode)
-                proxy_protocol = ["vless", "vmess"]
-                transport_protocol = ["domainsocket","gun","grpc","http","mkcp","quic","tcp","websocket"]
-                #transport_security = ["none", "tls"]
-                
-                vmess_address = resolve_address(response['result']['addrs'][0])
-                vmess_port = int(decode['metadata'][0]['port'])
-                pp = proxy_protocol[decode['metadata'][0]['proxy_protocol']-1]
-                #tp = transport_protocol[decode['metadata'][0]['transport_protocol']-1]
-                #tp = transport_protocol[1]
-                tp = transport_protocol[decode['metadata'][0]['transport_protocol']-1]
-                #ts = transport_security[decode['metadata'][0]['transport_security']-1]
-
-                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                sock.bind(('', 0))
-                api_port = sock.getsockname()[1]
-                sock.close()
-
-                print("api_port", api_port)
-                print("vmess_port", vmess_port)
-                print("vmess_address", vmess_address)
-                print("vmess_uid", f"{uid_16}")
-                print("vmess_transport", tp)
-                print("proxy_protocol", pp)
-                
-                if self.FRAGMENT:
-                    v2ray_config = V2RayFragmentConfiguration(
-                        api_port=api_port,
-                        vmess_port=vmess_port,
-                        vmess_address=vmess_address,
-                        vmess_uid=f"{uid_16}",
-                        vmess_transport=tp,
-                        proxy_port=1080,
-                        proxy_protocol=pp
-                    )
-                else:
-                    v2ray_config = V2RayConfiguration(
-                        api_port=api_port,
-                        vmess_port=vmess_port,
-                        vmess_address=vmess_address,
-                        vmess_uid=f"{uid_16}",
-                        vmess_transport=tp,
-                        proxy_port=1080,
-                        proxy_protocol=pp
-                    )
-                # ConfParams.KEYRINGDIR (.meile-gui)
-                config_file = path.join(ConfParams.KEYRINGDIR, "v2ray_config.json")
-                if path.isfile(config_file) is True:
-                    remove(config_file)
-                with open(config_file, "w", encoding="utf-8") as f:
-                    f.write(json.dumps(v2ray_config.get(), indent=4))
-                    
-                proxy_ip_file = path.join(ConfParams.KEYRINGDIR, "v2ray.proxy")
-                if path.isfile(proxy_ip_file) is True:
-                    remove(proxy_ip_file)
-                with open(proxy_ip_file, "w", encoding="utf-8") as f:
-                    f.write(vmess_address)
-                    
-                # v2ray_tun2routes_connect_bash
-                # >> hardcoded = proxy port >> 1080
-                # >> hardcoded = v2ray file >> /home/${USER}/.meile-gui/v2ray_config.json
-
-                tuniface = False
-                v2ray_handler = V2RayHandler(f"{v2ray_tun2routes_connect_bash} up")
-                v2ray_handler.start_daemon()
+            if pltfrm == Arch.LINUX:
+                child = pexpect.spawn(f"pkexec sh -c 'ip link delete {iface}; wg-quick up {config_file}'")
+                child.expect(pexpect.EOF)
+            elif pltfrm == Arch.OSX:
+                connectBASH = [sentinel_connect_bash]
+                proc2 = subprocess.Popen(connectBASH)
+                proc2.wait(timeout=30)
+                pid2 = proc2.pid
+                proc_out, proc_err = proc2.communicate()
+                #subprocess.run(["sudo", "launchctl", "load", str(LAUNCHDAEMON_PATH)], check=True)
                 sleep(3)
+            elif pltfrm == Arch.WINDOWS:
+                wgup = [gsudo, MeileConfig.WIREGUARD_BIN, "/installtunnelservice", config_file]
+                wg_process = subprocess.Popen(wgup)
+                sleep(15)
+                
+            if psutil.net_if_addrs().get(iface) or psutil.net_if_addrs().get("utun3"):
+                self.connected = {"v2ray_pid" : None,  
+                                  "result": True, 
+                                  "status" : iface, 
+                                  "session_id" : session_id}
+                conndesc.write("Checking network connection...\n")
+                conndesc.flush()
+                sleep(1)
+                self.get_ip_address()
+                sleep(1)
+                conndesc.close()
+                return
+            else:
+                self.connected = {"v2ray_pid" : None,  
+                                  "result": False, 
+                                  "status" : "Error bringing up wireguard interface", 
+                                  "session_id" : session_id}
+                return
+                    
+        else:  # v2ray
+            # os x
+            chdir(MeileConfig.BASEBINDIR) 
+            conndesc.write("Bringing up V2Ray socks tunnel...\n")
+            conndesc.flush()
+            decode = json.loads(decode)
+            print(decode)
+            
+            proxy_protocol = ["vless", "vmess"]
+            transport_protocol = ["domainsocket","gun","grpc","http","mkcp","quic","tcp","websocket"]
+            #transport_security = ["none", "tls"]
+            
+            vmess_address = resolve_address(response['result']['addrs'][0])
+            vmess_port = int(decode['metadata'][0]['port'])
+            pp = proxy_protocol[decode['metadata'][0]['proxy_protocol']-1]
+            tp = transport_protocol[decode['metadata'][0]['transport_protocol']-1]
+            #tp = transport_protocol[1]
+            #ts = transport_security[decode['metadata'][0]['transport_security']-1]
 
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.bind(('', 0))
+            api_port = sock.getsockname()[1]
+            sock.close()
+
+            print("api_port", api_port)
+            print("vmess_port", vmess_port)
+            print("vmess_address", vmess_address)
+            print("vmess_uid", f"{self.uid_16}")
+            print("vmess_transport", tp)
+            print("proxy_protocol", pp)
+            
+            if self.FRAGMENT:
+                v2ray_config = V2RayFragmentConfiguration(
+                    api_port=api_port,
+                    vmess_port=vmess_port,
+                    vmess_address=vmess_address,
+                    vmess_uid=f"{self.uid_16}",
+                    vmess_transport=tp,
+                    proxy_port=1080,
+                    proxy_protocol=pp
+                )
+            else:
+                v2ray_config = V2RayConfiguration(
+                    api_port=api_port,
+                    vmess_port=vmess_port,
+                    vmess_address=vmess_address,
+                    vmess_uid=f"{self.uid_16}",
+                    vmess_transport=tp,
+                    proxy_port=1080,
+                    proxy_protocol=pp
+                )
+            # ConfParams.KEYRINGDIR (.meile-gui)
+            config_file = path.join(ConfParams.KEYRINGDIR, "v2ray_config.json")
+            if path.isfile(config_file) is True:
+                remove(config_file)
+            with open(config_file, "w", encoding="utf-8") as f:
+                f.write(json.dumps(v2ray_config.get(), indent=4))
+                
+            proxy_ip_file = path.join(ConfParams.KEYRINGDIR, "v2ray.proxy")
+            if path.isfile(proxy_ip_file) is True:
+                remove(proxy_ip_file)
+            with open(proxy_ip_file, "w", encoding="utf-8") as f:
+                f.write(vmess_address)
+                
+            # v2ray_tun2routes_connect_bash
+            # >> hardcoded = proxy port >> 1080
+            # >> hardcoded = v2ray file >> /home/${USER}/.meile-gui/v2ray_config.json
+
+            tuniface = False
+            v2ray_handler = V2RayHandler(f"{v2ray_tun2routes_connect_bash} up")
+            if not v2ray_handler.start_daemon():
+                try:
+                    conndesc.write("Error connecting to V2Ray node...\n")
+                    conndesc.flush()
+                    v2ray_handler.v2ray_script = f"{v2ray_tun2routes_connect_bash} down"
+                    v2ray_handler.kill_daemon()
+                    conndesc.close()
+                except Exception as e:
+                    print(str(e))
+
+                self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid,  "result": False, "status": f"Error connecting to v2ray node: {tuniface}"}
+                print(self.connected)
+                # os x
+                chdir(MeileConfig.BASEDIR)
+                return
+                
+            if pltfrm != Arch.OSX:
                 for iface in psutil.net_if_addrs().keys():
                     if "tun" in iface:
                         tuniface = True
                         break
-
-                if tuniface is True:
-                    self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid, "result": True, "status" : tuniface}
+            else:
+                if psutil.net_if_addrs().get("utun123"):
+                    self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid, "result": True, "status" : "utun123"}
                     print(self.connected)
-                    conndesc.write("Checking network connection...\n")
+                    tuniface = True
+                
+            if tuniface is True:
+                self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid, "result": True, "status" : tuniface}
+                print(self.connected)
+                conndesc.write("Checking network connection...\n")
+                conndesc.flush()
+                sleep(1)
+                self.get_ip_address()
+                sleep(1)
+                conndesc.close()
+                # os x
+                chdir(MeileConfig.BASEDIR)
+                return
+            else:
+                try:
+                    conndesc.write("Error connecting to V2Ray node...\n")
                     conndesc.flush()
-                    sleep(5)
-                    self.get_ip_address()
-                    sleep(3)
+                    v2ray_handler.v2ray_script = f"{v2ray_tun2routes_connect_bash} down"
+                    v2ray_handler.kill_daemon()
                     conndesc.close()
-                    chdir(MeileConfig.BASEDIR)
-                    return
-                else:
-                    try:
-                        conndesc.write("Error connecting to V2Ray node...\n")
-                        conndesc.flush()
-                        v2ray_handler.v2ray_script = f"{v2ray_tun2routes_connect_bash} down"
-                        v2ray_handler.kill_daemon()
-                        conndesc.close()
-                    except Exception as e:
-                        print(str(e))
+                except Exception as e:
+                    print(str(e))
 
-                    self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid,  "result": False, "status": f"Error connecting to v2ray node: {tuniface}"}
-                    print(self.connected)
-                    chdir(MeileConfig.BASEDIR)
-                    return
+                self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid,  "result": False, "status": f"Error connecting to v2ray node: {tuniface}"}
+                print(self.connected)
+                # os x
+                chdir(MeileConfig.BASEDIR)
+                return
+        # os x
         chdir(MeileConfig.BASEDIR)
         self.connected = {"v2ray_pid" : None,  "result": False, "status": "Bad Response from Node"}
         return   
