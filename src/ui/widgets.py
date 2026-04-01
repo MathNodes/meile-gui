@@ -49,11 +49,12 @@ from cli.sentinel import NodeTreeData
 from cli.btcpay import BTCPayDB
 import main.main as Meile
 from adapters import HTTPRequests
-from ui.interfaces import TXContent, ConnectionDialog, QRDialogContent, QRDialogZanoContent
+from ui.interfaces import TXContent, ConnectionDialog, QRDialogContent, QRDialogZanoContent, QRDialogV2RayContent
 from coin_api.get_price import GetPriceAPI
 from adapters.ChangeDNS import ChangeDNS
 from kivy.uix.recyclegridlayout import RecycleGridLayout
 from helpers.helpers import format_byte_size
+from helpers.v2ray import generate_v2ray_uri
 from fiat.stripe_pay.dist import scrtsxx
 from utils.qr import QRCode
 
@@ -164,6 +165,67 @@ class HyperlinkLabel(ButtonBehavior, MDLabel, HoverBehavior):
 
     def update_size(self, *args):
         self.size = self.texture_size  # Ensure label size matches text size
+     
+class ShareTypeDialog(BoxLayout):
+    
+    def select_share_type(self, instance, value, proto):
+        if not value:
+            return
+        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
+        mw.closeDialog(None)
+        #self.closeDialog()
+        iface = "wg99"
+        WG_PATH = path.join(ConfParams.KEYRINGDIR,f"{iface}.conf")
+        V2_PATH = path.join(ConfParams.KEYRINGDIR, "v2ray_config.json")
+        connected_content = QRDialogV2RayContent()
+        QRcode = QRCode()
+        if proto == "wg":
+            if path.isfile(WG_PATH):       
+                with open(WG_PATH, "r") as f:
+                    wg_config = f.read()
+                wg_config = wg_config.replace("127.0.0.1,", "")
+                connected_content.ids.uri.text = wg_config
+                connected_content.ids.qr_img.source = QRcode.generate_wg_qr_code(WG_PATH, "WireGuard")
+        
+            else:
+                connected_content.ids.uri.text = "Start a WireGuard connection in Meile first."
+                connected_content.ids.qr_img.source = QRcode.generate_qr_code("NULL", "wireguard")
+            connected_content.ids.warning_comment.text = 'Scan the QR code or import the wireguard config strings into the official WireGuard mobile app. You MUST first disconnect from the Wireguard node in Meile before connecting on mobile. https://dvpn.my/wireguard'
+            
+        else:
+            if path.isfile(V2_PATH):
+                uri = generate_v2ray_uri(path.join(ConfParams.KEYRINGDIR, "v2ray_config.json"))
+            else:
+                uri = "Start a V2Ray connection in Meile first."
+                
+            connected_content.ids.uri.text = uri
+            connected_content.ids.qr_img.source = QRcode.generate_qr_code(uri, "v2ray")
+            connected_content.ids.warning_comment.text = 'Scan the QR code or import the URI string into the V2RayNG mobile app. You must do this before you disconnect in Meile. https://dvpn.my/v2ray'
+           
+        
+        self.dialog = MDDialog(
+            title="Connection Sharing",
+            type="custom",
+            content_cls=connected_content,
+            md_bg_color=get_color_from_hex(MeileColors.BLACK),
+            buttons=[
+                    MDRaisedButton(
+                        text="OK",
+                        theme_text_color="Custom",
+                        text_color=get_color_from_hex(MeileColors.BLACK),
+                        on_release=self.closeDialog
+                    ),
+                ]
+        )
+        self.dialog.open()
+        
+    def closeDialog(self, inst):
+        try:
+            self.dialog.dismiss()
+            self.dialog = None
+        except:
+            print("Dialog is NONE")
+            return
     
 class SubTypeDialog(BoxLayout):
     

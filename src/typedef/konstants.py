@@ -603,9 +603,11 @@ class IBCTokens():
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
-    VERSION = "v2.5.3"
-    BUILD = "17734519923"
+    VERSION = "v2.5.1"
+    BUILD   = "17748518213"
     RootTag = "SENTINEL"
+    GITHUB_API_URL = "https://api.github.com/repos/MathNodes/meile-gui/releases/latest"
+    DOWNLOAD_URL   = "https://meile.app"
     PassedHealthCheck = "Passed Sentinel Health Check"
     FailedHealthCheck = "Failed Sentinel Health Check"
     
