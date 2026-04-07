@@ -57,6 +57,7 @@ mapview==1.0.6
 mnemonic==0.21
 more-itertools==10.2.0
 mospy-wallet==0.6.0
+packaging==26.0
 pexpect==4.8.0
 Pillow==9.2.0
 proto-plus==1.26.1
