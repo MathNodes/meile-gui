@@ -8,6 +8,7 @@ from os import path
 import hashlib
 from helpers.helpers import is_ecryptfs_mounted
 from conf.meile_config import MeileGuiConfig
+from typedef.konstants import MeileColors
 
 
 class QRCode():
@@ -19,6 +20,81 @@ class QRCode():
         self.BASEDIR     = MeileGuiConfig.BASEDIR
         self.IMGDIR      = MeileGuiConfig.IMGDIR
         self.MeileConfig = MeileGuiConfig()
+        
+    def generate_wg_qr_code(self, conf_path, label=None):
+
+        
+        with open(conf_path, 'r') as f:
+            wg_config = f.read().strip()
+            
+        wg_config = wg_config.replace("127.0.0.1,", "")
+
+        if not label:
+            label = path.basename(conf_path)
+
+        
+        wg_logo_path = self.MeileConfig.resource_path(MeileColors.WIREGUARD_ICON)
+        has_logo = path.exists(wg_logo_path)
+
+        QRcode = qrcode.QRCode(
+            error_correction=qrcode.constants.ERROR_CORRECT_H
+        )
+        QRcode.add_data(wg_config)
+        QRcode.make()
+
+        QRimg = QRcode.make_image(
+            fill_color='Black', back_color='white'
+        ).convert('RGB')
+
+        if has_logo:
+            logo = Image.open(wg_logo_path)
+            basewidth = 100
+            wpercent = (basewidth / float(logo.size[0]))
+            hsize = int(float(logo.size[1]) * float(wpercent))
+            logo = logo.resize((basewidth, hsize))
+
+            pos = (
+                (QRimg.size[0] - logo.size[0]) // 2,
+                (QRimg.size[1] - logo.size[1]) // 2,
+            )
+            QRimg.paste(logo, pos)
+
+
+        border = (0, 4, 0, 30)  
+        QRimg = ImageOps.crop(QRimg, border)
+
+        if len(label) <= 50:
+            fontSize = 16
+        elif len(label) <= 75:
+            fontSize = 12
+        else:
+            fontSize = 11
+
+        background = Image.new(
+            'RGBA',
+            (QRimg.size[0], QRimg.size[1] + 15),
+            (255, 255, 255, 255),
+        )
+        robotoFont = ImageFont.truetype(
+            self.MeileConfig.resource_path(MeileColors.QR_FONT_FACE),
+            fontSize,
+        )
+
+        draw = ImageDraw.Draw(background)
+        _, _, w, h = draw.textbbox((0, 0), text=str(label))
+        draw.text(
+            ((QRimg.size[0] + 15 - w) / 2, QRimg.size[1] - 2),
+            label,
+            (0, 0, 0),
+            font=robotoFont,
+        )
+
+        background.paste(QRimg, (0, 0))
+
+        safe_name = path.splitext(path.basename(conf_path))[0]
+        out_path = path.join(self.IMGDIR, safe_name + '_wg.png')
+        background.save(out_path)
+        return out_path
 
     def generate_qr_code(self, ADDRESS, coin):
         DepositCoin    = coin
@@ -71,10 +147,17 @@ class QRCode():
         
         background.paste(QRimg, (0,0))
         
-        if not is_ecryptfs_mounted() or coin == "dvpn":
+        if ADDRESS.startswith(("vmess", "vless")):
+            background.save(path.join(self.IMGDIR, ADDRESS[:5] + ".png"))
+            return path.join(self.IMGDIR, ADDRESS[0:5] + ".png")
+        elif not is_ecryptfs_mounted() or coin == "dvpn":
             background.save(path.join(self.IMGDIR, ADDRESS + ".png"))
             return path.join(self.IMGDIR, ADDRESS + ".png")
         else:
             hashed_address = hashlib.sha256(ADDRESS.encode()).hexdigest()
             background.save(path.join(self.IMGDIR, hashed_address + ".png"))
             return path.join(self.IMGDIR, hashed_address + ".png")
+
+        background.save(path.join(self.IMGDIR, ADDRESS + ".png"))
+        return path.join(self.IMGDIR, ADDRESS + ".png")
+        

@@ -29,7 +29,8 @@ class ConfParams():
     DEFAULT_SUBS     = [5 * i for i in range(1, 6)]
     BTCPAYADJ        = 1.10
     XMRPAYADJ        = 3.14
-    SUBFEE           = 0.042069
+    SUBFEE           = 0.1
+    SUBFEEMULT       = 10
 
 class HTTParams():
     # Note http://128.199.90.172:26657 is testnet ONLY!
@@ -602,9 +603,11 @@ class IBCTokens():
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
-    VERSION = "2.2.2"
-    BUILD   = "1722988800718"
+    VERSION = "v2.5.4"
+    BUILD   = "17748518213"
     RootTag = "SENTINEL"
+    GITHUB_API_URL = "https://api.github.com/repos/MathNodes/meile-gui/releases/latest"
+    DOWNLOAD_URL   = "https://meile.app"
     PassedHealthCheck = "Passed Sentinel Health Check"
     FailedHealthCheck = "Failed Sentinel Health Check"
     
@@ -624,12 +627,19 @@ class MeileColors():
     FONT_FACE_ARIAL          = "../fonts/arial-unicode-ms.ttf"
     QR_FONT_FACE             = "../fonts/Roboto-BoldItalic.ttf"
     MAP_MARKER               = "../imgs/location_pin.png"
+    LOC_MARKER               = "../imgs/location_marker.png"
     LOGO                     = "../imgs/logo.png"
     LOGO_HD                  = "../imgs/logo_hd.png"
     LOGO_TEXT                = "../imgs/logo_text.png"
     SUBSCRIBE_BUTTON         = "../imgs/SubscribeButton.png"
     GETINFO_BUTTON           = "../imgs/GetInfoButton.png"
     SPINNER                  = "../imgs/spinner.png"
+    CONNECT_BUTTON           = "../imgs/ConnectButton.png"
+    DISCONNECT_BUTTON        = "../imgs/DisconnectButton.png"
+    WIREGUARD_ICON           = "../utils/coinimg/wireguard.png"
+    V2RAY_ICON               = "../utils/coinimg/v2ray.png"
+    BASIC_PLAN               = "../imgs/plans_basic.png"
+    PREMIUM_PLAN             = "../imgs/plans_premium.png"
     HEALTH_ICON              = "shield-plus"
     SICK_ICON                = "emoticon-sick"
     ARCGIS_MAP               = "https://server.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}.png"

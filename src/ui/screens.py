@@ -1,11 +1,11 @@
 from geography.continents import OurWorld
-from ui.interfaces import LatencyContent, TooltipMDIconButton, ConnectionDialog, ProtectedLabel, IPAddressTextField, ConnectedNode, QuotaPct,BandwidthBar,BandwidthLabel, MapCenterButton, UploadLabel, DownloadLabel
+from ui.interfaces import LatencyContent, TooltipMDIconButton, ConnectionDialog, ProtectedLabel, IPAddressTextField, ProtocolTextField, ConnectedNode, QuotaPct,BandwidthBar,BandwidthLabel, MapCenterButton, UploadLabel, DownloadLabel,QRDialogV2RayContent, TimeLabel
 from typedef.win import WindowNames
 from cli.sentinel import  NodeTreeData
 from typedef.konstants import NodeKeys, TextStrings, MeileColors, HTTParams, IBCTokens, ConfParams
 from cli.sentinel import disconnect as Disconnect
 import main.main as Meile
-from ui.widgets import WalletInfoContent, SeedInfoContent, MDMapCountryButton, RatingContent, NodeRV, NodeRV2, NodeAccordion, NodeRow, NodeDetails, PlanAccordion, PlanRow, PlanDetails, NodeCarousel, SubTypeDialog, SubscribeContent, LoadingSpinner
+from ui.widgets import WalletInfoContent, SeedInfoContent, MDMapCountryButton, RatingContent, NodeRV, NodeRV2, NodeAccordion, NodeRow, NodeDetails, PlanAccordion, PlanRow, PlanDetails, NodeCarousel, SubTypeDialog, SubscribeContent, LoadingSpinner, ShareTypeDialog
 from utils.qr import QRCode
 from cli.wallet import HandleWalletFunctions
 from conf.meile_config import MeileGuiConfig
@@ -19,6 +19,9 @@ from adapters.DNSCryptproxy import HandleDNSCryptProxy as dcp
 from helpers.helpers import format_byte_size
 from helpers.bandwidth import compute_consumed_data, compute_consumed_hours, init_GetConsumedWhileConnected, GetConsumedWhileConnected, GetTotalDataWhileConnected
 from helpers.aes import SecureSeed
+from helpers.v2ray import generate_v2ray_uri
+from helpers.update_checker import UpdateChecker, format_update_message
+from ui.update_dialog import UpdateDialog
 
 from kivy.properties import BooleanProperty, StringProperty, ColorProperty,ObjectProperty, NumericProperty
 from kivy.uix.screenmanager import Screen, SlideTransition
@@ -41,7 +44,7 @@ from kivymd.uix.boxlayout import MDBoxLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivymd.uix.anchorlayout import MDAnchorLayout
 from kivymd.uix.label.label import MDLabel
-
+from kivy.animation import Animation
 from kivy.app import App
 
 import requests
@@ -50,7 +53,7 @@ import sys
 import copy
 from copy import deepcopy
 import re
-from time import sleep
+from time import sleep, time
 from functools import partial
 from shutil import rmtree
 from os import path,geteuid, chdir, remove
@@ -361,7 +364,10 @@ class MainWindow(Screen):
     dnscrypt = False
     PlanConnect = False
     HourlyFirstRun = True
-
+    location_marker = None
+    is_running = False
+    start_time = 0
+    hwf = None
 
 
     def __init__(self, node_tree, **kwargs):
@@ -393,7 +399,7 @@ class MainWindow(Screen):
                                    width_mult=3,
                                    position="center",
                                    max_height=max_height,
-                                   background_color=get_color_from_hex(MeileColors.BLACK))
+                                   md_bg_color=get_color_from_hex(MeileColors.BLACK))
         
     def update_wallet(self, dt):
         MeileConfig = MeileGuiConfig()
@@ -445,11 +451,11 @@ class MainWindow(Screen):
                 pass
             
             
-            hwf = HandleWalletFunctions()
+            self.hwf = HandleWalletFunctions()
             thread = Thread(target=lambda: self.ping())
             thread.start()
             if not self.SubCaller:
-                t = Thread(target=lambda: hwf.connect(ID, 
+                t = Thread(target=lambda: self.hwf.connect(ID, 
                                                       naddress, 
                                                       proto, 
                                                       deposit,
@@ -457,7 +463,7 @@ class MainWindow(Screen):
                                                       plan=PlanConnect))
                 t.start()
             else:
-                t = Thread(target=lambda: hwf.connect(0, 
+                t = Thread(target=lambda: self.hwf.connect(0, 
                                                       node, 
                                                       protocol, 
                                                       sub_deposit,
@@ -485,10 +491,10 @@ class MainWindow(Screen):
             #conndesc.close()
             self.cd.ids.pb.value = 1
             
-            self.ConnectedDict = deepcopy(hwf.connected)
+            self.ConnectedDict = deepcopy(self.hwf.connected)
             yield 0.420
             try: 
-                if hwf.connected['result']:
+                if self.hwf.connected['result']:
                     print("CONNECTED!!!")
                     self.CONNECTED = True
                     Moniker = self.NodeCarouselData['moniker']
@@ -503,27 +509,67 @@ class MainWindow(Screen):
                     #print("REmove loading Widget")
                     # Here change the Connection button to a "Disconnect" button then display dialogAdd commentMore actions
                     self.set_protected_icon(True, Moniker)
+                    self.toggle_time_widget()
+                    #if "V2Ray" in [proto, protocol]:
+                    connected_content = QRDialogV2RayContent()
+                    QRcode = QRCode()
+                    if "V2Ray" in [proto, protocol]:
+                        uri = generate_v2ray_uri(path.join(ConfParams.KEYRINGDIR,"v2ray_config.json"))
+                        connected_content.ids.uri.text = uri
+                        connected_content.ids.warning_comment.text = "Scan the QR code or import the URI string into the V2RayNG mobile app. You must do this before you disconnect in Meile. https://dvpn.my/v2ray"
+                        connected_content.ids.qr_img.source = QRcode.generate_qr_code(uri, "v2ray")
+                    else:
+                        WG_PATH = path.join(ConfParams.KEYRINGDIR,"wg99.conf")
+                        with open(WG_PATH, "r") as f:
+                            wg_config = f.read()
+                        wg_config = wg_config.replace("127.0.0.1,", "")
+                        connected_content.ids.uri.text = wg_config
+                        connected_content.ids.warning_comment.text = "Scan the QR code or input the config with the official Wireguard app. You must do this before you disconnect in Meile. https://dvpn.my/wireguard"
+                        connected_content.ids.qr_img.source = QRcode.generate_wg_qr_code(WG_PATH, self.NodeCarouselData['moniker'])
+                            
                     self.dialog = MDDialog(
                         title="Connected!",
+                        type="custom",
+                        content_cls=connected_content,
                         md_bg_color=get_color_from_hex(MeileColors.BLACK),
                         buttons=[
-                                MDFlatButton(
+                                MDRaisedButton(
                                     text="OK",
                                     theme_text_color="Custom",
-                                    text_color=get_color_from_hex(MeileColors.MEILE),
+                                    text_color=get_color_from_hex(MeileColors.BLACK),
                                     on_release=partial(self.call_ip_get,
                                                        True,
                                                        Moniker
                                                        )
-                                ),])
+                                ),
+                            ]
+                    )
                     self.dialog.open()
+                    '''    
+                    else:
+                        self.dialog = MDDialog(
+                            title="Connected!",
+                            md_bg_color=get_color_from_hex(MeileColors.BLACK),
+                            buttons=[
+                                    MDFlatButton(
+                                        text="OK",
+                                        theme_text_color="Custom",
+                                        text_color=get_color_from_hex(MeileColors.MEILE),
+                                        on_release=partial(self.call_ip_get,
+                                                           True,
+                                                           Moniker
+                                                           )
+                                    ),])
+                        self.dialog.open()
+                        
+                    '''
                     
                 else:
                     self.remove_loading_widget2()
                     
                     self.dialog = MDDialog(
                         title="Something went wrong. Not connected: ",
-                        text=hwf.connected['status'] if hwf.connected['status'] else "Connection Error",
+                        text=self.hwf.connected['status'] if self.hwf.connected['status'] else "Connection Error",
                         md_bg_color=get_color_from_hex(MeileColors.BLACK),
                         buttons=[
                                 MDFlatButton(
@@ -554,6 +600,7 @@ class MainWindow(Screen):
             if self.PlanID:
                 ID       = self.PlanID
                 naddress = self.NodeCarouselData['address']
+                self.node_address = deepcopy(naddress)
                 proto    = self.NodeCarouselData['protocol']
                 deposit  = "dvpn"
                 PlanConnect = True
@@ -561,6 +608,7 @@ class MainWindow(Screen):
                 return
             elif self.SubCaller:
                 print("Calling for a session subscription")
+                proto = None
                 connect()
                     
             else:
@@ -581,6 +629,7 @@ class MainWindow(Screen):
         else:
             self.disconnect_from_node()
             self.HourlyFirstRun = True
+            self.reset_stopwatch()
             try: 
                 self.clock.cancel()
             except:
@@ -592,6 +641,56 @@ class MainWindow(Screen):
             except:
                 print("No Clock Bytes... Yet")
             self.clockBytes = None
+        
+    def toggle_time_widget(self):
+            if not self.is_running:
+                self.start_stopwatch()
+            else:
+                self.stop_stopwatch()
+                
+    def start_stopwatch(self):
+        self.is_running = True
+        if self.start_time == 0:
+            self.start_time = time()
+        Clock.schedule_interval(self.update_time, 1.0)
+        
+        
+    def stop_stopwatch(self):
+        self.is_running = False
+        Clock.unschedule(self.update_time)
+        
+    def update_time(self, dt):
+        if self.is_running:
+            self.elapsed_time = time() - self.start_time
+            self.time_widget.text = self.format_time(self.elapsed_time)
+        return True
+    
+    def format_time(self, seconds):
+        td = timedelta(seconds=int(seconds))
+        hours = td.seconds // 3600
+        minutes = (td.seconds % 3600) // 60
+        secs = td.seconds % 60
+        return f"{hours:02d}:{minutes:02d}:{secs:02d}"      
+                  
+    def reset_stopwatch(self):
+        self.is_running = False
+        self.start_time = 0
+        self.elapsed_time = 0
+        self.time_widget.text = '00:00:00'
+        Clock.unschedule(self.update_time)
+        
+    def qrcode_connection_sharing(self):
+        
+        share_content = ShareTypeDialog()
+        
+        self.dialog = MDDialog(
+            title="Protocol to Connection Share",
+            type="custom",
+            content_cls=share_content,
+            md_bg_color=get_color_from_hex(MeileColors.BLACK),
+        )
+        self.dialog.open()
+        
             
     def setTotalBytesClock(self):
         self.clockBytes = Clock.create_trigger(self.GetUpDownBytes,10)
@@ -751,6 +850,11 @@ class MainWindow(Screen):
         thread = Thread(target=lambda: self.nonblock_get_ip_address(self.get_ip_address, True))
         thread.start() 
         
+        if not getattr(self, '_update_checked', False):
+            self._update_checked = True
+            Thread(target=lambda: self._check_update_background(),daemon=True).start()
+            
+        
     def create_new_wallet(self):
         hwf = HandleWalletFunctions()
         
@@ -828,6 +932,8 @@ class MainWindow(Screen):
             self.map_widget_1    = IPAddressTextField()
             self.map_widget_2    = ConnectedNode()
             self.map_widget_3    = ProtectedLabel()
+            self.map_widget_4    = ProtocolTextField()
+            self.time_widget     = TimeLabel()
             self.upload_widget   = UploadLabel()
             self.download_widget = DownloadLabel()
             recenter             = MapCenterButton()
@@ -847,12 +953,15 @@ class MainWindow(Screen):
             layout.add_widget(self.map_widget_1)
             layout.add_widget(self.map_widget_2)
             layout.add_widget(self.map_widget_3)
+            layout.add_widget(self.map_widget_4)
             layout.add_widget(bw_label)
             layout.add_widget(self.quota)
             layout.add_widget(self.quota_pct)
             layout.add_widget(recenter)
             layout.add_widget(self.upload_widget)
             layout.add_widget(self.download_widget)
+            layout.add_widget(self.time_widget)
+            
 
             self.quota.value = 0
             self.quota_pct.text = "0%"
@@ -863,6 +972,20 @@ class MainWindow(Screen):
             self.AddCountryNodePins(False)
             self.MeileMapBuilt = True
             
+    def _check_update_background(self):
+        checker = UpdateChecker()
+        update_info = checker.check_for_update()
+
+        if update_info is not None:
+            Clock.schedule_once(lambda dt: self._show_update_dialog(update_info), 1.0)
+            
+    def _show_update_dialog(self, update_info):
+        message = format_update_message(update_info)
+        UpdateDialog(
+            message=message,
+            download_url=update_info["download_url"]
+        ).show()
+
     def check_boundaries(self, instance, value):
         if self.MeileMap.zoom == 1:
             self.recenter_map()
@@ -1131,6 +1254,7 @@ class MainWindow(Screen):
                     self.LatLong.append(loc[1])
             if not startup:        
                 self.zoom_country_map()
+                self.add_location_marker()
             return True
         except Exception as e:
             print(str(e))
@@ -1474,16 +1598,59 @@ class MainWindow(Screen):
             self.remove_loading_widget(None)
             self.close_sub_window()
             
+    def add_location_marker(self):
+        self.remove_location_marker()
+        Config = MeileGuiConfig()
+        
+        with open(path.join(ConfParams.KEYRINGDIR, 'ip-api.json'), 'r') as f:
+            data = f.read()
+            
+        ifJSON = json.loads(data)
+        if not ifJSON:
+            return False
+        
+        self.location_marker = MapMarkerPopup(lat=self.LatLong[0], lon=self.LatLong[1], source=Config.resource_path(MeileColors.LOC_MARKER))
+        self.location_marker.add_widget(MDMapCountryButton(text='%s, %s' %(ifJSON['city'], ifJSON['country']),
+                                                   theme_text_color="Custom",
+                                                   md_bg_color=get_color_from_hex(MeileColors.BLACK),
+                                                   text_color=(1,1,1,1),
+                                                   ))
+        
+        anim = (
+            Animation(opacity=0.4, duration=0.8, t='in_out_sine') +
+            Animation(opacity=1.0, duration=0.8, t='in_out_sine')
+        )
+        anim.repeat = True
+        anim.start(self.location_marker)
+        
+
+        self.Markers.append(self.location_marker)
+        self.MeileMap.add_marker(self.location_marker)
+    
+    def remove_location_marker(self):
+        if self.location_marker:
+            self.MeileMap.remove_marker(self.location_marker)
+            self.Markers.remove(self.Markers[-1])
+            
     def set_protected_icon(self, setbool, moniker):
         
         try: 
             if setbool:
                 self.map_widget_2.text = moniker
                 self.map_widget_3.text = "PROTECTED"
+                anim = (
+                    Animation(opacity=0.2, duration=0.8, t='in_out_sine') +
+                    Animation(opacity=1.0, duration=0.8, t='in_out_sine')
+                )
+                anim.repeat = True
+                anim.start(self.map_widget_3)
+                self.map_widget_4.text = self.NodeCarouselData['protocol']
                 self.ids.connect_button.source = self.return_connect_button("d")
             else:
                 self.map_widget_2.text = moniker
                 self.map_widget_3.text = "UNPROTECTED"
+                Animation.cancel_all(self.map_widget_3)
+                self.map_widget_4.text = ""
                 self.ids.connect_button.source = self.return_connect_button("c")
         except Exception as e:
             print(str(e))
@@ -1510,11 +1677,17 @@ class MainWindow(Screen):
     def return_connect_button(self, text):
         MeileConfig = MeileGuiConfig()
         if text == "c":
-            button_path = "../imgs/ConnectButton.png"
-            return MeileConfig.resource_path(button_path)
+            return MeileConfig.resource_path(MeileColors.CONNECT_BUTTON)
         else:
-            button_path = "../imgs/DisconnectButton.png"
-            return MeileConfig.resource_path(button_path)
+            return MeileConfig.resource_path(MeileColors.DISCONNECT_BUTTON)
+        
+    def closeDialog(self, inst):
+        try:
+            self.dialog.dismiss()
+            self.dialog = None
+        except:
+            print("Dialog is NONE")
+            return
         
 class WalletScreen(Screen):
     text = StringProperty()
@@ -2183,6 +2356,14 @@ class PlanScreen(MDBoxLayout):
         self.mw.carousel.remove_widget(self.mw.NodeWidget)
         self.mw.carousel.load_previous()
         
+    def get_plan_image(self, plan_type):
+        MeileConfig = MeileGuiConfig()
+        if plan_type == "b":
+            return MeileConfig.resource_path(MeileColors.BASIC_PLAN)
+        else:
+            return MeileConfig.resource_path(MeileColors.PREMIUM_PLAN)
+
+                
     def finished(self, *args):
         self.ids.rv.remove_widget(self.label)
         self.ids.rv.remove_widget(self.spinner)

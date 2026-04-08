@@ -49,11 +49,12 @@ from cli.sentinel import NodeTreeData
 from cli.btcpay import BTCPayDB
 import main.main as Meile
 from adapters import HTTPRequests
-from ui.interfaces import TXContent, ConnectionDialog, QRDialogContent, QRDialogZanoContent
+from ui.interfaces import TXContent, ConnectionDialog, QRDialogContent, QRDialogZanoContent, QRDialogV2RayContent
 from coin_api.get_price import GetPriceAPI
 from adapters.ChangeDNS import ChangeDNS
 from kivy.uix.recyclegridlayout import RecycleGridLayout
 from helpers.helpers import format_byte_size
+from helpers.v2ray import generate_v2ray_uri
 from fiat.stripe_pay.dist import scrtsxx
 from utils.qr import QRCode
 
@@ -164,6 +165,67 @@ class HyperlinkLabel(ButtonBehavior, MDLabel, HoverBehavior):
 
     def update_size(self, *args):
         self.size = self.texture_size  # Ensure label size matches text size
+     
+class ShareTypeDialog(BoxLayout):
+    
+    def select_share_type(self, instance, value, proto):
+        if not value:
+            return
+        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
+        mw.closeDialog(None)
+        #self.closeDialog()
+        iface = "wg99"
+        WG_PATH = path.join(ConfParams.KEYRINGDIR,f"{iface}.conf")
+        V2_PATH = path.join(ConfParams.KEYRINGDIR, "v2ray_config.json")
+        connected_content = QRDialogV2RayContent()
+        QRcode = QRCode()
+        if proto == "wg":
+            if path.isfile(WG_PATH):       
+                with open(WG_PATH, "r") as f:
+                    wg_config = f.read()
+                wg_config = wg_config.replace("127.0.0.1,", "")
+                connected_content.ids.uri.text = wg_config
+                connected_content.ids.qr_img.source = QRcode.generate_wg_qr_code(WG_PATH, "WireGuard")
+        
+            else:
+                connected_content.ids.uri.text = "Start a WireGuard connection in Meile first."
+                connected_content.ids.qr_img.source = QRcode.generate_qr_code("NULL", "wireguard")
+            connected_content.ids.warning_comment.text = 'Scan the QR code or import the wireguard config strings into the official WireGuard mobile app. You MUST first disconnect from the Wireguard node in Meile before connecting on mobile. https://dvpn.my/wireguard'
+            
+        else:
+            if path.isfile(V2_PATH):
+                uri = generate_v2ray_uri(path.join(ConfParams.KEYRINGDIR, "v2ray_config.json"))
+            else:
+                uri = "Start a V2Ray connection in Meile first."
+                
+            connected_content.ids.uri.text = uri
+            connected_content.ids.qr_img.source = QRcode.generate_qr_code(uri, "v2ray")
+            connected_content.ids.warning_comment.text = 'Scan the QR code or import the URI string into the V2RayNG mobile app. You must do this before you disconnect in Meile. https://dvpn.my/v2ray'
+           
+        
+        self.dialog = MDDialog(
+            title="Connection Sharing",
+            type="custom",
+            content_cls=connected_content,
+            md_bg_color=get_color_from_hex(MeileColors.BLACK),
+            buttons=[
+                    MDRaisedButton(
+                        text="OK",
+                        theme_text_color="Custom",
+                        text_color=get_color_from_hex(MeileColors.BLACK),
+                        on_release=self.closeDialog
+                    ),
+                ]
+        )
+        self.dialog.open()
+        
+    def closeDialog(self, inst):
+        try:
+            self.dialog.dismiss()
+            self.dialog = None
+        except:
+            print("Dialog is NONE")
+            return
     
 class SubTypeDialog(BoxLayout):
     
@@ -1921,6 +1983,7 @@ class PlanDetails(MDGridLayout):
     deposit = StringProperty()
     coin = StringProperty()
     
+    '''
     def filter_nodes(self):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         
@@ -1933,7 +1996,7 @@ class PlanDetails(MDGridLayout):
         mw.NodeTree.search(key=NodeKeys.NodesInfoKeys[1], value=plan_nodes_data, perfect_match=True, is_list=True)
         
         mw.refresh_country_recycler()
-    
+    '''
         
 class PlanAccordion(ButtonBehavior, MDGridLayout):
     node = ObjectProperty()  # Main node info
@@ -1994,22 +2057,9 @@ class PlanAccordion(ButtonBehavior, MDGridLayout):
 
     def finish_init(self, dt):    
         self.add_widget(self.node)        
-
+    '''    
     def on_release(self):
-        '''TODO:
-        in first logic statement populate a MainScreen dictionary
-        with current node address and ID.
-        THis will be used when the user clicks on the subscription
-        which expands it's contents, the MainScreen dictionary
-        will be used to connect to subscription when the user
-        clicks "Connect"
-        Second logic statement (else) should reset the MainScreen
-        dictionary to prior state.
-        
-        Use:
-        content.node_address
-        content.sub_id
-        '''
+
         if len(self.children) == 1:
             self.add_widget(self.content)
             self.open_panel()
@@ -2018,15 +2068,35 @@ class PlanAccordion(ButtonBehavior, MDGridLayout):
             self.remove_widget(self.children[0])
             self.close_panel()
             self.dispatch("on_close")
-
+    '''
+    def on_release(self):
+        if len(self.children) == 1:
+            self.open_panel()
+            self.dispatch("on_open")
+        else:
+            self.close_panel()
+            self.dispatch("on_close")
+            
+    @delayable
     def on_open(self, *args):
         """Called when a panel is opened."""
         self.mw.PlanID = self.content.id
+        
+        t = Thread(target=lambda: self.filter_nodes())
+        t.start()
+        
+        while t.is_alive():
+            print(".", end="")
+            yield 0.5
+        
+        self.mw.refresh_country_recycler()
+        
 
     def on_close(self, *args):
         """Called when a panel is closed."""
         self.mw.PlanID = None
-
+        self.mw.restore_results()
+    '''
     def close_panel(self) -> None:
         """Method closes the panel."""
 
@@ -2043,7 +2113,8 @@ class PlanAccordion(ButtonBehavior, MDGridLayout):
         )
         anim.bind(on_complete=self._disable_anim)
         anim.start(self)
-
+        
+    
     def open_panel(self, *args) -> None:
         """Method opens a panel."""
 
@@ -2061,17 +2132,72 @@ class PlanAccordion(ButtonBehavior, MDGridLayout):
         # anim.bind(on_complete=self._add_content)
         anim.bind(on_complete=self._disable_anim)
         anim.start(self)
-
+    '''
+    def close_panel(self) -> None:
+        if self._anim_playing:
+            return
+    
+        self._anim_playing = True
+        self._state = "close"
+    
+        # Store the target height BEFORE removing
+        target_h = self.node.height
+    
+        anim = Animation(
+            height=target_h,
+            d=self.closing_time,
+            t=self.closing_transition,
+        )
+        anim.bind(on_complete=self._on_close_complete)
+        anim.start(self)    
+        
+    def _on_close_complete(self, *args):
+        self._anim_playing = False
+        # Remove content AFTER animation finishes
+        if self.content in self.children:
+            self.remove_widget(self.content)
+    
+    def open_panel(self, *args) -> None:
+        if self._anim_playing:
+            return
+    
+        self._anim_playing = True
+        self._state = "open"
+    
+        # Add content first so we can measure it
+        if self.content not in self.children:
+            self.add_widget(self.content)
+    
+        # Current node height + content height
+        target_h = self.node.height + self.content.height
+    
+        # Temporarily keep current height so animation works
+        current_h = self.node.height
+        self.height = current_h
+    
+        anim = Animation(
+            height=target_h,
+            d=self.opening_time,
+            t=self.opening_transition,
+        )
+        anim.bind(on_complete=self._disable_anim)
+        anim.start(self)
+        
+    
     def get_state(self) -> str:
         """Returns the state of panel. Can be `close` or `open` ."""
 
         return self._state
-
+    '''
     def add_widget(self, widget, index=0, canvas=None):
         if isinstance(widget, NodeDetails):
             self.height = widget.height
         return super().add_widget(widget)
-
+    '''
+    def add_widget(self, widget, index=0, canvas=None):
+        # Don't override height here — let the animation handle it
+        return super().add_widget(widget, index=index, canvas=canvas)
+    
     def _disable_anim(self, *args):
         self._anim_playing = False
 
@@ -2079,6 +2205,19 @@ class PlanAccordion(ButtonBehavior, MDGridLayout):
         if self.content:
             self.content.y = dp(72)
             self.add_widget(self.content)
+            
+    def filter_nodes(self):
+        
+        try: 
+            Request = HTTPRequests.MakeRequest()
+            http = Request.hadapter()
+            req = http.get(HTTParams.PLAN_API + HTTParams.API_PLANS_NODES % self.content.uuid, auth=HTTPBasicAuth(scrtsxx.PLANUSERNAME, scrtsxx.PLANPASSWORD))
+        
+            plan_nodes_data = req.json() if req.status_code == 200 else None
+                
+            self.mw.NodeTree.search(key=NodeKeys.NodesInfoKeys[1], value=plan_nodes_data, perfect_match=True, is_list=True)
+        except:
+            pass
 
 
 class NodeCarousel(MDBoxLayout):

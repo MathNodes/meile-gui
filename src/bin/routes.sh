@@ -26,7 +26,7 @@ if [[ ${STATE} = "up" ]]; then
         # get v2ray proxy IP
         PROXY_IP=`cat /home/${USER}/.meile-gui/v2ray.proxy`
         #echo ${PROXY_IP} > /home/${USER}/.meile-gui/v2ray.proxy
-        echo ${PROXY_IP}
+        echo "Proxy IP: ${PROXY_IP}"
         sleep 2
         
         # add tun interface
