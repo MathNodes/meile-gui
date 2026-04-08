@@ -1116,7 +1116,7 @@ WindowManager:
             adaptive_height: True
             padding: [15, 25, 0, 25] 
             AsyncImage:
-                source: "../imgs/plans_basic.png" 
+                source: root.get_plan_image("b")
                 size_hint: 1, None
                 size: dp(215), dp(396)
                 pos_hint: {"center_x": 0.5}
@@ -1124,7 +1124,7 @@ WindowManager:
                 keep_ratio: True
                 padding: [15, 10, 15, 10]
             AsyncImage:
-                source: "../imgs/plans_premium.png" 
+                source: root.get_plan_image("p")
                 size_hint: 1, None
                 size: dp(225), dp(396)
                 pos_hint: {"center_x": 0.5}

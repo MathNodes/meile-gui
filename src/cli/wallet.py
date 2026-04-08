@@ -7,7 +7,7 @@ import random
 import re
 import platform
 from time import sleep 
-from os import path, remove
+from os import path, remove, chdir
 from urllib.parse import urlparse
 from urllib3.exceptions import NewConnectionError
 from grpc import RpcError, StatusCode
@@ -1373,51 +1373,51 @@ class HandleWalletFunctions():
             # >> hardcoded = proxy port >> 1080
             # >> hardcoded = v2ray file >> /home/${USER}/.meile-gui/v2ray_config.json
 
-                tuniface = False
-                v2ray_handler = V2RayHandler(f"{v2ray_tun2routes_connect_bash} up")
-                v2ray_handler.start_daemon()
-                sleep(14)
+            tuniface = False
+            v2ray_handler = V2RayHandler(f"{v2ray_tun2routes_connect_bash} up")
+            v2ray_handler.start_daemon()
+            sleep(14)
 
-                if pltfrm != Arch.OSX:
-                    for iface in psutil.net_if_addrs().keys():
-                        if "tun" in iface:
-                            tuniface = True
-                            break
-                else:
-                    if psutil.net_if_addrs().get("utun123"):
-                        self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid, "result": True, "status" : "utun123"}
-                        print(self.connected)
+            if pltfrm != Arch.OSX:
+                for iface in psutil.net_if_addrs().keys():
+                    if "tun" in iface:
                         tuniface = True
-
-                if tuniface is True:
-                    self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid, "result": True, "status" : tuniface}
+                        break
+            else:
+                if psutil.net_if_addrs().get("utun123"):
+                    self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid, "result": True, "status" : "utun123"}
                     print(self.connected)
-                    conndesc.write("Checking network connection...\n")
+                    tuniface = True
+
+            if tuniface is True:
+                self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid, "result": True, "status" : tuniface}
+                print(self.connected)
+                conndesc.write("Checking network connection...\n")
+                conndesc.flush()
+                sleep(1)
+                self.get_ip_address()
+                sleep(1)
+                conndesc.close()
+                # os x
+                chdir(MeileConfig.BASEDIR)
+                return
+            else:
+                try:
+                    conndesc.write("Error connecting to V2Ray node...\n")
                     conndesc.flush()
-                    sleep(1)
-                    self.get_ip_address()
-                    sleep(1)
+                    v2ray_handler.v2ray_script = f"{v2ray_tun2routes_connect_bash} down"
+                    v2ray_handler.kill_daemon()
                     conndesc.close()
-                    # os x
-                    #chdir(MeileConfig.BASEDIR)
-                    return
-                else:
-                    try:
-                        conndesc.write("Error connecting to V2Ray node...\n")
-                        conndesc.flush()
-                        v2ray_handler.v2ray_script = f"{v2ray_tun2routes_connect_bash} down"
-                        v2ray_handler.kill_daemon()
-                        conndesc.close()
-                    except Exception as e:
-                        print(str(e))
+                except Exception as e:
+                    print(str(e))
 
-                    self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid,  "result": False, "status": f"Error connecting to v2ray node: {tuniface}"}
-                    print(self.connected)
-                    # os x
-                    #chdir(MeileConfig.BASEDIR)
-                    return
+                self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid,  "result": False, "status": f"Error connecting to v2ray node: {tuniface}"}
+                print(self.connected)
+                # os x
+                chdir(MeileConfig.BASEDIR)
+                return
         # os x
-        #chdir(MeileConfig.BASEDIR)
+        chdir(MeileConfig.BASEDIR)
         self.connected = {"v2ray_pid" : None,  "result": False, "status": "Bad Response from Node"}
         return   
            

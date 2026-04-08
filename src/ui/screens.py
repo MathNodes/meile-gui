@@ -1677,11 +1677,9 @@ class MainWindow(Screen):
     def return_connect_button(self, text):
         MeileConfig = MeileGuiConfig()
         if text == "c":
-            button_path = "../imgs/ConnectButton.png"
-            return MeileConfig.resource_path(button_path)
+            return MeileConfig.resource_path(MeileColors.CONNECT_BUTTON)
         else:
-            button_path = "../imgs/DisconnectButton.png"
-            return MeileConfig.resource_path(button_path)
+            return MeileConfig.resource_path(MeileColors.DISCONNECT_BUTTON)
         
     def closeDialog(self, inst):
         try:
@@ -2358,6 +2356,14 @@ class PlanScreen(MDBoxLayout):
         self.mw.carousel.remove_widget(self.mw.NodeWidget)
         self.mw.carousel.load_previous()
         
+    def get_plan_image(self, plan_type):
+        MeileConfig = MeileGuiConfig()
+        if plan_type == "b":
+            return MeileConfig.resource_path(MeileColors.BASIC_PLAN)
+        else:
+            return MeileConfig.resource_path(MeileColors.PREMIUM_PLAN)
+
+                
     def finished(self, *args):
         self.ids.rv.remove_widget(self.label)
         self.ids.rv.remove_widget(self.spinner)
