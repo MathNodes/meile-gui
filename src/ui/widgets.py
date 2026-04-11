@@ -2590,15 +2590,14 @@ class NodeCarousel(MDBoxLayout):
             Request = HTTPRequests.MakeRequest(TIMEOUT=2.7)
             http = Request.hadapter()
             r = http.get(HTTParams.HEALTH_CHECK % address)
-            health_check = r.json()['result']
-            print(health_check)
-            if 'status' in health_check and health_check['status'] != 1:
-                return "Failed"
-            if any(k in health_check for k in [
-                "info_fetch_error", "config_exchange_error", "location_fetch_error"
-            ]):
-                return "Failed"
-            return "Passed"
+            if r.status_code == 200:
+                data = r.json()['data']
+                if data['isHealthy']:
+                    return "Passed"
+                else:
+                    return "Failed"
+            else:
+                return "Error"
         except:
             return "Error"   
         
