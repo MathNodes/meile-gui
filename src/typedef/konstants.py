@@ -107,7 +107,8 @@ class HTTParams():
     #APIURL                 = "http://128.199.90.172:1317"
     SERVER_URL             = "https://aimokoivunen.mathnodes.com"
     #GRPC                   = "grpc+http://128.199.90.172:9090/"
-    HEALTH_CHECK           = "https://api.health.sentinel.co/v1/records/%s"
+    #HEALTH_CHECK           = "https://api.health.sentinel.co/v1/records/%s"
+    HEALTH_CHECK           = "https://api.sentnodes.com/v2/node/%s"
     NODE_SCORE_ENDPOINT    = "/api/nodescores"
     NODE_LOCATION_ENDPOINT = "/api/nodelocations"
     NODE_TYPE_ENDPOINT     = "/api/nodetypes"
@@ -606,7 +607,7 @@ class IBCTokens():
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
-    VERSION = "v2.5.1"
+    VERSION = "v2.5.4"
     BUILD   = "17748518213"
     RootTag = "SENTINEL"
     GITHUB_API_URL = "https://api.github.com/repos/MathNodes/meile-gui/releases/latest"
