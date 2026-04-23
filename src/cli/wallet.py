@@ -61,6 +61,9 @@ class HandleWalletFunctions():
         
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
+        self.sdk = None
+        self.returncode = None
+        self.connected = {"v2ray_pid" : None, "result" : False, "status" : None, "session_id" : None}
         
         # Migrate existing wallet to v2
         address = CONFIG['wallet'].get('address', None)
@@ -314,6 +317,54 @@ class HandleWalletFunctions():
 
         return(False, "Tx error")
     """
+    
+    def _ensure_sdk(self, grpcaddr, grpcport, private_key):
+        """Initialize SDK once per instance, with error handling."""
+        if self.sdk is not None:
+            return True
+    
+        try:
+            self.sdk = SDKInstance(
+                grpcaddr, int(grpcport), secret=private_key, ssl=True
+            )
+            return True
+        except ConnectionError:
+            message = "gRPC unresponsive. Try again later or switch gRPCs."
+            self.returncode = (
+                False,
+                message,
+            )
+            self.connected = {"v2ray_pid" : None, 
+                                  "result" : False, 
+                                  "status" : message, 
+                                  "session_id" : None}
+            return False
+        except grpc._channel._InactiveRpcError as e:
+            status_code = e.code()
+            if status_code == StatusCode.NOT_FOUND:
+                message = '''
+                Wallet not found on blockchain. Please verify you have 
+                sent coins to your wallet to activate it. Then try your 
+                subscription again.'''
+                self.returncode = (
+                    False,
+                    message,
+                )
+                self.connected = {"v2ray_pid" : None,  
+                                      "result": False, 
+                                      "status" : message, 
+                                      "session_id" : None}
+            else:
+                message = "gRPC unresponsive. Try again later or switch gRPCs."
+                self.returncode = (
+                    False,
+                    message,
+                )
+                self.connected = {"v2ray_pid" : None, 
+                                      "result" : False, 
+                                      "status" : message, 
+                                      "session_id" : None}
+            return False
 
     def send_2plan_wallet(self, KEYNAME, plan_id, DENOM, amount_required, tax: bool=False, bal=None):
         if not KEYNAME:
@@ -328,7 +379,7 @@ class HandleWalletFunctions():
 
         kr = self.__keyring(PASSWORD)
         private_key = kr.get_password("meile-gui", KEYNAME)
-
+        '''
         try:
             sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key, ssl=True)
         except ConnectionError:
@@ -340,9 +391,14 @@ class HandleWalletFunctions():
             if status_code == StatusCode.NOT_FOUND:
                 message = "Wallet not found on blockchain. Please verify you have sent coins to your wallet to activate it. Then try your subscription again"
                 return (False, {'hash' : None, 'success' : False, 'message' : message})
-                
+        '''
+        if not self._ensure_sdk(grpcaddr, grpcport, private_key):
+            message = "Could not instantiate the SDK"
+            self.returncode = (False, message)
+            return    
+            
         if not tax:        
-            balance = self.get_balance(sdk._account.address)
+            balance = self.get_balance(self.sdk._account.address)
             print(balance)
         else:
             balance = bal
@@ -367,7 +423,8 @@ class HandleWalletFunctions():
         # Get balance automatically return udvpn ad dvpn
         if ubalance < amount_required:
             message = f"Balance is too low, required: {amount_required}{DENOM}"
-            return (False, {'hash' : None, 'success' : False, 'message' : message})
+            self.returncode = (False, message)
+            return
         
         gas = random.randint(ConfParams.GAS-50000, 314159)
         
@@ -379,7 +436,7 @@ class HandleWalletFunctions():
         )
 
         tx = Transaction(
-            account=sdk._account,
+            account=self.sdk._account,
             fee=Coin(denom=tx_params.denom, amount=f"{tx_params.fee_amount}"),
             gas=tx_params.gas,
             protobuf="sentinel",
@@ -391,7 +448,7 @@ class HandleWalletFunctions():
         tax_wallet = TAX_WALLET[random.randint(0, len(TAX_WALLET)-1)]
         tx.add_msg(
             tx_type='transfer',
-            sender=sdk._account,
+            sender=self.sdk._account,
             recipient=MEILE_PLAN_WALLET if not tax else tax_wallet,
             # receipient=sdk._account.address,  # TODO: debug send to myself
             amount=int(amount_required),
@@ -400,47 +457,41 @@ class HandleWalletFunctions():
             # denom="udvpn"  # TODO: debug
         )
         # # Required before each tx of we get account sequence mismatch, expected 945, got 944: incorrect account sequence
-        sdk._client.load_account_data(account=sdk._account)
+        self.sdk._client.load_account_data(account=self.sdk._account)
         # inplace, auto-update gas with update=True
         # auto calculate the gas only if was not already passed as args:
         if tx_params.gas == 0:
-            sdk._client.estimate_gas(
+            self.sdk._client.estimate_gas(
                 transaction=tx, update=True, multiplier=tx_params.gas_multiplier
             )
 
         tx_height = 0
         try:
-            tx = sdk._client.broadcast_transaction(transaction=tx)
+            tx = self.sdk._client.broadcast_transaction(transaction=tx)
         except RpcError as rpc_error:
             details = rpc_error.details()
             print("details", details)
             print("code", rpc_error.code())
             print("debug_error_string", rpc_error.debug_error_string())
-            return (False, {'hash' : None, 'success' : False, 'message' : details})
+            self.returncode = (False, details)
+            return
 
         if tx.get("log", None) is None:
-            try: 
-                tx_response = sdk.nodes.wait_for_tx(tx["hash"], timeout=25)
-            except (mospy.exceptions.clients.TransactionTimeout,
-                    mospy.exceptions.clients.NodeException,
-                    mospy.exceptions.clients.NodeTimeoutException)  as e:
-                return (False, {'hash' : None, 'success' : False, 'message' : "GRPC Error"})
-            
-            tx_height = tx_response.get("txResponse", {}).get("height", 0) if isinstance(tx_response, dict) else tx_response.tx_response.height
-        '''
-        # F***ck we have always a unit issue ...
-        # Rollback to original dvpn amount :(
-        if DENOM == "udvpn":
-            DENOM = "dvpn"
-            amount_required = round(amount_required / IBCTokens.SATOSHI, 4)
-        else:
-            # Change denom to 'human' readable one
-            token_ibc = {v: k for k, v in IBCTokens.IBCUNITTOKEN.items()}
-            # token_ibc (v: k) is a dict like: {'ibc/31FEE1A2A9F9C01113F90BD0BBCCE8FD6BBB8585FAF109A2101827DD1D5B95B8': 'uscrt', 'ibc/A8C2D23A1E6F95DA4E48BA349667E322BD7A6C996D8A4AAE8BA72E190F3D1477': 'uatom',
-            DENOM = token_ibc.get(DENOM, DENOM)
-        '''
+            if not tax:
+                try: 
+                    tx_response = self.sdk.nodes.wait_for_tx(tx["hash"], timeout=25)
+                except (mospy.exceptions.clients.TransactionTimeout,
+                        mospy.exceptions.clients.NodeException,
+                        mospy.exceptions.clients.NodeTimeoutException)  as e:
+                    self.returncode = (False, "GRPC Error")
+                    return
+                
+                tx_height = tx_response.get("txResponse", {}).get("height", 0) if isinstance(tx_response, dict) else tx_response.tx_response.height
+            else:
+                tx_height = 0
+
         message = f"Succefully sent {amount_required}{DENOM} at height: {tx_height} for plan id: {plan_id}." if tx.get("log", None) is None else tx["log"]
-        return (True, {'hash' : tx.get("hash", None), 'success' : tx.get("log", None) is None, 'message' : message})
+        self.returncode =  (True, message)
 
     def subscribe(self, KEYNAME, NODE, DEPOSIT, GB, hourly):
         self.returncode = (False, 1337)
@@ -461,7 +512,7 @@ class HandleWalletFunctions():
         
         kr = self.__keyring(PASSWORD)
         private_key = kr.get_password("meile-gui", KEYNAME)
-        
+        '''
         try:
             sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key, ssl=True)
         # SDK raises ConnectionError, otherwise it is a grpc module exception
@@ -477,8 +528,13 @@ class HandleWalletFunctions():
             else:
                 self.returncode = (False, "gRPC unresponsive. Try again later or switch gRPCs.")
                 return
-    
-        balance = self.get_balance(sdk._account.address)
+        '''
+        if not self._ensure_sdk(grpcaddr, grpcport, private_key):
+            message = "Could not instantiate the SDK"
+            self.returncode = (False, message)
+            return 
+        
+        balance = self.get_balance(self.sdk._account.address)
         
         amount_required = float(DEPOSIT.replace(DENOM, "")) * IBCTokens.SATOSHI
         if DENOM == "udvpn":
@@ -497,12 +553,12 @@ class HandleWalletFunctions():
             pass
         
         try:
-            result = sdk.nodes.QueryNode(address=NODE)
+            result = self.sdk.nodes.QueryNode(address=NODE)
         except (mospy.exceptions.clients.TransactionTimeout,
                 mospy.exceptions.clients.NodeException,
                 mospy.exceptions.clients.NodeTimeoutException) as e:
             print(str(e))
-            message = "gRPC Error!"
+            message = "gRPC unresponsive. Try again later or switch gRPCs."
             return(False, message)
         
         k = 0
@@ -652,44 +708,25 @@ class HandleWalletFunctions():
         print(f"Nodes for ring sessions: {addresses}")    
         return addresses     
     
-    def fetch_credentials(self, address, session_id, type, conndesc, renew_sdk: bool = False):
-        if renew_sdk:
-            CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
-            PASSWORD = CONFIG['wallet'].get('password', '')
-            KEYNAME = CONFIG['wallet'].get('keyname', '')
-            self.GRPC     = CONFIG['network'].get('grpc', HTTParams.GRPC)
-            grpcaddr, grpcport = self.GRPC.split(":")
-            kr = self.__keyring(PASSWORD)
-            private_key = kr.get_password("meile-gui", KEYNAME)
-            try:
-                self.sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key, ssl=True)
-            except ConnectionError:
-                message = "gRPC unresponsive. Try again later or switch gRPCs."
-                self.connected = {"v2ray_pid" : None, 
-                                  "result" : False, 
-                                  "status" : message, 
-                                  "session_id" : None}
-                return
-            except grpc._channel._InactiveRpcError as e:
-                status_code = e.code()
-                
-                if status_code == StatusCode.NOT_FOUND:
-                    message = "Wallet not found on blockchain. Please verify you have sent coins to your wallet to activate it. Then try your subscription again"
-                    self.connected = {"v2ray_pid" : None,  
-                                      "result": False, 
-                                      "status" : message, 
-                                      "session_id" : None}
-                    print(self.connected)
-                    return
-                else:
-                    message = "gRPC Error!"
-                    self.connected = {"v2ray_pid" : None, 
-                                      "result" : False, 
-                                      "status" : message, 
-                                      "session_id" : None}
-                    return
-                
+    def fetch_credentials(self, address, session_id, type, conndesc):
+        #if renew_sdk:
+            #CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
+            #PASSWORD = CONFIG['wallet'].get('password', '')
+            #KEYNAME = CONFIG['wallet'].get('keyname', '')
+            #self.GRPC     = CONFIG['network'].get('grpc', HTTParams.GRPC)
+            #grpcaddr, grpcport = self.GRPC.split(":")
+            #kr = self.__keyring(PASSWORD)
+            #private_key = kr.get_password("meile-gui", KEYNAME)
+            
         
+        #if not self._ensure_sdk(grpcaddr, grpcport, private_key):
+        #    message = "Could not instantiate the SDK"
+        #    self.returncode = (False, message)
+        #    self.connected = {"v2ray_pid" : None, 
+        #                      "result" : False, 
+        #                      "status" : message, 
+        #                      "session_id" : None}
+        #    return
             
         node = self.sdk.nodes.QueryNode(address)
     
@@ -750,7 +787,8 @@ class HandleWalletFunctions():
                 self.connected = {
                     "v2ray_pid": None,
                     "result": False,
-                    "status": status
+                    "status": status,
+                    "session_id" : session_id
                 }
                 print(self.connected)
                 return None, None, None
@@ -764,7 +802,8 @@ class HandleWalletFunctions():
                 self.connected = {
                     "v2ray_pid": None,
                     "result": False,
-                    "status": status
+                    "status": status,
+                    "session_id" : session_id
                 }
                 print(self.connected)
                 return None, None, None
@@ -783,7 +822,8 @@ class HandleWalletFunctions():
             self.connected = {
                 "v2ray_pid": None,
                 "result": False,
-                "status": response.text
+                "status": response.text,
+                "session_id" : session_id
             }
             print(self.connected)
             return None, None, None
@@ -878,6 +918,65 @@ class HandleWalletFunctions():
     
         return config_file
     
+    
+    def write_v2ray_config(self, response, decode):
+        decode = json.loads(decode)
+        print(decode)
+        proxy_protocol = ["vless", "vmess"]
+        transport_protocol = ["domainsocket","gun","grpc","http","mkcp","quic","tcp","websocket"]
+        #transport_security = ["none", "tls"]
+        
+        vmess_address = resolve_address(response['result']['addrs'][0])
+        vmess_port = int(decode['metadata'][0]['port'])
+        pp = proxy_protocol[decode['metadata'][0]['proxy_protocol']-1]
+        tp = transport_protocol[decode['metadata'][0]['transport_protocol']-1]
+        #ts = transport_security[decode['metadata'][0]['transport_security']-1]
+
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.bind(('', 0))
+        api_port = sock.getsockname()[1]
+        sock.close()
+
+        print("api_port", api_port)
+        print("vmess_port", vmess_port)
+        print("vmess_address", vmess_address)
+        print("vmess_uid", f"{self.uid_16}")
+        print("vmess_transport", tp)
+        print("proxy_protocol", pp)
+        
+        if self.FRAGMENT:
+            v2ray_config = V2RayFragmentConfiguration(
+                api_port=api_port,
+                vmess_port=vmess_port,
+                vmess_address=vmess_address,
+                vmess_uid=f"{self.uid_16}",
+                vmess_transport=tp,
+                proxy_port=1080,
+                proxy_protocol=pp
+            )
+        else:
+            v2ray_config = V2RayConfiguration(
+                api_port=api_port,
+                vmess_port=vmess_port,
+                vmess_address=vmess_address,
+                vmess_uid=f"{self.uid_16}",
+                vmess_transport=tp,
+                proxy_port=1080,
+                proxy_protocol=pp
+            )
+        # ConfParams.KEYRINGDIR (.meile-gui)
+        config_file = path.join(ConfParams.KEYRINGDIR, "v2ray_config.json")
+        if path.isfile(config_file) is True:
+            remove(config_file)
+        with open(config_file, "w", encoding="utf-8") as f:
+            f.write(json.dumps(v2ray_config.get(), indent=4))
+            
+        proxy_ip_file = path.join(ConfParams.KEYRINGDIR, "v2ray.proxy")
+        if path.isfile(proxy_ip_file) is True:
+            remove(proxy_ip_file)
+        with open(proxy_ip_file, "w", encoding="utf-8") as f:
+            f.write(vmess_address)
+    
     def connect(self, 
                 ID, 
                 address, 
@@ -911,7 +1010,7 @@ class HandleWalletFunctions():
 
         kr = self.__keyring(PASSWORD)
         private_key = kr.get_password("meile-gui", KEYNAME)
-        
+        '''
         try:
             self.sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key, ssl=True)
         except ConnectionError:
@@ -939,6 +1038,11 @@ class HandleWalletFunctions():
                                   "status" : message, 
                                   "session_id" : None}
                 return
+        '''
+        if not self._ensure_sdk(grpcaddr, grpcport, private_key):
+            message = "Could not instantiate the SDK"
+            self.returncode = (False, message)
+            return
             
         regex_denom = r'^([\d\.]+)(.*)$'
         regres = re.match(regex_denom, deposit)
@@ -1037,6 +1141,7 @@ class HandleWalletFunctions():
                                                price=sprice, 
                                                gigabytes=0 if hourly else int(units),
                                                hours=int(units) if hourly else 0,
+                                               next_sequence = True,
                                                tx_params=tx_params)
             except RpcError as rpc_error:
                 details = rpc_error.details()
@@ -1080,165 +1185,10 @@ class HandleWalletFunctions():
         session_id = search_attribute(tx_response,
                                       "sentinel.subscription.v3.EventCreateSession" if plan else "sentinel.node.v3.EventCreateSession", 
                                       "session_id")
-
-        '''
-        from_event = {
-            "subscription_id": search_attribute(tx_response, "sentinel.subscription.v3.EventCreateSession", "subscription_id"),
-            "address": search_attribute(tx_response, "sentinel.subscription.v3.EventCreateSession", "acc_address"),
-            "node_address": search_attribute(tx_response, "sentinel.subscription.v3.EventCreateSession", "node_address"),
-        }
-        '''
-        
-        # Sanity Check. Not needed
-        #assert from_event["subscription_id"] == ID and from_event["address"] == sdk._account.address and from_event["node_address"] == address
        
         sleep(0.2)  # Wait a few seconds....
         # The sleep is required because the session_id could not be fetched from the node / rpc
-        '''
-        node = sdk.nodes.QueryNode(address)
         
-        # Get Client PubKey
-        pub_key_bytes = sdk._account.public_key.key
-        pub_key_b64 = base64.b64encode(pub_key_bytes).decode("utf-8")  # Base64 encode
-        pub_key = f"secp256k1:{pub_key_b64}"
-        
-        if type == "WireGuard":
-            wgkey = WgKey()
-            key = wgkey.pubkey
-            data = {'public_key' : key}
-            data_bytes = json.dumps(data).encode('utf-8')
-        else:  # NodeType.V2RAY
-            uid_16 = uuid.uuid4()
-            data = {'uuid': list(uid_16.bytes)}
-            data_bytes = json.dumps(data).encode('utf-8')
-        
-        for _ in range(0, 10):  # bumped as 3 wasn't enough
-            sk = ecdsa.SigningKey.from_string(sdk._account.private_key, curve=ecdsa.SECP256k1, hashfunc=hashlib.sha256)
-
-            bige_session = int(session_id).to_bytes(8, byteorder="big")
-            msg = bige_session + data_bytes  
-            signature = sk.sign(msg)
-            
-            payload = {
-                "data" : base64.b64encode(data_bytes).decode("utf-8"),
-                "id" : int(session_id),
-                "pub_key": pub_key,
-                "signature": base64.b64encode(signature).decode("utf-8"),
-            }
-            
-            print(f"\nPayload: {json.dumps(payload, indent=4)}")
-            conndesc.write("Fetching credentials from node...\n")
-            conndesc.flush()
-            try:
-                response = requests.post(
-                    f"https://{node.remote_addrs[0]}/",
-                    json=payload,
-                    headers={"Content-Type": "application/json; charset=utf-8"},
-                    verify=False,
-                    timeout=17
-                )
-            except (ReadTimeout, ConnectionError, ConnectionRefusedError) as e:
-                print(str(e))
-                status = "Timeout while trying to fetch credentials from node...Exiting\n"
-                conndesc.write(status)
-                conndesc.flush()
-                conndesc.close()
-                self.connected = {"v2ray_pid" : None,  "result": False, "status" : status}
-                print(self.connected)
-                return
-            except NewConnectionError as e:
-                print(str(e))
-                status = "Timeout while trying to fetch credentials from node...Exiting\n"
-                conndesc.write(status)
-                conndesc.flush()
-                conndesc.close()
-                self.connected = {"v2ray_pid" : None,  "result": False, "status" : status}
-                print(self.connected)
-                return
-            
-            print(response, response.text)
-            
-            if response.ok is True:
-                break
-
-            sleep(random.uniform(0.5, 1))
-            # Continue iteration only for code == 4 (invalid signature)
-            if response.json()["error"]["code"] != 2:
-                break
-
-        if response.ok is False:
-            self.connected = {"v2ray_pid" : None,  "result": False, "status" : response.text}
-            print(self.connected)
-            return
-
-        response = response.json()
-        if response.get("success", True) is True:
-            response_dict = response["result"]
-            decode = base64.b64decode(response_dict['data']).decode('utf-8')
-            print(f"\nDecode: {decode}")
-            print(f"\nlength: {len(decode)}")
-            
-            if type == "WireGuard":
-                if len(decode) < 100:
-                    self.connected = {"v2ray_pid" : None,  "result": False, "status" : f"Incorrect result size: {len(decode)}"}
-                    print(self.connected)
-                    return
-                decode = json.loads(decode)
-                conndesc.write("Bringing up dVPN tunnel...\n")
-                conndesc.flush()
-                
-                ipv4_address = decode['addrs'][0]
-                
-                if len(decode['addrs']) > 1:
-                    ipv6_address = decode['addrs'][1]
-                else:
-                    ipv6_address = ""
-                    
-                # Here should check if client is using ipv6. This will give ipv4
-                host = response['result']['addrs'][0]
-                
-                port = decode['metadata'][0]['port']
-                peer_endpoint = f"{host}:{port}"
-
-                print("ipv4_address", ipv4_address)
-                print("ipv6_address", ipv6_address)
-                print("host", host)
-                print("port", port)
-                print("peer_endpoint", peer_endpoint)
-
-                
-                public_key = decode['metadata'][0]['public_key']
-                print("public_key", public_key)
-
-                config = configparser.ConfigParser()
-                config.optionxform = str
-
-                sock = socket.socket()
-                sock.bind(('', 0))
-                listen_port = sock.getsockname()[1]
-                sock.close()
-
-                config.add_section("Interface")
-                config.set("Interface", "Address", ",".join([ipv4_address, ipv6_address]) if ipv6_address else ipv4_address)
-                config.set("Interface", "ListenPort", f"{listen_port}")
-                config.set("Interface", "PrivateKey", wgkey.privkey)
-                config.set("Interface", "DNS", DNS if pltfrm == Arch.LINUX else",".join(["1.1.1.1", DNS, "127.0.0.1", natural_gateway(ipv4_address), "1.0.0.1"]))
-                config.add_section("Peer")
-                config.set("Peer", "PublicKey", public_key)
-                config.set("Peer", "Endpoint", peer_endpoint)
-                config.set("Peer", "AllowedIPs", ",".join(["0.0.0.0/0","::/0"]))
-                config.set("Peer", "PersistentKeepalive", "25")  # TODO: 15(?) from golang file
-
-                iface = "wg99"
-                # ConfParams.KEYRINGDIR (.meile-gui)
-                config_file = path.join(ConfParams.KEYRINGDIR, f"{iface}.conf")
-
-                if path.isfile(config_file) is True:
-                    remove(config_file)
-
-                with open(config_file, "w", encoding="utf-8") as f:
-                    config.write(f)
-        '''
         response, decode, wgkey = self.fetch_credentials(
              address, session_id, type, conndesc
         )
@@ -1306,78 +1256,35 @@ class HandleWalletFunctions():
                 return
                     
         else:  # v2ray
-            # os x
-            chdir(MeileConfig.BASEBINDIR) 
+            if pltfrm == Arch.OSX:
+                chdir(MeileConfig.BASEBINDIR) 
             conndesc.write("Bringing up V2Ray socks tunnel...\n")
             conndesc.flush()
-            decode = json.loads(decode)
-            print(decode)
             
-            proxy_protocol = ["vless", "vmess"]
-            transport_protocol = ["domainsocket","gun","grpc","http","mkcp","quic","tcp","websocket"]
-            #transport_security = ["none", "tls"]
+            self.write_v2ray_config(response, decode)
             
-            vmess_address = resolve_address(response['result']['addrs'][0])
-            vmess_port = int(decode['metadata'][0]['port'])
-            pp = proxy_protocol[decode['metadata'][0]['proxy_protocol']-1]
-            tp = transport_protocol[decode['metadata'][0]['transport_protocol']-1]
-            #tp = transport_protocol[1]
-            #ts = transport_security[decode['metadata'][0]['transport_security']-1]
-
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.bind(('', 0))
-            api_port = sock.getsockname()[1]
-            sock.close()
-
-            print("api_port", api_port)
-            print("vmess_port", vmess_port)
-            print("vmess_address", vmess_address)
-            print("vmess_uid", f"{self.uid_16}")
-            print("vmess_transport", tp)
-            print("proxy_protocol", pp)
-            
-            if self.FRAGMENT:
-                v2ray_config = V2RayFragmentConfiguration(
-                    api_port=api_port,
-                    vmess_port=vmess_port,
-                    vmess_address=vmess_address,
-                    vmess_uid=f"{self.uid_16}",
-                    vmess_transport=tp,
-                    proxy_port=1080,
-                    proxy_protocol=pp
-                )
-            else:
-                v2ray_config = V2RayConfiguration(
-                    api_port=api_port,
-                    vmess_port=vmess_port,
-                    vmess_address=vmess_address,
-                    vmess_uid=f"{self.uid_16}",
-                    vmess_transport=tp,
-                    proxy_port=1080,
-                    proxy_protocol=pp
-                )
-            # ConfParams.KEYRINGDIR (.meile-gui)
-            config_file = path.join(ConfParams.KEYRINGDIR, "v2ray_config.json")
-            if path.isfile(config_file) is True:
-                remove(config_file)
-            with open(config_file, "w", encoding="utf-8") as f:
-                f.write(json.dumps(v2ray_config.get(), indent=4))
-                
-            proxy_ip_file = path.join(ConfParams.KEYRINGDIR, "v2ray.proxy")
-            if path.isfile(proxy_ip_file) is True:
-                remove(proxy_ip_file)
-            with open(proxy_ip_file, "w", encoding="utf-8") as f:
-                f.write(vmess_address)
-                
-            # v2ray_tun2routes_connect_bash
-            # >> hardcoded = proxy port >> 1080
-            # >> hardcoded = v2ray file >> /home/${USER}/.meile-gui/v2ray_config.json
-
             tuniface = False
             v2ray_handler = V2RayHandler(f"{v2ray_tun2routes_connect_bash} up")
-            v2ray_handler.start_daemon()
-            sleep(14)
+            if not v2ray_handler.start_daemon():
+                try:
+                    conndesc.write("Error connecting to V2Ray node...\n")
+                    conndesc.flush()
+                    v2ray_handler.v2ray_script = f"{v2ray_tun2routes_connect_bash} down"
+                    v2ray_handler.kill_daemon()
+                    conndesc.close()
+                except Exception as e:
+                    print(str(e))
 
+                self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid,
+                                  "result": False, 
+                                  "status": f"Error connecting to v2ray node: {tuniface}",
+                                  "session_id" : session_id}
+                print(self.connected)
+                
+                if pltfrm == Arch.OSX:
+                    chdir(MeileConfig.BASEDIR)
+                return
+                
             if pltfrm != Arch.OSX:
                 for iface in psutil.net_if_addrs().keys():
                     if "tun" in iface:
@@ -1385,21 +1292,32 @@ class HandleWalletFunctions():
                         break
             else:
                 if psutil.net_if_addrs().get("utun123"):
-                    self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid, "result": True, "status" : "utun123"}
+                    self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid, 
+                                      "result": True, 
+                                      "status" : "utun123",
+                                      "session_id" : session_id}
                     print(self.connected)
                     tuniface = True
 
             if tuniface is True:
-                self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid, "result": True, "status" : tuniface}
                 print(self.connected)
                 conndesc.write("Checking network connection...\n")
                 conndesc.flush()
                 sleep(1)
-                self.get_ip_address()
+                if self.get_ip_address():
+                    self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid, 
+                                      "result": True, 
+                                      "status" : tuniface, 
+                                      "session_id" : session_id}
+                else:
+                    self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid, 
+                                      "result": False, 
+                                      "status" : "Error establising connection to internet. Try a differnt node.", 
+                                      "session_id" : session_id}
                 sleep(1)
                 conndesc.close()
-                # os x
-                chdir(MeileConfig.BASEDIR)
+                if pltfrm == Arch.OSX:
+                    chdir(MeileConfig.BASEDIR)
                 return
             else:
                 try:
@@ -1411,14 +1329,20 @@ class HandleWalletFunctions():
                 except Exception as e:
                     print(str(e))
 
-                self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid,  "result": False, "status": f"Error connecting to v2ray node: {tuniface}"}
+                self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid,  
+                                  "result": False, 
+                                  "status": f"Error connecting to v2ray node: {tuniface}",
+                                  "session_id" : session_id}
                 print(self.connected)
-                # os x
-                chdir(MeileConfig.BASEDIR)
+                if pltfrm == Arch.OSX:
+                    chdir(MeileConfig.BASEDIR)
                 return
-        # os x
-        chdir(MeileConfig.BASEDIR)
-        self.connected = {"v2ray_pid" : None,  "result": False, "status": "Bad Response from Node"}
+        if pltfrm == Arch.OSX:
+            chdir(MeileConfig.BASEDIR)
+        self.connected = {"v2ray_pid" : None,  
+                          "result": False, 
+                          "status": "Bad Response from Node", 
+                          "session_id" : session_id}
         return   
            
     def get_balance(self, address):
@@ -1463,7 +1387,7 @@ class HandleWalletFunctions():
             ifconfig = resolver.DNSRequest()
             if ifconfig:
                 print("%s:%s" % (HTTParams.IPAPIDNS, ifconfig))
-                Request = HTTPRequests.MakeRequest(TIMEOUT=7)
+                Request = HTTPRequests.MakeRequest(TIMEOUT=4)
                 http = Request.hadapter()
                 req = http.get(HTTParams.IPAPI)
                 ifJSON = req.json()
