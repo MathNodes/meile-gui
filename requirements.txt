@@ -91,7 +91,7 @@ safe-pysha3==1.0.4
 screeninfo==0.8.1
 SecretStorage==3.3.3
 sentinel_protobuf==0.4.3
-sentinel_sdk @ file:///Users/freqnik/git/MathNodes/sentinel-python-sdk/dist/sentinel_sdk-0.1.0-py3-none-any.whl#sha256=f2857a00ee9283a9c91088d9d6833b333eca6c8872f571d68d6def089a455b80
+sentinel_sdk==0.1.4
 six==1.16.0
 sniffio==1.3.1
 stripe==4.2.0

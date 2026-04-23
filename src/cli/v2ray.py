@@ -171,10 +171,12 @@ class V2RayHandler:
             "sleep 1"
         ]
         '''
-        privileged_commands = ["launchctl bootstrap system /Library/LaunchDaemons/app.meile.xray.plist"]
+        privileged_commands = ["launchctl enable /Library/LaunchDaemons/app.meile.xray.plist",
+                               "launchctl bootstrap system /Library/LaunchDaemons/app.meile.xray.plist"]
         privileged_commands.append("sleep 3")
         privileged_commands.append("curl --preproxy socks5://localhost:1080 -s https://icanhazip.com")
         privileged_commands.append("sleep 1")
+        privileged_commands.append("launchctl enable /Library/LaunchDaemons/app.meile.tun2socks.plist")
         privileged_commands.append("launchctl bootstrap system /Library/LaunchDaemons/app.meile.tun2socks.plist")
         privileged_commands.append("sleep 2")
         privileged_commands.append("ifconfig utun123 198.18.0.1 198.18.0.1 up")
@@ -208,7 +210,7 @@ class V2RayHandler:
             privileged_commands.append(f"route delete -net {network} 198.18.0.1")
         
         privileged_commands.append("ifconfig utun123 198.18.0.1 198.18.0.1 down")
-        privileged_commands.append("launchctl bootout system /Library/LaunchDaemons/app.meile.xray.plist ; launchctl bootout system /Library/LaunchDaemons/app.meile.tun2socks.plist")
+        privileged_commands.append("launchctl bootout system /Library/LaunchDaemons/app.meile.xray.plist ; launchctl bootout system /Library/LaunchDaemons/app.meile.tun2socks.plist ; launchctl disable /Library/LaunchDaemons/app.meile.xray.plist ; launchctl disable Library/LaunchDaemons/app.meile.tun2socks.plist ")
         #privileged_commands.append("launchctl bootout system /Library/LaunchDaemons/app.meile.tun2socks.plist")
 
         self.run_privileged_script(privileged_commands)

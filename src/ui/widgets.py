@@ -1545,17 +1545,26 @@ class PlanRow(MDGridLayout):
         KEYNAME = CONFIG['wallet'].get('keyname', '')
 
         hwf = HandleWalletFunctions()
-        result, output = hwf.send_2plan_wallet(KEYNAME, self.plan_id, mu_coin, int(round(float(deposit),4)*IBCTokens.SATOSHI))
-        print("result", result)
-        print("output", output)
+        hwf_thread = Thread(target=lambda: hwf.send_2plan_wallet(KEYNAME, self.plan_id, mu_coin, int(round(float(deposit),4)*IBCTokens.SATOSHI)))
+        hwf_thread.start()
+        
+        while hwf_thread.is_alive():
+            print(".", end="")
+            yield 0.5
+        if hwf.returncode and len(hwf.returncode) == 2:
+            result, output = hwf.returncode
+            print("result", result)
+            print("output", output)
 
-        if result is True:
+        if result:
             if self.dialog:
                 self.dialog.dismiss()
             self.dialog = None
-            self.dialog = MDDialog(title=output["message"] + " Finishing up...",
+            self.dialog = MDDialog(title="Finishing up...",
                                    md_bg_color=get_color_from_hex(MeileColors.BLACK)
                                    )
+            if isinstance(output, str):
+                self.dialog.text = output
             self.dialog.open()
             yield 0.6
             on_success()
@@ -1564,7 +1573,7 @@ class PlanRow(MDGridLayout):
                 self.dialog.dismiss()
 
             self.dialog = MDDialog(
-                title = ("Success" if output["success"] else "Failed") if isinstance(output, dict) else ("Error: %s" % "No wallet found!" if output == 1337 else output),
+                title = "Success" if result else "Failed",
                 md_bg_color=get_color_from_hex(MeileColors.BLACK),
                 buttons=[
                         MDFlatButton(
@@ -1573,8 +1582,8 @@ class PlanRow(MDGridLayout):
                             text_color=MeileColors.MEILE,
                             on_release=self.closeDialog
                         ),])
-            if isinstance(output, dict) is True:
-                self.dialog.text = output["message"]
+            if isinstance(output, str):
+                self.dialog.text = output
             self.dialog.open()
 
     def pay_meile_plan_with_btcpay(self, usd):
