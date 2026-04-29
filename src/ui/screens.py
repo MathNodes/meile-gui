@@ -1894,7 +1894,7 @@ class WalletScreen(Screen):
             self.scrt_text = str(CoinDict['scrt']) + " scrt"
             self.atom_text = str(CoinDict['atom']) + " atom"
             self.osmo_text = str(CoinDict['osmo']) + " osmo"
-            self.dvpn_text = str(CoinDict['dvpn']) + " dvpn"
+            self.dvpn_text = str(CoinDict['dvpn']) + " P2P"
             self.nam_text  = str(CoinDict['nam'])  + " nam"
             #self.dvpn_text = str(CoinDict['tsent']) + " tsent"
             data = [ 
@@ -1912,7 +1912,7 @@ class WalletScreen(Screen):
             self.scrt_text = str("0.0") + " scrt"
             self.atom_text = str("0.0") + " atom"
             self.osmo_text = str("0.0") + " osmo"
-            self.dvpn_text = str("0.0") + " dvpn"
+            self.dvpn_text = str("0.0") + " P2P"
             self.nam_text = str("0.0") + " nam"
             #self.dvpn_text = str("0.0") + " tsent"
             

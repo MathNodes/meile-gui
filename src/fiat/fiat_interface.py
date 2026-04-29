@@ -29,7 +29,7 @@ import fiat.stripe_pay.charge as Charge
 from fiat.stripe_pay.dist import scrtsxx
 
 from typedef.win import WindowNames
-from typedef.konstants import HTTParams
+from typedef.konstants import HTTParams, IBCTokens
 from ui.interfaces import TXContent
 from conf.meile_config import MeileGuiConfig
 import main.main as Meile
@@ -121,7 +121,7 @@ class FiatInterface(Screen):
         menu_items = [
             {
                 "viewclass": "OneLineListItem",
-                "text": f"{i}",
+                "text": IBCTokens.COIN_DISPLAY.get(i, i),
                 "height": dp(56),
                 "on_release": lambda x=f"{i}": self.set_token(x),
             } for i in self.TokenOptions
@@ -173,7 +173,7 @@ class FiatInterface(Screen):
                     self.ProcessingDialog("You did not accept the MathNodes purchasing policy.", True, False) 
                     return
             else:
-                self.ProcessingDialog("We could not get an accurate DVPN price at the moment. Please try your order again later.", True, False)
+                self.ProcessingDialog("We could not get an accurate P2P price at the moment. Please try your order again later.", True, False)
                 return 
             
     def DynamicCoinOptions(self):
@@ -254,7 +254,7 @@ class FiatInterface(Screen):
                 }
                     
     def set_token_price(self, token, dt):
-        self.ids.dvpn_price.text = "%s: $" % token.upper() + str(self.get_token_price(token))
+        self.ids.dvpn_price.text = "%s: $" % IBCTokens.COIN_DISPLAY.get(token, token.upper()) + str(self.get_token_price(token))
          
     def get_token_price(self, token):
         try:
@@ -283,7 +283,7 @@ class FiatInterface(Screen):
         except:
             pass 
         
-        self.ids.dvpn_price.text = "%s: $" % token.upper() + str(round(float(token_price)*1.05, 8))
+        self.ids.dvpn_price.text = "%s: $" % IBCTokens.COIN_DISPLAY.get(token, token.upper()) + str(round(float(token_price)*1.05, 8))
         return round(float(token_price)*1.05, 8)
         
         
@@ -483,7 +483,7 @@ class FiatInterface(Screen):
             return STATUS
     
     def set_token(self, text_item):
-        self.ids.token.set_item(text_item)
+        self.ids.token.set_item(IBCTokens.COIN_DISPLAY.get(text_item, text_item))
         self.menu_token.dismiss()
         self.menu_dvpn_qty.clear_widgets()
         self.SelectedCoin = text_item
@@ -567,11 +567,11 @@ class FiatInterface(Screen):
         self.ids.charge_amount.text = "Total Charge: $" + str(round((self.get_token_price(token)*self.get_token_qty(token))+self.GetSurchargeAmount(),2))
         
         if token == self.TokenOptions[0]:
-            self.ids.coin_qty.text = "QTY: " + str(self.DVPNOptions[self.idvpn]) + " " + self.TokenOptions[0]
+            self.ids.coin_qty.text = "QTY: " + str(self.DVPNOptions[self.idvpn]) + " " + IBCTokens.COIN_DISPLAY.get(self.TokenOptions[0], self.TokenOptions[0])
         elif token == self.TokenOptions[1]:
-            self.ids.coin_qty.text = "QTY: " + str(self.DECOptions[self.idvpn]) + " " + self.TokenOptions[1]
+            self.ids.coin_qty.text = "QTY: " + str(self.DECOptions[self.idvpn]) + " " + IBCTokens.COIN_DISPLAY.get(self.TokenOptions[1], self.TokenOptions[1])
         else:
-            self.ids.coin_qty.text = "QTY: " + str(self.SCRTOptions[self.idvpn]) + " " + self.TokenOptions[2]
+            self.ids.coin_qty.text = "QTY: " + str(self.SCRTOptions[self.idvpn]) + " " + IBCTokens.COIN_DISPLAY.get(self.TokenOptions[2], self.TokenOptions[2])
     
     def get_token_qty(self, token):
         if token == self.TokenOptions[0]:

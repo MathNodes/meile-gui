@@ -2116,9 +2116,9 @@ WindowManager:
         MDDropDownItem:
             id: drop_item
             pos_hint: {'center_x': .5, 'center_y': .5}
-            text: "dvpn"
+            text: "P2P"
             on_release: root.menu.open()
-            
+
         MDLabel:
             id: usd_price
             text: "$0.00"
@@ -2127,7 +2127,7 @@ WindowManager:
             font_size: "14sp"
             font_name: root.get_font()
             text_color: get_color_from_hex(MeileColors.MEILE)
-            
+
 <PlanSubscribeContent>
     orientation: "vertical"
     spacing: "1sp"
@@ -2175,7 +2175,7 @@ WindowManager:
                     font_size: sp(12)
                 TooltipMDIconButton:
                     icon: "help-circle"
-                    tooltip_text: "Pay with Wallet in DVPN or IBC enabled coins"
+                    tooltip_text: "Pay with Wallet in P2P or IBC enabled coins"
 
             MDBoxLayout:
                 orientation: "horizontal"
@@ -2258,7 +2258,7 @@ WindowManager:
         MDDropDownItem:
             id: drop_item
             pos_hint: {'center_x': .5, 'center_y': .5}
-            text: "dvpn"
+            text: "P2P"
             on_release: root.menu.open()
             
         MDLabel:
@@ -2450,7 +2450,7 @@ WindowManager:
                     text_color: get_color_from_hex(MeileColors.MEILE)
                 MDLabel:
                     font_name: "DejaVuSans"
-                    text: "There are two primary ways to receive tokens to purchase dVPN (the currency) subscriptions and utilize the network. 1.) You get the DVPN token on a exchange and send it to your wallet address. Current exchanges are KuCoin, HotBit, Polarity and Osmosis. Once you purchase the tokens on the exchange, you need to withdraw them to your address listed in the wallet section of this app. The tokens should appear within minutes after a withdrawal and you can begin purchasing and subscribing to Sentinel dVPN nodes through Meile. 2.) You can purchase the currency used for Meile dVPN right in our app via the 'RE-FUEL' button within the wallet. These funds will be handled by our servers and the payment processing is handled by Stripe. Once you successfully complete a purchase, your funds should appear in your wallet within minutes of a successful purchase through our app. This is the easiest method to using Meile dVPN."
+                    text: "There are two primary ways to receive tokens to purchase P2P (the currency) subscriptions and utilize the network. 1.) You get the P2P token on a exchange and send it to your wallet address. Current exchanges are KuCoin, HotBit, Polarity and Osmosis. Once you purchase the tokens on the exchange, you need to withdraw them to your address listed in the wallet section of this app. The tokens should appear within minutes after a withdrawal and you can begin purchasing and subscribing to Sentinel dVPN nodes through Meile. 2.) You can purchase the currency used for Meile dVPN right in our app via the 'RE-FUEL' button within the wallet. These funds will be handled by our servers and the payment processing is handled by Stripe. Once you successfully complete a purchase, your funds should appear in your wallet within minutes of a successful purchase through our app. This is the easiest method to using Meile dVPN."
                     size_hint_y: None
                     height: self.texture_size[1]
                     size_hint_x: 1
@@ -2593,7 +2593,7 @@ WindowManager:
                 
                 MDLabel:
                     font_name: "DejaVuSans"
-                    text: "Sentinel is a Layer-1 blockchain within the Cosmos ecosystem. It was founded in 2017, and provides privacy services, such as decentralized VPN to users both of traditional commerce and blockchain enthusiasts. It's native coin ticker is $DVPN. "
+                    text: "Sentinel is a Layer-1 blockchain within the Cosmos ecosystem. It was founded in 2017, and provides privacy services, such as decentralized VPN to users both of traditional commerce and blockchain enthusiasts. It's native coin ticker is $P2P. "
                     size_hint_y: None
                     height: self.texture_size[1]
                     size_hint_x: 1
@@ -2722,7 +2722,7 @@ WindowManager:
                 id: token
                 pos_hint: {"x": .355, "center_y": .60}
                 text_color: get_color_from_hex(MeileColors.MEILE)
-                text: 'dvpn'
+                text: 'P2P'
                 on_release: root.menu_token.open()
                       
             MDDropDownItem:
@@ -2748,7 +2748,7 @@ WindowManager:
                     
             MDLabel:
                 id: dvpn_price
-                text: "DVPN: $" + str(root.get_token_price('dvpn'))
+                text: "P2P: $" + str(root.get_token_price('dvpn'))
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex(MeileColors.MEILE)
                 pos_hint: {"x": .40, "center_y": .48}
@@ -2763,7 +2763,7 @@ WindowManager:
                 font_size: "16sp"
             MDLabel:
                 id: coin_qty
-                text:"QTY: " + str(root.DVPNOptions[root.idvpn]) + " dvpn"
+                text:"QTY: " + str(root.DVPNOptions[root.idvpn]) + " P2P"
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex(MeileColors.MEILE)
                 pos_hint: {"x": .40, "center_y": .38}

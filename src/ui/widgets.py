@@ -296,12 +296,12 @@ class SubscribeContent(BoxLayout):
         self.price_api = GetPriceAPI()
         self.price_cache = {}
         self.parse_coin_deposit(IBCTokens.ibc_coins[0])
-        
+
         menu_items = [
             {
                 "viewclass": "IconListItem",
                 "icon": "circle-multiple",
-                "text": f"{i}",
+                "text": IBCTokens.COIN_DISPLAY.get(i, i),
                 "height": dp(56),
                 "on_release": lambda x=f"{i}": self.set_item(x),
             } for i in IBCTokens.ibc_coins #+ ['xmr']
@@ -331,8 +331,8 @@ class SubscribeContent(BoxLayout):
         return Config.resource_path(MeileColors.FONT_FACE)
     
     def set_item(self, text_item):
-        self.ids.drop_item.set_item(text_item)
-    
+        self.ids.drop_item.set_item(IBCTokens.COIN_DISPLAY.get(text_item, text_item))
+
         def after_deposit_updated(deposit_text):
             try:
                 amount = float(deposit_text)
@@ -495,7 +495,7 @@ class PlanSubscribeContent(BoxLayout):
             {
                 "viewclass": "IconListItem",
                 "icon": "circle-multiple",
-                "text": f"{i}",
+                "text": IBCTokens.COIN_DISPLAY.get(i, i),
                 "height": dp(56),
                 "on_release": lambda x=f"{i}": self.set_item(x),
             } for i in IBCTokens.ibc_coins
@@ -561,12 +561,12 @@ class PlanSubscribeContent(BoxLayout):
                 self.set_item("arrr")
                 
             else:
-                self.ids.drop_item.text = "dvpn"
+                self.ids.drop_item.text = "P2P"
                 menu_items = [
                     {
                         "viewclass": "IconListItem",
                         "icon": "circle-multiple",
-                        "text": f"{i}",
+                        "text": IBCTokens.COIN_DISPLAY.get(i, i),
                         "height": dp(56),
                         "on_release": lambda x=f"{i}": self.set_item(x),
                     } for i in IBCTokens.ibc_coins
@@ -575,8 +575,8 @@ class PlanSubscribeContent(BoxLayout):
                 self.set_item(IBCTokens.ibc_coins[0])
                 
     def set_item(self, text_item):
-        self.ids.drop_item.set_item(text_item)
-    
+        self.ids.drop_item.set_item(IBCTokens.COIN_DISPLAY.get(text_item, text_item))
+
         def on_deposit_updated(deposit_text):
             match = re.match(r"([0-9]+(?:\.[0-9]+)?)", deposit_text)
             amt = match.groups()[0] if match else 0.0

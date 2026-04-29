@@ -558,6 +558,7 @@ class IBCTokens():
     IBCUNITTOKEN = {'uscrt' : IBCSCRT, 'uatom' : IBCATOM , 'uosmo' : IBCOSMO, 'unam' : IBCNAM, 'udvpn' : 'udvpn', 'tsent' : 'tsent'}
     mu_coins     = ["udvpn", "uscrt", "uosmo", "uatom", "unam"]
     ibc_coins    = ["dvpn", "scrt", "osmo", "atom", "nam"]
+    COIN_DISPLAY = {'dvpn': 'P2P'}
     ibc_mu_coins  = {"tsent" : "tsent", 
                      "dvpn"  : "udvpn", 
                      "scrt"  : "uscrt", 
