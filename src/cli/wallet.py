@@ -407,8 +407,8 @@ class HandleWalletFunctions():
         amount_required = int(amount_required)  # Just in case was passed as str
 
         # F***ck we have always a unit issue ...
-        if DENOM == "dvpn":
-            print(f"Denom is a dvpn, convert as udvpn, amount_required: {amount_required}dvpn")
+        if DENOM == "p2p":
+            print(f"Denom is a p2p, convert as udvpn, amount_required: {amount_required}p2p")
             DENOM = "udvpn"
             ubalance = balance.get("dvpn", 0) * IBCTokens.SATOSHI
         else:
