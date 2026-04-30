@@ -22,10 +22,11 @@ from helpers.aes import SecureSeed
 from helpers.v2ray import generate_v2ray_uri
 from helpers.update_checker import UpdateChecker, format_update_message
 from ui.update_dialog import UpdateDialog
+from coin_api.get_price import GetPriceAPI
 
 from kivy.properties import BooleanProperty, StringProperty, ColorProperty,ObjectProperty, NumericProperty
 from kivy.uix.screenmanager import Screen, SlideTransition
-from kivymd.uix.button import MDFlatButton, MDRaisedButton,MDTextButton, MDFillRoundFlatButton
+from kivymd.uix.button import MDFlatButton, MDRaisedButton
 from kivymd.uix.dialog import MDDialog
 from kivy.clock import Clock, mainthread
 from kivyoav.delayed import delayable
@@ -36,18 +37,15 @@ from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.behaviors import HoverBehavior
 #from kivymd.theming import ThemableBehavior
 from kivy.core.window import Window
-#from kivymd.uix.behaviors.elevation import RectangularElevationBehavior
 from kivy_garden.mapview import MapMarkerPopup, MapView, MapSource
 from kivymd.toast import toast
 from kivy.uix.carousel import Carousel
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivy.uix.floatlayout import FloatLayout
-from kivymd.uix.anchorlayout import MDAnchorLayout
 from kivymd.uix.label.label import MDLabel
 from kivy.animation import Animation
 from kivy.app import App
 
-import requests
 from requests.auth import HTTPBasicAuth
 import sys
 import copy
@@ -58,7 +56,6 @@ from functools import partial
 from shutil import rmtree
 from os import path,geteuid, chdir, remove
 from threading import Thread
-import threading
 from unidecode import unidecode
 from datetime import datetime, timedelta
 import json
@@ -1720,7 +1717,7 @@ class WalletScreen(Screen):
                                    width_mult=3,
                                    position="center",
                                    max_height=max_height,
-                                   background_color=get_color_from_hex(MeileColors.BLACK))
+                                   md_bg_color=get_color_from_hex(MeileColors.BLACK))
         Clock.schedule_once(self.build)
 
     def build(self, dt):
@@ -1894,11 +1891,11 @@ class WalletScreen(Screen):
             self.scrt_text = str(CoinDict['scrt']) + " scrt"
             self.atom_text = str(CoinDict['atom']) + " atom"
             self.osmo_text = str(CoinDict['osmo']) + " osmo"
-            self.dvpn_text = str(CoinDict['dvpn']) + " dvpn"
+            self.dvpn_text = str(CoinDict['dvpn']) + " p2p"
             self.nam_text  = str(CoinDict['nam'])  + " nam"
             #self.dvpn_text = str(CoinDict['tsent']) + " tsent"
             data = [ 
-                { "logo" : self.return_coin_logo("dvpn"), "text" : self.dvpn_text },
+                { "logo" : self.return_coin_logo("p2p"), "text" : self.dvpn_text },
                 { "logo" : self.return_coin_logo("scrt"), "text" : self.scrt_text },
                 { "logo" : self.return_coin_logo("atom"), "text" : self.atom_text },
                 { "logo" : self.return_coin_logo("osmo"), "text" : self.osmo_text },
@@ -1912,7 +1909,7 @@ class WalletScreen(Screen):
             self.scrt_text = str("0.0") + " scrt"
             self.atom_text = str("0.0") + " atom"
             self.osmo_text = str("0.0") + " osmo"
-            self.dvpn_text = str("0.0") + " dvpn"
+            self.dvpn_text = str("0.0") + " p2p"
             self.nam_text = str("0.0") + " nam"
             #self.dvpn_text = str("0.0") + " tsent"
             
@@ -1945,7 +1942,7 @@ class WalletScreen(Screen):
         Meile.app.root.transistion = SlideTransition(direction="down")
         Meile.app.root.current = WindowNames.MAIN_WINDOW
 
-
+# deprecated
 class SubscriptionScreen(MDBoxLayout):
 
     def __init__(self, node_tree,  **kwargs):
@@ -2293,11 +2290,13 @@ class PlanScreen(MDBoxLayout):
         for pd in plan_data:
             req3 = http.get(HTTParams.PLAN_API + HTTParams.API_PLANS_NODES % pd['uuid'], auth=HTTPBasicAuth(scrtsxx.PLANUSERNAME, scrtsxx.PLANPASSWORD))
             plan_nodes = req3.json() if req3.ok and req3.status_code != 404 else []
-            no_of_nodes = len(plan_nodes)
+            no_of_nodes = 0
             countries = []
             no_of_countries = 0
             for node in plan_nodes:
                 node_data = self.mw.NodeTree.NodeTree.get_node(node)
+                if node_data:
+                    no_of_nodes += 1
                 try: 
                     if node_data.data['Country'] in countries:
                         continue
@@ -2311,9 +2310,10 @@ class PlanScreen(MDBoxLayout):
             self.PlanData.append(pd)
             self.TotalCountries.append(no_of_countries)
             self.TotalNodes.append(no_of_nodes)
-            #self.build_plans( pd, user_enrolled_plans, no_of_nodes, no_of_countries)
-        
-        #self.finish_loading()
+            
+        price_api = GetPriceAPI()
+        self.p2p_price = price_api.get_usd("p2p")['price']
+
         Clock.schedule_once(self.finished)
         
     def build_plans(self, data, plans, no_of_nodes, no_of_countries):
@@ -2326,12 +2326,15 @@ class PlanScreen(MDBoxLayout):
 
         # In the future cost should be both in dvpn and euro (fuck usd)
         # Can use coin_api to get dvpn price and translate cost
+        
+        plancost = int(data['plan_price'] / IBCTokens.SATOSHI)
+        plancost_usd = round(float(plancost * self.p2p_price),2)
         item = PlanAccordion(
             node=PlanRow(
                 plan_name=data['plan_name'],
                 num_of_nodes=str(no_of_nodes),
                 num_of_countries=str(no_of_countries),
-                cost=str(round(float(data['plan_price'] / IBCTokens.SATOSHI),2)) + data['plan_denom'],
+                cost=str(plancost) + data['plan_denom'] + f"[color=fcb711]    ${plancost_usd}[/color]",
                 logo_image=data['logo'],
                 uuid=data['uuid'],
                 id=str(plan['subscription_id']) if plan else str(0),

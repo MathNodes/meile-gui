@@ -555,20 +555,24 @@ class IBCTokens():
     ZANO_WALLET = "ZxDEXCMwvpwirJujwjZExHfKFEqNjMWdjLw5MGYXa5KxScvcsr2BNGm8TFyk4mvFAhAPtWh54tadWNgS5CxPAqXX1fpoQLkJJ"
     
     IBCCOINS     = [{'uscrt' : IBCSCRT}, {'uatom' : IBCATOM}, {'uosmo' : IBCOSMO}, {'uknwn' :IBCUNKWN}, {'unam' : IBCNAM}]
-    UNITTOKEN    = {'uscrt' : 'scrt', 'uatom' : 'atom' , 'uosmo' : 'osmo', 'udvpn' : 'dvpn', 'unam' : 'nam', 'tsent' : 'tsent'}
+    UNITTOKEN    = {'uscrt' : 'scrt', 'uatom' : 'atom' , 'uosmo' : 'osmo', 'udvpn' : 'p2p', 'unam' : 'nam', 'tsent' : 'tsent'}
     IBCUNITTOKEN = {'uscrt' : IBCSCRT, 'uatom' : IBCATOM , 'uosmo' : IBCOSMO, 'unam' : IBCNAM, 'udvpn' : 'udvpn', 'tsent' : 'tsent'}
     mu_coins     = ["udvpn", "uscrt", "uosmo", "uatom", "unam"]
-    ibc_coins    = ["dvpn", "scrt", "osmo", "atom", "nam"]
+    ibc_coins    = ["p2p", "scrt", "osmo", "atom", "nam"]
+    COIN_DISPLAY = {'dvpn': 'P2P'}
     ibc_mu_coins  = {"tsent" : "tsent", 
                      "dvpn"  : "udvpn", 
                      "scrt"  : "uscrt", 
                      "osmo"  : "uosmo", 
                      "atom"  : "uatom", 
-                     "nam"   : "unam"}
+                     "nam"   : "unam",
+                     "p2p"   : "udvpn"}
+    
     CSAPPMAP     = {'atom' : 'cosmos', 
                     'scrt' : 'secret', 
                     'osmo' : 'osmosis', 
                     'dvpn' : 'sentinel', 
+                    'p2p'  : 'sentinel',
                     'beam' : 'beam', 
                     'firo' : 'zcoin',
                     'pivx' : 'pivx',
@@ -604,7 +608,7 @@ class IBCTokens():
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
-    VERSION = "v2.5.4"
+    VERSION = "v2.5.5"
     BUILD   = "17748518213"
     RootTag = "SENTINEL"
     GITHUB_API_URL = "https://api.github.com/repos/MathNodes/meile-gui/releases/latest"

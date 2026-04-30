@@ -418,7 +418,7 @@ class SubscribeContent(BoxLayout):
         except AttributeError:
             return " GB"   
             
-    def refresh_price_async(self, mu_coin="dvpn", cache=30, callback=None):
+    def refresh_price_async(self, mu_coin="p2p", cache=30, callback=None):
         def fetch_price():
             try:
                 if mu_coin not in self.price_cache or time.time() - self.price_cache[mu_coin]["time"] > cache:
@@ -483,7 +483,7 @@ class PlanSubscribeContent(BoxLayout):
         self.price_cache = {}
 
         self.price_text = price
-        self.parse_coin_deposit("dvpn")
+        self.parse_coin_deposit("p2p")
 
         self.white_label = white_label
         self.nnodes = str(nnodes)
@@ -561,7 +561,7 @@ class PlanSubscribeContent(BoxLayout):
                 self.set_item("arrr")
                 
             else:
-                self.ids.drop_item.text = "dvpn"
+                self.ids.drop_item.text = "p2p"
                 menu_items = [
                     {
                         "viewclass": "IconListItem",
@@ -595,12 +595,12 @@ class PlanSubscribeContent(BoxLayout):
         self.deposit_callback = callback
     
         def after_dvpn_fetched(dt):
-            if mu_coin != "dvpn":
+            if mu_coin != "p2p":
                 self.refresh_price_async(mu_coin, cache=30, callback=self.after_both_prices_fetched)
             else:
                 self.after_both_prices_fetched(None)
     
-        self.refresh_price_async("dvpn", cache=30, callback=after_dvpn_fetched)
+        self.refresh_price_async("p2p", cache=30, callback=after_dvpn_fetched)
     
 
 
@@ -608,14 +608,15 @@ class PlanSubscribeContent(BoxLayout):
         mu_coin = self.selected_mu_coin
         price_text = self.price_text_copy
         month = int(self.ids.slider1.value)
+        price = price_text.split("p2p")[0]
     
         try:
-            if mu_coin == "dvpn":
-                value = float(price_text.rstrip(mu_coin).strip())
+            if mu_coin == "p2p":
+                value = float(price.strip())
             else:
                 value = round(
-                    float(price_text.rstrip("dvpn").strip()) *
-                    self.price_cache["dvpn"]["price"] /
+                    float(price.strip()) *
+                    self.price_cache["p2p"]["price"] /
                     self.price_cache[mu_coin]["price"], 8
                 )
     
@@ -631,7 +632,7 @@ class PlanSubscribeContent(BoxLayout):
             if self.deposit_callback:
                 self.deposit_callback("Error")
 
-    def refresh_price_async(self, mu_coin="dvpn", cache=30, callback=None):
+    def refresh_price_async(self, mu_coin="p2p", cache=30, callback=None):
         def fetch_price():
             if mu_coin not in self.price_cache or time.time() - self.price_cache[mu_coin]["time"] > cache:
                 try:
@@ -720,7 +721,7 @@ class OnHoverMDRaisedButton(MDFlatButton, HoverBehavior):
         self.md_bg_color = get_color_from_hex("#fcb711")
         Window.set_system_cursor('arrow')
 
-
+# deprecated
 class NodeRow(MDGridLayout):
     moniker = StringProperty()
     location = StringProperty()
@@ -731,7 +732,8 @@ class NodeRow(MDGridLayout):
     def get_font(self):
         Config = MeileGuiConfig()
         return Config.resource_path(MeileColors.FONT_FACE)
-    
+
+# deprecated    
 class NodeDetails(MDGridLayout):
     sub_id = StringProperty()
     allocated = StringProperty()
