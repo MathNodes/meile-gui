@@ -2218,7 +2218,7 @@ WindowManager:
 
     MDBoxLayout:
         orientation: "horizontal"
-        size_hint_x: .8
+        size_hint_x: 1
         spacing: 20
 
         MDTextField:
@@ -2227,8 +2227,9 @@ WindowManager:
             mode: "fill"
             text: ""
             size_hint_y: .65
-            width: "50sp"
-            height: "30sp"
+            size_hint_x: 1.30
+            #width: "90sp"
+            #height: "30sp"
             readonly: True
 
         MDTextField:
@@ -2237,13 +2238,14 @@ WindowManager:
             mode: "fill"
             text: root.price_text
             size_hint_y: .65
-            width: "50sp"
-            height: "30sp"
+            size_hint_x: 1.30
+            #width: "90sp"
+            #height: "30sp"
             readonly: True
 
         MDDropDownItem:
             id: drop_item
-            pos_hint: {'center_x': .5, 'center_y': .5}
+            pos_hint: {'center_x': .7, 'center_y': .5}
             text: "p2p"
             on_release: root.menu.open()
             

@@ -1,14 +1,13 @@
 #!/bin/bash
-CLICMD="$1"
+set -euo pipefail
 
-osascript - "$CLICMD" <<EOF
+WG_BIN="${HOME}/.meile-gui/bin/wg-quick"
+WG_CONF="${HOME}/.meile-gui/wg99.conf"
 
-    
-    on run argv
-    with timeout of 30 seconds
-        do shell script ("launchctl bootout system /Library/LaunchDaemons/app.meile.wireguard.plist && launchctl disable /Library/LaunchDaemons/app.meile.wireguard.plist ; bash ${HOME}/.meile-gui/bin/wg-quick down ${HOME}/.meile-gui/wg99.conf") without altering line endings with administrator privileges        
-    end timeout
-    end run
-
+/usr/bin/osascript <<EOF
+do shell script "
+    launchctl bootout system/app.meile.wireguard 2>/dev/null ;
+    launchctl disable system/app.meile.wireguard ;
+    $(printf %q "$WG_BIN") down $(printf %q "$WG_CONF")
+" without altering line endings with administrator privileges
 EOF
-

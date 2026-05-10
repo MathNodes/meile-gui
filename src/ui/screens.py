@@ -424,30 +424,15 @@ class MainWindow(Screen):
                                    max_height=max_height,
                                    md_bg_color=get_color_from_hex(MeileColors.BLACK))
         
-        # MacOS
+    # MacOS
+    
         if not self.MeileConfig.is_plist_exists():
-            print("plist doesn't exist!")
-            self.dialog = MDDialog(
-                title="We need to install some runtime files. This will only happen once.",
-                md_bg_color=get_color_from_hex(MeileColors.BLACK),
-                buttons=[
-                    MDFlatButton(
-                        text="OK",
-                        theme_text_color="Custom",
-                        text_color=get_color_from_hex(MeileColors.MEILE),
-                        on_release=self.InstallPlist
-                    ),])
-            self.dialog.open()
+            print("Created local .plists")
+        else:
+            print(".plists exists")
+
             
-    def InstallPlist(self, dt):
-        PLIST_COPY_OSASCRIPT = Path.home() / ".meile-gui" / "bin" / "copy-plist.sh"
-        plistBASH = [PLIST_COPY_OSASCRIPT]
-        proc2 = subprocess.Popen(plistBASH)
-        proc2.wait(timeout=30)
-        pid2 = proc2.pid
-        proc_out, proc_err = proc2.communicate()
-        self.remove_loading_widget2()
-        
+            
     def update_wallet(self, dt):
         MeileConfig = MeileGuiConfig()
         CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
@@ -2467,7 +2452,7 @@ class PlanScreen(MDBoxLayout):
                 plan_name=data['plan_name'],
                 num_of_nodes=str(no_of_nodes),
                 num_of_countries=str(no_of_countries),
-                cost=str(plancost) + data['plan_denom'] + f"[color=fcb711]    ${plancost_usd}[/color]",
+                cost=str(plancost) + data['plan_denom'].replace('dvpn', ' p2p') + f"[color=fcb711]    ${plancost_usd}[/color]",
                 logo_image=data['logo'],
                 uuid=data['uuid'],
                 id=str(plan['subscription_id']) if plan else str(0),

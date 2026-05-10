@@ -136,48 +136,44 @@ class V2RayHandler:
 
     def start_daemon(self):
         print("Starting v2ray service...")
+        PLIST_DIR = os.path.expanduser("~/.meile-gui/launchd")
+        xray_plist = f"{PLIST_DIR}/app.meile.xray.plist"
+        tun2_plist = f"{PLIST_DIR}/app.meile.tun2socks.plist"
         
         '''
-        xray_cmd = f"{os.environ['HOME']}/.meile-gui/bin/xray run -c {os.environ['HOME']}/.meile-gui/v2ray_config.json > /dev/null 2>&1 &"
-        self.run_cmd(xray_cmd, background=True)
-        time.sleep(1)
-        
-        check_xray_cmd = "ps aux | grep xray | grep -v grep"
-        result = self.run_cmd(check_xray_cmd)
-        print(f"Xray process check: {result}")
-        
-        try:
-            curl_cmd = "curl --preproxy socks5://localhost:1080 -s https://icanhazip.com"
-            result = self.run_cmd(curl_cmd)
-            print(f"Curl result: {result}")
-        except:
-            print("Curl failed or timed out - xray might not be ready yet")
-        
-        nic_cmd = "route get default | grep 'interface' | cut -d ':' -f 2 | tr -d ' '"
-        nic = subprocess.check_output(nic_cmd, shell=True, text=True).strip()
+        privileged_commands = [
+            # First-run setup, idempotent:
+            "rm -rf /Library/LaunchDaemons/app.meile.tun2socks.plist",
+            "rm -rf /Library/LaunchDaemons/app.meile.wireguard.plist",
+            "rm -rf /Library/LaunchDaemons/app.meile.xray.plist",
+            "mkdir -p /Library/Application\\ Support/Meile/bin",
+            f"cp {base}/bin/xray /Library/Application\\ Support/Meile/bin/",
+            f"cp {base}/bin/tun2socks /Library/Application\\ Support/Meile/bin/",
+            "chown -R root:wheel /Library/Application\\ Support/Meile",
+            "chmod 755 /Library/Application\\ Support/Meile/bin/*",
+            "launchctl enable /Library/LaunchDaemons/app.meile.xray.plist",
+            "launchctl bootstrap system /Library/LaunchDaemons/app.meile.xray.plist"
+            ]
+        '''
         
         privileged_commands = [
-            "mkdir -p /tmp/meile-gui",
-            f"{os.environ['HOME']}/.meile-gui/bin/tun2socks -device utun123 -proxy socks5://127.0.0.1:1080 -interface {nic} > /tmp/meile-gui/tun2socks.log 2>&1 &",
-            "sleep 2",
-            "if ps aux | grep tun2socks | grep -v grep > /dev/null; then",
-            "   echo 'tun2socks is running' > /tmp/meile-gui/tun2socks-status.log",
-            "else",
-            "   echo 'tun2socks failed to start' > /tmp/meile-gui/tun2socks-status.log",
-            "   cat /tmp/meile-gui/tun2socks.log",
-            "   exit 1",
-            "fi",
-            "ifconfig utun123 198.18.0.1 198.18.0.1 up",
-            "sleep 1"
-        ]
-        '''
-        privileged_commands = ["launchctl enable /Library/LaunchDaemons/app.meile.xray.plist",
-                               "launchctl bootstrap system /Library/LaunchDaemons/app.meile.xray.plist"]
+            'mkdir -p "/Library/Application Support/Meile/launchd"',
+            f'cp "{xray_plist}" "/Library/Application Support/Meile/launchd/"',
+            f'cp "{tun2_plist}" "/Library/Application Support/Meile/launchd/"',
+            'chown -R root:wheel "/Library/Application Support/Meile"',
+            'chmod 755 "/Library/Application Support/Meile" "/Library/Application Support/Meile/launchd"',
+            'chmod 644 "/Library/Application Support/Meile/launchd/"*.plist',
+            "rm -rf /Library/LaunchDaemons/app.meile.tun2socks.plist",
+            "rm -rf /Library/LaunchDaemons/app.meile.wireguard.plist",
+            "rm -rf /Library/LaunchDaemons/app.meile.xray.plist",
+            "launchctl enable system/app.meile.xray",
+            'launchctl bootstrap system "/Library/Application Support/Meile/launchd/app.meile.xray.plist"',
+            ]
         privileged_commands.append("sleep 3")
         privileged_commands.append("curl --preproxy socks5://localhost:1080 -s https://icanhazip.com")
         privileged_commands.append("sleep 1")
-        privileged_commands.append("launchctl enable /Library/LaunchDaemons/app.meile.tun2socks.plist")
-        privileged_commands.append("launchctl bootstrap system /Library/LaunchDaemons/app.meile.tun2socks.plist")
+        privileged_commands.append(f"launchctl enable system/app.meile.tun2socks")
+        privileged_commands.append(f'launchctl bootstrap system "/Library/Application Support/Meile/launchd/app.meile.tun2socks.plist"')
         privileged_commands.append("sleep 2")
         privileged_commands.append("ifconfig utun123 198.18.0.1 198.18.0.1 up")
         
@@ -191,13 +187,6 @@ class V2RayHandler:
             print("Failed to execute privileged commands")
             return False
         
-        #sentinel_xray_connect_bash = os.path.join(self.MeileConfig.BASEBINDIR, "sentinel-xray-connect.sh")
-        #connectBASH = [sentinel_xray_connect_bash]
-        #proc2 = subprocess.Popen(connectBASH)
-        #proc2.wait(timeout=30)
-        #pid2 = proc2.pid
-        #proc_out, proc_err = proc2.communicate()
-        
         return True
     
     def kill_daemon(self):
@@ -210,7 +199,7 @@ class V2RayHandler:
             privileged_commands.append(f"route delete -net {network} 198.18.0.1")
         
         privileged_commands.append("ifconfig utun123 198.18.0.1 198.18.0.1 down")
-        privileged_commands.append("launchctl bootout system /Library/LaunchDaemons/app.meile.xray.plist ; launchctl bootout system /Library/LaunchDaemons/app.meile.tun2socks.plist ; launchctl disable /Library/LaunchDaemons/app.meile.xray.plist ; launchctl disable Library/LaunchDaemons/app.meile.tun2socks.plist ")
+        privileged_commands.append(f'launchctl bootout system "/Library/Application Support/Meile/launchd/app.meile.xray.plist" ; launchctl bootout system "/Library/Application Support/Meile/launchd/app.meile.tun2socks.plist" ; launchctl disable system/app.meile.xray ; launchctl disable system/app.meile.tun2socks')
         #privileged_commands.append("launchctl bootout system /Library/LaunchDaemons/app.meile.tun2socks.plist")
 
         self.run_privileged_script(privileged_commands)

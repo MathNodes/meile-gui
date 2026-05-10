@@ -25,12 +25,13 @@ class MeileGuiConfig():
     WIREGUARD_BIN_PATH            = Path.home() / ".meile-gui" / "bin" / "wg-quick"
     XRAY_BIN_PATH                 = Path.home() / ".meile-gui" / "bin" / "xray"
     TUN2SOCKS_BIN_PATH            = Path.home() / ".meile-gui" / "bin" / "tun2socks"
+    LAUNCHD_PATH                  = Path.home() / ".meile-gui" / "launchd"
     WG_LAUNCHDAEMON_LABEL         = "app.meile.wireguard"
     XRAY_LAUNCHDAEMON_LABEL       = "app.meile.xray"
     TUN2SOCKS_LAUNCHDAEMON_LABEL  = "app.meile.tun2socks"
-    WG_LAUNCHDAEMON_PATH          = Path("/Library/LaunchDaemons") / f"{WG_LAUNCHDAEMON_LABEL}.plist"
-    XRAY_LAUNCHDAEMON_PATH        = Path("/Library/LaunchDaemons") / f"{XRAY_LAUNCHDAEMON_LABEL}.plist"
-    TUN2SOCKS_LAUNCHDAEMON_PATH   = Path("/Library/LaunchDaemons") / f"{TUN2SOCKS_LAUNCHDAEMON_LABEL}.plist"
+    WG_LAUNCHDAEMON_PATH          = LAUNCHD_PATH / f"{WG_LAUNCHDAEMON_LABEL}.plist"
+    XRAY_LAUNCHDAEMON_PATH        = LAUNCHD_PATH / f"{XRAY_LAUNCHDAEMON_LABEL}.plist"
+    TUN2SOCKS_LAUNCHDAEMON_PATH   = LAUNCHD_PATH / f"{TUN2SOCKS_LAUNCHDAEMON_LABEL}.plist"
     
     def resource_path(self, relative_path):
         """ Get absolute path to resource, works for dev and for PyInstaller """
@@ -84,7 +85,8 @@ class MeileGuiConfig():
             if path.exists(to_path):
                 shutil.rmtree(to_path)
             shutil.copytree(from_path, to_path)
-            
+    
+    # MacOS        
     def is_plist_exists(self):
         
         wg_plist_content = {
@@ -145,11 +147,11 @@ class MeileGuiConfig():
             return True
         else:
             print("WRITING network plists....")
-            with open(path.join(self.BASEDIR, f"{self.WG_LAUNCHDAEMON_LABEL}.plist"), "wb") as f:
+            with open(self.WG_LAUNCHDAEMON_PATH, "wb") as f:
                 plistlib.dump(wg_plist_content, f)
-            with open(path.join(self.BASEDIR, f"{self.XRAY_LAUNCHDAEMON_LABEL}.plist"), "wb") as f:
+            with open(self.XRAY_LAUNCHDAEMON_PATH, "wb") as f:
                 plistlib.dump(xray_plist_content, f)
-            with open(path.join(self.BASEDIR, f"{self.TUN2SOCKS_LAUNCHDAEMON_LABEL}.plist"), "wb") as f:
+            with open(self.TUN2SOCKS_LAUNCHDAEMON_PATH, "wb") as f:
                 plistlib.dump(tun2socks_plist_content, f)
             return False
             
@@ -174,6 +176,9 @@ class MeileGuiConfig():
             
         if not path.isdir(self.IMGDIR):
             mkdir(self.IMGDIR)
+            
+        if not path.isdir(self.LAUNCHD_PATH):
+            mkdir(self.LAUNCHD_PATH)
         
         dnscrypt_confile = path.join(self.BASEDIR, 'dnscrypt-proxy.toml')
         
