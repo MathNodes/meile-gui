@@ -1149,23 +1149,47 @@ class HandleWalletFunctions():
                                                price=sprice, 
                                                gigabytes=0 if hourly else int(units),
                                                hours=int(units) if hourly else 0,
-                                               next_sequence = True,
+                                               next_sequence=True,
                                                tx_params=tx_params)
             except RpcError as rpc_error:
                 details = rpc_error.details()
                 print("details", details)
-                print("code", rpc_error.code()) 
-                print("debug_error_string", rpc_error.debug_error_string()) 
-                conndesc.write("GRPC Error... Exiting")
-                conndesc.flush()
-                conndesc.close()
-                self.connected = {"v2ray_pid" : None,  
-                                  "result": False, 
-                                  "status" : details, 
-                                  "session_id" : None}
-                print(self.connected)
-                return
-        
+                if "expected" in details:
+                    try:
+                        tx = self.sdk.nodes.SubscribeToNode(node_address=address, 
+                                                       price=sprice, 
+                                                       gigabytes=0 if hourly else int(units),
+                                                       hours=int(units) if hourly else 0,
+                                                       next_sequence=False,
+                                                       tx_params=tx_params)
+                    except RpcError as rpc_error:
+                        details = rpc_error.details()
+                        print("details", details)
+                        print("code", rpc_error.code()) 
+                        print("debug_error_string", rpc_error.debug_error_string()) 
+                        conndesc.write("GRPC Error... Exiting")
+                        conndesc.flush()
+                        conndesc.close()
+                        self.connected = {"v2ray_pid" : None,  
+                                          "result": False, 
+                                          "status" : details, 
+                                          "session_id" : None}
+                        print(self.connected)
+                        return
+                else:
+                    print("details", details)
+                    print("code", rpc_error.code()) 
+                    print("debug_error_string", rpc_error.debug_error_string()) 
+                    conndesc.write("GRPC Error... Exiting")
+                    conndesc.flush()
+                    conndesc.close()
+                    self.connected = {"v2ray_pid" : None,  
+                                      "result": False, 
+                                      "status" : details, 
+                                      "session_id" : None}
+                    print(self.connected)
+                    return
+            
         # Will need to handle log responses with friendly UI response in case of session create error
         if tx.get("log", None) is not None:
             self.connected = {"v2ray_pid" : None,  
