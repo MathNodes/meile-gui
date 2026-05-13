@@ -1141,17 +1141,18 @@ class HandleWalletFunctions():
                                                price=sprice, 
                                                gigabytes=0 if hourly else int(units),
                                                hours=int(units) if hourly else 0,
-                                               next_sequence=False,
+                                               next_sequence=True,
                                                tx_params=tx_params)
             except RpcError as rpc_error:
                 details = rpc_error.details()
-                if "incorrect account sequence" in details:
+                print("details", details)
+                if "expected" in details:
                     try:
                         tx = self.sdk.nodes.SubscribeToNode(node_address=address, 
                                                        price=sprice, 
                                                        gigabytes=0 if hourly else int(units),
                                                        hours=int(units) if hourly else 0,
-                                                       next_sequence=True,
+                                                       next_sequence=False,
                                                        tx_params=tx_params)
                     except RpcError as rpc_error:
                         details = rpc_error.details()

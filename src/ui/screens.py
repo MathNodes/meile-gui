@@ -46,6 +46,7 @@ from kivy.uix.floatlayout import FloatLayout
 from kivymd.uix.label.label import MDLabel
 from kivy.animation import Animation
 from kivy.app import App
+from kivy.core.clipboard import Clipboard
 
 
 from requests.auth import HTTPBasicAuth
@@ -1841,6 +1842,10 @@ class WalletScreen(Screen):
     def build(self, dt):
         Wallet = HandleWalletFunctions()
         self.SetBalances(Wallet.get_balance(self.ADDRESS))
+        
+    def copy_to_clipboard(self, text):
+        Clipboard.copy(text)
+        toast(text="Address copied!", duration=3.5)
 
     def refresh_wallet(self):
         self.build(None)
