@@ -386,45 +386,23 @@ WindowManager:
     wallet_address: ""
     qr_address: root.get_qr_code_address()
     md_bg_color: get_color_from_hex("#121212")
-    
+
     canvas.before:
         Color:
-            rgba: 0.07, 0.07, 0.07, 1  # This corresponds to #121212 in hex (RGB values divided by 255)
+            rgba: 0.07, 0.07, 0.07, 1
         Rectangle:
             pos: self.pos
             size: self.size
-            
+
     MDBoxLayout:
         orientation: "vertical"
+
         MDTopAppBar:
             id: toolbar
             title: "Wallet"
             md_bg_color: get_color_from_hex("#FFB908")
-            padding: 0,20,0,0
-            
-            MDBoxLayout:
-                orientation: 'horizontal'
-                size_hint_x: None
-                width: self.parent.width - sp(96)  # Adjust to leave space for left and right actions
-                pos_hint: {'center_x': 0.5}
-                MDLabel:
-                    size_hint_x: None
-                    width: (self.parent.width - sp(400) - sp(96)) / 2
-                
-                MDTextField:
-                    hint_text: "Address"
-                    mode: "fill"
-                    size_hint_x: None
-                    width: sp(400) 
-                    #pos_hint: {"center_x" : .5, "center_y": .5}
-                    pos_hint: {'center_y': 0.5}                
-                    text: root.wallet_address
-                    readonly: True
-                    opacity: 1
-                    theme_text_color: "Custom"
-                    text_color: get_color_from_hex("#000000")
-                    normal_color: app.theme_cls.accent_color
-                    
+            padding: 0, 20, 0, 0
+
             ToolTipMDIconButton:
                 id: wallet_menu
                 size_hint: None, None
@@ -434,39 +412,90 @@ WindowManager:
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex(MeileColors.BLACK)
                 on_release: root.menu_open()
-                #pos_hint: {'x' : .95, 'center_y' : .5}
-                    
-        MDFloatLayout:
-            MDBoxLayout:
-                orientation: "vertical"
-                size_hint_x: 0.5  
-                pos_hint: {'center_x': 0.5, 'top': .925}  
-                spacing: '40sp'
-                Image:
-                    id: qr
-                    source: root.qr_address
-                    pos_hint: {'x': 0, 'top': 1}
-                    size_hint_y: .5
-                RecycleView:
-                    viewclass: 'RowContainer'
-                    id: rv
-                    RecycleBoxLayout:
-                        default_size: None, sp(56)
-                        default_size_hint: 1, None
-                        size_hint_y: None
-                        height: self.minimum_height
-                        orientation: 'vertical'
-                        spacing: '10sp'    
+
+        MDBoxLayout:
+		    orientation: "vertical"
+		    padding: dp(20), dp(20), dp(20), dp(70)  # extra bottom padding for ActionBar
+		    spacing: dp(20)
+		
+		    # --- QR + Address block, centered horizontally ---
+		    MDBoxLayout:
+		        orientation: "vertical"
+		        adaptive_height: True
+		        size_hint_x: None
+		        width: sp(440)
+		        pos_hint: {"center_x": 0.5}
+		        spacing: dp(10)
+		
+		        Image:
+		            id: qr
+		            source: root.qr_address
+		            size_hint_y: None
+		            height: sp(300)
+		            allow_stretch: True
+		            keep_ratio: True
+		
+		        MDBoxLayout:
+		            orientation: "horizontal"
+		            size_hint_y: None
+		            height: sp(60)
+		            spacing: dp(4)
+		            pos_hint: {"center_x": 0.5}
+		
+		            MDTextField:
+		                id: address_field
+		                hint_text: "Address"
+		                mode: "fill"
+		                size_hint_x: None
+		                width: sp(400)
+		                pos_hint: {"center_y": 0.5}
+		                text: root.wallet_address
+		                readonly: True
+		                opacity: 1
+		                theme_text_color: "Custom"
+		                text_color: get_color_from_hex("#000000")
+		                normal_color: app.theme_cls.accent_color
+		
+		            ToolTipMDIconButton:
+		                icon: "content-copy"
+		                tooltip_text: "Copy address"
+		                pos_hint: {"center_y": 0.5}
+		                theme_text_color: "Custom"
+		                text_color: get_color_from_hex("#FFB908")
+		                on_release: root.copy_to_clipboard(address_field.text)
+		
+		    # --- Centered, half-width RecycleView ---
+		    AnchorLayout:
+		        anchor_x: "center"
+		        anchor_y: "top"
+		
+		        RecycleView:
+		            id: rv
+		            viewclass: 'RowContainer'
+		            size_hint_x: 0.5
+		            # Optional: cap min/max width so it looks good on very small/large screens
+		            # size_hint_x: None
+		            # width: min(self.parent.width * 0.5, sp(600))
+		
+		            RecycleBoxLayout:
+		                default_size: None, sp(56)
+		                default_size_hint: 1, None
+		                size_hint_y: None
+		                height: self.minimum_height
+		                orientation: 'vertical'
+		                spacing: '10sp'
+
     ActionBar:
         background_normal: ''
         background_down: ''
         background_color: get_color_from_hex("#121212")
+
         ActionView:
             ActionPrevious:
                 icon: "arrow-left-circle"
                 title: 'Go Back'
                 with_previous: True
-                on_release: root.set_previous_screen() 
+                on_release: root.set_previous_screen()
 
 <SettingsScreen>:
     name: "settings"
