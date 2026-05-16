@@ -2224,7 +2224,7 @@ class NodeScreen(MDBoxLayout):
             {
                 "viewclass"          : "RecycleViewRow",
                 "moniker_text"       : node[NodeKeys.NodesInfoKeys[0]],
-                "country_text"       : node[NodeKeys.NodesInfoKeys[4]],
+                "country_text"       : node[NodeKeys.NodesInfoKeys[5]],
                 "protocol_text"      : node[NodeKeys.NodesInfoKeys[13]],
                 "speed_text"         : speedText,
                 "isp_type_text"      : node[NodeKeys.NodesInfoKeys[15]] if node[NodeKeys.NodesInfoKeys[15]] else "Unknown", 
