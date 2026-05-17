@@ -23,6 +23,7 @@ from kivymd.uix.behaviors import HoverBehavior
 #from kivymd.theming import ThemableBehavior
 from kivymd.uix.behaviors.elevation import RectangularElevationBehavior
 from kivyoav.delayed import delayable
+from kivy_garden.mapview import MapView, MapSource
 
 from functools import partial
 from subprocess import Popen, TimeoutExpired
@@ -2371,8 +2372,10 @@ class NodeCarousel(MDBoxLayout):
     isp_type        = StringProperty()
     node_formula    = StringProperty()
     votes           = StringProperty()
-    score           = StringProperty()
+    score           = NumericProperty()
     location        = StringProperty()
+    download_norm   = NumericProperty(0)
+    upload_norm     = NumericProperty(0)
     dialog          = None
     
     def __init__(self, node, **kwargs):
@@ -2420,8 +2423,10 @@ class NodeCarousel(MDBoxLayout):
             
             self.moniker         = node[NodeKeys.NodesInfoKeys[0]]
             self.address         = node[NodeKeys.NodesInfoKeys[1]]
-            self.download        = format_byte_size(node[NodeKeys.NodesInfoKeys[8]])+ "/s"
-            self.upload          = format_byte_size(node[NodeKeys.NodesInfoKeys[9]])+ "/s"
+            #self.download        = format_byte_size(node[NodeKeys.NodesInfoKeys[8]])+ "/s"
+            #self.upload          = format_byte_size(node[NodeKeys.NodesInfoKeys[9]])+ "/s"
+            self.set_bandwidth(node[NodeKeys.NodesInfoKeys[8]], node[NodeKeys.NodesInfoKeys[9]])
+            
             self.connected_peers = str(node[NodeKeys.NodesInfoKeys[10]])
             self.max_peers       = str(node[NodeKeys.NodesInfoKeys[11]])
             self.protocol        = node[NodeKeys.NodesInfoKeys[13]]
@@ -2430,15 +2435,67 @@ class NodeCarousel(MDBoxLayout):
             #self.health_check    = self.GetHealthCheck(node[NodeKeys.NodesInfoKeys[1]])
             Thread(target=self.run_health_check_async, args=(self.address,), daemon=True).start()
             self.isp_type        = node[NodeKeys.NodesInfoKeys[15]] if node[NodeKeys.NodesInfoKeys[15]] else "Unknown" 
-            self.node_formula    = str(node[NodeKeys.NodesInfoKeys[18]]) if node[NodeKeys.NodesInfoKeys[18]] else "NULL"
+            self.node_formula    = str(node[NodeKeys.NodesInfoKeys[18]]) if node[NodeKeys.NodesInfoKeys[18]] else "0"
             self.votes           = str(node[NodeKeys.NodesInfoKeys[17]]) if node[NodeKeys.NodesInfoKeys[17]] else "0"
-            self.score           = str(node[NodeKeys.NodesInfoKeys[16]]) if node[NodeKeys.NodesInfoKeys[16]] else "NULL"
+            self.score           = float(node[NodeKeys.NodesInfoKeys[16]]) if node[NodeKeys.NodesInfoKeys[16]] else "0"
             self.location        = f"[b]Location:[/b] {node[NodeKeys.NodesInfoKeys[5]]}, {node[NodeKeys.NodesInfoKeys[4]]}"
             
             try:
-                self.ids.mapview.center_on(float(node[NodeKeys.NodesInfoKeys[6]])-1,float(node[NodeKeys.NodesInfoKeys[7]]))
+                lat = node[NodeKeys.NodesInfoKeys[6]]
+                lon = node[NodeKeys.NodesInfoKeys[7]]
+                self.ids.mapview.center_on(float(lat),float(lon))
             except Exception as e:
                 print(str(e))
+                
+            self.ids.mapview.map_source = MapSource(
+                url=MeileColors.CARTO_MAP,
+                cache_key="cartodark",
+                min_zoom=0,
+                max_zoom=20,
+                attribution="© CARTO",
+            )
+            Clock.schedule_once(lambda dt: self._init_map(lat, lon, 7), 0.1)
+            Clock.schedule_once(lambda dt: self.animate_bars(), 0.1)
+            
+    def _init_map(self, lat, lon, zoom=7):
+        mv = self.ids.mapview
+        mv.zoom = zoom
+        mv.center_on(lat, lon)
+        
+    def animate_bars(self):
+        Animation(
+            value=self.download_norm * 100,
+            d=2.2,
+            t="out_cubic",
+        ).start(self.ids.dl_bar)
+    
+        Animation(
+            value=self.upload_norm * 100,
+            d=2.2,
+            t="out_cubic",
+        ).start(self.ids.ul_bar)
+    
+        Animation(
+            value=float(self.score)*10,
+            d=2.2,
+            t="out_cubic",
+        ).start(self.ids.score_bar)
+        
+    def set_bandwidth(self, download_bytes, upload_bytes):
+        # store raw
+        self._download_raw = download_bytes
+        self._upload_raw = upload_bytes
+    
+        # formatted display (your helper)
+        self.download = format_byte_size(download_bytes) + "/s"
+        self.upload = format_byte_size(upload_bytes) + "/s"
+    
+        # normalize to 1 GiB/s scale
+        gib = (1024 ** 3) / 2
+    
+        self.download_norm = min(download_bytes / gib, 1.0)
+        self.upload_norm = min(upload_bytes / gib, 1.0)
+        
     def get_font(self):
         Config = MeileGuiConfig()
         return Config.resource_path(MeileColors.FONT_FACE)
@@ -2654,6 +2711,10 @@ class NodeCarousel(MDBoxLayout):
         except Exception as e:
             print(str(e))
             self.dialog = None
+            
+    def themed_border(self, alpha=0.35):
+        c = get_color_from_hex(MeileColors.MEILE)
+        return [c[0], c[1], c[2], alpha]
 
 #class WalletCoinRow(MDCard,RectangularElevationBehavior,ThemableBehavior, HoverBehavior):
 class WalletCoinRow(MDCard,HoverBehavior):

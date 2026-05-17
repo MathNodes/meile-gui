@@ -112,7 +112,7 @@ WindowManager:
                     TooltipMDFlatButton:
                         size_hint: None, None
                         size: dp(70), dp(40)
-                        pos_hint: {'center_x': .2}
+                        pos_hint: {'center_x': .25}
                         on_release: root.connect_routine()
                         Image:
                             id: connect_button
@@ -1463,230 +1463,437 @@ WindowManager:
     height: self.minimum_height
     
     
+#:import get_color_from_hex kivy.utils.get_color_from_hex
+#:import sp kivy.metrics.sp
+#:import dp kivy.metrics.dp
+
 <NodeCarousel>:
     name: "node_carousel"
+    orientation: "vertical"
+    spacing: dp(10)
+    padding: dp(14)
+
+    # ===== HEADER =====
     MDBoxLayout:
         orientation: "vertical"
-        MDGridLayout:
-            rows: 3
-            cols: 2
-            orientation: 'lr-tb'
-            size_hint_y: .15
+        size_hint_y: None
+        height: dp(80)
+        spacing: dp(4)
+
+        MDBoxLayout:
+            orientation: "horizontal"
+            size_hint_y: None
+            height: dp(44)
+
             MDLabel:
                 text: root.moniker
-                #size_hint_x: .9
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex(MeileColors.MEILE)
-                font_size: sp(25)
+                font_size: sp(24)
                 font_name: root.get_font()
+                shorten: True
+                shorten_from: "right"
+
             AnchorLayout:
                 anchor_x: "right"
+                anchor_y: "center"
+                size_hint_x: None
+                width: dp(48)
                 TooltipMDIconButton:
                     icon: "server-network"
-                    tooltip_text: "Servers"
-                    #size_hint_x: .01
+                    tooltip_text: "Nodes"
                     theme_text_color: "Custom"
                     text_color: get_color_from_hex(MeileColors.MEILE)
-                    on_press: 
+                    on_press:
                         self.on_leave()
                         root.switch_carousel()
-            HSeparator:
-            HSeparator:
-            MDLabel:
-                text: root.address
-                size_hint_x: .95
-                font_size: sp(11)
-        MDFloatLayout
-            size_hint_y: 1
 
-            MDBoxLayout:
+        HSeparator:
+            size_hint_y: None
+            height: dp(1)
+
+        MDLabel:
+            text: root.address
+            font_size: sp(11)
+            size_hint_y: None
+            height: dp(20)
+            theme_text_color: "Custom"
+            text_color: 0.7, 0.7, 0.7, 1
+
+    # ===== BODY: LEFT (cards) | RIGHT (map + actions) =====
+    MDBoxLayout:
+        orientation: "horizontal"
+        spacing: dp(14)
+
+        # ========== LEFT COLUMN ==========
+        MDBoxLayout:
+            orientation: "vertical"
+            size_hint_x: 0.58
+            spacing: dp(10)
+
+            # ----- PRICING -----
+            MDCard:
                 orientation: "vertical"
-                size_hint_x: .6
-                size_hint_y: .95
-                spacing: 30             
+                padding: dp(12)
+                radius: [dp(16)]
+                elevation: 0
+                md_bg_color: 0.10, 0.10, 0.12, 1
+                line_color: root.themed_border(0.35)
+                size_hint_y: None
+                height: dp(120)
+
+                MDLabel:
+                    text: "PRICING"
+                    bold: True
+                    halign: "center"
+                    size_hint_y: None
+                    height: dp(22)
+                    theme_text_color: "Custom"
+                    text_color: get_color_from_hex(MeileColors.MEILE)
+                    font_size: sp(13)
+
+                MDGridLayout:
+                    cols: 2
+                    spacing: dp(8)
+
+                    MDLabel:
+                        text: "Per GB"
+                        halign: "center"
+                        font_size: sp(11)
+                        theme_text_color: "Custom"
+                        text_color: 0.65, 0.65, 0.65, 1
+                        size_hint_y: None
+                        height: dp(18)
+                    MDLabel:
+                        text: "Per Hour"
+                        halign: "center"
+                        font_size: sp(11)
+                        theme_text_color: "Custom"
+                        text_color: 0.65, 0.65, 0.65, 1
+                        size_hint_y: None
+                        height: dp(18)
+
+                    MDLabel:
+                        text: root.gb_prices
+                        halign: "center"
+                        valign: "top"
+                        font_size: sp(12)
+                    MDLabel:
+                        text: root.hr_prices
+                        halign: "center"
+                        valign: "top"
+                        font_size: sp(12)
+
+            # ----- BANDWIDTH -----
+            MDCard:
+                orientation: "vertical"
+                padding: dp(12)
+                radius: [dp(16)]
+                elevation: 0
+                md_bg_color: 0.10, 0.10, 0.12, 1
+                line_color: root.themed_border(0.35)
+                spacing: dp(4)
+                size_hint_y: None
+                height: dp(130)
+
+                MDLabel:
+                    text: "BANDWIDTH"
+                    bold: True
+                    halign: "center"
+                    size_hint_y: None
+                    height: dp(22)
+                    theme_text_color: "Custom"
+                    text_color: get_color_from_hex(MeileColors.MEILE)
+                    font_size: sp(13)
+
                 MDBoxLayout:
-                    size_hint_y: .125
-                    MDGridLayout
-                        cols: 2
+                    orientation: "horizontal"
+                    size_hint_y: None
+                    height: dp(18)
+                    MDLabel:
+                        text: "Download"
+                        font_size: sp(11)
+                        theme_text_color: "Custom"
+                        text_color: 0.65, 0.65, 0.65, 1
+                    MDLabel:
+                        text: root.download
+                        font_size: sp(11)
+                        halign: "right"
+
+                MDProgressBar:
+                    id: dl_bar
+                    #value: root.download_norm * 100
+                    value: 0
+                    color: get_color_from_hex(MeileColors.DOWNLOAD)
+                    size_hint_y: None
+                    height: dp(6)
+
+                MDBoxLayout:
+                    orientation: "horizontal"
+                    size_hint_y: None
+                    height: dp(18)
+                    MDLabel:
+                        text: "Upload"
+                        font_size: sp(11)
+                        theme_text_color: "Custom"
+                        text_color: 0.65, 0.65, 0.65, 1
+                    MDLabel:
+                        text: root.upload
+                        font_size: sp(11)
+                        halign: "right"
+
+                MDProgressBar:
+                    id: ul_bar
+                    #value: root.upload_norm * 100
+                    value: 0
+                    color: get_color_from_hex(MeileColors.UPLOAD)
+                    size_hint_y: None
+                    height: dp(6)
+
+            # ----- NETWORK -----
+            MDCard:
+                orientation: "vertical"
+                padding: dp(12)
+                radius: [dp(16)]
+                elevation: 0
+                md_bg_color: 0.10, 0.10, 0.12, 1
+                line_color: root.themed_border(0.35)
+                size_hint_y: None
+                height: dp(150)
+
+                MDLabel:
+                    text: "NETWORK"
+                    bold: True
+                    halign: "center"
+                    size_hint_y: None
+                    height: dp(22)
+                    theme_text_color: "Custom"
+                    text_color: get_color_from_hex(MeileColors.MEILE)
+                    font_size: sp(13)
+
+                MDGridLayout:
+                    cols: 2
+                    spacing: dp(4)
+
+                    MDLabel:
+                        text: "Peers"
+                        font_size: sp(12)
+                        theme_text_color: "Custom"
+                        text_color: 0.65, 0.65, 0.65, 1
+                    MDLabel:
+                        text: root.connected_peers + " / " + root.max_peers
+                        font_size: sp(12)
+                        halign: "right"
+
+                    MDLabel:
+                        text: "Protocol"
+                        font_size: sp(12)
+                        theme_text_color: "Custom"
+                        text_color: 0.65, 0.65, 0.65, 1
+                    MDLabel:
+                        text: root.protocol + " " + root.version
+                        font_size: sp(12)
+                        halign: "right"
+
+                    MDLabel:
+                        text: "Handshake"
+                        font_size: sp(12)
+                        theme_text_color: "Custom"
+                        text_color: 0.65, 0.65, 0.65, 1
+                    MDLabel:
+                        text: root.handshake
+                        font_size: sp(12)
+                        halign: "right"
+
+                    MDLabel:
+                        text: "Health"
+                        font_size: sp(12)
+                        theme_text_color: "Custom"
+                        text_color: 0.65, 0.65, 0.65, 1
+                    MDLabel:
+                        text: root.health_check
+                        font_size: sp(12)
+                        halign: "right"
+                        theme_text_color: "Custom"
+                        text_color:
+                            (0.3, 0.9, 0.4, 1) if root.health_check == "Passed" \
+                            else ((1, 0.85, 0.2, 1) if root.health_check == "Checking..." \
+                            else (1, 0.35, 0.35, 1))
+
+            # ----- REPUTATION -----
+            MDCard:
+                orientation: "vertical"
+                padding: dp(12)
+                radius: [dp(16)]
+                elevation: 0
+                md_bg_color: 0.10, 0.10, 0.12, 1
+                line_color: root.themed_border(0.35)
+                spacing: dp(4)
+                size_hint_y: None
+                height: dp(120)
+
+                MDLabel:
+                    text: "REPUTATION"
+                    bold: True
+                    halign: "center"
+                    size_hint_y: None
+                    height: dp(22)
+                    theme_text_color: "Custom"
+                    text_color: get_color_from_hex(MeileColors.MEILE)
+                    font_size: sp(13)
+
+                MDBoxLayout:
+                    orientation: "horizontal"
+                    size_hint_y: None
+                    height: dp(22)
+
+                    MDLabel:
+                        text: "Score"
+                        font_size: sp(12)
+                        theme_text_color: "Custom"
+                        text_color: 0.65, 0.65, 0.65, 1
+                    MDLabel:
+                        text: str(root.score)
+                        font_size: sp(12)
+                        halign: "right"
+                        theme_text_color: "Custom"
+                        text_color:
+                            (0.3, 0.9, 0.4, 1) if float(root.score) > 80 \
+                            else (1, 0.65, 0.2, 1)
+
+                MDProgressBar:
+                	id: score_bar
+                    #value: float(root.score)
+                    value: 0
+                    color: get_color_from_hex(MeileColors.MEILE)
+                    size_hint_y: None
+                    height: dp(6)
+
+                MDBoxLayout:
+                    orientation: "horizontal"
+                    size_hint_y: None
+                    height: dp(22)
+
+                    MDLabel:
+                        text: "Votes"
+                        font_size: sp(12)
+                        theme_text_color: "Custom"
+                        text_color: 0.65, 0.65, 0.65, 1
+                    MDLabel:
+                        text: root.votes
+                        font_size: sp(12)
+                        halign: "right"
+
+            # ----- META -----
+            MDCard:
+                orientation: "vertical"
+                padding: dp(12)
+                radius: [dp(16)]
+                elevation: 0
+                md_bg_color: 0.10, 0.10, 0.12, 1
+                line_color: root.themed_border(0.35)
+                size_hint_y: None
+                height: dp(80)
+
+                MDGridLayout:
+                    cols: 2
+                    spacing: dp(4)
+
+                    MDLabel:
+                        text: "ISP"
+                        font_size: sp(12)
+                        theme_text_color: "Custom"
+                        text_color: 0.65, 0.65, 0.65, 1
+                    MDLabel:
+                        text: root.isp_type
+                        font_size: sp(12)
+                        halign: "right"
+
+                    MDLabel:
+                        text: "Formula"
+                        font_size: sp(12)
+                        theme_text_color: "Custom"
+                        text_color: 0.65, 0.65, 0.65, 1
+                    MDLabel:
+                        text: root.node_formula
+                        font_size: sp(12)
+                        halign: "right"
+
+            Widget:
+
+        # ========== RIGHT COLUMN ==========
+        MDBoxLayout:
+            orientation: "vertical"
+            size_hint_x: 0.42
+            spacing: dp(12)
+
+            # ----- MAP -----
+            MDCard:
+                radius: [dp(16)]
+                elevation: 0
+                md_bg_color: 0.10, 0.10, 0.12, 1
+                line_color: root.themed_border(0.35)
+                padding: dp(4)
+                size_hint_y: 0.7
+
+                RelativeLayout:
+                    MapView:
+                        id: mapview
+                        lat: 48.849943
+                        lon: 2.279793
+                        zoom: 8
+
+                    MDCard:
+                        size_hint: None, None
+                        size: dp(220), dp(36)
+                        pos_hint: {"center_x": 0.5, "y": 0.03}
+                        radius: [dp(18)]
+                        md_bg_color: 0, 0, 0, 0.75
+                        line_color: root.themed_border(0.5)
+                        elevation: 0
+
+                        MDLabel:
+                            text: root.location
+                            halign: "center"
+                            markup: True
+                            font_size: sp(12)
+                            theme_text_color: "Custom"
+                            text_color: 1, 1, 1, 1
+
+            # ----- ACTION BUTTONS -----
+            MDBoxLayout:
+                orientation: "horizontal"
+                size_hint_y: None
+                height: dp(48)
+                spacing: dp(12)
+
+                MDFlatButton:
+                    #text: "Subscribe"
+                    size_hint_x: 0.5
+                    md_bg_color: get_color_from_hex(MeileColors.DIALOG_BG_COLOR)
+                    #theme_text_color: "Custom"
+                    #text_color: 0, 0, 0, 1
+                    on_release: root.subscribe_to_node(root.gb_prices, root.hr_prices, root.address, root.moniker)
+					Image:
+	                    id: subscribe_button
+	                    size_hint: 2.2,2.2
+	                    source: root.get_button("subscribe")
+                MDFlatButton:
+                    #text: "Live Data"
+                    size_hint_x: 0.5
+                    md_bg_color: get_color_from_hex(MeileColors.DIALOG_BG_COLOR)
+                    #theme_text_color: "Custom"
+                    #text_color: 0, 0, 0, 1
+                    on_release: root.get_realtime_of_node(root.address)
+                    Image:
+	                    id: realtime_button
+	                    size_hint: 2.2,2.2
+	                    source: root.get_button("info")
+
+            Widget:
+                size_hint_y: None
+                height: dp(8)
                         
-                        MDLabel:
-                            text: "[b]Gigabyte Prices[/b]"
-                            halign: "center"
-                            markup: True
-                        
-                        MDLabel:
-                            text: "[b]Hourly Prices[/b]"
-                            halign: "center"
-                            markup: True
-                        
-                        MDLabel:
-                            text: root.gb_prices
-                            halign: "center"
-                            font_size: sp(12)
-                        
-                        MDLabel:
-                            text: root.hr_prices
-                            halign: "center"
-                            font_size: sp(12)
-                MDBoxLayout:
-                    size_hint_y: .03
-                    MDGridLayout
-                        cols: 2
-                        rows: 2
-                        MDLabel:
-                            text: "[b]Bandwidth Down[/b]"
-                            halign: "center"
-                            markup: True
-                        MDLabel:
-                            text: "[b]Bandwidth Up[/b]"
-                            halign: "center"
-                            markup: True
-                        MDLabel:
-                            text: root.download
-                            halign: "center"
-                            font_size: sp(12)
-                        MDLabel:
-                            text: root.upload
-                            halign: "center"
-                            font_size: sp(12)
-                MDBoxLayout:
-                    size_hint_y: .03
-                    MDGridLayout
-                        cols: 2
-                        rows: 2
-                        MDLabel:
-                            text: "[b]Connected Peers[/b]"
-                            halign: "center"
-                            markup: True
-                        MDLabel:
-                            text: "[b]Max Peers[/b]"
-                            halign: "center"
-                            markup: True
-                        MDLabel:
-                            text: root.connected_peers
-                            halign: "center"
-                            font_size: sp(12)
-                        MDLabel:
-                            text: root.max_peers
-                            halign: "center"
-                            font_size: sp(12)
-                MDBoxLayout:
-                    size_hint_y: .03
-                    MDGridLayout
-                        cols: 2
-                        rows: 2
-                        MDLabel:
-                            text: "[b]Protocol[/b]"
-                            halign: "center"
-                            markup: True
-                        MDLabel:
-                            text: "[b]Version[/b]"
-                            halign: "center"
-                            markup: True
-                        MDLabel:
-                            text: root.protocol
-                            halign: "center"
-                            font_size: sp(12)
-                        MDLabel:
-                            text: root.version
-                            halign: "center"
-                            font_size: sp(12)
-                MDBoxLayout:
-                    size_hint_y: .03
-                    MDGridLayout
-                        cols: 2
-                        rows: 2
-                        MDLabel:
-                            text: "[b]Handshake[/b]"
-                            halign: "center"
-                            markup: True
-                        MDLabel:
-                            text: "[b]Health Check[/b]"
-                            halign: "center"
-                            markup: True
-                        MDLabel:
-                            text: root.handshake
-                            halign: "center"
-                            font_size: sp(12)
-                        MDLabel:
-                            text: root.health_check
-                            halign: "center"
-                            font_size: sp(12)
-                MDBoxLayout:
-                    size_hint_y: .03
-                    MDGridLayout
-                        cols: 2
-                        rows: 2
-                        MDLabel:
-                            text: "[b]ISP Type[/b]"
-                            halign: "center"
-                            markup: True
-                        MDLabel:
-                            text: "[b]Formula[/b]"
-                            halign: "center"
-                            markup: True
-                        MDLabel:
-                            text: root.isp_type
-                            halign: "center"
-                            font_size: sp(12)
-                        MDLabel:
-                            text: root.node_formula
-                            halign: "center"
-                            font_size: sp(12)
-                MDBoxLayout:
-                    size_hint_y: .03
-                    MDGridLayout
-                        cols: 2
-                        rows: 2
-                        MDLabel:
-                            text: "[b]Votes[/b]"
-                            halign: "center"
-                            markup: True
-                        MDLabel:
-                            text: "[b]Score[/b]"
-                            halign: "center"
-                            markup: True
-                        MDLabel:
-                            text: root.votes
-                            halign: "center"
-                            font_size: sp(12)
-                        MDLabel:
-                            text: root.score
-                            halign: "center"
-                            font_size: sp(12)
-                MDBoxLayout:
-                    size_hint_y: .1
-                    
-            MapView:
-                id: mapview
-                lat: 48.849943
-                lon: 2.279793
-                zoom: 8
-                size_hint: .4, .6
-                pos_hint: {"x": .575, "y": .4}
-                
-            MDLabel:
-                text: root.location
-                pos_hint: {"x" : .7, "y": -.125}
-                markup: True
-                    
-            MDFlatButton:        
-                md_bg_color: get_color_from_hex("#121212")
-                pos_hint: {'x' : .67, 'y': .275}
-                on_release: root.subscribe_to_node(root.gb_prices, root.hr_prices, root.address, root.moniker)
-                Image:
-                    id: subscribe_button
-                    size_hint: 3,3
-                    source: root.get_button("subscribe")
-            
-            MDFlatButton:        
-                md_bg_color: get_color_from_hex("#121212")
-                pos_hint: {'x' : .87, 'y': .275}
-                on_release: root.get_realtime_of_node(root.address)
-                Image:
-                    id: realtime_button
-                    size_hint: 3,3
-                    source: root.get_button("info")
 <Separator@Widget>:
     canvas:
         Color:
