@@ -1019,11 +1019,11 @@ class MainWindow(Screen):
         if not self.MeileMapBuilt:
             self.MeileMap = MapView(zoom=2,
                                     background_color=get_color_from_hex(MeileColors.MAP_BG_COLOR))
-            source = MapSource(url=MeileColors.ARCGIS_MAP,
-                               cache_key="meile-map-canvas-dark-grey-base-2",
+            source = MapSource(url=MeileColors.CARTO_MAP,
+                               cache_key="cartodark",
                                tile_size=256,
                                image_ext="png",
-                               attribution="@ Meile",
+                               attribution="© OpenStreetMap © CARTO",
                                min_zoom=1)
             #self.MeileMap.map_source = "osm"
             self.MeileMap.map_source = source
