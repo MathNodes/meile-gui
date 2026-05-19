@@ -1141,55 +1141,53 @@ class HandleWalletFunctions():
                                                price=sprice, 
                                                gigabytes=0 if hourly else int(units),
                                                hours=int(units) if hourly else 0,
-                                               next_sequence=True,
+                                               next_sequence=False,
                                                tx_params=tx_params)
             except RpcError as rpc_error:
                 details = rpc_error.details()
                 print("details", details)
-                if "expected" in details:
-                    try:
-                        tx = self.sdk.nodes.SubscribeToNode(node_address=address, 
-                                                       price=sprice, 
-                                                       gigabytes=0 if hourly else int(units),
-                                                       hours=int(units) if hourly else 0,
-                                                       next_sequence=False,
-                                                       tx_params=tx_params)
-                    except RpcError as rpc_error:
-                        details = rpc_error.details()
-                        print("details", details)
-                        print("code", rpc_error.code()) 
-                        print("debug_error_string", rpc_error.debug_error_string()) 
-                        conndesc.write("GRPC Error... Exiting")
-                        conndesc.flush()
-                        conndesc.close()
-                        self.connected = {"v2ray_pid" : None,  
-                                          "result": False, 
-                                          "status" : details, 
-                                          "session_id" : None}
-                        print(self.connected)
-                        return
-                else:
-                    print("details", details)
-                    print("code", rpc_error.code()) 
-                    print("debug_error_string", rpc_error.debug_error_string()) 
-                    conndesc.write("GRPC Error... Exiting")
-                    conndesc.flush()
-                    conndesc.close()
-                    self.connected = {"v2ray_pid" : None,  
-                                      "result": False, 
-                                      "status" : details, 
-                                      "session_id" : None}
-                    print(self.connected)
-                    return
+                print("details", details)
+                print("code", rpc_error.code()) 
+                print("debug_error_string", rpc_error.debug_error_string()) 
+                conndesc.write("GRPC Error... Exiting")
+                conndesc.flush()
+                conndesc.close()
+                self.connected = {"v2ray_pid" : None,  
+                                  "result": False, 
+                                  "status" : details, 
+                                  "session_id" : None}
+                print(self.connected)
+                return
             
-        # Will need to handle log responses with friendly UI response in case of session create error
-        if tx.get("log", None) is not None:
-            self.connected = {"v2ray_pid" : None,  
-                              "result": False, 
-                              "status" : tx["log"], 
-                              "session_id" : None}
-            print(self.connected)
+        txret = self.check_tx_log(tx)    
+        if txret == 420:
+            try:
+                tx = self.sdk.nodes.SubscribeToNode(node_address=address, 
+                                               price=sprice, 
+                                               gigabytes=0 if hourly else int(units),
+                                               hours=int(units) if hourly else 0,
+                                               next_sequence=True,
+                                               tx_params=tx_params)
+                txret = self.check_tx_log(tx)
+                if txret in [1,420]:
+                    return
+            except RpcError as rpc_error:
+                details = rpc_error.details()
+                print("details", details, flush=True)
+                print("code", rpc_error.code(), flush=True) 
+                print("debug_error_string", rpc_error.debug_error_string(), flush=True) 
+                conndesc.write("GRPC Error... Exiting")
+                conndesc.flush()
+                conndesc.close()
+                self.connected = {"v2ray_pid" : None,  
+                                  "result": False, 
+                                  "status" : details, 
+                                  "session_id" : None}
+                print(self.connected)
+                return
+        elif txret == 1:
             return
+
        
         try: 
             tx_response = self.sdk.subscriptions.wait_for_tx(tx["hash"], timeout=25)
@@ -1368,7 +1366,24 @@ class HandleWalletFunctions():
                           "result": False, 
                           "status": "Bad Response from Node", 
                           "session_id" : session_id}
-        return   
+        return
+    
+    def check_tx_log(self, tx):
+        if tx.get("log", None) is not None:
+            self.connected = {"v2ray_pid" : None,  
+                                  "result": False, 
+                                  "status" : tx["log"], 
+                                  "session_id" : None}
+            print(self.connected)
+            if "account sequence mismatch" in tx['log']:
+                print("ERROR: 420")
+                return 420
+            else:
+                print("ERROR: 1")
+                return 1
+        else:
+            print("NO LOG ERROR")
+            return 0   
            
     def get_balance(self, address):
         Request = HTTPRequests.MakeRequest()
