@@ -2368,7 +2368,7 @@ class PlanScreen(MDBoxLayout):
                 plan_name=data['plan_name'],
                 num_of_nodes=str(no_of_nodes),
                 num_of_countries=str(no_of_countries),
-                cost=str(plancost) + data['plan_denom'] + f"[color=fcb711]    ${plancost_usd}[/color]",
+                ost=str(plancost) + data['plan_denom'].replace('dvpn', ' p2p') + f"[color=fcb711]    ${plancost_usd}[/color]",
                 logo_image=data['logo'],
                 uuid=data['uuid'],
                 id=str(plan['subscription_id']) if plan else str(0),

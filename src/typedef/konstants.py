@@ -83,11 +83,8 @@ class HTTParams():
     NODE_API = "https://ungovernable.dev/api/public/card/1643a397-ddbd-48b1-89f7-396d16606eb5/query/json"
     NODE_APIS = [NODE_API] +  [
                               "https://metabase.mathnodes.com/api/public/card/bdff9cda-e0b8-417e-afd0-a8736a329914/query/json",
-                              "https://metabase.bluefren.xyz/api/public/card/4a891454-51da-462a-a5df-e85ca17c05d5/query/json",
-                              "https://metabase.ro.mathnodes.com/api/public/card/6fd7194d-f025-4766-ba3c-3635ba6a6c00/query/json",
-                              "https://cache.noncompliance.org/api/public/card/bc75f719-db4a-44b8-9688-f5793742a203/query/json",
-                              "https://hsinao.com/api/public/card/5591a83b-d076-4278-b1c2-107ed441e21e/query/json",
-                              "https://cache.meile.cryptopepper.org/api/public/card/9ced889b-3532-422e-a4c2-e1ee3349342a/query/json"
+                              "https://metabase.bluefren.net/api/public/card/4a891454-51da-462a-a5df-e85ca17c05d5/query/json",
+                              "https://cache.noncompliance.org/api/public/card/bc75f719-db4a-44b8-9688-f5793742a203/query/json"
                               ]
     
     DNSSERVERS = [{'Country' : 'Mexico-1'    , 'ip' : '207.248.224.71'},
@@ -601,13 +598,20 @@ class IBCTokens():
                     'fusd' : 'freedom-dollar',
                     'nam'  : 'namada',
                     'zeph' : 'zephyr-protocol',
-                    'zsd'  : 'zephyr-protocol-stable-dollar'}
+                    'zsd'  : 'zephyr-protocol-stable-dollar',
+                    'bchx' : 'bitcoin-cash',
+                    'bnbx' : 'binance-coin',
+                    'btcx' : 'bitcoin',
+                    'daix' : 'dai',
+                    'ethx' : 'ethereum',
+                    'solx' : 'solana',
+                    'tonx' : 'the-open-network'}
     
     NOWCOINS     = ["firo", "beam", "pivx", "zec", "dcr", "epic",
                     "bch", "kmd", "xno", "sol", "dgb", "xaut", "eth",
                     "ada", "inj", "dot" ]
     BTCPAYCOINS  = ["xmr", "btc", "zec", "ltc", "doge", "dash"]
-    PRIVACYCOINS = ["arrr", "firo", "pivx", "zano", "fusd", "zeph", "zsd"]
+    PRIVACYCOINS = ["arrr", "firo", "pivx", "zano", "fusd", "zeph", "zsd", "bchx", "bnbx", "btcx", "daix", "ethx", "solx", "tonx"]
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"

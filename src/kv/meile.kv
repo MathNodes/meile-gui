@@ -2072,7 +2072,9 @@ WindowManager:
             width: 75
     MDBoxLayout:
         orientation: "horizontal"
+        size_hint_x: 1
         spacing: 20
+        
         
         MDTextField:
             id: deposit
@@ -2080,6 +2082,7 @@ WindowManager:
             mode: "fill"
             text: ""
             size_hint_y: .65
+            size_hint_x: 1.3
             readonly: True
         
         MDTextField:
@@ -2089,12 +2092,12 @@ WindowManager:
             text: root.price_text
             size_hint_y: .65
             readonly: True
-            size_hint_x: .1
+            size_hint_x: 1.3
             opacity: 0
             
         MDDropDownItem:
             id: drop_item
-            pos_hint: {'center_x': .5, 'center_y': .5}
+            pos_hint: {'center_x': .7, 'center_y': .5}
             text: "p2p"
             on_release: root.menu.open()
             
