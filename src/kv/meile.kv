@@ -417,7 +417,7 @@ WindowManager:
 		    orientation: "vertical"
 		    padding: dp(20), dp(20), dp(20), dp(70)  # extra bottom padding for ActionBar
 		    spacing: dp(20)
-		
+
 		    # --- QR + Address block, centered horizontally ---
 		    MDBoxLayout:
 		        orientation: "vertical"
@@ -781,13 +781,72 @@ WindowManager:
                 size: dp(32), dp(32)
                 pos_hint: {"center_y": 0.5}
                 active: root.get_config('ringsessions')
+
+        BoxLayout:
+            orientation: "horizontal"
+            spacing: dp(10)
+            padding: [20,0,0,20]
+            size_hint_y: None
+            height: dp(48)
+            pos_hint: {"center_x": 0.5, "top": 0.35}
+            canvas.before:
+                Color:
+                    rgba: get_color_from_hex('#2a2a2a')
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+
+            MDLabel:
+                font_name: "Roboto-Bold"
+                text: "Split Tunneling"
+                font_size: "20sp"
+                size_hint: None, None
+                width: sp(250)
+                pos_hint: {"center_y": 0.5}
+                halign: "left"
+                valign: "middle"
+                padding: [20,0,0,0]
+
+            Check2:
+                id: split_tunnel
+                size_hint: None, None
+                size: dp(32), dp(32)
+                pos_hint: {"center_y": 0.5}
+                active: root.get_config('splittunnel')
+
+        BoxLayout:
+            orientation: "horizontal"
+            spacing: dp(10)
+            padding: [20,0,0,20]
+            size_hint_y: None
+            height: dp(48)
+            pos_hint: {"center_x": 0.5, "top": 0.30}
+
+            MDLabel:
+                font_name: "Roboto-Bold"
+                text: "Bypass Apps"
+                font_size: "20sp"
+                size_hint_x: None
+                width: sp(250)
+                padding: [20,0,0,0]
+
+            MDDropDownItem:
+                id: split_tunnel_apps_drop_item
+                text: root.get_split_tunnel_summary()
+                on_release: root.open_split_tunnel_menu()
+
+            MDFlatButton:
+                text: "CLEAR"
+                theme_text_color: "Custom"
+                text_color: get_color_from_hex(MeileColors.MEILE)
+                on_release: root.clear_split_tunnel_apps()
 		
-		MDFlatButton:
+        MDFlatButton:
             text: "CANCEL"
             font_size: "18sp"
             pos_hint: { "center_x": .80, "top": 0.1}
             theme_text_color: "Custom"
-        	text_color: get_color_from_hex(MeileColors.MEILE)
+            text_color: get_color_from_hex(MeileColors.MEILE)
             on_release: root.set_previous_screen()
 
         MDRaisedButton:
@@ -3277,4 +3336,4 @@ WindowManager:
         Check:
         	group: 'proto'
         	on_active: root.select_share_type(self, self.active, "v2")
-            pos_hint: {"x": .5, "y" : .025}	
+            pos_hint: {"x": .5, "y" : .025}

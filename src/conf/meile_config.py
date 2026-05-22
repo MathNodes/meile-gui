@@ -115,6 +115,7 @@ class MeileGuiConfig():
             self.CONFIG.set('network', 'fragment', '1')
             self.CONFIG.set('network', 'dns', '1.1.1.1')
             self.CONFIG.set('network', 'ringsessions', '0')
+            self.CONFIG.set('network', 'splittunnel', '0')
             FILE = open(self.CONFFILE, 'w')    
             self.CONFIG.write(FILE)
             FILE.close()
@@ -143,10 +144,25 @@ class MeileGuiConfig():
                 self.CONFIG.set('network', 'ringsessions', '1')
             if self.CONFIG.has_option('network', 'ringsessions'):
                 self.CONFIG.set('network', 'ringsessions', '1')
+            if not self.CONFIG.has_option('network', 'splittunnel'):
+                self.CONFIG.set('network', 'splittunnel', '0')
                 
             FILE = open(self.CONFFILE, 'w')    
             self.CONFIG.write(FILE) 
             FILE.close()
+
+        if not self.CONFIG.has_section('split_tunnel'):
+            self.CONFIG.add_section('split_tunnel')
+            self.CONFIG.set('split_tunnel', 'apps', '[]')
+            FILE = open(self.CONFFILE, 'w')
+            self.CONFIG.write(FILE)
+            FILE.close()
+        else:
+            if not self.CONFIG.has_option('split_tunnel', 'apps'):
+                self.CONFIG.set('split_tunnel', 'apps', '[]')
+                FILE = open(self.CONFFILE, 'w')
+                self.CONFIG.write(FILE)
+                FILE.close()
             
            
         return self.CONFIG

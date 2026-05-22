@@ -22,6 +22,12 @@ from helpers.res import Resolution
 from helpers.aes import SecureSeed
 from helpers.v2ray import generate_v2ray_uri
 from helpers.update_checker import UpdateChecker, format_update_message
+from helpers.windows_split_tunnel import (
+    WindowsAppCatalog,
+    get_split_tunnel_apps,
+    set_split_tunnel_apps,
+    split_tunnel_summary,
+)
 from ui.update_dialog import UpdateDialog
 from coin_api.get_price import GetPriceAPI
 
@@ -2467,6 +2473,7 @@ class HelpScreen(Screen):
 class SettingsScreen(Screen):
     MeileConfig = MeileGuiConfig()
     SettingsNetworkMenu = ["grpc", "api", "mnapi", "cache", "dns", "resolver1", "resolver2", "resolver3"]
+    split_tunnel_apps = []
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -2489,6 +2496,8 @@ class SettingsScreen(Screen):
         self.DNS       = config['network'].get('dns', '1.1.1.1')
         self.CONFIGDNS = config['network'].get('dns', '1.1.1.1')
         self.RINGSESSIONS = config['network'].get('ringsessions', '0')
+        self.SPLITTUNNEL = config['network'].get('splittunnel', '0')
+        self.split_tunnel_apps = get_split_tunnel_apps(config)
         
         self.MeileConfig = MeileGuiConfig()
 
@@ -2639,6 +2648,24 @@ class SettingsScreen(Screen):
         )
         self.resolver3_menu.bind()
 
+        split_tunnel_items = [
+            {
+                "viewclass": "IconListItem",
+                "icon": "application",
+                "text": app.name,
+                "height": dp(56),
+                "on_release": lambda x=app.path: self.add_split_tunnel_app(x),
+            } for app in WindowsAppCatalog().list_apps()
+        ]
+        self.split_tunnel_menu = MDDropdownMenu(
+            caller=self.ids.split_tunnel_apps_drop_item,
+            items=split_tunnel_items,
+            position="center",
+            width_mult=7,
+        )
+        self.split_tunnel_menu.bind()
+        self.ids.split_tunnel_apps_drop_item.set_item(self.get_split_tunnel_summary())
+
     def get_config(self, what: str = "grpc"):
         config = self.MeileConfig.read_configuration(self.MeileConfig.CONFFILE)
         if what in self.SettingsNetworkMenu:
@@ -2647,6 +2674,8 @@ class SettingsScreen(Screen):
         elif what == "fragment":
             return bool(int(config['network'].get(what, "0")))
         elif what == "ringsessions":
+            return bool(int(config['network'].get(what, "0")))
+        elif what == "splittunnel":
             return bool(int(config['network'].get(what, "0")))
         else:
             getattr(self.ids, f"{what}_drop_item").set_item(config['subscription'][what])
@@ -2669,6 +2698,29 @@ class SettingsScreen(Screen):
             getattr(self.ids, f"{what.lower()}_drop_item").set_item(text_item)
             setattr(self, what.upper(), text_item)
             getattr(self, f"{what.lower()}_menu").dismiss()
+
+    def get_split_tunnel_summary(self):
+        apps = getattr(self, "split_tunnel_apps", None)
+        if apps is None:
+            config = self.MeileConfig.read_configuration(self.MeileConfig.CONFFILE)
+            apps = get_split_tunnel_apps(config)
+        return split_tunnel_summary(apps)
+
+    def open_split_tunnel_menu(self):
+        if not self.split_tunnel_menu.items:
+            toast(text="No Windows apps found", duration=3.5)
+            return
+        self.split_tunnel_menu.open()
+
+    def add_split_tunnel_app(self, app_path):
+        if app_path not in self.split_tunnel_apps:
+            self.split_tunnel_apps.append(app_path)
+        self.ids.split_tunnel_apps_drop_item.set_item(self.get_split_tunnel_summary())
+        self.split_tunnel_menu.dismiss()
+
+    def clear_split_tunnel_apps(self):
+        self.split_tunnel_apps = []
+        self.ids.split_tunnel_apps_drop_item.set_item(self.get_split_tunnel_summary())
 
     def build(self):
         return self.screen
@@ -2694,6 +2746,10 @@ class SettingsScreen(Screen):
         
         what = "ringsessions"
         config.set('network', what, '1' if self.ids.ring_sessions.active else '0')
+
+        what = "splittunnel"
+        config.set('network', what, '1' if self.ids.split_tunnel.active else '0')
+        set_split_tunnel_apps(config, self.split_tunnel_apps)
         
         with open(self.MeileConfig.CONFFILE, 'w', encoding="utf-8") as f:
             config.write(f)

@@ -21,6 +21,7 @@ from adapters import HTTPRequests, DNSRequests
 from cli.v2ray import V2RayHandler, V2RayConfiguration, V2RayFragmentConfiguration
 from helpers.wireguard import WgKey
 from helpers.helpers import resolve_address
+from helpers.windows_split_tunnel import activate_windows_split_tunnel, prepare_windows_split_tunnel
 
 import base64
 import bcrypt
@@ -58,12 +59,13 @@ class HandleWalletFunctions():
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        
+
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
         self.sdk = None
         self.returncode = None
         self.connected = {"v2ray_pid" : None, "result" : False, "status" : None, "session_id" : None}
+        self.split_tunnel_session = None
         
         # Migrate existing wallet to v2
         address = CONFIG['wallet'].get('address', None)
@@ -74,6 +76,31 @@ class HandleWalletFunctions():
         #if address and version < 200:
         #    print("Migrating Wallet...")
         #    self.__migrate_wallets()
+
+    def prepare_split_tunnel(self, conndesc):
+        self.split_tunnel_session = None
+        if platform.system() != Arch.WINDOWS:
+            return
+        try:
+            self.split_tunnel_session = prepare_windows_split_tunnel(MeileConfig.CONFFILE)
+            if self.split_tunnel_session:
+                conndesc.write("Preparing split tunneling...\n")
+                conndesc.flush()
+        except Exception as e:
+            print("Split tunneling preparation failed:", str(e))
+
+    def start_split_tunnel(self, conndesc):
+        if not self.split_tunnel_session:
+            return
+        try:
+            added_routes = activate_windows_split_tunnel(self.split_tunnel_session)
+            conndesc.write("Split tunneling enabled")
+            if added_routes:
+                conndesc.write(f" ({len(added_routes)} route(s) added)")
+            conndesc.write(".\n")
+            conndesc.flush()
+        except Exception as e:
+            print("Split tunneling start failed:", str(e))
         
     @staticmethod
     def decode_jwt_file(fpath: str, password: str) -> dict:
@@ -1231,6 +1258,8 @@ class HandleWalletFunctions():
                               "session_id" : session_id}
             print(self.connected)
             return
+
+        self.prepare_split_tunnel(conndesc)
         
         if type == "WireGuard":
             iface = "wg99"
@@ -1270,6 +1299,7 @@ class HandleWalletFunctions():
                                   "result": True, 
                                   "status" : iface, 
                                   "session_id" : session_id}
+                self.start_split_tunnel(conndesc)
                 conndesc.write("Checking network connection...\n")
                 conndesc.flush()
                 sleep(1)
@@ -1338,6 +1368,7 @@ class HandleWalletFunctions():
                                       "result": True, 
                                       "status" : tuniface, 
                                       "session_id" : session_id}
+                    self.start_split_tunnel(conndesc)
                 else:
                     self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid, 
                                       "result": False, 
@@ -1452,6 +1483,3 @@ class HandleWalletFunctions():
             with open(path.join(ConfParams.KEYRINGDIR, 'ip-api.json'), 'w') as f:
                 f.write(json.dumps('{}'))
             return False
-                
-    
-        

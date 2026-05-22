@@ -21,6 +21,7 @@ from typedef.konstants import ConfParams, HTTParams, IBCTokens, TextStrings, Nod
 from adapters import HTTPRequests
 from cli.v2ray import V2RayHandler
 from helpers import helpers
+from helpers.windows_split_tunnel import stop_windows_split_tunnel
 
 import mospy
 import grpc
@@ -42,7 +43,7 @@ class NodeTreeData():
     NodeTypes      = {}
     NodeHealth     = {}
     NodeFormula    = {}
-    
+
     def __init__(self, node_tree):
         if not node_tree:
             self.NodeTree = Tree()
@@ -394,7 +395,7 @@ class NodeTreeData():
                 continue 
 
         return NodeTreeBase
-    
+
     def return_denom(self, tokens):
         for ibc_coin in IBCTokens.IBCCOINS:
             for denom,ibc in ibc_coin.items():
@@ -402,7 +403,6 @@ class NodeTreeData():
                     tokens = tokens.replace(ibc, denom)
         
         return tokens
-    
     def parse_coin_deposit(self, tokens):
         UnitAmounts = []
         tokenString = ""
@@ -600,6 +600,7 @@ def disconnect(v2ray):
     if v2ray:
         try:
             if pltfrm == Arch.WINDOWS:
+                stop_windows_split_tunnel()
                 V2Ray = V2RayHandler(v2ray_tun2routes_connect_bash + " down")
                 chdir(MeileConfig.BASEBINDIR)
                 rc = V2Ray.kill_daemon()
@@ -615,6 +616,7 @@ def disconnect(v2ray):
     else:
         
         if pltfrm == Arch.WINDOWS:
+            stop_windows_split_tunnel()
             with open(path.join(MeileConfig.BASEBINDIR, 'disconnect.bat'), 'w') as DISBATFILE:
                 DISBATFILE.write("%s /uninstalltunnelservice wg99\n" % MeileConfig.WIREGUARD_BIN)
                 DISBATFILE.write("TASKKILL /F /IM WireGuard.exe\n")
@@ -632,11 +634,9 @@ def disconnect(v2ray):
         else:
             CONFFILE = path.join(ConfParams.KEYRINGDIR, 'wg99.conf')
             wg_downCMD = ['pkexec', 'env', 'PATH=%s' % ConfParams.PATH, 'wg-quick', 'down', CONFFILE]
-                
+
             proc1 = Popen(wg_downCMD)
             proc1.wait(timeout=30)
-        
+
             proc_out,proc_err = proc1.communicate()
             return proc1.returncode, False
-
-    
