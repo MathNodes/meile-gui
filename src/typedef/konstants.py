@@ -39,8 +39,6 @@ class HTTParams():
     APIS_URL = [APIURL,
         {"Name" : "Ungovernable", "Country" : "Canada", "url" : "https://api.ungovernable.dev"},
         {"Name" : "Noncompliance", "Country" : "US" , "url" : "https://api.sentinel.noncompliance.org"},
-        {"Name" : "MathNodes RO", "Country" : "Romania", "url" : "https://api.ro.mathnodes.com"},
-        {"Name" : "dVPN.me", "Country" : "China" , "url" : "https://api.dvpn.me:443"},
         {"Name" : "BlueFren", "Country" : "Singapore" , "url" : "https://api.bluefren.net:443"},
         {"Name" : "BusurNodes", "Country" : "Global" , "url" : "https://api-sentinel.busurnode.com:443"},
         {"Name" : "Sentinel DAO", "Country" : "Global" , "url" : "https://api.sentineldao.com:443"},
@@ -71,8 +69,6 @@ class HTTParams():
     ]
     GRPC = {"Name" : "Ungovernable", "Country" : "Canada", "url" : "grpc.ungovernable.dev:443"}
     GRPCS =  [ GRPC, 
-        {"Name" : "MathNodes", "Country" : "Romania" , "url" : "grpc.mathnodes.com:443"},
-        {"Name" : "dVPN.me", "Country" : "China" , "url" : "grpc.dvpn.me:443"},
         {"Name" : "Noncompliance", "Country" : "US" , "url" : "grpc.sentinel.noncompliance.org:443"},
         {"Name" : "BlueFren", "Country" : "Singapore" , "url" : "grpc.bluefren.net:443"},
         {"Name" : "BusurNodes", "Country" : "Global" , "url" : "grpc-sentinel.busurnode.com:443"},
@@ -630,7 +626,7 @@ class MeileColors():
     DIALOG_BG_COLOR2         = "#181818"
     INDICATOR                = "#00DD21"
     INACTIVE_DIALOG_BG_COLOR = "#50507c"
-    MAP_BG_COLOR             = "#232227"
+    MAP_BG_COLOR             = "#262626"
     ROW_HOVER                = "#39363c"
     DOWNLOAD                 = "#2fe548"
     UPLOAD                   = "#2fa1e5"
