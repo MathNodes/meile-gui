@@ -7,8 +7,10 @@ from dataclasses import dataclass
 import sys
 import os
 import tempfile
+import socket, time
 
 from conf.meile_config import MeileGuiConfig
+from helpers.helpers import wait_for_port
 
 # Platform-conditional imports
 if sys.platform == 'win32':
@@ -51,6 +53,8 @@ class _LinuxV2RayHandler():
 
         self.v2ray_pid = v2ray_srvc_proc.pid
 
+    
+
     def start_daemon(self):
 
         print("Starting v2ray service...")
@@ -58,8 +62,11 @@ class _LinuxV2RayHandler():
         multiprocessing.get_context('fork')
         warp_fork = Process(target=self.fork_v2ray)
         warp_fork.run()
-        sleep(1.5)
-        return True
+        ok = wait_for_port(host="127.0.0.1", port=1080, timeout=120)
+        if ok:
+            return True
+        else:
+            return False
 
     def kill_daemon(self):
         v2ray_daemon_cmd = (

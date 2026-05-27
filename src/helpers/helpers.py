@@ -1,5 +1,8 @@
 import socket
 import ipaddress
+import socket
+import time
+
 
 def format_byte_size(size, decimals=2, binary_system=True):
     if binary_system:
@@ -41,6 +44,36 @@ def natural_gateway(ip_with_prefix: str) -> str:
     else:
         net64 = ipaddress.ip_network(f"{iface.ip.exploded}/64", strict=False)
         return str(ipaddress.ip_address(int(net64.network_address) + 1))
+
+def wait_for_port(host, port, timeout=300, poll=0.2):
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            try:
+                with socket.create_connection((host, port), timeout=0.5):
+                    return True
+            except OSError:
+                time.sleep(poll)
+        return False
+
+def wait_for_tunnel_iface(iface=None, timeout=300, poll=0.2):
+    if not iface:
+        raise ValueError("iface must be a non-empty list")
+
+    wanted = set(iface)
+    deadline = time.monotonic() + timeout
+
+    while time.monotonic() < deadline:
+        present = {name for _, name in socket.if_nameindex()}
+        found = wanted & present
+        if found:
+            # if multiple matched, prefer the order the caller gave
+            for name in iface:
+                if name in found:
+                    return name
+        time.sleep(poll)
+
+    return None
+
 
 
 def is_ecryptfs_mounted():

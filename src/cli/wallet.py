@@ -19,7 +19,7 @@ from typedef.konstants import IBCTokens, ConfParams, HTTParams, MEILE_PLAN_WALLE
 from adapters import HTTPRequests, DNSRequests
 from cli.v2ray import V2RayHandler, V2RayConfiguration, V2RayFragmentConfiguration
 from helpers.wireguard import WgKey
-from helpers.helpers import resolve_address, natural_gateway
+from helpers.helpers import resolve_address, natural_gateway, wait_for_tunnel_iface
 
 import base64
 import bcrypt
@@ -1010,35 +1010,7 @@ class HandleWalletFunctions():
 
         kr = self.__keyring(PASSWORD)
         private_key = kr.get_password("meile-gui", KEYNAME)
-        '''
-        try:
-            self.sdk = SDKInstance(grpcaddr, int(grpcport), secret=private_key, ssl=True)
-        except ConnectionError:
-            message = "gRPC unresponsive. Try again later or switch gRPCs."
-            self.connected = {"v2ray_pid" : None, 
-                              "result" : False, 
-                              "status" : message, 
-                              "session_id" : None}
-            return
-        except grpc._channel._InactiveRpcError as e:
-            status_code = e.code()
-            
-            if status_code == StatusCode.NOT_FOUND:
-                message = "Wallet not found on blockchain. Please verify you have sent coins to your wallet to activate it. Then try your subscription again"
-                self.connected = {"v2ray_pid" : None,  
-                                  "result": False, 
-                                  "status" : message, 
-                                  "session_id" : None}
-                print(self.connected)
-                return
-            else:
-                message = "gRPC Error!"
-                self.connected = {"v2ray_pid" : None, 
-                                  "result" : False, 
-                                  "status" : message, 
-                                  "session_id" : None}
-                return
-        '''
+        
         if not self._ensure_sdk(grpcaddr, grpcport, private_key):
             message = "Could not instantiate the SDK"
             self.returncode = (False, message)
@@ -1244,19 +1216,36 @@ class HandleWalletFunctions():
             if pltfrm == Arch.LINUX:
                 child = pexpect.spawn(f"pkexec sh -c 'ip link delete {iface}; wg-quick up {config_file}'")
                 child.expect(pexpect.EOF)
-                sleep(5)
+                ok = wait_for_tunnel_iface(iface=["wg99", "utun3"], timeout=300)
+                if ok is None:
+                    self.connected = {"v2ray_pid" : None,  
+                                      "result": False, 
+                                      "status" : "Error bringing up wireguard interface", 
+                                      "session_id" : session_id}
+                    return
             elif pltfrm == Arch.OSX:
                 connectBASH = [sentinel_connect_bash]
                 proc2 = subprocess.Popen(connectBASH)
                 proc2.wait(timeout=30)
                 pid2 = proc2.pid
                 proc_out, proc_err = proc2.communicate()
-                #subprocess.run(["sudo", "launchctl", "load", str(LAUNCHDAEMON_PATH)], check=True)
-                sleep(3)
+                ok = wait_for_tunnel_iface(iface=["wg99", "utun3"], timeout=300)
+                if ok is None:
+                    self.connected = {"v2ray_pid" : None,  
+                                      "result": False, 
+                                      "status" : "Error bringing up wireguard interface", 
+                                      "session_id" : session_id}
+                    return
             elif pltfrm == Arch.WINDOWS:
                 wgup = [gsudo, MeileConfig.WIREGUARD_BIN, "/installtunnelservice", config_file]
                 wg_process = subprocess.Popen(wgup)
-                sleep(15)
+                ok = wait_for_tunnel_iface(iface=["wg99", "utun3"], timeout=300)
+                if ok is None:
+                    self.connected = {"v2ray_pid" : None,  
+                                      "result": False, 
+                                      "status" : "Error bringing up wireguard interface", 
+                                      "session_id" : session_id}
+                    return
                 
             if psutil.net_if_addrs().get(iface) or psutil.net_if_addrs().get("utun3"):
                 self.connected = {"v2ray_pid" : None,  
