@@ -1693,7 +1693,7 @@ class WalletScreen(Screen):
     MeileConfig = None
     dialog = None
     qr_address = StringProperty()
-    MenuOptions = ["Refresh", "New Wallet", "Re-Fuel", "View Seed"]
+    MenuOptions = ["Refresh", "New Wallet", "View Seed"]
 
     def __init__(self, ADDRESS,  **kwargs):
         super(WalletScreen, self).__init__()
@@ -1704,7 +1704,7 @@ class WalletScreen(Screen):
         item_height = 50
         max_height = len(self.MenuOptions) * item_height
 
-        menu_icons = ["refresh-circle", "wallet-plus", "cash-multiple", "lock-open-variant"]
+        menu_icons = ["refresh-circle", "wallet-plus", "lock-open-variant"]
         menu_items = [
             {
                 "viewclass" : "IconListItem",
@@ -1742,9 +1742,12 @@ class WalletScreen(Screen):
         elif selection == self.MenuOptions[1]:
             self.open_dialog_new_wallet()
         elif selection == self.MenuOptions[2]:
-            self.open_fiat_interface()
-        elif selection == self.MenuOptions[3]:
             self.display_seed()
+        '''
+        elif selection == self.MenuOptions[2]:
+            self.open_fiat_interface()
+        '''
+
         
     def open_dialog_new_wallet(self):
         self.dialog = MDDialog(
