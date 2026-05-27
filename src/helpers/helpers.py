@@ -1,6 +1,5 @@
 import socket
 import ipaddress
-import socket
 import time
 import psutil
 
@@ -29,6 +28,23 @@ def resolve_address(addr):
     except ValueError:
         # Not an IP, treat as hostname
         return socket.gethostbyname(addr)
+    
+def natural_gateway(ip_with_prefix: str) -> str:
+
+    iface = ipaddress.ip_interface(ip_with_prefix)
+    net = iface.network
+
+    if net.num_addresses > 1:
+        gw = ipaddress.ip_address(int(net.network_address) + 1)
+        return str(gw)
+
+    if iface.version == 4:
+        net24 = ipaddress.ip_network(f"{iface.ip.exploded}/24", strict=False)
+        gw = ipaddress.ip_address(int(net24.network_address) + 1)
+        return str(gw)
+    else:
+        net64 = ipaddress.ip_network(f"{iface.ip.exploded}/64", strict=False)
+        return str(ipaddress.ip_address(int(net64.network_address) + 1))
 
 
 def wait_for_port(host, port, timeout=120, poll=0.2):

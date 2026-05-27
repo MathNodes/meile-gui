@@ -20,6 +20,7 @@ if sys.platform == 'win32':
     from os import path
     import win32gui, win32con
     from typedef.konstants import ConfParams
+    import threading
 elif sys.platform == 'darwin':
     import tempfile
 elif sys.platform.startswith('linux'):
