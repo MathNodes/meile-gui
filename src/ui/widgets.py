@@ -482,7 +482,7 @@ class PlanSubscribeContent(BoxLayout):
         self.price_api = GetPriceAPI()
         self.price_cache = {}
 
-        self.price_text = price
+        self.price_text = ' '.join([price.split("p2p")[0], 'p2p'])
         self.parse_coin_deposit("p2p")
 
         self.white_label = white_label
@@ -608,7 +608,8 @@ class PlanSubscribeContent(BoxLayout):
         mu_coin = self.selected_mu_coin
         price_text = self.price_text_copy
         month = int(self.ids.slider1.value)
-        price = price_text.split("p2p")[0]
+        price = price_text.split("p2p")[0].strip()
+        print(f"PRICE IS: {price}")
     
         try:
             if mu_coin == "p2p":
