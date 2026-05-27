@@ -6,6 +6,7 @@ from time import sleep
 from dataclasses import dataclass
 import sys
 import os
+import tempfile
 
 from conf.meile_config import MeileGuiConfig
 
@@ -253,8 +254,8 @@ class _WindowsV2RayHandler():
 class _DarwinV2RayHandler:
     v2ray_pid = 0
 
-    def __init__(self, script, **kwargs):
-        self.script_path = script
+    def __init__(self, script_path, **kwargs):
+        self.script_path = script_path
         self.processes = []
         self.MeileConfig = MeileGuiConfig()
 
@@ -325,10 +326,22 @@ class _DarwinV2RayHandler:
 
     def start_daemon(self):
         print("Starting v2ray service...")
+        PLIST_DIR = os.path.expanduser("~/.meile-gui/launchd")
+        xray_plist = f"{PLIST_DIR}/app.meile.xray.plist"
+        tun2_plist = f"{PLIST_DIR}/app.meile.tun2socks.plist"
 
         privileged_commands = [
-            "launchctl bootstrap system"
-            " /Library/LaunchDaemons/app.meile.xray.plist"
+            'mkdir -p "/Library/Application Support/Meile/launchd"',
+            f'cp "{xray_plist}" "/Library/Application Support/Meile/launchd/"',
+            f'cp "{tun2_plist}" "/Library/Application Support/Meile/launchd/"',
+            'chown -R root:wheel "/Library/Application Support/Meile"',
+            'chmod 755 "/Library/Application Support/Meile" "/Library/Application Support/Meile/launchd"',
+            'chmod 644 "/Library/Application Support/Meile/launchd/"*.plist',
+            "rm -rf /Library/LaunchDaemons/app.meile.tun2socks.plist",
+            "rm -rf /Library/LaunchDaemons/app.meile.wireguard.plist",
+            "rm -rf /Library/LaunchDaemons/app.meile.xray.plist",
+            "launchctl enable system/app.meile.xray",
+            'launchctl bootstrap system "/Library/Application Support/Meile/launchd/app.meile.xray.plist"',
         ]
         privileged_commands.append("sleep 3")
         privileged_commands.append(
@@ -336,14 +349,10 @@ class _DarwinV2RayHandler:
             " -s https://icanhazip.com"
         )
         privileged_commands.append("sleep 1")
-        privileged_commands.append(
-            "launchctl bootstrap system"
-            " /Library/LaunchDaemons/app.meile.tun2socks.plist"
-        )
+        privileged_commands.append(f"launchctl enable system/app.meile.tun2socks")
+        privileged_commands.append(f'launchctl bootstrap system "/Library/Application Support/Meile/launchd/app.meile.tun2socks.plist"')
         privileged_commands.append("sleep 2")
-        privileged_commands.append(
-            "ifconfig utun123 198.18.0.1 198.18.0.1 up"
-        )
+        privileged_commands.append("ifconfig utun123 198.18.0.1 198.18.0.1 up")
 
         networks = [
             "1.0.0.0/8",
@@ -391,12 +400,7 @@ class _DarwinV2RayHandler:
         privileged_commands.append(
             "ifconfig utun123 198.18.0.1 198.18.0.1 down"
         )
-        privileged_commands.append(
-            "launchctl bootout system"
-            " /Library/LaunchDaemons/app.meile.xray.plist"
-            " ; launchctl bootout system"
-            " /Library/LaunchDaemons/app.meile.tun2socks.plist"
-        )
+        privileged_commands.append(f'launchctl bootout system "/Library/Application Support/Meile/launchd/app.meile.xray.plist" ; launchctl bootout system "/Library/Application Support/Meile/launchd/app.meile.tun2socks.plist" ; launchctl disable system/app.meile.xray ; launchctl disable system/app.meile.tun2socks')
 
         self.run_privileged_script(privileged_commands)
 
