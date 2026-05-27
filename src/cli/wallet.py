@@ -843,6 +843,8 @@ class HandleWalletFunctions():
         return None, None, None
     
     def write_wireguard_config(self, response, decode, wgkey, conndesc, iface):
+        CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
+        user_dns = CONFIG['network'].get('dns', '9.9.9.9')
         if len(decode) < 100:
             self.connected = {
                 "v2ray_pid": None,
@@ -898,7 +900,7 @@ class HandleWalletFunctions():
         config.set("Interface", "PrivateKey", wgkey.privkey)
         config.set(
             "Interface", "DNS",
-            ",".join(["127.0.0.1", "1.0.0.1", "1.1.1.1"])
+            ",".join([user_dns, "1.0.0.1", "1.1.1.1"])
         )
     
         config.add_section("Peer")
@@ -1216,46 +1218,39 @@ class HandleWalletFunctions():
             if pltfrm == Arch.LINUX:
                 child = pexpect.spawn(f"pkexec sh -c 'ip link delete {iface}; wg-quick up {config_file}'")
                 child.expect(pexpect.EOF)
-                ok = wait_for_tunnel_iface(iface=["wg99", "utun3"], timeout=300)
-                if ok is None:
-                    self.connected = {"v2ray_pid" : None,  
-                                      "result": False, 
-                                      "status" : "Error bringing up wireguard interface", 
-                                      "session_id" : session_id}
-                    return
+                
             elif pltfrm == Arch.OSX:
                 connectBASH = [sentinel_connect_bash]
                 proc2 = subprocess.Popen(connectBASH)
                 proc2.wait(timeout=30)
                 pid2 = proc2.pid
                 proc_out, proc_err = proc2.communicate()
-                ok = wait_for_tunnel_iface(iface=["wg99", "utun3"], timeout=300)
-                if ok is None:
-                    self.connected = {"v2ray_pid" : None,  
-                                      "result": False, 
-                                      "status" : "Error bringing up wireguard interface", 
-                                      "session_id" : session_id}
-                    return
+                
             elif pltfrm == Arch.WINDOWS:
                 wgup = [gsudo, MeileConfig.WIREGUARD_BIN, "/installtunnelservice", config_file]
                 wg_process = subprocess.Popen(wgup)
-                ok = wait_for_tunnel_iface(iface=["wg99", "utun3"], timeout=300)
-                if ok is None:
-                    self.connected = {"v2ray_pid" : None,  
-                                      "result": False, 
-                                      "status" : "Error bringing up wireguard interface", 
-                                      "session_id" : session_id}
-                    return
                 
-            if psutil.net_if_addrs().get(iface) or psutil.net_if_addrs().get("utun3"):
+                
+            #if psutil.net_if_addrs().get(iface) or psutil.net_if_addrs().get("utun3"):
+            tuniface = wait_for_tunnel_iface(iface=[iface, "utun3"], timeout=30)
+            if tuniface is not None:
                 self.connected = {"v2ray_pid" : None,  
                                   "result": True, 
-                                  "status" : iface, 
+                                  "status" : tuniface, 
                                   "session_id" : session_id}
                 conndesc.write("Checking network connection...\n")
                 conndesc.flush()
-                sleep(1)
-                self.get_ip_address()
+                sleep(2)
+                if self.get_ip_address():
+                    self.connected = {"v2ray_pid" : None,
+                                      "result": True, 
+                                      "status" : tuniface, 
+                                      "session_id" : session_id}
+                else:
+                    self.connected = {"v2ray_pid" : None,
+                                      "result": False, 
+                                      "status" : "Error establising connection to internet. Try a differnt node.", 
+                                      "session_id" : session_id}
                 sleep(1)
                 conndesc.close()
                 return
@@ -1295,7 +1290,8 @@ class HandleWalletFunctions():
                 if pltfrm == Arch.OSX:
                     chdir(MeileConfig.BASEDIR)
                 return
-                
+            
+            '''
             if pltfrm != Arch.OSX:
                 for iface in psutil.net_if_addrs().keys():
                     if "tun" in iface:
@@ -1309,12 +1305,16 @@ class HandleWalletFunctions():
                                       "session_id" : session_id}
                     print(self.connected)
                     tuniface = True
+            '''
 
-            if tuniface is True:
-                print(self.connected)
+            tuniface = wait_for_tunnel_iface(iface=["tun", "utun3", "utun123"], timeout=30)
+
+
+            if tuniface is not None:
+                print("Tunnel interface is up:", tuniface)
                 conndesc.write("Checking network connection...\n")
                 conndesc.flush()
-                sleep(1)
+                sleep(3.3)
                 if self.get_ip_address():
                     self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid, 
                                       "result": True, 
