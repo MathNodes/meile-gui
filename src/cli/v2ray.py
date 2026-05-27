@@ -25,6 +25,7 @@ elif sys.platform == 'darwin':
 elif sys.platform.startswith('linux'):
     import psutil
     from typedef.konstants import ConfParams
+    import threading
 
 # ---------------------------------------------------------------------------
 # V2RayHandler – one class per platform, selected at the bottom of this
@@ -56,6 +57,7 @@ class _LinuxV2RayHandler():
     
 
     def start_daemon(self):
+        '''
 
         print("Starting v2ray service...")
 
@@ -67,6 +69,32 @@ class _LinuxV2RayHandler():
             return True
         else:
             return False
+        '''
+        print("Starting v2ray service...")
+
+        try:
+            self.fork_v2ray()
+        except Exception as e:
+            print(f"[start_daemon] fork_v2ray failed: {e!r}")
+            return False
+
+        result = {"ok": False}
+
+        def worker():
+            try:
+                result["ok"] = wait_for_port("127.0.0.1", 1080, timeout=120)
+            except Exception as e:
+                print(f"[start_daemon] worker error: {e!r}")
+                result["ok"] = False
+
+        t = threading.Thread(target=worker, daemon=True)
+        t.start()
+
+        while t.is_alive():
+            print(".", end="", flush=True)
+            time.sleep(0.3) 
+
+        return result["ok"]
 
     def kill_daemon(self):
         v2ray_daemon_cmd = (
