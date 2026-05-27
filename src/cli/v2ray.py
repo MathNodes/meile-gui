@@ -26,6 +26,7 @@ elif sys.platform.startswith('linux'):
     import psutil
     from typedef.konstants import ConfParams
     import threading
+    import threading
 
 # ---------------------------------------------------------------------------
 # V2RayHandler – one class per platform, selected at the bottom of this
