@@ -112,7 +112,7 @@ WindowManager:
                     TooltipMDFlatButton:
                         size_hint: None, None
                         size: dp(70), dp(40)
-                        pos_hint: {'center_x': .2}
+                        pos_hint: {'center_x': .25}
                         on_release: root.connect_routine()
                         Image:
                             id: connect_button
@@ -386,45 +386,23 @@ WindowManager:
     wallet_address: ""
     qr_address: root.get_qr_code_address()
     md_bg_color: get_color_from_hex("#121212")
-    
+
     canvas.before:
         Color:
-            rgba: 0.07, 0.07, 0.07, 1  # This corresponds to #121212 in hex (RGB values divided by 255)
+            rgba: 0.07, 0.07, 0.07, 1
         Rectangle:
             pos: self.pos
             size: self.size
-            
+
     MDBoxLayout:
         orientation: "vertical"
+
         MDTopAppBar:
             id: toolbar
             title: "Wallet"
             md_bg_color: get_color_from_hex("#FFB908")
-            padding: 0,20,0,0
-            
-            MDBoxLayout:
-                orientation: 'horizontal'
-                size_hint_x: None
-                width: self.parent.width - sp(96)  # Adjust to leave space for left and right actions
-                pos_hint: {'center_x': 0.5}
-                MDLabel:
-                    size_hint_x: None
-                    width: (self.parent.width - sp(400) - sp(96)) / 2
-                
-                MDTextField:
-                    hint_text: "Address"
-                    mode: "fill"
-                    size_hint_x: None
-                    width: sp(400) 
-                    #pos_hint: {"center_x" : .5, "center_y": .5}
-                    pos_hint: {'center_y': 0.5}                
-                    text: root.wallet_address
-                    readonly: True
-                    opacity: 1
-                    theme_text_color: "Custom"
-                    text_color: get_color_from_hex("#000000")
-                    normal_color: app.theme_cls.accent_color
-                    
+            padding: 0, 20, 0, 0
+
             ToolTipMDIconButton:
                 id: wallet_menu
                 size_hint: None, None
@@ -434,39 +412,90 @@ WindowManager:
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex(MeileColors.BLACK)
                 on_release: root.menu_open()
-                #pos_hint: {'x' : .95, 'center_y' : .5}
-                    
-        MDFloatLayout:
-            MDBoxLayout:
-                orientation: "vertical"
-                size_hint_x: 0.5  
-                pos_hint: {'center_x': 0.5, 'top': .925}  
-                spacing: '40sp'
-                Image:
-                    id: qr
-                    source: root.qr_address
-                    pos_hint: {'x': 0, 'top': 1}
-                    size_hint_y: .5
-                RecycleView:
-                    viewclass: 'RowContainer'
-                    id: rv
-                    RecycleBoxLayout:
-                        default_size: None, sp(56)
-                        default_size_hint: 1, None
-                        size_hint_y: None
-                        height: self.minimum_height
-                        orientation: 'vertical'
-                        spacing: '10sp'    
+
+        MDBoxLayout:
+		    orientation: "vertical"
+		    padding: dp(20), dp(20), dp(20), dp(70)  # extra bottom padding for ActionBar
+		    spacing: dp(20)
+		
+		    # --- QR + Address block, centered horizontally ---
+		    MDBoxLayout:
+		        orientation: "vertical"
+		        adaptive_height: True
+		        size_hint_x: None
+		        width: sp(440)
+		        pos_hint: {"center_x": 0.5}
+		        spacing: dp(10)
+		
+		        Image:
+		            id: qr
+		            source: root.qr_address
+		            size_hint_y: None
+		            height: sp(200)
+		            allow_stretch: True
+		            keep_ratio: True
+		
+		        MDBoxLayout:
+		            orientation: "horizontal"
+		            size_hint_y: None
+		            height: sp(60)
+		            spacing: dp(4)
+		            pos_hint: {"center_x": 0.5}
+		
+		            MDTextField:
+		                id: address_field
+		                hint_text: "Address"
+		                mode: "fill"
+		                size_hint_x: None
+		                width: sp(400)
+		                pos_hint: {"center_y": 0.5}
+		                text: root.wallet_address
+		                readonly: True
+		                opacity: 1
+		                theme_text_color: "Custom"
+		                text_color: get_color_from_hex("#000000")
+		                normal_color: app.theme_cls.accent_color
+		
+		            ToolTipMDIconButton:
+		                icon: "content-copy"
+		                tooltip_text: "Copy address"
+		                pos_hint: {"center_y": 0.5}
+		                theme_text_color: "Custom"
+		                text_color: get_color_from_hex("#FFB908")
+		                on_release: root.copy_to_clipboard(address_field.text)
+		
+		    # --- Centered, half-width RecycleView ---
+		    AnchorLayout:
+		        anchor_x: "center"
+		        anchor_y: "top"
+		
+		        RecycleView:
+		            id: rv
+		            viewclass: 'RowContainer'
+		            size_hint_x: 0.5
+		            # Optional: cap min/max width so it looks good on very small/large screens
+		            # size_hint_x: None
+		            # width: min(self.parent.width * 0.5, sp(600))
+		
+		            RecycleBoxLayout:
+		                default_size: None, sp(56)
+		                default_size_hint: 1, None
+		                size_hint_y: None
+		                height: self.minimum_height
+		                orientation: 'vertical'
+		                spacing: '10sp'
+
     ActionBar:
         background_normal: ''
         background_down: ''
         background_color: get_color_from_hex("#121212")
+
         ActionView:
             ActionPrevious:
                 icon: "arrow-left-circle"
                 title: 'Go Back'
                 with_previous: True
-                on_release: root.set_previous_screen() 
+                on_release: root.set_previous_screen()
 
 <SettingsScreen>:
     name: "settings"
@@ -1180,7 +1209,7 @@ WindowManager:
                 size_hint_x: 2.3
     
             MDLabel:
-                text: "Location"
+                text: "       City"
                 bold: True
                 size_hint_x: 1.7
     
@@ -1190,7 +1219,7 @@ WindowManager:
                 size_hint_x: 2.2
     
             MDLabel:
-                text: "Protocol"
+                text: "     Protocol"
                 bold: True
                 size_hint_x: 1.6
     
@@ -1445,230 +1474,437 @@ WindowManager:
     height: self.minimum_height
     
     
+#:import get_color_from_hex kivy.utils.get_color_from_hex
+#:import sp kivy.metrics.sp
+#:import dp kivy.metrics.dp
+
 <NodeCarousel>:
     name: "node_carousel"
+    orientation: "vertical"
+    spacing: dp(10)
+    padding: dp(14)
+
+    # ===== HEADER =====
     MDBoxLayout:
         orientation: "vertical"
-        MDGridLayout:
-            rows: 3
-            cols: 2
-            orientation: 'lr-tb'
-            size_hint_y: .15
+        size_hint_y: None
+        height: dp(80)
+        spacing: dp(4)
+
+        MDBoxLayout:
+            orientation: "horizontal"
+            size_hint_y: None
+            height: dp(44)
+
             MDLabel:
                 text: root.moniker
-                #size_hint_x: .9
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex(MeileColors.MEILE)
-                font_size: sp(25)
+                font_size: sp(24)
                 font_name: root.get_font()
+                shorten: True
+                shorten_from: "right"
+
             AnchorLayout:
                 anchor_x: "right"
+                anchor_y: "center"
+                size_hint_x: None
+                width: dp(48)
                 TooltipMDIconButton:
                     icon: "server-network"
-                    tooltip_text: "Servers"
-                    #size_hint_x: .01
+                    tooltip_text: "Nodes"
                     theme_text_color: "Custom"
                     text_color: get_color_from_hex(MeileColors.MEILE)
-                    on_press: 
+                    on_press:
                         self.on_leave()
                         root.switch_carousel()
-            HSeparator:
-            HSeparator:
-            MDLabel:
-                text: root.address
-                size_hint_x: .95
-                font_size: sp(11)
-        MDFloatLayout
-            size_hint_y: 1
 
-            MDBoxLayout:
+        HSeparator:
+            size_hint_y: None
+            height: dp(1)
+
+        MDLabel:
+            text: root.address
+            font_size: sp(11)
+            size_hint_y: None
+            height: dp(20)
+            theme_text_color: "Custom"
+            text_color: 0.7, 0.7, 0.7, 1
+
+    # ===== BODY: LEFT (cards) | RIGHT (map + actions) =====
+    MDBoxLayout:
+        orientation: "horizontal"
+        spacing: dp(14)
+
+        # ========== LEFT COLUMN ==========
+        MDBoxLayout:
+            orientation: "vertical"
+            size_hint_x: 0.58
+            spacing: dp(10)
+
+            # ----- PRICING -----
+            MDCard:
                 orientation: "vertical"
-                size_hint_x: .6
-                size_hint_y: .95
-                spacing: 30             
+                padding: dp(12)
+                radius: [dp(16)]
+                elevation: 0
+                md_bg_color: 0.10, 0.10, 0.12, 1
+                line_color: root.themed_border(0.35)
+                size_hint_y: None
+                height: dp(120)
+
+                MDLabel:
+                    text: "PRICING"
+                    bold: True
+                    halign: "center"
+                    size_hint_y: None
+                    height: dp(22)
+                    theme_text_color: "Custom"
+                    text_color: get_color_from_hex(MeileColors.MEILE)
+                    font_size: sp(13)
+
+                MDGridLayout:
+                    cols: 2
+                    spacing: dp(8)
+
+                    MDLabel:
+                        text: "Per GB"
+                        halign: "center"
+                        font_size: sp(11)
+                        theme_text_color: "Custom"
+                        text_color: 0.65, 0.65, 0.65, 1
+                        size_hint_y: None
+                        height: dp(18)
+                    MDLabel:
+                        text: "Per Hour"
+                        halign: "center"
+                        font_size: sp(11)
+                        theme_text_color: "Custom"
+                        text_color: 0.65, 0.65, 0.65, 1
+                        size_hint_y: None
+                        height: dp(18)
+
+                    MDLabel:
+                        text: root.gb_prices
+                        halign: "center"
+                        valign: "top"
+                        font_size: sp(12)
+                    MDLabel:
+                        text: root.hr_prices
+                        halign: "center"
+                        valign: "top"
+                        font_size: sp(12)
+
+            # ----- BANDWIDTH -----
+            MDCard:
+                orientation: "vertical"
+                padding: dp(12)
+                radius: [dp(16)]
+                elevation: 0
+                md_bg_color: 0.10, 0.10, 0.12, 1
+                line_color: root.themed_border(0.35)
+                spacing: dp(4)
+                size_hint_y: None
+                height: dp(130)
+
+                MDLabel:
+                    text: "BANDWIDTH"
+                    bold: True
+                    halign: "center"
+                    size_hint_y: None
+                    height: dp(22)
+                    theme_text_color: "Custom"
+                    text_color: get_color_from_hex(MeileColors.MEILE)
+                    font_size: sp(13)
+
                 MDBoxLayout:
-                    size_hint_y: .125
-                    MDGridLayout
-                        cols: 2
+                    orientation: "horizontal"
+                    size_hint_y: None
+                    height: dp(18)
+                    MDLabel:
+                        text: "Download"
+                        font_size: sp(11)
+                        theme_text_color: "Custom"
+                        text_color: 0.65, 0.65, 0.65, 1
+                    MDLabel:
+                        text: root.download
+                        font_size: sp(11)
+                        halign: "right"
+
+                MDProgressBar:
+                    id: dl_bar
+                    #value: root.download_norm * 100
+                    value: 0
+                    color: get_color_from_hex(MeileColors.DOWNLOAD)
+                    size_hint_y: None
+                    height: dp(6)
+
+                MDBoxLayout:
+                    orientation: "horizontal"
+                    size_hint_y: None
+                    height: dp(18)
+                    MDLabel:
+                        text: "Upload"
+                        font_size: sp(11)
+                        theme_text_color: "Custom"
+                        text_color: 0.65, 0.65, 0.65, 1
+                    MDLabel:
+                        text: root.upload
+                        font_size: sp(11)
+                        halign: "right"
+
+                MDProgressBar:
+                    id: ul_bar
+                    #value: root.upload_norm * 100
+                    value: 0
+                    color: get_color_from_hex(MeileColors.UPLOAD)
+                    size_hint_y: None
+                    height: dp(6)
+
+            # ----- NETWORK -----
+            MDCard:
+                orientation: "vertical"
+                padding: dp(12)
+                radius: [dp(16)]
+                elevation: 0
+                md_bg_color: 0.10, 0.10, 0.12, 1
+                line_color: root.themed_border(0.35)
+                size_hint_y: None
+                height: dp(150)
+
+                MDLabel:
+                    text: "NETWORK"
+                    bold: True
+                    halign: "center"
+                    size_hint_y: None
+                    height: dp(22)
+                    theme_text_color: "Custom"
+                    text_color: get_color_from_hex(MeileColors.MEILE)
+                    font_size: sp(13)
+
+                MDGridLayout:
+                    cols: 2
+                    spacing: dp(4)
+
+                    MDLabel:
+                        text: "Peers"
+                        font_size: sp(12)
+                        theme_text_color: "Custom"
+                        text_color: 0.65, 0.65, 0.65, 1
+                    MDLabel:
+                        text: root.connected_peers + " / " + root.max_peers
+                        font_size: sp(12)
+                        halign: "right"
+
+                    MDLabel:
+                        text: "Protocol"
+                        font_size: sp(12)
+                        theme_text_color: "Custom"
+                        text_color: 0.65, 0.65, 0.65, 1
+                    MDLabel:
+                        text: root.protocol + " " + root.version
+                        font_size: sp(12)
+                        halign: "right"
+
+                    MDLabel:
+                        text: "Handshake"
+                        font_size: sp(12)
+                        theme_text_color: "Custom"
+                        text_color: 0.65, 0.65, 0.65, 1
+                    MDLabel:
+                        text: root.handshake
+                        font_size: sp(12)
+                        halign: "right"
+
+                    MDLabel:
+                        text: "Health"
+                        font_size: sp(12)
+                        theme_text_color: "Custom"
+                        text_color: 0.65, 0.65, 0.65, 1
+                    MDLabel:
+                        text: root.health_check
+                        font_size: sp(12)
+                        halign: "right"
+                        theme_text_color: "Custom"
+                        text_color:
+                            (0.3, 0.9, 0.4, 1) if root.health_check == "Passed" \
+                            else ((1, 0.85, 0.2, 1) if root.health_check == "Checking..." \
+                            else (1, 0.35, 0.35, 1))
+
+            # ----- REPUTATION -----
+            MDCard:
+                orientation: "vertical"
+                padding: dp(12)
+                radius: [dp(16)]
+                elevation: 0
+                md_bg_color: 0.10, 0.10, 0.12, 1
+                line_color: root.themed_border(0.35)
+                spacing: dp(4)
+                size_hint_y: None
+                height: dp(120)
+
+                MDLabel:
+                    text: "REPUTATION"
+                    bold: True
+                    halign: "center"
+                    size_hint_y: None
+                    height: dp(22)
+                    theme_text_color: "Custom"
+                    text_color: get_color_from_hex(MeileColors.MEILE)
+                    font_size: sp(13)
+
+                MDBoxLayout:
+                    orientation: "horizontal"
+                    size_hint_y: None
+                    height: dp(22)
+
+                    MDLabel:
+                        text: "Score"
+                        font_size: sp(12)
+                        theme_text_color: "Custom"
+                        text_color: 0.65, 0.65, 0.65, 1
+                    MDLabel:
+                        text: str(root.score)
+                        font_size: sp(12)
+                        halign: "right"
+                        theme_text_color: "Custom"
+                        text_color:
+                            (0.3, 0.9, 0.4, 1) if float(root.score) > 80 \
+                            else (1, 0.65, 0.2, 1)
+
+                MDProgressBar:
+                	id: score_bar
+                    #value: float(root.score)
+                    value: 0
+                    color: get_color_from_hex(MeileColors.MEILE)
+                    size_hint_y: None
+                    height: dp(6)
+
+                MDBoxLayout:
+                    orientation: "horizontal"
+                    size_hint_y: None
+                    height: dp(22)
+
+                    MDLabel:
+                        text: "Votes"
+                        font_size: sp(12)
+                        theme_text_color: "Custom"
+                        text_color: 0.65, 0.65, 0.65, 1
+                    MDLabel:
+                        text: root.votes
+                        font_size: sp(12)
+                        halign: "right"
+
+            # ----- META -----
+            MDCard:
+                orientation: "vertical"
+                padding: dp(12)
+                radius: [dp(16)]
+                elevation: 0
+                md_bg_color: 0.10, 0.10, 0.12, 1
+                line_color: root.themed_border(0.35)
+                size_hint_y: None
+                height: dp(80)
+
+                MDGridLayout:
+                    cols: 2
+                    spacing: dp(4)
+
+                    MDLabel:
+                        text: "ISP"
+                        font_size: sp(12)
+                        theme_text_color: "Custom"
+                        text_color: 0.65, 0.65, 0.65, 1
+                    MDLabel:
+                        text: root.isp_type
+                        font_size: sp(12)
+                        halign: "right"
+
+                    MDLabel:
+                        text: "Formula"
+                        font_size: sp(12)
+                        theme_text_color: "Custom"
+                        text_color: 0.65, 0.65, 0.65, 1
+                    MDLabel:
+                        text: root.node_formula
+                        font_size: sp(12)
+                        halign: "right"
+
+            Widget:
+
+        # ========== RIGHT COLUMN ==========
+        MDBoxLayout:
+            orientation: "vertical"
+            size_hint_x: 0.42
+            spacing: dp(12)
+
+            # ----- MAP -----
+            MDCard:
+                radius: [dp(16)]
+                elevation: 0
+                md_bg_color: 0.10, 0.10, 0.12, 1
+                line_color: root.themed_border(0.35)
+                padding: dp(4)
+                size_hint_y: 0.7
+
+                RelativeLayout:
+                    MapView:
+                        id: mapview
+                        lat: 48.849943
+                        lon: 2.279793
+                        zoom: 8
+
+                    MDCard:
+                        size_hint: None, None
+                        size: dp(220), dp(36)
+                        pos_hint: {"center_x": 0.5, "y": 0.03}
+                        radius: [dp(18)]
+                        md_bg_color: 0, 0, 0, 0.75
+                        line_color: root.themed_border(0.5)
+                        elevation: 0
+
+                        MDLabel:
+                            text: root.location
+                            halign: "center"
+                            markup: True
+                            font_size: sp(12)
+                            theme_text_color: "Custom"
+                            text_color: 1, 1, 1, 1
+
+            # ----- ACTION BUTTONS -----
+            MDBoxLayout:
+                orientation: "horizontal"
+                size_hint_y: None
+                height: dp(48)
+                spacing: dp(12)
+
+                MDFlatButton:
+                    #text: "Subscribe"
+                    size_hint_x: 0.5
+                    md_bg_color: get_color_from_hex(MeileColors.DIALOG_BG_COLOR)
+                    #theme_text_color: "Custom"
+                    #text_color: 0, 0, 0, 1
+                    on_release: root.subscribe_to_node(root.gb_prices, root.hr_prices, root.address, root.moniker)
+					Image:
+	                    id: subscribe_button
+	                    size_hint: 2.2,2.2
+	                    source: root.get_button("subscribe")
+                MDFlatButton:
+                    #text: "Live Data"
+                    size_hint_x: 0.5
+                    md_bg_color: get_color_from_hex(MeileColors.DIALOG_BG_COLOR)
+                    #theme_text_color: "Custom"
+                    #text_color: 0, 0, 0, 1
+                    on_release: root.get_realtime_of_node(root.address)
+                    Image:
+	                    id: realtime_button
+	                    size_hint: 2.2,2.2
+	                    source: root.get_button("info")
+
+            Widget:
+                size_hint_y: None
+                height: dp(8)
                         
-                        MDLabel:
-                            text: "[b]Gigabyte Prices[/b]"
-                            halign: "center"
-                            markup: True
-                        
-                        MDLabel:
-                            text: "[b]Hourly Prices[/b]"
-                            halign: "center"
-                            markup: True
-                        
-                        MDLabel:
-                            text: root.gb_prices
-                            halign: "center"
-                            font_size: sp(12)
-                        
-                        MDLabel:
-                            text: root.hr_prices
-                            halign: "center"
-                            font_size: sp(12)
-                MDBoxLayout:
-                    size_hint_y: .03
-                    MDGridLayout
-                        cols: 2
-                        rows: 2
-                        MDLabel:
-                            text: "[b]Bandwidth Down[/b]"
-                            halign: "center"
-                            markup: True
-                        MDLabel:
-                            text: "[b]Bandwidth Up[/b]"
-                            halign: "center"
-                            markup: True
-                        MDLabel:
-                            text: root.download
-                            halign: "center"
-                            font_size: sp(12)
-                        MDLabel:
-                            text: root.upload
-                            halign: "center"
-                            font_size: sp(12)
-                MDBoxLayout:
-                    size_hint_y: .03
-                    MDGridLayout
-                        cols: 2
-                        rows: 2
-                        MDLabel:
-                            text: "[b]Connected Peers[/b]"
-                            halign: "center"
-                            markup: True
-                        MDLabel:
-                            text: "[b]Max Peers[/b]"
-                            halign: "center"
-                            markup: True
-                        MDLabel:
-                            text: root.connected_peers
-                            halign: "center"
-                            font_size: sp(12)
-                        MDLabel:
-                            text: root.max_peers
-                            halign: "center"
-                            font_size: sp(12)
-                MDBoxLayout:
-                    size_hint_y: .03
-                    MDGridLayout
-                        cols: 2
-                        rows: 2
-                        MDLabel:
-                            text: "[b]Protocol[/b]"
-                            halign: "center"
-                            markup: True
-                        MDLabel:
-                            text: "[b]Version[/b]"
-                            halign: "center"
-                            markup: True
-                        MDLabel:
-                            text: root.protocol
-                            halign: "center"
-                            font_size: sp(12)
-                        MDLabel:
-                            text: root.version
-                            halign: "center"
-                            font_size: sp(12)
-                MDBoxLayout:
-                    size_hint_y: .03
-                    MDGridLayout
-                        cols: 2
-                        rows: 2
-                        MDLabel:
-                            text: "[b]Handshake[/b]"
-                            halign: "center"
-                            markup: True
-                        MDLabel:
-                            text: "[b]Health Check[/b]"
-                            halign: "center"
-                            markup: True
-                        MDLabel:
-                            text: root.handshake
-                            halign: "center"
-                            font_size: sp(12)
-                        MDLabel:
-                            text: root.health_check
-                            halign: "center"
-                            font_size: sp(12)
-                MDBoxLayout:
-                    size_hint_y: .03
-                    MDGridLayout
-                        cols: 2
-                        rows: 2
-                        MDLabel:
-                            text: "[b]ISP Type[/b]"
-                            halign: "center"
-                            markup: True
-                        MDLabel:
-                            text: "[b]Formula[/b]"
-                            halign: "center"
-                            markup: True
-                        MDLabel:
-                            text: root.isp_type
-                            halign: "center"
-                            font_size: sp(12)
-                        MDLabel:
-                            text: root.node_formula
-                            halign: "center"
-                            font_size: sp(12)
-                MDBoxLayout:
-                    size_hint_y: .03
-                    MDGridLayout
-                        cols: 2
-                        rows: 2
-                        MDLabel:
-                            text: "[b]Votes[/b]"
-                            halign: "center"
-                            markup: True
-                        MDLabel:
-                            text: "[b]Score[/b]"
-                            halign: "center"
-                            markup: True
-                        MDLabel:
-                            text: root.votes
-                            halign: "center"
-                            font_size: sp(12)
-                        MDLabel:
-                            text: root.score
-                            halign: "center"
-                            font_size: sp(12)
-                MDBoxLayout:
-                    size_hint_y: .1
-                    
-            MapView:
-                id: mapview
-                lat: 48.849943
-                lon: 2.279793
-                zoom: 8
-                size_hint: .4, .6
-                pos_hint: {"x": .575, "y": .4}
-                
-            MDLabel:
-                text: root.location
-                pos_hint: {"x" : .7, "y": -.125}
-                markup: True
-                    
-            MDFlatButton:        
-                md_bg_color: get_color_from_hex("#121212")
-                pos_hint: {'x' : .67, 'y': .275}
-                on_release: root.subscribe_to_node(root.gb_prices, root.hr_prices, root.address, root.moniker)
-                Image:
-                    id: subscribe_button
-                    size_hint: 3,3
-                    source: root.get_button("subscribe")
-            
-            MDFlatButton:        
-                md_bg_color: get_color_from_hex("#121212")
-                pos_hint: {'x' : .87, 'y': .275}
-                on_release: root.get_realtime_of_node(root.address)
-                Image:
-                    id: realtime_button
-                    size_hint: 3,3
-                    source: root.get_button("info")
 <Separator@Widget>:
     canvas:
         Color:
@@ -2116,7 +2352,7 @@ WindowManager:
         MDDropDownItem:
             id: drop_item
             pos_hint: {'center_x': .5, 'center_y': .5}
-            text: "dvpn"
+            text: "p2p"
             on_release: root.menu.open()
             
         MDLabel:
@@ -2175,7 +2411,7 @@ WindowManager:
                     font_size: sp(12)
                 TooltipMDIconButton:
                     icon: "help-circle"
-                    tooltip_text: "Pay with Wallet in DVPN or IBC enabled coins"
+                    tooltip_text: "Pay with Wallet in P2P or IBC enabled coins"
 
             MDBoxLayout:
                 orientation: "horizontal"
@@ -2232,7 +2468,7 @@ WindowManager:
 
     MDBoxLayout:
         orientation: "horizontal"
-        size_hint_x: .8
+        size_hint_x: 1
         spacing: 20
 
         MDTextField:
@@ -2241,8 +2477,9 @@ WindowManager:
             mode: "fill"
             text: ""
             size_hint_y: .65
-            width: "50sp"
-            height: "30sp"
+            size_hint_x: 1.30
+            #width: "50sp"
+            #height: "30sp"
             readonly: True
 
         MDTextField:
@@ -2251,14 +2488,15 @@ WindowManager:
             mode: "fill"
             text: root.price_text
             size_hint_y: .65
-            width: "50sp"
-            height: "30sp"
+            size_hint_x: 1.30
+            #width: "50sp"
+            #height: "30sp"
             readonly: True
 
         MDDropDownItem:
             id: drop_item
-            pos_hint: {'center_x': .5, 'center_y': .5}
-            text: "dvpn"
+            pos_hint: {'center_x': .7, 'center_y': .5}
+            text: "p2p"
             on_release: root.menu.open()
             
         MDLabel:
@@ -2450,7 +2688,7 @@ WindowManager:
                     text_color: get_color_from_hex(MeileColors.MEILE)
                 MDLabel:
                     font_name: "DejaVuSans"
-                    text: "There are two primary ways to receive tokens to purchase dVPN (the currency) subscriptions and utilize the network. 1.) You get the DVPN token on a exchange and send it to your wallet address. Current exchanges are KuCoin, HotBit, Polarity and Osmosis. Once you purchase the tokens on the exchange, you need to withdraw them to your address listed in the wallet section of this app. The tokens should appear within minutes after a withdrawal and you can begin purchasing and subscribing to Sentinel dVPN nodes through Meile. 2.) You can purchase the currency used for Meile dVPN right in our app via the 'RE-FUEL' button within the wallet. These funds will be handled by our servers and the payment processing is handled by Stripe. Once you successfully complete a purchase, your funds should appear in your wallet within minutes of a successful purchase through our app. This is the easiest method to using Meile dVPN."
+                    text: "There are two primary ways to receive coins to purchase P2P (the currency) subscriptions and utilize the network. 1.) You get the P2P coin on a exchange and send it to your wallet address. Current exchanges are KuCoin, HotBit, Polarity and Osmosis. Once you purchase the tokens on the exchange, you need to withdraw them to your address listed in the wallet section of this app. The tokens should appear within minutes after a withdrawal and you can begin purchasing and subscribing to Sentinel dVPN nodes through Meile. 2.) You can purchase the currency used for Meile dVPN right in our app via the 'RE-FUEL' button within the wallet. These funds will be handled by our servers and the payment processing is handled by Stripe. Once you successfully complete a purchase, your funds should appear in your wallet within minutes of a successful purchase through our app. This is the easiest method to using Meile dVPN."
                     size_hint_y: None
                     height: self.texture_size[1]
                     size_hint_x: 1
@@ -2593,7 +2831,7 @@ WindowManager:
                 
                 MDLabel:
                     font_name: "DejaVuSans"
-                    text: "Sentinel is a Layer-1 blockchain within the Cosmos ecosystem. It was founded in 2017, and provides privacy services, such as decentralized VPN to users both of traditional commerce and blockchain enthusiasts. It's native coin ticker is $DVPN. "
+                    text: "Sentinel is a Layer-1 blockchain within the Cosmos ecosystem. It was founded in 2017, and provides privacy services, such as decentralized VPN to users both of traditional commerce and blockchain enthusiasts. It's native coin ticker is $P2P. "
                     size_hint_y: None
                     height: self.texture_size[1]
                     size_hint_x: 1
@@ -2722,7 +2960,7 @@ WindowManager:
                 id: token
                 pos_hint: {"x": .355, "center_y": .60}
                 text_color: get_color_from_hex(MeileColors.MEILE)
-                text: 'dvpn'
+                text: 'p2p'
                 on_release: root.menu_token.open()
                       
             MDDropDownItem:
@@ -2748,7 +2986,7 @@ WindowManager:
                     
             MDLabel:
                 id: dvpn_price
-                text: "DVPN: $" + str(root.get_token_price('dvpn'))
+                text: "P2P: $" + str(root.get_token_price('dvpn'))
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex(MeileColors.MEILE)
                 pos_hint: {"x": .40, "center_y": .48}
@@ -2763,7 +3001,7 @@ WindowManager:
                 font_size: "16sp"
             MDLabel:
                 id: coin_qty
-                text:"QTY: " + str(root.DVPNOptions[root.idvpn]) + " dvpn"
+                text:"QTY: " + str(root.DVPNOptions[root.idvpn]) + " p2p"
                 theme_text_color: "Custom"
                 text_color: get_color_from_hex(MeileColors.MEILE)
                 pos_hint: {"x": .40, "center_y": .38}

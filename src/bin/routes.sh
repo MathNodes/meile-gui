@@ -21,13 +21,13 @@ if [[ ${STATE} = "up" ]]; then
         # start v2ray
         echo "Running xray: /home/${USER}/.meile-gui/bin/v2ray run -c /home/${USER}/.meile-gui/v2ray_config.json &"
         /home/${USER}/.meile-gui/bin/xray run -c /home/${USER}/.meile-gui/v2ray_config.json &
-        sleep 3
+        sleep 1
         
         # get v2ray proxy IP
         PROXY_IP=`cat /home/${USER}/.meile-gui/v2ray.proxy`
         #echo ${PROXY_IP} > /home/${USER}/.meile-gui/v2ray.proxy
         echo "Proxy IP: ${PROXY_IP}"
-        sleep 2
+        sleep 1
         
         # add tun interface
         TUNID=${RANDOM} 
@@ -64,7 +64,7 @@ if [[ ${STATE} = "up" ]]; then
         echo "Routing table: "
         ip route show
         
-        sleep 3
+        sleep 1
         echo "-----------------------_CURLING_---------------------------"
         curl https://icanhazip.com
 else

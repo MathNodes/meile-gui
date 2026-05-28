@@ -1,5 +1,9 @@
 import socket
 import ipaddress
+import socket
+import time
+import psutil
+
 
 def format_byte_size(size, decimals=2, binary_system=True):
     if binary_system:
@@ -41,6 +45,33 @@ def natural_gateway(ip_with_prefix: str) -> str:
     else:
         net64 = ipaddress.ip_network(f"{iface.ip.exploded}/64", strict=False)
         return str(ipaddress.ip_address(int(net64.network_address) + 1))
+
+def wait_for_port(host, port, timeout=120, poll=0.2):
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        for c in psutil.net_connections(kind="tcp"):
+            if c.status == psutil.CONN_LISTEN and c.laddr.port == port:
+                # optional: also match host
+                if host in ("0.0.0.0", "", c.laddr.ip):
+                    return True
+        time.sleep(poll)
+    return False
+
+def wait_for_tunnel_iface(iface=None, timeout=30, poll=0.2):
+    if not iface:
+        raise ValueError("iface must be a non-empty list")
+
+    deadline = time.monotonic() + timeout
+
+    while time.monotonic() < deadline:
+        for tunface in psutil.net_if_addrs().keys():
+            for intface in iface:
+                if tunface.startswith(intface):
+                    return tunface
+        time.sleep(poll)
+
+    return None
+
 
 
 def is_ecryptfs_mounted():

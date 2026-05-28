@@ -39,8 +39,6 @@ class HTTParams():
     APIS_URL = [APIURL,
         {"Name" : "Ungovernable", "Country" : "Canada", "url" : "https://api.ungovernable.dev"},
         {"Name" : "Noncompliance", "Country" : "US" , "url" : "https://api.sentinel.noncompliance.org"},
-        {"Name" : "MathNodes RO", "Country" : "Romania", "url" : "https://api.ro.mathnodes.com"},
-        {"Name" : "dVPN.me", "Country" : "China" , "url" : "https://api.dvpn.me:443"},
         {"Name" : "BlueFren", "Country" : "Singapore" , "url" : "https://api.bluefren.net:443"},
         {"Name" : "BusurNodes", "Country" : "Global" , "url" : "https://api-sentinel.busurnode.com:443"},
         {"Name" : "Sentinel DAO", "Country" : "Global" , "url" : "https://api.sentineldao.com:443"},
@@ -71,8 +69,6 @@ class HTTParams():
     ]
     GRPC = {"Name" : "Ungovernable", "Country" : "Canada", "url" : "grpc.ungovernable.dev:443"}
     GRPCS =  [ GRPC, 
-        {"Name" : "MathNodes", "Country" : "Romania" , "url" : "grpc.mathnodes.com:443"},
-        {"Name" : "dVPN.me", "Country" : "China" , "url" : "grpc.dvpn.me:443"},
         {"Name" : "Noncompliance", "Country" : "US" , "url" : "grpc.sentinel.noncompliance.org:443"},
         {"Name" : "BlueFren", "Country" : "Singapore" , "url" : "grpc.bluefren.net:443"},
         {"Name" : "BusurNodes", "Country" : "Global" , "url" : "grpc-sentinel.busurnode.com:443"},
@@ -81,14 +77,12 @@ class HTTParams():
     NODE_API = "https://ungovernable.dev/api/public/card/1643a397-ddbd-48b1-89f7-396d16606eb5/query/json"
     NODE_APIS = [NODE_API] +  [
                               "https://metabase.mathnodes.com/api/public/card/bdff9cda-e0b8-417e-afd0-a8736a329914/query/json",
-                              "https://metabase.bluefren.xyz/api/public/card/4a891454-51da-462a-a5df-e85ca17c05d5/query/json",
-                              "https://metabase.ro.mathnodes.com/api/public/card/6fd7194d-f025-4766-ba3c-3635ba6a6c00/query/json",
-                              "https://cache.noncompliance.org/api/public/card/bc75f719-db4a-44b8-9688-f5793742a203/query/json",
-                              "https://hsinao.com/api/public/card/5591a83b-d076-4278-b1c2-107ed441e21e/query/json",
-                              "https://cache.meile.cryptopepper.org/api/public/card/9ced889b-3532-422e-a4c2-e1ee3349342a/query/json"
+                              "https://metabase.bluefren.net/api/public/card/4a891454-51da-462a-a5df-e85ca17c05d5/query/json",
+                              "https://cache.noncompliance.org/api/public/card/bc75f719-db4a-44b8-9688-f5793742a203/query/json"
                               ]
     
-    DNSSERVERS = [{'Country' : 'Mexico-1'    , 'ip' : '207.248.224.71'},
+    DNSSERVERS = [{'Country' : 'DNSCrypt'    , 'ip' : '127.0.0.1'},
+                  {'Country' : 'Mexico-1'    , 'ip' : '207.248.224.71'},
                   {'Country' : 'Mexico-2'    , 'ip' : '200.56.98.145'},
                   {'Country' : 'U.S.-1'      , 'ip' : '75.150.197.154'},
                   {'Country' : 'U.S.-2'      , 'ip' : '98.101.194.137'},
@@ -97,7 +91,8 @@ class HTTParams():
                   {'Country' : 'Japan'       , 'ip' : '153.156.93.5'},
                   {'Country' : 'Russia'      , 'ip' : '77.88.8.8'},
                   {'Country' : 'Indonesia'   , 'ip' : '103.184.98.227'},
-                  {'Country' : 'Cloudflare'  , 'ip' : '1.1.1.1'}
+                  {'Country' : 'Cloudflare'  , 'ip' : '1.1.1.1'},
+                  {'Country' : 'Quad9'       , 'ip' : '9.9.9.9'}
                   ]
     
     
@@ -105,7 +100,8 @@ class HTTParams():
     #APIURL                 = "http://128.199.90.172:1317"
     SERVER_URL             = "https://aimokoivunen.mathnodes.com"
     #GRPC                   = "grpc+http://128.199.90.172:9090/"
-    HEALTH_CHECK           = "https://api.health.sentinel.co/v1/records/%s"
+    #HEALTH_CHECK           = "https://api.health.sentinel.co/v1/records/%s"
+    HEALTH_CHECK           = "https://api.sentnodes.com/v2/node/%s"
     NODE_SCORE_ENDPOINT    = "/api/nodescores"
     NODE_LOCATION_ENDPOINT = "/api/nodelocations"
     NODE_TYPE_ENDPOINT     = "/api/nodetypes"
@@ -554,20 +550,24 @@ class IBCTokens():
     ZANO_WALLET = "ZxDEXCMwvpwirJujwjZExHfKFEqNjMWdjLw5MGYXa5KxScvcsr2BNGm8TFyk4mvFAhAPtWh54tadWNgS5CxPAqXX1fpoQLkJJ"
     
     IBCCOINS     = [{'uscrt' : IBCSCRT}, {'uatom' : IBCATOM}, {'uosmo' : IBCOSMO}, {'uknwn' :IBCUNKWN}, {'unam' : IBCNAM}]
-    UNITTOKEN    = {'uscrt' : 'scrt', 'uatom' : 'atom' , 'uosmo' : 'osmo', 'udvpn' : 'dvpn', 'unam' : 'nam', 'tsent' : 'tsent'}
+    UNITTOKEN    = {'uscrt' : 'scrt', 'uatom' : 'atom' , 'uosmo' : 'osmo', 'udvpn' : 'p2p', 'unam' : 'nam', 'tsent' : 'tsent'}
     IBCUNITTOKEN = {'uscrt' : IBCSCRT, 'uatom' : IBCATOM , 'uosmo' : IBCOSMO, 'unam' : IBCNAM, 'udvpn' : 'udvpn', 'tsent' : 'tsent'}
     mu_coins     = ["udvpn", "uscrt", "uosmo", "uatom", "unam"]
-    ibc_coins    = ["dvpn", "scrt", "osmo", "atom", "nam"]
+    ibc_coins    = ["p2p", "scrt", "osmo", "atom", "nam"]
+    COIN_DISPLAY = {'dvpn': 'P2P'}
     ibc_mu_coins  = {"tsent" : "tsent", 
                      "dvpn"  : "udvpn", 
                      "scrt"  : "uscrt", 
                      "osmo"  : "uosmo", 
                      "atom"  : "uatom", 
-                     "nam"   : "unam"}
+                     "nam"   : "unam",
+                     "p2p"   : "udvpn"}
+    
     CSAPPMAP     = {'atom' : 'cosmos', 
                     'scrt' : 'secret', 
                     'osmo' : 'osmosis', 
                     'dvpn' : 'sentinel', 
+                    'p2p'  : 'sentinel',
                     'beam' : 'beam', 
                     'firo' : 'zcoin',
                     'pivx' : 'pivx',
@@ -592,18 +592,27 @@ class IBCTokens():
                     'eth'  : 'ethereum',
                     'zano' : 'zano',
                     'fusd' : 'freedom-dollar',
-                    'nam'  : 'namada'}
+                    'nam'  : 'namada',
+                    'zeph' : 'zephyr-protocol',
+                    'zsd'  : 'zephyr-protocol-stable-dollar',
+                    'bchx' : 'bitcoin-cash',
+                    'bnbx' : 'binance-coin',
+                    'btcx' : 'bitcoin',
+                    'daix' : 'dai',
+                    'ethx' : 'ethereum',
+                    'solx' : 'solana',
+                    'tonx' : 'the-open-network'}
     
     NOWCOINS     = ["firo", "beam", "pivx", "zec", "dcr", "epic",
                     "bch", "kmd", "xno", "sol", "dgb", "xaut", "eth",
                     "ada", "inj", "dot" ]
     
     BTCPAYCOINS  = ["xmr", "btc", "zec", "ltc", "doge", "dash"]
-    PRIVACYCOINS = ["arrr", "firo", "pivx", "zano", "fusd"]
+    PRIVACYCOINS = ["arrr", "firo", "pivx", "zano", "fusd", "zeph", "zsd", "bchx", "bnbx", "btcx", "daix", "ethx", "solx", "tonx"]
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
-    VERSION = "v2.5.4"
+    VERSION = "v2.5.5"
     BUILD   = "17748518213"
     RootTag = "SENTINEL"
     GITHUB_API_URL = "https://api.github.com/repos/MathNodes/meile-gui/releases/latest"
@@ -619,7 +628,7 @@ class MeileColors():
     DIALOG_BG_COLOR2         = "#181818"
     INDICATOR                = "#00DD21"
     INACTIVE_DIALOG_BG_COLOR = "#50507c"
-    MAP_BG_COLOR             = "#232227"
+    MAP_BG_COLOR             = "#262626"
     ROW_HOVER                = "#39363c"
     DOWNLOAD                 = "#2fe548"
     UPLOAD                   = "#2fa1e5"
@@ -644,6 +653,7 @@ class MeileColors():
     SICK_ICON                = "emoticon-sick"
     ARCGIS_MAP               = "https://server.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}.png"
     ARCGIS_MAP2              = "https://server.arcgisonline.com/arcgis/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}.png"
+    CARTO_MAP                = "https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png"
     
 class NodeKeys():
     '''v1.8.0
