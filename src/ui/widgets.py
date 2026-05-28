@@ -1913,7 +1913,7 @@ class PlanRow(MDGridLayout):
                 check_balance(1)
                 if self.zaddress_balance >= arrr:
                     self.invoice_result = {"success" : True, "id": self.zaddress_balance }
-    '''
+    
     def check_invoice_status_firo(self, address=False, invoice=False, firo=0):
         Request = HTTPRequests.MakeRequest(TIMEOUT=120)
         http = Request.hadapter()
@@ -2193,20 +2193,6 @@ class PlanRow(MDGridLayout):
             if self.on_success_subscription_payg:
                 self.on_success_subscription_payg()
             
-    '''
-
-    def reparse_coin_deposit(self, deposit):
-        for k,v in CoinsList.ibc_coins.items():
-            try:
-                coin = re.findall(k,deposit)[0]
-                deposit = deposit.replace(coin, v)
-                mu_deposit_amt = int(float(re.findall(r'[0-9]+\.[0-9]+', deposit)[0])*CoinsList.SATOSHI)
-                tru_mu_deposit = str(mu_deposit_amt) + v
-                return tru_mu_deposit
-            except:
-                pass
-    '''
-            
     def closeDialog(self, inst):
         self.dialog.dismiss()
         self.dialog = None
@@ -2393,12 +2379,7 @@ class PlanAccordion(ButtonBehavior, MDGridLayout):
         """Returns the state of panel. Can be `close` or `open` ."""
 
         return self._state
-    '''
-    def add_widget(self, widget, index=0, canvas=None):
-        if isinstance(widget, NodeDetails):
-            self.height = widget.height
-        return super().add_widget(widget)
-    '''
+    
     def add_widget(self, widget, index=0, canvas=None):
         # Don't override height here — let the animation handle it
         return super().add_widget(widget, index=index, canvas=canvas)

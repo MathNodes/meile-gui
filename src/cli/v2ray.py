@@ -14,6 +14,7 @@ from helpers.helpers import wait_for_port
 
 # Platform-conditional imports
 if sys.platform == 'win32':
+    import threading
     import psutil
     import netifaces
     import json
@@ -26,7 +27,7 @@ elif sys.platform.startswith('linux'):
     import psutil
     from typedef.konstants import ConfParams
     import threading
-    import threading
+    
 
 # ---------------------------------------------------------------------------
 # V2RayHandler – one class per platform, selected at the bottom of this

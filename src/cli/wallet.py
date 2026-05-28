@@ -1270,7 +1270,7 @@ class HandleWalletFunctions():
                 return
                     
         else:  # v2ray
-            if pltfrm == Arch.OSX:
+            if pltfrm in [Arch.OSX, Arch.WINDOWS]:
                 chdir(MeileConfig.BASEBINDIR) 
             conndesc.write("Bringing up V2Ray socks tunnel...\n")
             conndesc.flush()
@@ -1299,30 +1299,13 @@ class HandleWalletFunctions():
                     chdir(MeileConfig.BASEDIR)
                 return
             
-            '''
-            if pltfrm != Arch.OSX:
-                for iface in psutil.net_if_addrs().keys():
-                    if "tun" in iface:
-                        tuniface = True
-                        break
-            else:
-                if psutil.net_if_addrs().get("utun123"):
-                    self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid, 
-                                      "result": True, 
-                                      "status" : "utun123",
-                                      "session_id" : session_id}
-                    print(self.connected)
-                    tuniface = True
-            '''
-
             tuniface = wait_for_tunnel_iface(iface=["tun", "utun3", "utun123"], timeout=30)
-
 
             if tuniface is not None:
                 print("Tunnel interface is up:", tuniface)
                 conndesc.write("Checking network connection...\n")
                 conndesc.flush()
-                sleep(3.3)
+                sleep(5.3)
                 if self.get_ip_address():
                     self.connected = {"v2ray_pid" : v2ray_handler.v2ray_pid, 
                                       "result": True, 
@@ -1335,7 +1318,7 @@ class HandleWalletFunctions():
                                       "session_id" : session_id}
                 sleep(1)
                 conndesc.close()
-                if pltfrm == Arch.OSX:
+                if pltfrm in [Arch.OSX, Arch.WINDOWS]:
                     chdir(MeileConfig.BASEDIR)
                 return
             else:
@@ -1353,10 +1336,10 @@ class HandleWalletFunctions():
                                   "status": f"Error connecting to v2ray node: {tuniface}",
                                   "session_id" : session_id}
                 print(self.connected)
-                if pltfrm == Arch.OSX:
+                if pltfrm in [Arch.OSX, Arch.WINDOWS]:
                     chdir(MeileConfig.BASEDIR)
                 return
-        if pltfrm == Arch.OSX:
+        if pltfrm in [Arch.OSX, Arch.WINDOWS]:
             chdir(MeileConfig.BASEDIR)
         self.connected = {"v2ray_pid" : None,  
                           "result": False, 

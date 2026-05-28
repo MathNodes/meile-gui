@@ -613,8 +613,8 @@ class IBCTokens():
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
-    VERSION = "v2.5.5"
-    BUILD   = "17748518213"
+    VERSION = "v2.6.0"
+    BUILD = "1779933081642"
     RootTag = "SENTINEL"
     GITHUB_API_URL = "https://api.github.com/repos/MathNodes/meile-gui/releases/latest"
     DOWNLOAD_URL   = "https://meile.app"
@@ -666,6 +666,16 @@ class NodeKeys():
     FinalSubsKeys = [SubsInfoKeys[0], NodesInfoKeys[0],SubsInfoKeys[4],SubsInfoKeys[5], SubsInfoKeys[7], NodesInfoKeys[4], "Allocated", "Consumed", NodesInfoKeys[13],SubsInfoKeys[2],SubsInfoKeys[6]]
     NodeVersions  = [str(item).zfill(3) for item in range(70,1000)]
     Nodetypes = ['residential', 'business', 'hosting', 'edu']
+
+
+
+
+
+
+
+
+
+
 
 
 
