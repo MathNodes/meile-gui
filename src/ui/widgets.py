@@ -1462,6 +1462,25 @@ class PlanRow(MDGridLayout):
                 yield 0.6
                 self.start_payment_thread_zephyr(total_arrr, mu_coin)
                 
+            elif subscribe_dialog.pay_with == "now":
+                if self.dialog:
+                    self.dialog.dismiss()
+                self.dialog = None
+                self.dialog = MDDialog(
+                        title="Waiting for invoice to be paid...",
+                        md_bg_color=get_color_from_hex(MeileColors.BLACK),
+                        buttons=[
+                            MDFlatButton(
+                                text="CANCEL",
+                                theme_text_color="Custom",
+                                text_color=get_color_from_hex(MeileColors.MEILE),
+                                on_release=self.cancel_payment
+                            ),
+                        ]
+                    )
+                self.dialog.open()
+                yield 0.6
+                self.start_payment_thread_now(usd*ConfParams.BTCPAYADJ, mu_coin)
             
         else:
             MDDialog(text="[color=#FF0000]Please select a payment option[/color]").open()
