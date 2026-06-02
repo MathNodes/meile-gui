@@ -8,6 +8,7 @@ from os import path
 import hashlib
 from helpers.helpers import is_ecryptfs_mounted
 from conf.meile_config import MeileGuiConfig
+
 from typedef.konstants import MeileColors
 
 
@@ -32,8 +33,11 @@ class QRCode():
         if not label:
             label = path.basename(conf_path)
 
-        
-        wg_logo_path = self.MeileConfig.resource_path(MeileColors.WIREGUARD_ICON)
+        robotoFont = ImageFont.truetype(self.MeileConfig.resource_path(MeileColors.FONT_FACE), 13)
+   
+        wg_logo_path = self.MeileConfig.resource_path(
+            'utils/coinimg/wireguard.png'
+        )
         has_logo = path.exists(wg_logo_path)
 
         QRcode = qrcode.QRCode(
@@ -81,7 +85,7 @@ class QRCode():
         )
 
         draw = ImageDraw.Draw(background)
-        _, _, w, h = draw.textbbox((0, 0), text=str(label))
+        _, _, w, h = draw.textbbox((0, 0), text=str(label), font=robotoFont)
         draw.text(
             ((QRimg.size[0] + 15 - w) / 2, QRimg.size[1] - 2),
             label,
