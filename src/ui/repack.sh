@@ -28,12 +28,21 @@ declare -A DISTRO_MAP=(
     ["ubuntu2604"]="resolute"
 )
 
+# Map LMDE codenames to the Ubuntu build they should use
+# key = lmde codename, value = ubuntu identifier to pull .deb from
+declare -A LMDE_SOURCE_MAP=(
+    ["faye"]="ubuntu2004"
+    ["gigi"]="ubuntu2204"
+)
+
 # Map codenames to architectures
 declare -A ARCH_MAP=(
     ["focal"]="amd64 i386 arm64"
     ["jammy"]="amd64 arm64"
     ["noble"]="amd64 arm64"
-    ["plucky"]="amd64 arm64"
+    ["resolute"]="amd64 arm64"
+    ["faye"]="amd64 arm64"
+    ["gigi"]="amd64 arm64"
 )
 
 # Map codenames to descriptions
@@ -42,6 +51,8 @@ declare -A DESC_MAP=(
     ["jammy"]="Ubuntu 22.04 (Jammy Jellyfish)"
     ["noble"]="Ubuntu 24.04 (Noble Numbat)"
     ["resolute"]="Ubuntu 26.04 (Resolute Raccoon)"
+    ["faye"]="LMDE 5 (Faye) - Debian Bullseye based"
+    ["gigi"]="LMDE 6 (Gigi) - Debian Bookworm based"
 )
 
 # Function to check if a codename exists in distributions
@@ -53,7 +64,7 @@ codename_exists() {
 add_distribution() {
     local codename="$1"
     local archs="${ARCH_MAP[$codename]:-amd64 arm64}"
-    local desc="${DESC_MAP[$codename]:-Ubuntu ($codename)}"
+    local desc="${DESC_MAP[$codename]:-Unknown ($codename)}"
 
     # Get SignWith key from an existing entry
     local sign_key
@@ -70,20 +81,20 @@ add_distribution() {
     local existing_override
     existing_override=$(grep "^DebOverride:" "$DISTRIBUTIONS_FILE" | head -1 || true)
     if [ -n "$existing_override" ]; then
-        # Create an override file for the new codename
         local existing_override_file
         existing_override_file=$(echo "$existing_override" | awk '{print $2}')
         if [ -f "$REPO_DIR/conf/$existing_override_file" ]; then
-            cp "$REPO_DIR/conf/$existing_override_file" "$REPO_DIR/conf/override.${codename}"
+            cp "$REPO_DIR/conf/$existing_override_file" \
+                "$REPO_DIR/conf/override.${codename}"
         fi
         override_line="DebOverride: override.${codename}"
     fi
 
     echo ""
-    echo "Adding new distribution: $codename"
-    echo "  Architectures: $archs"
-    echo "  Description:   $desc"
-    echo "  SignWith:       $sign_key"
+    echo "  Adding new distribution: $codename"
+    echo "    Architectures: $archs"
+    echo "    Description:   $desc"
+    echo "    SignWith:       $sign_key"
 
     # Append to distributions file
     {
@@ -103,8 +114,66 @@ add_distribution() {
     # Export the new distribution
     reprepro -b "$REPO_DIR" export "$codename"
 
-    echo "  Distribution '$codename' added and exported."
+    echo "    Distribution '$codename' added and exported."
 }
+
+# Function to repack and add a .deb to a specific codename
+repack_and_add() {
+    local deb_file="$1"
+    local version="$2"
+    local codename="$3"
+    local label="$4"
+
+    echo "------------------------------------------"
+    echo "  [$label] Codename: $codename"
+    echo "------------------------------------------"
+
+    # Check if distribution exists, if not add it
+    if ! codename_exists "$codename"; then
+        echo "  Distribution '$codename' not found in $DISTRIBUTIONS_FILE"
+        add_distribution "$codename"
+    fi
+
+    local extract_dir="$WORK_DIR/meile-gui-${codename}"
+
+    # Extract the .deb
+    rm -rf "$extract_dir"
+    dpkg-deb -R "$deb_file" "$extract_dir"
+
+    # Update the version in the control file
+    sed -i "s/Version: ${version}/Version: ${version}~${codename}/" \
+        "$extract_dir/DEBIAN/control"
+
+    # Verify the change
+    echo "  Updated control file:"
+    grep "Version:" "$extract_dir/DEBIAN/control" | sed 's/^/    /'
+
+    # Repackage
+    local output_deb="$WORK_DIR/meile-gui_${version}~${codename}_amd64.deb"
+    dpkg-deb -b "$extract_dir" "$output_deb"
+    echo "  Repacked: $output_deb"
+
+    # Remove old version from repo
+    echo "  Removing old version from $codename..."
+    local existing
+    existing=$(reprepro -b "$REPO_DIR" list "$codename" "$PACKAGE_NAME" \
+        2>/dev/null || true)
+    if [ -n "$existing" ]; then
+        echo "    Old: $existing"
+        reprepro -b "$REPO_DIR" remove "$codename" "$PACKAGE_NAME"
+    else
+        echo "    No existing version found."
+    fi
+
+    # Add new version to repo
+    echo "  Adding new version to $codename..."
+    reprepro -b "$REPO_DIR" includedeb "$codename" "$output_deb"
+    echo "  Done!"
+    echo ""
+}
+
+# Collect source .deb paths by ubuntu identifier for LMDE reuse
+declare -A SOURCE_DEBS
 
 # Find all matching .deb files
 FOUND=0
@@ -123,60 +192,27 @@ for deb_file in "$DEB_DIR"/meile-gui-v*_ubuntu*_amd64.deb; do
     # Extract ubuntu identifier (e.g., ubuntu2004)
     UBUNTU_ID=$(echo "$filename" | grep -oP 'ubuntu\d{4}')
 
-    # Look up the codename
+    # Look up the Ubuntu codename
     CODENAME="${DISTRO_MAP[$UBUNTU_ID]}"
 
     if [ -z "$CODENAME" ]; then
         echo "ERROR: Unknown distribution identifier: $UBUNTU_ID"
-        echo "Please add a mapping for '$UBUNTU_ID' to the DISTRO_MAP in this script."
+        echo "Please add a mapping for '$UBUNTU_ID' to the DISTRO_MAP."
         continue
     fi
+
+    # Store the path for LMDE reuse
+    SOURCE_DEBS[$UBUNTU_ID]="$deb_file"
 
     echo "=========================================="
     echo "Processing: $filename"
     echo "  Version:  $VERSION"
-    echo "  Distro:   $UBUNTU_ID -> $CODENAME"
+    echo "  Ubuntu:   $UBUNTU_ID -> $CODENAME"
     echo "=========================================="
 
-    # Check if distribution exists, if not add it
-    if ! codename_exists "$CODENAME"; then
-        echo "  Distribution '$CODENAME' not found in $DISTRIBUTIONS_FILE"
-        add_distribution "$CODENAME"
-    fi
+    # Repack and add for Ubuntu
+    repack_and_add "$deb_file" "$VERSION" "$CODENAME" "Ubuntu"
 
-    EXTRACT_DIR="$WORK_DIR/meile-gui-${CODENAME}"
-
-    # Extract the .deb
-    rm -rf "$EXTRACT_DIR"
-    dpkg-deb -R "$deb_file" "$EXTRACT_DIR"
-
-    # Update the version in the control file
-    sed -i "s/Version: ${VERSION}/Version: ${VERSION}~${CODENAME}/" "$EXTRACT_DIR/DEBIAN/control"
-
-    # Verify the change
-    echo "  Updated control file:"
-    grep "Version:" "$EXTRACT_DIR/DEBIAN/control" | sed 's/^/    /'
-
-    # Repackage
-    OUTPUT_DEB="$WORK_DIR/meile-gui_${VERSION}~${CODENAME}_amd64.deb"
-    dpkg-deb -b "$EXTRACT_DIR" "$OUTPUT_DEB"
-    echo "  Repacked: $OUTPUT_DEB"
-
-    # Remove old version from repo
-    echo "  Removing old version from $CODENAME..."
-    EXISTING=$(reprepro -b "$REPO_DIR" list "$CODENAME" "$PACKAGE_NAME" 2>/dev/null || true)
-    if [ -n "$EXISTING" ]; then
-        echo "    Old: $EXISTING"
-        reprepro -b "$REPO_DIR" remove "$CODENAME" "$PACKAGE_NAME"
-    else
-        echo "    No existing version found."
-    fi
-
-    # Add new version to repo
-    echo "  Adding new version to $CODENAME..."
-    reprepro -b "$REPO_DIR" includedeb "$CODENAME" "$OUTPUT_DEB"
-    echo "  Done!"
-    echo ""
 done
 
 if [ "$FOUND" -eq 0 ]; then
@@ -184,13 +220,39 @@ if [ "$FOUND" -eq 0 ]; then
     exit 1
 fi
 
+# Now handle LMDE distributions
+echo ""
+echo "=========================================="
+echo "Processing LMDE distributions"
+echo "=========================================="
+
+for lmde_codename in "${!LMDE_SOURCE_MAP[@]}"; do
+    ubuntu_id="${LMDE_SOURCE_MAP[$lmde_codename]}"
+    source_deb="${SOURCE_DEBS[$ubuntu_id]}"
+
+    if [ -z "$source_deb" ] || [ ! -f "$source_deb" ]; then
+        echo "WARNING: No source .deb found for LMDE '$lmde_codename'"
+        echo "  Expected Ubuntu build: $ubuntu_id"
+        echo "  Skipping."
+        continue
+    fi
+
+    echo ""
+    echo "LMDE $lmde_codename <- reusing $ubuntu_id build"
+    repack_and_add "$source_deb" "$VERSION" "$lmde_codename" "LMDE"
+
+done
+
 # Final verification
 echo "=========================================="
 echo "Repository status:"
 echo "=========================================="
-# Dynamically list all codenames from the distributions file
 while IFS= read -r codename; do
-    reprepro -b "$REPO_DIR" list "$codename" "$PACKAGE_NAME" 2>/dev/null || true
+    result=$(reprepro -b "$REPO_DIR" list "$codename" "$PACKAGE_NAME" \
+        2>/dev/null || true)
+    if [ -n "$result" ]; then
+        echo "$result"
+    fi
 done < <(grep "^Codename:" "$DISTRIBUTIONS_FILE" | awk '{print $2}')
 
 echo ""
