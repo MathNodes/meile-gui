@@ -165,6 +165,21 @@ We have built tun2socks, v2ray, and sentinel-cli from source on the target archi
 
 **Note:** we use **v2ray** version **5.1.0** as this is what the dvpn-node software also uses and it is recommended to use the same client version as the server version.
 
+## Split Tunneling
+
+Meile uses full-tunnel routing by default. To route only selected networks through a
+connected dVPN node, edit `~/.meile-gui/config.ini` and enable split tunneling:
+
+```ini
+[split_tunnel]
+enabled = 1
+routes = 10.20.0.0/16, 192.168.1.5/32
+```
+
+When split tunneling is enabled, WireGuard uses the configured routes as
+`AllowedIPs`, and V2Ray/tun2socks adds only those routes to the tunnel interface.
+Leave `enabled = 0` or `routes` empty to keep the existing full-tunnel behavior.
+
 ## Help
 
 Please make comments, suggestions, and issues on the issues page here at GitHub. If you are a GitHub newb, you can join us in our various open messaging channels:
