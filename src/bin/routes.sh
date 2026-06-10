@@ -11,6 +11,38 @@ else
     USER=$SUDO_USER
 fi
 
+SPLIT_ROUTES_FILE="/home/${USER}/.meile-gui/split-routes"
+
+has_split_routes() {
+        [[ -s "${SPLIT_ROUTES_FILE}" ]]
+}
+
+apply_tunnel_routes() {
+        if has_split_routes; then
+                while IFS= read -r ROUTE; do
+                        [[ -z "${ROUTE}" || "${ROUTE}" =~ ^# ]] && continue
+                        echo "ip route add ${ROUTE} via 10.10.10.10 dev ${TUNIFACE} metric 1"
+                        ip route add "${ROUTE}" via 10.10.10.10 dev "${TUNIFACE}" metric 1
+                done < "${SPLIT_ROUTES_FILE}"
+        else
+                echo "ip route add default via 10.10.10.10 dev ${TUNIFACE} metric 1"
+                ip route add default via 10.10.10.10 dev ${TUNIFACE} metric 1
+        fi
+}
+
+remove_tunnel_routes() {
+        if has_split_routes; then
+                while IFS= read -r ROUTE; do
+                        [[ -z "${ROUTE}" || "${ROUTE}" =~ ^# ]] && continue
+                        echo "ip route del ${ROUTE} via 10.10.10.10 dev ${TUNIFACE} metric 1"
+                        ip route del "${ROUTE}" via 10.10.10.10 dev "${TUNIFACE}" metric 1
+                done < "${SPLIT_ROUTES_FILE}"
+        else
+                ip route del default
+                ip route del default via 10.10.10.10 dev ${TUNIFACE} metric 1
+        fi
+}
+
 
 if [[ ${STATE} = "up" ]]; then
 
@@ -46,9 +78,8 @@ if [[ ${STATE} = "up" ]]; then
         ip link set dev ${TUNIFACE} up
 
         # add default route for tun
-        echo "Adding default route for tun..."
-        echo "ip route add default via 10.10.10.10 dev ${TUNIFACE} metric 1"
-        ip route add default via 10.10.10.10 dev ${TUNIFACE} metric 1
+        echo "Adding tunnel routes..."
+        apply_tunnel_routes
 
         # add normal route for proxy IP
         echo "Add normal route for proxy..."
@@ -80,18 +111,19 @@ else
         pkill -9 xray
 	    sleep 5
 
+        # delete routes before removing the tun interface
+        remove_tunnel_routes
+        ip route del ${PROXY_IP} via ${GATEWAY} metric 1
+
         # bring down tun interface
         ip addr del 10.10.10.10/24 dev ${TUNIFACE}
         ip link set dev ${TUNIFACE} down
         ip tuntap del mode tun dev ${TUNIFACE}
         
-        # delete routes
-        ip route del default
-        ip route del default via 10.10.10.10 dev ${TUNIFACE} metric 1
-        ip route del ${PROXY_IP} via ${GATEWAY} metric 1
-        
         # add default route to LAN gateway & DNS
-        ip route add default via ${GATEWAY} dev ${PRIMARY_IFACE} metric 100
+        if ! has_split_routes; then
+                ip route add default via ${GATEWAY} dev ${PRIMARY_IFACE} metric 100
+        fi
 
         # sanity check
 	    curl https://icanhazip.com

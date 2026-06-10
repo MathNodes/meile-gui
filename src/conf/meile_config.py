@@ -92,6 +92,14 @@ class MeileGuiConfig():
             FILE = open(self.CONFFILE, 'w')    
             self.CONFIG.write(FILE)
             FILE.close() 
+
+        if not self.CONFIG.has_section('split_tunnel'):
+            self.CONFIG.add_section('split_tunnel')
+            self.CONFIG.set('split_tunnel', 'enabled', '0')
+            self.CONFIG.set('split_tunnel', 'routes', '')
+            FILE = open(self.CONFFILE, 'w')
+            self.CONFIG.write(FILE)
+            FILE.close()
             
            
         return self.CONFIG

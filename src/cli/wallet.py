@@ -19,6 +19,7 @@ from typedef.konstants import IBCTokens, ConfParams, HTTParams, MEILE_PLAN_WALLE
 from adapters import HTTPRequests, DNSRequests
 from cli.v2ray import V2RayHandler, V2RayConfiguration, V2RayFragmentConfiguration
 from helpers.wireguard import WgKey
+from helpers.split_tunnel import parse_split_tunnel, write_split_routes
 
 import base64
 import bcrypt
@@ -551,6 +552,7 @@ class HandleWalletFunctions():
         self.RPC = CONFIG['network'].get('rpc', HTTParams.RPC)
         self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
         self.FRAGMENT = bool(int(CONFIG['network'].get('fragment',"0")))
+        split_tunnel = parse_split_tunnel(CONFIG)
         grpcaddr, grpcport = self.GRPC.split(":")
 
         kr = self.__keyring(PASSWORD)
@@ -878,7 +880,7 @@ class HandleWalletFunctions():
                 config.add_section("Peer")
                 config.set("Peer", "PublicKey", public_key)
                 config.set("Peer", "Endpoint", peer_endpoint)
-                config.set("Peer", "AllowedIPs", ",".join(["0.0.0.0/0","::/0"]))
+                config.set("Peer", "AllowedIPs", ",".join(split_tunnel.allowed_ips))
                 config.set("Peer", "PersistentKeepalive", "25")  # TODO: 15(?) from golang file
 
                 iface = "wg99"
@@ -987,6 +989,7 @@ class HandleWalletFunctions():
                 # v2ray_tun2routes_connect_bash
                 # >> hardcoded = proxy port >> 1080
                 # >> hardcoded = v2ray file >> /home/${USER}/.meile-gui/v2ray_config.json
+                write_split_routes(CONFIG)
 
                 tuniface = False
                 v2ray_handler = V2RayHandler(f"{v2ray_tun2routes_connect_bash} up")
