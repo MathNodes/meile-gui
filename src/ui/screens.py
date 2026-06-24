@@ -29,6 +29,7 @@ from kivy.properties import BooleanProperty, StringProperty, ColorProperty, Nume
 from kivy.uix.screenmanager import Screen, SlideTransition
 from kivymd.uix.button import MDFlatButton, MDRaisedButton
 from kivymd.uix.dialog import MDDialog
+from kivymd.uix.textfield import MDTextField
 from kivy.clock import Clock, mainthread
 from kivyoav.delayed import delayable
 from kivy.properties import ObjectProperty
@@ -2654,6 +2655,8 @@ class SettingsScreen(Screen):
             return bool(int(config['network'].get(what, "0")))
         elif what == "ringsessions":
             return bool(int(config['network'].get(what, "0")))
+        elif what == "split_tunneling":
+            return bool(int(config['network'].get(what, "0")))
         else:
             getattr(self.ids, f"{what}_drop_item").set_item(config['subscription'][what])
             return config['subscription'][what]
@@ -2701,6 +2704,9 @@ class SettingsScreen(Screen):
         what = "ringsessions"
         config.set('network', what, '1' if self.ids.ring_sessions.active else '0')
         
+        what = "split_tunneling"
+        config.set('network', what, '1' if getattr(self.ids, 'split_tunneling', None) and self.ids.split_tunneling.active else '0')
+        
         with open(self.MeileConfig.CONFFILE, 'w', encoding="utf-8") as f:
             config.write(f)
             
@@ -2731,3 +2737,38 @@ class SettingsScreen(Screen):
         Meile.app.root.remove_widget(self)
         Meile.app.root.transistion = SlideTransition(direction="up")
         Meile.app.root.current = WindowNames.MAIN_WINDOW
+
+    def open_split_tunneling_dialog(self):
+        config = self.MeileConfig.read_configuration(self.MeileConfig.CONFFILE)
+        whitelist_apps = config['network'].get('splittunneling_apps', '')
+
+        self.split_tunneling_input = MDTextField(
+            text=whitelist_apps,
+            hint_text="Comma-separated app paths (e.g. C:\\app.exe)",
+            multiline=True
+        )
+        self.split_tunneling_dialog = MDDialog(
+            title="Split Tunneling Whitelist",
+            type="custom",
+            content_cls=self.split_tunneling_input,
+            buttons=[
+                MDFlatButton(
+                    text="CANCEL",
+                    on_release=lambda x: self.split_tunneling_dialog.dismiss()
+                ),
+                MDRaisedButton(
+                    text="SAVE",
+                    on_release=self.save_split_tunneling_apps
+                ),
+            ],
+        )
+        self.split_tunneling_dialog.open()
+
+    def save_split_tunneling_apps(self, *args):
+        apps = self.split_tunneling_input.text
+        config = self.MeileConfig.read_configuration(self.MeileConfig.CONFFILE)
+        config.set('network', 'splittunneling_apps', apps)
+        with open(self.MeileConfig.CONFFILE, 'w', encoding="utf-8") as f:
+            config.write(f)
+        self.split_tunneling_dialog.dismiss()
+

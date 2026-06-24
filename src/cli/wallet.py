@@ -990,6 +990,8 @@ class HandleWalletFunctions():
         self.GRPC     = CONFIG['network'].get('grpc', HTTParams.GRPC)
         self.FRAGMENT = bool(int(CONFIG['network'].get('fragment',"0")))
         RINGSESSIONS = bool(int(CONFIG['network'].get('ringsessions', '0')))
+        self.SPLIT_TUNNELING = bool(int(CONFIG['network'].get('split_tunneling', '0')))
+        self.SPLIT_TUNNELING_APPS = CONFIG['network'].get('splittunneling_apps', '')
         grpcaddr, grpcport = self.GRPC.split(":")
 
         kr = self.__keyring(PASSWORD)
@@ -1246,6 +1248,10 @@ class HandleWalletFunctions():
                                   "result": True, 
                                   "status" : tuniface, 
                                   "session_id" : session_id}
+                if self.SPLIT_TUNNELING and self.SPLIT_TUNNELING_APPS:
+                    from helpers.splittunnel import SplitTunnel
+                    SplitTunnel.apply_split_tunneling(self.SPLIT_TUNNELING_APPS, interface_alias=iface)
+                    
                 conndesc.write("Checking network connection...\n")
                 conndesc.flush()
                 sleep(2)

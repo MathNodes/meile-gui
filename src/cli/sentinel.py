@@ -596,7 +596,12 @@ class NodeTreeData():
                  
 def disconnect(v2ray):
     import platform
+    from helpers.splittunnel import SplitTunnel
     pltfrm = platform.system()
+    
+    if pltfrm == Arch.WINDOWS:
+        SplitTunnel.remove_split_tunneling()
+        
     if v2ray:
         try:
             if pltfrm == Arch.WINDOWS:
