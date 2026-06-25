@@ -656,6 +656,7 @@ class MeileColors():
     SPINNER                  = "imgs/spinner.png"
     HEALTH_ICON              = "shield-plus"
     SICK_ICON                = "emoticon-sick"
+    WIREGUARD_ICON           = "utils/coinimg/wireguard.png"
     ARCGIS_MAP               = "https://server.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}.png"
     ARCGIS_MAP2              = "https://server.arcgisonline.com/arcgis/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}.png"
     CARTO_MAP                = "https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png"
