@@ -23,13 +23,16 @@ class MeileGuiConfig():
     WIREGUARD_CONF_PATH           = Path.home() / ".meile-gui" / "wg99.conf"
     XRAY_CONF_PATH                = Path.home() / ".meile-gui" / "v2ray_config.json"
     WIREGUARD_BIN_PATH            = Path.home() / ".meile-gui" / "bin" / "wg-quick"
+    AWIREGUARD_BIN_PATH           = Path.home() / ".meile-gui" / "bin" / "awg-quick"
     XRAY_BIN_PATH                 = Path.home() / ".meile-gui" / "bin" / "xray"
     TUN2SOCKS_BIN_PATH            = Path.home() / ".meile-gui" / "bin" / "tun2socks"
     LAUNCHD_PATH                  = Path.home() / ".meile-gui" / "launchd"
     WG_LAUNCHDAEMON_LABEL         = "app.meile.wireguard"
+    AWG_LAUNCHDAEMON_LABEL        = "app.meile.amnezia"
     XRAY_LAUNCHDAEMON_LABEL       = "app.meile.xray"
     TUN2SOCKS_LAUNCHDAEMON_LABEL  = "app.meile.tun2socks"
     WG_LAUNCHDAEMON_PATH          = LAUNCHD_PATH / f"{WG_LAUNCHDAEMON_LABEL}.plist"
+    AWG_LAUNCHDAEMON_PATH         = LAUNCHD_PATH / f"{AWG_LAUNCHDAEMON_LABEL}.plist"
     XRAY_LAUNCHDAEMON_PATH        = LAUNCHD_PATH / f"{XRAY_LAUNCHDAEMON_LABEL}.plist"
     TUN2SOCKS_LAUNCHDAEMON_PATH   = LAUNCHD_PATH / f"{TUN2SOCKS_LAUNCHDAEMON_LABEL}.plist"
     
@@ -104,6 +107,21 @@ class MeileGuiConfig():
             "AbandonProcessGroup": True,
         }
         
+        awg_plist_content = {
+            "Label": self.AWG_LAUNCHDAEMON_LABEL,
+            "ProgramArguments": [
+                str(self.AWIREGUARD_BIN_PATH),
+                "up",
+                str(self.WIREGUARD_CONF_PATH)
+            ],
+            "RunAtLoad": True,
+            "KeepAlive": True,
+            "StandardOutPath": "/var/log/amnezia-wg99.log",
+            "StandardErrorPath": "/var/log/amnezia-wg99.err",
+            "EnableTransactions": True,
+            "AbandonProcessGroup": True,
+        }
+        
         xray_plist_content = {
             "Label": self.XRAY_LAUNCHDAEMON_LABEL,
             "ProgramArguments": [
@@ -142,13 +160,15 @@ class MeileGuiConfig():
             "AbandonProcessGroup": True,
         }
         
-        if path.isfile(self.WG_LAUNCHDAEMON_PATH) and path.isfile(self.XRAY_LAUNCHDAEMON_PATH) and path.isfile(self.TUN2SOCKS_LAUNCHDAEMON_PATH):
+        if path.isfile(self.WG_LAUNCHDAEMON_PATH) and path.isfile(self.AWG_LAUNCHDAEMON_PATH) and path.isfile(self.XRAY_LAUNCHDAEMON_PATH) and path.isfile(self.TUN2SOCKS_LAUNCHDAEMON_PATH):
             print("EXISTS")
             return True
         else:
             print("WRITING network plists....")
             with open(self.WG_LAUNCHDAEMON_PATH, "wb") as f:
                 plistlib.dump(wg_plist_content, f)
+            with open(self.AWG_LAUNCHDAEMON_PATH, "wb") as f:
+                plistlib.dump(awg_plist_content, f)
             with open(self.XRAY_LAUNCHDAEMON_PATH, "wb") as f:
                 plistlib.dump(xray_plist_content, f)
             with open(self.TUN2SOCKS_LAUNCHDAEMON_PATH, "wb") as f:

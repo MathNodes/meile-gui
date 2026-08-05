@@ -539,43 +539,6 @@ class MainWindow(Screen):
                     self.CONNECTED = True
                     Moniker = self.NodeCarouselData['moniker']
                     
-                    '''
-                    if self.PlanID:
-                        Moniker = self.NodeCarouselData['moniker']
-                    
-                    # TODO:    
-                    # All this in the conditional is no longer needed as we don't have subscriptions anymore
-                    # need to redo bandwidth meter as well
-                    # can probably use setTotalBytesClock() instead for gigabyte sessions
-                    # will need one for timed sessions as well
-                    else:
-                        Moniker                         = self.SelectedSubscription['moniker']
-                        self.NodeSwitch['moniker']      = self.SelectedSubscription['moniker']
-                        self.NodeSwitch['node']         = self.SelectedSubscription['address']
-                        self.NodeSwitch['switch']       = True
-                        self.NodeSwitch['id']           = self.SelectedSubscription['id']
-                        self.NodeSwitch['allocated']    = self.SelectedSubscription['allocated']
-                        self.NodeSwitch['consumed']     = self.SelectedSubscription['consumed']
-                        self.NodeSwitch['og_consumed']  = self.SelectedSubscription['consumed'] 
-                        self.NodeSwitch['expirary']     = self.SelectedSubscription['expires']
-                        self.NodeSwitch['deposit']      = self.SelectedSubscription['deposit']
-                        
-                        # TODO: Add Quota routines 
-                        # Determine if node has been connected to and if so report last data usage stats
-                        # otherwise start a fresh count
-                        if not ID in self.PersistentBandwidth:
-                            self.PersistentBandwidth[ID] = self.NodeSwitch
-                        else:
-                            self.PersistentBandwidth[ID]['og_consumed'] = deepcopy(self.PersistentBandwidth[ID]['consumed'])
-                        
-                        # Check if subscription is hourly
-                        if "hrs" in self.SelectedSubscription['allocated']:
-                            print("Hourly sub")
-                            self.setQuotaClock(ID, naddress, True)
-                        else:
-                            self.setQuotaClock(ID, naddress, False)
-                    '''
-                    
                     if hourly:
                         self.setQuotaClock(units, True)
                     else:
@@ -622,24 +585,6 @@ class MainWindow(Screen):
                             ]
                     )
                     self.dialog.open()
-                    '''    
-                    else:
-                        self.dialog = MDDialog(
-                            title="Connected!",
-                            md_bg_color=get_color_from_hex(MeileColors.BLACK),
-                            buttons=[
-                                    MDFlatButton(
-                                        text="OK",
-                                        theme_text_color="Custom",
-                                        text_color=get_color_from_hex(MeileColors.MEILE),
-                                        on_release=partial(self.call_ip_get,
-                                                           True,
-                                                           Moniker
-                                                           )
-                                    ),])
-                        self.dialog.open()
-                        
-                    '''
                     
                 else:
                     self.remove_loading_widget2()
@@ -703,32 +648,7 @@ class MainWindow(Screen):
                             ),])
                 self.dialog.open()
                 return 
-                '''
-                
-                self.SubCaller = True
-                nc = NodeCarousel(node=None)
-                nc.subscribe_to_node(self.NodeCarouselData['gb_prices'],
-                                     self.NodeCarouselData['hr_prices'],
-                                     self.NodeCarouselData['address'],
-                                     self.NodeCarouselData['moniker'])
-                '''
-                    
-            # not needed since we are no longer processing subscriptions
-            '''       
-            if self.SelectedSubscription['id'] and self.SelectedSubscription['address'] and self.SelectedSubscription['protocol']:
-                ID       = self.SelectedSubscription['id']
-                naddress = self.SelectedSubscription['address']
-                proto    = self.SelectedSubscription['protocol']
-                deposit  = self.SelectedSubscription['deposit']
-                
-                connect()
-                
-                
-            else:
-                # TODO
-                print("Something went wrong")
-            '''
-            
+               
         else:
             self.disconnect_from_node()
             self.HourlyFirstRun = True
@@ -1392,7 +1312,7 @@ class MainWindow(Screen):
         try:
             if self.ConnectedDict['v2ray_pid'] is not None:
                 try:
-                    returncode, self.CONNECTED = Disconnect(True)
+                    returncode, self.CONNECTED = Disconnect(self.NodeCarouselData['protocol'])
                     print("Disconnect RTNCODE: %s" % returncode)
                     thread = Thread(target=lambda: self.nonblock_get_ip_address(self.get_ip_address))
                     thread.start()
@@ -1402,7 +1322,7 @@ class MainWindow(Screen):
                     print("Something went wrong")
                     
             elif self.CONNECTED == None:
-                returncode, self.CONNECTED = Disconnect(False)
+                returncode, self.CONNECTED = Disconnect(self.NodeCarouselData['protocol'])
                 print("Disconnect RTNCODE: %s" % returncode)
                 thread = Thread(target=lambda: self.nonblock_get_ip_address(self.get_ip_address))
                 thread.start()
@@ -1413,7 +1333,7 @@ class MainWindow(Screen):
                 return True
             
             else:
-                returncode, self.CONNECTED = Disconnect(False)
+                returncode, self.CONNECTED = Disconnect(self.NodeCarouselData['protocol'])
                 print("Disconnect RTNCODE: %s" % returncode)
                 thread = Thread(target=lambda: self.nonblock_get_ip_address(self.get_ip_address))
                 thread.start()

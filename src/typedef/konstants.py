@@ -619,8 +619,8 @@ class IBCTokens():
     
 class TextStrings():
     dash = "-"
-    VERSION           = "v2.6.1"
-    BUILD             = "17858929753"
+    VERSION           = "v2.7.0"
+    BUILD             = "17859601993"
     RootTag           = "SENTINEL"
     WG_HASH           = ""
     WG_QUICK_HASH     = ""
@@ -679,6 +679,7 @@ class NodeKeys():
     FinalSubsKeys = [SubsInfoKeys[0], NodesInfoKeys[0],SubsInfoKeys[4],SubsInfoKeys[5], SubsInfoKeys[7], NodesInfoKeys[4], "Allocated", "Consumed", NodesInfoKeys[13],SubsInfoKeys[2],SubsInfoKeys[6]]
     NodeVersions  = [str(item).zfill(3) for item in range(70,1000)]
     Nodetypes = ['residential', 'business', 'hosting', 'edu']
+    ProtocolTypes = ["WireGuard", "V2Ray", "OpenVPN", "XRAY", "AmneziaWG", "Hysteria2"]
 
 
 
