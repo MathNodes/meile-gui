@@ -3321,3 +3321,332 @@ WindowManager:
         	group: 'proto'
         	on_active: root.select_share_type(self, self.active, "v2")
             pos_hint: {"x": .5, "y" : .025}	
+            
+            
+# SMS POOL SCREEN
+
+#:import Window kivy.core.window.Window
+#:set BG_DARK [0.06, 0.08, 0.12, 1]
+#:set BG_CARD [0.10, 0.13, 0.19, 1]
+#:set BG_INPUT [0.14, 0.17, 0.24, 1]
+#:set ACCENT [0.0, 0.85, 0.75, 1]
+#:set ACCENT_DIM [0.0, 0.55, 0.50, 1]
+#:set DANGER [0.95, 0.28, 0.38, 1]
+#:set TEXT_MAIN [0.92, 0.95, 1.0, 1]
+#:set TEXT_DIM [0.60, 0.68, 0.78, 1]
+#:set SUCCESS [0.30, 0.90, 0.55, 1]
+
+<NeonLabel@Label>:
+    color: TEXT_MAIN
+    font_size: '14sp'
+    halign: 'left'
+    valign: 'middle'
+    text_size: self.size
+    size_hint_y: None
+    height: '24dp'
+
+<SectionTitle@Label>:
+    color: ACCENT
+    font_size: '11sp'
+    bold: True
+    halign: 'left'
+    valign: 'middle'
+    text_size: self.size
+    size_hint_y: None
+    height: '20dp'
+
+<Card@BoxLayout>:
+    orientation: 'vertical'
+    padding: '14dp'
+    spacing: '8dp'
+    size_hint_y: None
+    canvas.before:
+        Color:
+            rgba: BG_CARD
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [10,]
+        Color:
+            rgba: 0.15, 0.20, 0.30, 1
+        Line:
+            rounded_rectangle: (self.x, self.y, self.width, self.height, 10)
+            width: 1
+
+<StyledInput@TextInput>:
+    background_color: 0, 0, 0, 0
+    foreground_color: TEXT_MAIN
+    cursor_color: ACCENT
+    hint_text_color: TEXT_DIM
+    selection_color: ACCENT_DIM
+    padding: ['12dp', '10dp']
+    font_size: '14sp'
+    size_hint_y: None
+    height: '42dp'
+    multiline: False
+    canvas.before:
+        Color:
+            rgba: BG_INPUT
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [8,]
+        Color:
+            rgba: ACCENT if self.focus else (0.20, 0.25, 0.35, 1)
+        Line:
+            rounded_rectangle: (self.x, self.y, self.width, self.height, 8)
+            width: 1.2 if self.focus else 1
+
+<StyledSpinner@Spinner>:
+    background_color: 0, 0, 0, 0
+    background_normal: ''
+    color: TEXT_MAIN
+    font_size: '14sp'
+    size_hint_y: None
+    height: '42dp'
+    canvas.before:
+        Color:
+            rgba: BG_INPUT
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [8,]
+        Color:
+            rgba: 0.20, 0.25, 0.35, 1
+        Line:
+            rounded_rectangle: (self.x, self.y, self.width, self.height, 8)
+            width: 1
+
+<PrimaryButton@Button>:
+    background_color: 0, 0, 0, 0
+    background_normal: ''
+    color: 0.02, 0.05, 0.08, 1
+    bold: True
+    font_size: '15sp'
+    size_hint_y: None
+    height: '48dp'
+    canvas.before:
+        Color:
+            rgba: ACCENT if self.state == 'normal' else ACCENT_DIM
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [10,]
+
+<DangerButton@Button>:
+    background_color: 0, 0, 0, 0
+    background_normal: ''
+    color: 1, 1, 1, 1
+    bold: True
+    font_size: '14sp'
+    size_hint_y: None
+    height: '44dp'
+    canvas.before:
+        Color:
+            rgba: DANGER if self.state == 'normal' else (0.75, 0.20, 0.28, 1)
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [10,]
+
+<SMSPoolScreen>:
+    balance_label: balance_label
+    country_spinner: country_spinner
+    service_spinner: service_spinner
+    pool_spinner: pool_spinner
+    purchase_btn: purchase_btn
+    order_status: order_status
+    phone_label: phone_label
+    debug_label: debug_label
+    sms_output: sms_output
+    cancel_btn: cancel_btn
+    status_dot: status_dot
+
+    orientation: 'vertical'
+    padding: '14dp'
+    spacing: '12dp'
+
+    canvas.before:
+        Color:
+            rgba: BG_DARK
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+    # Header
+    BoxLayout:
+        size_hint_y: None
+        height: '56dp'
+        spacing: '10dp'
+
+        Widget:
+            size_hint_x: None
+            width: '8dp'
+            canvas:
+                Color:
+                    rgba: ACCENT
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+                    radius: [3,]
+
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: 'SMSPOOL'
+                color: TEXT_MAIN
+                font_size: '22sp'
+                bold: True
+                halign: 'left'
+                valign: 'bottom'
+                text_size: self.size
+            Label:
+                text: 'Virtual Number Terminal'
+                color: TEXT_DIM
+                font_size: '11sp'
+                halign: 'left'
+                valign: 'top'
+                text_size: self.size
+
+        BoxLayout:
+            size_hint_x: None
+            width: '160dp'
+            padding: '10dp', '6dp'
+            canvas.before:
+                Color:
+                    rgba: BG_CARD
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+                    radius: [8,]
+            Label:
+                id: balance_label
+                text: 'Balance: ---'
+                color: SUCCESS
+                font_size: '13sp'
+                bold: True
+
+    ScrollView:
+        do_scroll_x: False
+        bar_width: '4dp'
+        bar_color: ACCENT
+        bar_inactive_color: 0.2, 0.2, 0.3, 0.5
+
+        BoxLayout:
+            orientation: 'vertical'
+            size_hint_y: None
+            height: self.minimum_height
+            spacing: '12dp'
+            padding: 0, 0, 0, '10dp'
+
+            # Selection card
+            Card:
+                height: self.minimum_height
+                SectionTitle:
+                    text: 'ORDER CONFIGURATION'
+                NeonLabel:
+                    text: 'Country'
+                StyledSpinner:
+                    id: country_spinner
+                    text: 'Select Country'
+                NeonLabel:
+                    text: 'Service'
+                StyledSpinner:
+                    id: service_spinner
+                    text: 'Select Service'
+                NeonLabel:
+                    text: 'Pool (optional)'
+                StyledSpinner:
+                    id: pool_spinner
+                    text: 'Auto (Any)'
+                PrimaryButton:
+                    id: purchase_btn
+                    text: 'PURCHASE NUMBER'
+                    on_press: root._purchase()
+
+            # Order status card
+            Card:
+                height: self.minimum_height
+                SectionTitle:
+                    text: 'ACTIVE ORDER'
+                BoxLayout:
+                    size_hint_y: None
+                    height: '28dp'
+                    spacing: '8dp'
+                    Widget:
+                        id: status_dot
+                        size_hint: None, None
+                        size: '10dp', '10dp'
+                        pos_hint: {'center_y': 0.5}
+                        canvas:
+                            Color:
+                                rgba: TEXT_DIM
+                            Ellipse:
+                                pos: self.pos
+                                size: self.size
+                    NeonLabel:
+                        id: order_status
+                        text: 'Idle'
+                        height: '28dp'
+                BoxLayout:
+                    size_hint_y: None
+                    height: '48dp'
+                    padding: '10dp', '8dp'
+                    canvas.before:
+                        Color:
+                            rgba: BG_INPUT
+                        RoundedRectangle:
+                            pos: self.pos
+                            size: self.size
+                            radius: [8,]
+                    Label:
+                        id: phone_label
+                        text: '---'
+                        color: ACCENT
+                        font_size: '18sp'
+                        bold: True
+                        halign: 'center'
+                DangerButton:
+                    id: cancel_btn
+                    text: 'CANCEL ORDER'
+                    on_press: root._cancel_order()
+
+            # SMS Card
+            Card:
+                height: '260dp'
+                SectionTitle:
+                    text: 'INBOX'
+                StyledInput:
+                    id: sms_output
+                    readonly: True
+                    multiline: True
+                    hint_text: 'Waiting for SMS...'
+                    size_hint_y: 1
+                    height: self.height
+
+            # Debug
+            Card:
+                height: self.minimum_height
+                SectionTitle:
+                    text: 'DEBUG LOG'
+                Label:
+                    id: debug_label
+                    text: ''
+                    color: TEXT_DIM
+                    font_size: '11sp'
+                    halign: 'left'
+                    valign: 'top'
+                    text_size: self.width, None
+                    size_hint_y: None
+                    height: max(self.texture_size[1], 40)
+    ActionBar:
+        background_normal: ''
+        background_down: ''
+        background_color: get_color_from_hex("#121212")
+
+        ActionView:
+            ActionPrevious:
+                icon: "arrow-left-circle"
+                title: 'Go Back'
+                with_previous: True
+                on_release: root.set_previous_screen()
