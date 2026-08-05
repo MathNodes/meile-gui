@@ -606,8 +606,10 @@ class NodeTreeData():
             nodeQuota.append(str(round(consumed,2)) + "hrs")
             return str(inactive_date),nodeQuota   
                  
-def disconnect(v2ray):
-    if v2ray:
+def disconnect(protocol):
+    import platform
+    pltfrm = platform.system()
+    if protocol == NodeKeys.ProtocolTypes[1]:
         try:
             V2Ray = V2RayHandler(v2ray_tun2routes_connect_bash + " down")
             rc = V2Ray.kill_daemon()
@@ -615,14 +617,77 @@ def disconnect(v2ray):
         except Exception as e:
             print(str(e))
             return 1, True
-    else:
-        CONFFILE = path.join(ConfParams.KEYRINGDIR, 'wg99.conf')
-        wg_downCMD = ['pkexec', 'env', 'PATH=%s' % ConfParams.PATH, 'wg-quick', 'down', CONFFILE]
+    elif protocol == NodeKeys.ProtocolTypes[0]:
+        
+        if pltfrm == Arch.WINDOWS:
+            with open(path.join(MeileConfig.BASEBINDIR, 'disconnect.bat'), 'w') as DISBATFILE:
+                DISBATFILE.write("%s /uninstalltunnelservice wg99\n" % MeileConfig.WIREGUARD_BIN)
+                DISBATFILE.write("TASKKILL /F /IM WireGuard.exe\n")
+                DISBATFILE.flush()
+                DISBATFILE.close()
+               
+            partCMD = [gsudo, path.join(MeileConfig.BASEBINDIR, 'disconnect.bat')]
             
-        proc1 = Popen(wg_downCMD)
-        proc1.wait(timeout=30)
-    
-        proc_out,proc_err = proc1.communicate()
-        return proc1.returncode, False
+            chdir(MeileConfig.BASEBINDIR)
+            proc1 = Popen(partCMD)
+            proc1.wait(timeout=30)
+            chdir(MeileConfig.BASEDIR)  
+            
+            return proc1.returncode, False
+        elif pltfrm == Arch.LINUX:
+            CONFFILE = path.join(ConfParams.KEYRINGDIR, 'wg99.conf')
+            wg_downCMD = ['pkexec', 'env', 'PATH=%s' % ConfParams.PATH, 'wg-quick', 'down', CONFFILE]
+                
+            proc1 = Popen(wg_downCMD)
+            proc1.wait(timeout=30)
+        
+            proc_out,proc_err = proc1.communicate()
+            return proc1.returncode, False
+        
+        else:
+            wg_downCMD = [path.join(ConfParams.BASEBINDIR,'sentinel-disconnect.sh')]
+                
+            proc1 = Popen(wg_downCMD)
+            proc1.wait(timeout=30)
+        
+            proc_out,proc_err = proc1.communicate()
+            return proc1.returncode, False
+        
+    elif protocol == NodeKeys.ProtocolTypes[4]:
+        
+        if pltfrm == Arch.WINDOWS:
+            with open(path.join(MeileConfig.BASEBINDIR, 'disconnect.bat'), 'w') as DISBATFILE:
+                DISBATFILE.write("%s /uninstalltunnelservice wg99\n" % MeileConfig.WIREGUARD_BIN)
+                DISBATFILE.write("TASKKILL /F /IM WireGuard.exe\n")
+                DISBATFILE.flush()
+                DISBATFILE.close()
+               
+            partCMD = [gsudo, path.join(MeileConfig.BASEBINDIR, 'disconnect.bat')]
+            
+            chdir(MeileConfig.BASEBINDIR)
+            proc1 = Popen(partCMD)
+            proc1.wait(timeout=30)
+            chdir(MeileConfig.BASEDIR)  
+            
+            return proc1.returncode, False
+        elif pltfrm == Arch.LINUX:
+            CONFFILE = path.join(ConfParams.KEYRINGDIR, 'wg99.conf')
+            wg_downCMD = ['pkexec', 'env', 'PATH=%s' % ConfParams.PATH, 'wg-quick', 'down', CONFFILE]
+                
+            proc1 = Popen(wg_downCMD)
+            proc1.wait(timeout=30)
+        
+            proc_out,proc_err = proc1.communicate()
+            return proc1.returncode, False
+        
+        else:
+            wg_downCMD = [path.join(ConfParams.BASEBINDIR,'asentinel-disconnect.sh')]
+                
+            proc1 = Popen(wg_downCMD)
+            proc1.wait(timeout=30)
+        
+            proc_out,proc_err = proc1.communicate()
+            return proc1.returncode, False
+            
 
     

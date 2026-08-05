@@ -48,9 +48,10 @@ import string
 from treelib import  Tree
 
 MeileConfig = MeileGuiConfig()
-gsudo       = path.join(MeileConfig.BASEBINDIR, 'gsudo.exe') # windows
-sentinel_connect_bash         = path.join(ConfParams.KEYRINGDIR, "bin/sentinel-connect.sh") # os x
-v2ray_tun2routes_connect_bash = path.join(ConfParams.KEYRINGDIR, "bin/routes.sh") # linux
+gsudo       = path.join(MeileConfig.BASEBINDIR, 'gsudo.exe')
+sentinel_connect_bash          = path.join(ConfParams.KEYRINGDIR, "bin/sentinel-connect.sh")
+asentinel_connect_bash         = path.join(ConfParams.KEYRINGDIR, "bin/asentinel-connect.sh")
+v2ray_tun2routes_connect_bash  = path.join(ConfParams.KEYRINGDIR, "bin/tun2routes.sh")
 
 class HandleWalletFunctions():
     connected =  {'v2ray_pid' : None, 'result' : False, 'status' : None}
@@ -735,7 +736,7 @@ class HandleWalletFunctions():
             pub_key_b64 = base64.b64encode(pub_key_bytes).decode("utf-8")
             pub_key = f"secp256k1:{pub_key_b64}"
         
-            if type == "WireGuard":
+            if type == "WireGuard" or type == "AmneziaWG":
                 wgkey = WgKey()
                 key = wgkey.pubkey
                 data = {'public_key': key}
@@ -837,12 +838,36 @@ class HandleWalletFunctions():
             print(f"\nDecode: {decode}")
             print(f"\nlength: {len(decode)}")
     
-            wgkey_out = wgkey if type == "WireGuard" else None
+            wgkey_out = wgkey if (type == "WireGuard" or type == "AmneziaWG") else None
             return response, decode, wgkey_out
     
         return None, None, None
     
-    def write_wireguard_config(self, response, decode, wgkey, conndesc, iface):
+    def _rand_n(self,n):
+        """Go-style randUint16n: uniform integer in [0, n)."""
+        return random.randint(0, n - 1)
+
+    def generate_amnezia_junk_params(self):
+        """
+        Mirror Sentinel's obfs.go junk parameter generation.
+        Jc/Jmin/Jmax are local-only (need not match the server),
+        but must satisfy: Jc<=10, 64<=Jmin<Jmax<=1024.
+        """
+        JC_MAX    = 10
+        JSIZE_MIN = 64
+        JSIZE_MAX = 1024
+    
+        jc   = self._rand_n(JC_MAX - 3) + 3                    # 3..9
+        jmin = self._rand_n(JSIZE_MAX - JSIZE_MIN) + JSIZE_MIN # 64..1023
+        jmax = self._rand_n(JSIZE_MAX - 512) + 512             # 512..1023
+    
+        # Safety: guarantee Jmin < Jmax (Sentinel requires strict inequality)
+        if jmin >= jmax:
+            jmin, jmax = jmax - 1, jmax  # or regenerate
+    
+        return jc, jmin, jmax
+    
+    def write_wireguard_config(self, response, decode, wgkey, conndesc, iface, config_type="WireGuard"):
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
         user_dns = CONFIG['network'].get('dns', '9.9.9.9')
         if len(decode) < 100:
@@ -902,6 +927,29 @@ class HandleWalletFunctions():
             "Interface", "DNS",
             ",".join([user_dns, "1.0.0.1", "1.1.1.1"])
         )
+        
+        # AmneziaWG specific settings
+        if config_type == "AmneziaWG":
+            metadata = decode['metadata'][0]
+            # Get AmneziaWG parameters from metadata
+            # These MUST match the server's junk config.
+            # Sentinel's default AmneziaWG junk parameters:
+            jc, jmin, jmax = self.generate_amnezia_junk_params()
+            
+            config.set("Interface", "Jc",   str(jc))
+            config.set("Interface", "Jmin", str(jmin))
+            config.set("Interface", "Jmax", str(jmax))
+    
+            # From the node response
+            config.set("Interface", "S1", str(metadata['s1']))
+            config.set("Interface", "S2", str(metadata['s2']))
+            config.set("Interface", "S3", str(metadata['s3']))
+            config.set("Interface", "S4", str(metadata['s4']))
+            config.set("Interface", "H1", str(metadata['h1']))
+            config.set("Interface", "H2", str(metadata['h2']))
+            config.set("Interface", "H3", str(metadata['h3']))
+            config.set("Interface", "H4", str(metadata['h4']))
+            
     
         config.add_section("Peer")
         config.set("Peer", "PublicKey", public_key)
@@ -1198,10 +1246,10 @@ class HandleWalletFunctions():
             print(self.connected)
             return
         
-        if type == "WireGuard":
-            iface = "wg99"
+        if type == "WireGuard" or type == "AmneziaWG":
+            iface = "wg99" 
             config_file = self.write_wireguard_config(
-                response, decode, wgkey, conndesc, iface
+                response, decode, wgkey, conndesc, iface, config_type=type
             )
             
             if config_file is None:
@@ -1216,11 +1264,16 @@ class HandleWalletFunctions():
             
                     
             if pltfrm == Arch.LINUX:
-                child = pexpect.spawn(f"pkexec sh -c 'ip link delete {iface}; wg-quick up {config_file}'")
+                # For AmneziaWG, you might need to use a different command
+                if type == "AmneziaWG":
+                    # Assuming you have AmneziaWG tools installed (awg-quick instead of wg-quick)
+                    child = pexpect.spawn(f"pkexec sh -c 'ip link delete {iface}; awg-quick up {config_file}'")
+                else:
+                    child = pexpect.spawn(f"pkexec sh -c 'ip link delete {iface}; wg-quick up {config_file}'")
                 child.expect(pexpect.EOF)
                 
             elif pltfrm == Arch.OSX:
-                connectBASH = [sentinel_connect_bash]
+                connectBASH = [sentinel_connect_bash if type == "WireGuard" else asentinel_connect_bash]
                 proc2 = subprocess.Popen(connectBASH)
                 proc2.wait(timeout=30)
                 pid2 = proc2.pid

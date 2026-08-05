@@ -21,12 +21,124 @@ class MeileGuiConfig():
     
     def copy_bin_dir(self):
         self.copy_and_overwrite(self.resource_path("../bin"), self.BASEBINDIR)
-        
+
     def copy_and_overwrite(self, from_path, to_path):
         if path.exists(to_path):
             shutil.rmtree(to_path)
         shutil.copytree(from_path, to_path)
+        
+    def update_bin(self, from_path, to_path):
+        try:
+            procs = self.process_exists()
+            if len(procs) > 0: 
+                for p in procs:
+                    self.kill_process(p.split(' ')[0].rstrip().lstrip())
+                sleep(10)
+                if path.exists(to_path):
+                    shutil.rmtree(to_path)
+                shutil.copytree(from_path, to_path)
+            else: 
+                if path.exists(to_path):
+                    shutil.rmtree(to_path)
+                shutil.copytree(from_path, to_path)
+        except Exception as e:
+            print("Process name codec error... Defaulting....")
+            print(str(e))
+            if path.exists(to_path):
+                shutil.rmtree(to_path)
+            shutil.copytree(from_path, to_path)
     
+    # MacOS        
+    def is_plist_exists(self):
+        
+        wg_plist_content = {
+            "Label": self.WG_LAUNCHDAEMON_LABEL,
+            "ProgramArguments": [
+                str(self.WIREGUARD_BIN_PATH),
+                "up",
+                str(self.WIREGUARD_CONF_PATH)
+            ],
+            "RunAtLoad": True,
+            "KeepAlive": True,
+            "StandardOutPath": "/var/log/wireguard-wg99.log",
+            "StandardErrorPath": "/var/log/wireguard-wg99.err",
+            "EnableTransactions": True,
+            "AbandonProcessGroup": True,
+        }
+        
+        awg_plist_content = {
+            "Label": self.AWG_LAUNCHDAEMON_LABEL,
+            "ProgramArguments": [
+                str(self.AWIREGUARD_BIN_PATH),
+                "up",
+                str(self.WIREGUARD_CONF_PATH)
+            ],
+            "RunAtLoad": True,
+            "KeepAlive": True,
+            "StandardOutPath": "/var/log/amnezia-wg99.log",
+            "StandardErrorPath": "/var/log/amnezia-wg99.err",
+            "EnableTransactions": True,
+            "AbandonProcessGroup": True,
+        }
+        
+        xray_plist_content = {
+            "Label": self.XRAY_LAUNCHDAEMON_LABEL,
+            "ProgramArguments": [
+                str(self.XRAY_BIN_PATH),
+                "run",
+                "-c",
+                str(self.XRAY_CONF_PATH)
+            ],
+            "RunAtLoad": True,
+            "KeepAlive": True,
+            "StandardOutPath": "/var/log/xray.log",
+            "StandardErrorPath": "/var/log/xray.err",
+            "EnableTransactions": True,
+            "AbandonProcessGroup": True,
+        }
+        
+        nic_cmd = "route get default | grep 'interface' | cut -d ':' -f 2 | tr -d ' '"
+        nic = subprocess.check_output(nic_cmd, shell=True, text=True).strip()
+        
+        tun2socks_plist_content = {
+            "Label": self.TUN2SOCKS_LAUNCHDAEMON_LABEL,
+            "ProgramArguments": [
+                str(self.TUN2SOCKS_BIN_PATH),
+                "-device",
+                "utun123",
+                "-proxy",
+                "socks5://127.0.0.1:1080",
+                "-interface",
+                f"{nic}"
+            ],
+            "RunAtLoad": True,
+            "KeepAlive": True,
+            "StandardOutPath": "/var/log/tun2socks.log",
+            "StandardErrorPath": "/var/log/tun2socks.err",
+            "EnableTransactions": True,
+            "AbandonProcessGroup": True,
+        }
+        
+        if path.isfile(self.WG_LAUNCHDAEMON_PATH) and path.isfile(self.AWG_LAUNCHDAEMON_PATH) and path.isfile(self.XRAY_LAUNCHDAEMON_PATH) and path.isfile(self.TUN2SOCKS_LAUNCHDAEMON_PATH):
+            print("EXISTS")
+            return True
+        else:
+            print("WRITING network plists....")
+            with open(self.WG_LAUNCHDAEMON_PATH, "wb") as f:
+                plistlib.dump(wg_plist_content, f)
+            with open(self.AWG_LAUNCHDAEMON_PATH, "wb") as f:
+                plistlib.dump(awg_plist_content, f)
+            with open(self.XRAY_LAUNCHDAEMON_PATH, "wb") as f:
+                plistlib.dump(xray_plist_content, f)
+            with open(self.TUN2SOCKS_LAUNCHDAEMON_PATH, "wb") as f:
+                plistlib.dump(tun2socks_plist_content, f)
+            return False
+            
+            
+            
+    def rewrite_bin(self):
+        self.update_bin(self.resource_path("bin"), self.BASEBINDIR)
+        
     def read_configuration(self, confpath):
         """Read the configuration file at given path."""
         # copy our default config file
