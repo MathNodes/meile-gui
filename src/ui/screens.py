@@ -1879,6 +1879,13 @@ class WalletScreen(Screen):
         for c in IBCTokens.ibc_coins:
             if c == coin:
                 return self.MeileConfig.resource_path(logoDict[c])
+            
+    def get_swap_image(self, service):
+        if service == "Exolix":
+            return self.MeileConfig.resource_path(MeileColors.EXOLIX)
+        else:
+            return self.MeileConfig.resource_path(MeileColors.SIMPLE_SWAP)
+        
 
     def get_qr_code_address(self):
         CONFIG = MeileGuiConfig()

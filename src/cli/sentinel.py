@@ -152,7 +152,20 @@ class NodeTreeData():
                     ninfos.append(node['connected_peers'])
                     ninfos.append(node['max_peers'])
                     ninfos.append(node['handshake'])
-                    ninfos.append("WireGuard" if node['node_type'] == 1 else "V2Ray")
+                    if node['node_type'] == 1:
+                        ninfos.append("WireGuard")
+                    elif node['node_type'] == 2:
+                        ninfos.append("V2Ray")
+                    elif node['node_type'] == 3:
+                        ninfos.append("OpenVPN")
+                    elif node['node_type'] == 4:
+                        ninfos.append("XRay")
+                    elif node['node_type'] == 5:
+                        ninfos.append("AmneziaWG")
+                    elif node['node_type'] == 6:
+                        ninfos.append("Hysteria2")
+                    else:
+                        ninfos.append("Undefined")
                     ninfos.append(node['node_version'])
                     ninfos.append(node['isp_type'])
                     ninfos.append(node['score'])

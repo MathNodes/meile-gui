@@ -464,26 +464,69 @@ WindowManager:
 		                text_color: get_color_from_hex("#FFB908")
 		                on_release: root.copy_to_clipboard(address_field.text)
 		
-		    # --- Centered, half-width RecycleView ---
-		    AnchorLayout:
-		        anchor_x: "center"
-		        anchor_y: "top"
-		
-		        RecycleView:
-		            id: rv
-		            viewclass: 'RowContainer'
-		            size_hint_x: 0.5
-		            # Optional: cap min/max width so it looks good on very small/large screens
-		            # size_hint_x: None
-		            # width: min(self.parent.width * 0.5, sp(600))
-		
-		            RecycleBoxLayout:
-		                default_size: None, sp(56)
-		                default_size_hint: 1, None
-		                size_hint_y: None
-		                height: self.minimum_height
-		                orientation: 'vertical'
-		                spacing: '10sp'
+		            # --- Centered RecyclerView with affiliate banners ---
+	        MDBoxLayout:
+	            orientation: "horizontal"
+	            padding: dp(10), dp(0), dp(10), dp(0)
+	            spacing: dp(10)
+	
+	            # Left affiliate banner — Exolix
+	            #TooltipMDFlatButton:
+	            HyperlinkImageButton:
+	            	url: "https://exolix.com?ref=DEC0D45C2C8D7EBF4CB29C79117703F0"
+	                size_hint_x: None
+	                width: dp(250)
+	                height: dp(200)
+	                pos_hint: {"center_y": 0.5}
+	                tooltip_text: "Exolix"
+	                #on_release:
+	                #    import webbrowser
+	                #    webbrowser.open("https://exolix.com?ref=DEC0D45C2C8D7EBF4CB29C79117703F0")
+	                AsyncImage:
+	                    source: root.get_swap_image("Exolix")
+	                    size_hint: 1, 1
+	                    pos_hint: {"center_x": 0.5, "center_y": 0.5}
+	                    allow_stretch: True
+	                    keep_ratio: True
+	                    mipmap: True
+	
+	            # Centre — RecycleView
+	            RecycleView:
+	                id: rv
+	                viewclass: "RowContainer"
+	                size_hint_x: 0.5
+	                pos_hint: {"center_y": 0.5}
+	
+	                RecycleBoxLayout:
+	                    default_size: None, sp(56)
+	                    default_size_hint: 1, None
+	                    size_hint_y: None
+	                    height: self.minimum_height
+	                    orientation: "vertical"
+	                    spacing: "10sp"
+	
+	            # Right affiliate banner — SimpleSwap
+	            #TooltipMDFlatButton:
+	            HyperlinkImageButton:
+	            	url: "https://simpleswap.io/?ref=93535744514b"
+	                size_hint_x: None
+	                width: dp(250)
+	                height: dp(200)
+	                pos_hint: {"center_y": 0.5}
+	                tooltip_text: "SimpleSwap"
+	                #on_release:
+	                #    import webbrowser
+	                #    webbrowser.open("https://simpleswap.io/?ref=93535744514b")
+	                AsyncImage:
+	                    source: root.get_swap_image("SimpleSwap")
+	                    size_hint: 1, 1
+	                    pos_hint: {"center_x": 0.5, "center_y": 0.5}
+	                    allow_stretch: True
+	                    keep_ratio: True
+	                    mipmap: True
+			            
+
+
 
     ActionBar:
         background_normal: ''
