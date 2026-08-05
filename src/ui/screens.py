@@ -564,24 +564,6 @@ class MainWindow(Screen):
                             ]
                     )
                     self.dialog.open()
-                    '''    
-                    else:
-                        self.dialog = MDDialog(
-                            title="Connected!",
-                            md_bg_color=get_color_from_hex(MeileColors.BLACK),
-                            buttons=[
-                                    MDFlatButton(
-                                        text="OK",
-                                        theme_text_color="Custom",
-                                        text_color=get_color_from_hex(MeileColors.MEILE),
-                                        on_release=partial(self.call_ip_get,
-                                                           True,
-                                                           Moniker
-                                                           )
-                                    ),])
-                        self.dialog.open()
-                        
-                    '''
                     
                 else:
                     self.remove_loading_widget2()
@@ -644,8 +626,8 @@ class MainWindow(Screen):
                                 on_release=partial(self.call_ip_get, False, "")
                             ),])
                 self.dialog.open()
-                return
-            
+                return 
+               
         else:
             self.disconnect_from_node()
             self.HourlyFirstRun = True
@@ -1310,7 +1292,7 @@ class MainWindow(Screen):
         try:
             if self.ConnectedDict['v2ray_pid'] is not None:
                 try:
-                    returncode, self.CONNECTED = Disconnect(True)
+                    returncode, self.CONNECTED = Disconnect(self.NodeCarouselData['protocol'])
                     print("Disconnect RTNCODE: %s" % returncode)
                     thread = Thread(target=lambda: self.nonblock_get_ip_address(self.get_ip_address))
                     thread.start()
@@ -1320,7 +1302,7 @@ class MainWindow(Screen):
                     print("Something went wrong")
                     
             elif self.CONNECTED == None:
-                returncode, self.CONNECTED = Disconnect(False)
+                returncode, self.CONNECTED = Disconnect(self.NodeCarouselData['protocol'])
                 print("Disconnect RTNCODE: %s" % returncode)
                 thread = Thread(target=lambda: self.nonblock_get_ip_address(self.get_ip_address))
                 thread.start()
@@ -1331,7 +1313,7 @@ class MainWindow(Screen):
                 return True
             
             else:
-                returncode, self.CONNECTED = Disconnect(False)
+                returncode, self.CONNECTED = Disconnect(self.NodeCarouselData['protocol'])
                 print("Disconnect RTNCODE: %s" % returncode)
                 thread = Thread(target=lambda: self.nonblock_get_ip_address(self.get_ip_address))
                 thread.start()
