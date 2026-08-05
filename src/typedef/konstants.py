@@ -613,7 +613,7 @@ class IBCTokens():
 class TextStrings():
     dash = "-"
     VERSION           = "v2.6.1"
-    BUILD             = "17858881473"
+    BUILD             = "17858929753"
     RootTag           = "SENTINEL"
     WG_HASH           = ""
     WG_QUICK_HASH     = ""
