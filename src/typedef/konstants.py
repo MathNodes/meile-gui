@@ -619,8 +619,8 @@ class IBCTokens():
     
 class TextStrings():
     dash = "-"
-    VERSION           = "v2.5.5"
-    BUILD             = "17748518213"
+    VERSION           = "v2.6.1"
+    BUILD             = "17858881473"
     RootTag           = "SENTINEL"
     WG_HASH           = ""
     WG_QUICK_HASH     = ""
@@ -657,6 +657,8 @@ class MeileColors():
     HEALTH_ICON              = "shield-plus"
     SICK_ICON                = "emoticon-sick"
     WIREGUARD_ICON           = "utils/coinimg/wireguard.png"
+    EXOLIX                   = "imgs/ExolixSwap.png"
+    SIMPLE_SWAP              = "imgs/SimpleSwap.png"
     ARCGIS_MAP               = "https://server.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}.png"
     ARCGIS_MAP2              = "https://server.arcgisonline.com/arcgis/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}.png"
     CARTO_MAP                = "https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png"

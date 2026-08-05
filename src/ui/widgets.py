@@ -14,6 +14,7 @@ from kivymd.uix.label import MDLabel
 from kivymd.uix.card import MDCard
 from kivymd.uix.dialog import MDDialog
 from kivymd.uix.button import MDFlatButton, MDRaisedButton, MDFillRoundFlatButton
+from kivymd.uix.tooltip import MDTooltip
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.gridlayout import MDGridLayout
 from kivymd.uix.floatlayout import MDFloatLayout
@@ -166,6 +167,25 @@ class HyperlinkLabel(ButtonBehavior, MDLabel, HoverBehavior):
 
     def update_size(self, *args):
         self.size = self.texture_size  # Ensure label size matches text size
+        
+class HyperlinkImageButton(MDFlatButton, MDTooltip, HoverBehavior):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        #self.bind(size=self.update_size)
+        #self.color = get_color_from_hex(MeileColors.MEILE)
+        self.cursor = 'arrow'
+
+    def on_enter(self, *args):
+        Window.set_system_cursor('hand')
+
+    def on_leave(self, *args):
+        Window.set_system_cursor('arrow')
+        
+    def on_release(self):
+        webbrowser.open(self.url)  # Open the URL when the label is clicked
+
+    #def update_size(self, *args):
+    #    self.size = self.texture_size  # Ensure label size matches text size
      
 class ShareTypeDialog(BoxLayout):
     
