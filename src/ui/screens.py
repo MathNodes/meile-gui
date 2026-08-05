@@ -48,6 +48,7 @@ from kivymd.uix.label.label import MDLabel
 from kivy.animation import Animation
 from kivy.app import App
 from kivy.core.clipboard import Clipboard
+from kivy.network.urlrequest import UrlRequest
 
 
 import requests
@@ -68,6 +69,8 @@ import json
 from treelib.exceptions import NodeIDAbsentError
 import base64
 
+
+BASE_URL = "https://api.smspool.net"
 
 class WalletRestore(Screen):
     screemanager = ObjectProperty()
@@ -341,7 +344,7 @@ class MainWindow(Screen):
     menu = None
     MeileLand = None
     SortOptions = ['None', "Moniker", "Price"]
-    MenuOptions = ['Refresh', 'Sort', 'DNSCrypt', 'Exit']
+    MenuOptions = ['Refresh', 'Sort', 'DNSCrypt', 'SMS Verify', 'Exit']
     Sort = SortOptions[1]
     MeileMap = None
     MeileMapBuilt = False
@@ -403,7 +406,7 @@ class MainWindow(Screen):
         item_height = 50
         max_height = len(self.MenuOptions) * item_height
         
-        menu_icons = ["cloud-refresh", "sort", "shield-lock", "shield-lock", "exit-to-app"]
+        menu_icons = ["cloud-refresh", "sort", "shield-lock", "phone-message", "exit-to-app"]
         menu_items = [
             {
                 "viewclass" : "IconListItem",
@@ -812,6 +815,9 @@ class MainWindow(Screen):
         elif selection == self.MenuOptions[2]:
             self.start_dnscrypt()
         elif selection == self.MenuOptions[3]:
+            #self.build_smspol_screen_interface()
+            pass
+        elif selection == self.MenuOptions[4]:
             self.disconnect_from_node()
             if self.dnscrypt:
                 dnsproxy = dcp()
@@ -1524,6 +1530,13 @@ class MainWindow(Screen):
         Meile.app.root.add_widget(SettingsScreen(name=WindowNames.SETTINGS))
         Meile.app.root.transition = SlideTransition(direction = "down")
         Meile.app.root.current = WindowNames.SETTINGS
+        
+    def build_smspol_screen_interface(self):
+        # Clear out any previous Carousel Data
+        self.clear_node_carousel()
+        Meile.app.root.add_widget(SMSPoolScreen(name=WindowNames.SMS))
+        Meile.app.root.transition = SlideTransition(direction = "up")
+        Meile.app.root.current = WindowNames.SMS
 
     def switch_window(self, window):
         # Clear out any previous Carousel Data
@@ -2737,4 +2750,247 @@ class SettingsScreen(Screen):
     def set_previous_screen(self):
         Meile.app.root.remove_widget(self)
         Meile.app.root.transistion = SlideTransition(direction="up")
+        Meile.app.root.current = WindowNames.MAIN_WINDOW
+        
+        
+class SMSPoolScreen(Screen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.countries = {}
+        self.services = {}
+        self.pools = {}
+        self.current_order = None
+        self.sms_check_event = None
+        Clock.schedule_once(lambda dt: self._load_initial_data(), 0.3)
+        self.API_KEY = ""
+
+    # ---------- API helper ----------
+    def _api_post(self, path, form_data, on_success, on_error=None):
+        url = BASE_URL + path
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        if on_error is None:
+            on_error = self._default_error
+        body = "&".join(f"{k}={v}" for k, v in form_data.items())
+        UrlRequest(
+            url,
+            on_success=on_success,
+            on_failure=on_error,
+            on_error=on_error,
+            req_headers=headers,
+            req_body=body,
+            method='POST',
+            timeout=15,
+        )
+
+    def _default_error(self, request, error):
+        self._set_status(f"Network error: {error}", ok=False)
+        self.debug_label.text = f"ERR: {error}"
+
+    def _set_status(self, text, ok=None):
+        self.order_status.text = text
+        # Update status dot color
+        from kivy.graphics import Color, Ellipse
+        self.status_dot.canvas.clear()
+        with self.status_dot.canvas:
+            if ok is True:
+                Color(0.30, 0.90, 0.55, 1)
+            elif ok is False:
+                Color(0.95, 0.28, 0.38, 1)
+            else:
+                Color(0.60, 0.68, 0.78, 1)
+            Ellipse(pos=self.status_dot.pos, size=self.status_dot.size)
+
+    # ---------- Initial load ----------
+    def _load_initial_data(self):
+        self._api_post("/country/retrieve_all", {}, self._on_countries)
+        self._api_post("/service/retrieve_all", {}, self._on_services)
+        Clock.schedule_interval(self._refresh_balance, 60)
+
+    def _refresh_balance(self, dt):
+        if not self.API_KEY.strip():
+            return
+        self._api_post(
+            "/request/balance",
+            {"key": self.API_KEY.strip()},
+            self._on_balance,
+        )
+
+    def _on_balance(self, request, result):
+        try:
+            data = json.loads(result) if isinstance(result, str) else result
+            self.balance_label.text = f"Balance: ${data.get('balance', 'N/A')}"
+        except Exception as e:
+            self.balance_label.text = "Balance: err"
+            self.debug_label.text = f"Balance parse: {e}"
+
+    def _on_countries(self, request, result):
+        try:
+            data = json.loads(result) if isinstance(result, str) else result
+            self.countries = {c["name"]: c["ID"] for c in data}
+            self.country_spinner.values = sorted(self.countries.keys())
+        except Exception as e:
+            self.debug_label.text = f"Country load error: {e}"
+
+    def _on_services(self, request, result):
+        try:
+            data = json.loads(result) if isinstance(result, str) else result
+            self.services = {s["name"]: s["ID"] for s in data}
+            self.service_spinner.values = sorted(self.services.keys())
+        except Exception as e:
+            self.debug_label.text = f"Service load error: {e}"
+
+    def _fetch_pools(self, *_):
+        country = self.country_spinner.text
+        service = self.service_spinner.text
+        if country == "Select Country" or service == "Select Service":
+            return
+        cid = self.countries.get(country)
+        sid = self.services.get(service)
+        if cid and sid:
+            self._api_post(
+                "/pool/retrieve_valid",
+                {"service": str(sid), "country": str(cid), "web": "1"},
+                self._on_pools,
+            )
+
+    def _on_pools(self, request, result):
+        try:
+            data = json.loads(result) if isinstance(result, str) else result
+            if isinstance(data, list):
+                self.pools = {p["name"]: p["pool"] for p in data if "name" in p}
+            else:
+                self.pools = {}
+            self.pool_spinner.values = ["Auto (Any)"] + list(self.pools.keys())
+        except Exception as e:
+            self.debug_label.text = f"Pool load error: {e}"
+
+    # ---------- Purchase ----------
+    def _purchase(self):
+        key = self.API_KEY.strip()
+        if not key:
+            self._set_status("Enter API key first", ok=False)
+            return
+        country = self.country_spinner.text
+        service = self.service_spinner.text
+        if country == "Select Country" or service == "Select Service":
+            self._set_status("Select country and service", ok=False)
+            return
+
+        cid = self.countries[country]
+        sid = self.services[service]
+        pool = self.pool_spinner.text
+        form = {
+            "key": key,
+            "service": str(sid),
+            "country": str(cid),
+        }
+        if pool != "Auto (Any)" and pool in self.pools:
+            form["pool"] = str(self.pools[pool])
+
+        self._set_status("Ordering...", ok=None)
+        self.debug_label.text = ""
+        # Correct endpoint per SMSPool docs
+        self._api_post(
+            "/purchase/sms",
+            form,
+            self._on_order_success,
+            self._on_order_error,
+        )
+
+    def _on_order_success(self, request, result):
+        raw = result if isinstance(result, str) else json.dumps(result)
+        self.debug_label.text = f"Order response:\n{raw}"
+        try:
+            data = json.loads(result) if isinstance(result, str) else result
+        except Exception:
+            self._set_status("Invalid response", ok=False)
+            return
+
+        # SMSPool returns success=1 (int) on success
+        if str(data.get("success")) == "1":
+            self.current_order = {
+                "id": data.get("order_id") or data.get("orderid"),
+                "number": data.get("number") or data.get("phonenumber"),
+            }
+            self._set_status(
+                f"Order #{self.current_order['id']} active", ok=True
+            )
+            self.phone_label.text = str(self.current_order["number"])
+            self.sms_output.text = ""
+            if self.sms_check_event:
+                self.sms_check_event.cancel()
+            self.sms_check_event = Clock.schedule_interval(self._check_sms, 5)
+            self._refresh_balance(0)
+        else:
+            msg = data.get("message") or data.get("errors") or "unknown"
+            self._set_status(f"Order failed: {msg}", ok=False)
+
+    def _on_order_error(self, request, error):
+        self._set_status(f"Order error: {error}", ok=False)
+        self.debug_label.text = f"ERR: {error}"
+
+    # ---------- SMS polling ----------
+    def _check_sms(self, dt):
+        if not self.current_order:
+            return False
+        form = {
+            "key": self.API_KEY.strip(),
+            "orderid": str(self.current_order["id"]),
+        }
+        # Correct endpoint per SMSPool docs
+        self._api_post("/sms/check", form, self._on_sms_received)
+
+    def _on_sms_received(self, request, result):
+        try:
+            data = json.loads(result) if isinstance(result, str) else result
+        except Exception:
+            return
+        # status 3 = SMS received per SMSPool
+        status = str(data.get("status", ""))
+        sms = data.get("sms") or data.get("full_sms")
+        if status == "3" and sms:
+            existing = self.sms_output.text or ""
+            if sms not in existing:
+                self.sms_output.text = f"[RECEIVED]\n{sms}\n\n" + existing
+                self._set_status("SMS received", ok=True)
+        elif status == "6":
+            self._set_status("Order refunded/cancelled", ok=False)
+            if self.sms_check_event:
+                self.sms_check_event.cancel()
+                self.sms_check_event = None
+
+    # ---------- Cancel ----------
+    def _cancel_order(self):
+        if not self.current_order:
+            self._set_status("No active order", ok=False)
+            return
+        form = {
+            "key": self.API_KEY.strip(),
+            "orderid": str(self.current_order["id"]),
+        }
+        # Correct endpoint per SMSPool docs
+        self._api_post("/sms/cancel", form, self._on_cancel_success)
+        if self.sms_check_event:
+            self.sms_check_event.cancel()
+            self.sms_check_event = None
+
+    def _on_cancel_success(self, request, result):
+        try:
+            data = json.loads(result) if isinstance(result, str) else result
+        except Exception:
+            self._set_status("Cancel: bad response", ok=False)
+            return
+        if str(data.get("success")) == "1":
+            self._set_status("Order cancelled", ok=None)
+            self.phone_label.text = "---"
+            self.current_order = None
+            self.sms_output.text = "[CANCELLED]\n\n" + (self.sms_output.text or "")
+            self._refresh_balance(0)
+        else:
+            msg = data.get("message", "unknown")
+            self._set_status(f"Cancel failed: {msg}", ok=False)
+            
+    def set_previous_screen(self):
+        Meile.app.root.remove_widget(self)
+        Meile.app.root.transistion = SlideTransition(direction="down")
         Meile.app.root.current = WindowNames.MAIN_WINDOW

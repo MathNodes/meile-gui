@@ -11,4 +11,6 @@ class WindowNames():
     SETTINGS       = "settings"
     NODE_CAROUSEL  = "node_carousel"
     PLAN           = "plans" 
+    SMS            = "sms"
+    
     
