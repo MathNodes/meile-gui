@@ -1403,7 +1403,7 @@ class PlanRow(MDGridLayout):
                 yield 0.6
                 self.start_payment_thread_firo(total_arrr)
                 
-            elif mu_coin in ['zano', 'fusd']:
+            elif mu_coin in ["zano", "fusd","bchx", "bnbx", "btcx", "daix", "ethx", "solx", "tonx"]:
                 zaddress = IBCTokens.ZANO_WALLET
                 
                 price_api = GetPriceAPI()
