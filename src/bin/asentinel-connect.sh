@@ -1,4 +1,6 @@
 #!/bin/bash
+# USE THIS FOR MANUAL INTERVENTION WITH THE AMNEZIA WIREGUARD PROTOCOL
+# THIS BRINGS THE AMNEZIAWG INTERFACE UP
 set -euo pipefail
 
 USER_PLIST="${HOME}/.meile-gui/launchd/app.meile.amnezia.plist"

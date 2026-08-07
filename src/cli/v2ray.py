@@ -9,8 +9,10 @@ import os
 import tempfile
 import socket, time
 
+
 from conf.meile_config import MeileGuiConfig
 from helpers.helpers import wait_for_port
+
 
 # Platform-conditional imports
 if sys.platform == 'win32':
@@ -23,6 +25,8 @@ if sys.platform == 'win32':
     import threading
 elif sys.platform == 'darwin':
     import tempfile
+    from os import path
+    from typedef.konstants import ConfParams
 elif sys.platform.startswith('linux'):
     import psutil
     from typedef.konstants import ConfParams
@@ -360,90 +364,207 @@ class _DarwinV2RayHandler:
         else:
             return subprocess.run(cmd, shell=True, timeout=30)
 
-    def start_daemon(self):
-        print("Starting v2ray service...")
-        PLIST_DIR = os.path.expanduser("~/.meile-gui/launchd")
-        xray_plist = f"{PLIST_DIR}/app.meile.xray.plist"
-        tun2_plist = f"{PLIST_DIR}/app.meile.tun2socks.plist"
-
-        privileged_commands = [
-            'mkdir -p "/Library/Application Support/Meile/launchd"',
-            f'cp "{xray_plist}" "/Library/Application Support/Meile/launchd/"',
-            f'cp "{tun2_plist}" "/Library/Application Support/Meile/launchd/"',
-            'chown -R root:wheel "/Library/Application Support/Meile"',
-            'chmod 755 "/Library/Application Support/Meile" "/Library/Application Support/Meile/launchd"',
-            'chmod 644 "/Library/Application Support/Meile/launchd/"*.plist',
-            "rm -rf /Library/LaunchDaemons/app.meile.tun2socks.plist",
-            "rm -rf /Library/LaunchDaemons/app.meile.wireguard.plist",
-            "rm -rf /Library/LaunchDaemons/app.meile.xray.plist",
-            "launchctl enable system/app.meile.xray",
-            'launchctl bootstrap system "/Library/Application Support/Meile/launchd/app.meile.xray.plist"',
-        ]
-        privileged_commands.append("sleep 3")
-        privileged_commands.append(
-            "curl --preproxy socks5://localhost:1080"
-            " -s https://icanhazip.com"
-        )
-        privileged_commands.append("sleep 1")
-        privileged_commands.append(f"launchctl enable system/app.meile.tun2socks")
-        privileged_commands.append(f'launchctl bootstrap system "/Library/Application Support/Meile/launchd/app.meile.tun2socks.plist"')
-        privileged_commands.append("sleep 2")
-        privileged_commands.append("ifconfig utun123 198.18.0.1 198.18.0.1 up")
-
-        networks = [
-            "1.0.0.0/8",
-            "2.0.0.0/7",
-            "4.0.0.0/6",
-            "8.0.0.0/5",
-            "16.0.0.0/4",
-            "32.0.0.0/3",
-            "64.0.0.0/2",
-            "128.0.0.0/1",
-            "198.18.0.0/15",
-        ]
-
-        for network in networks:
+    def start_daemon(self, is_v2ray: bool = True):
+        if is_v2ray: 
+            print("Starting v2ray service...")
+            PLIST_DIR = os.path.expanduser("~/.meile-gui/launchd")
+            xray_plist = f"{PLIST_DIR}/app.meile.xray.plist"
+            tun2_plist = f"{PLIST_DIR}/app.meile.tun2socks.plist"
+    
+            privileged_commands = [
+                'mkdir -p "/Library/Application Support/Meile/launchd"',
+                f'cp "{xray_plist}" "/Library/Application Support/Meile/launchd/"',
+                f'cp "{tun2_plist}" "/Library/Application Support/Meile/launchd/"',
+                'chown -R root:wheel "/Library/Application Support/Meile"',
+                'chmod 755 "/Library/Application Support/Meile" "/Library/Application Support/Meile/launchd"',
+                'chmod 644 "/Library/Application Support/Meile/launchd/"*.plist',
+                "rm -rf /Library/LaunchDaemons/app.meile.tun2socks.plist",
+                "rm -rf /Library/LaunchDaemons/app.meile.wireguard.plist",
+                "rm -rf /Library/LaunchDaemons/app.meile.xray.plist",
+                "launchctl enable system/app.meile.xray",
+                'launchctl bootstrap system "/Library/Application Support/Meile/launchd/app.meile.xray.plist"',
+            ]
+            privileged_commands.append("sleep 3")
             privileged_commands.append(
-                f"route add -net {network} 198.18.0.1"
+                "curl --preproxy socks5://localhost:1080"
+                " -s https://icanhazip.com"
             )
+            privileged_commands.append("sleep 1")
+            privileged_commands.append(f"launchctl enable system/app.meile.tun2socks")
+            privileged_commands.append(f'launchctl bootstrap system "/Library/Application Support/Meile/launchd/app.meile.tun2socks.plist"')
+            privileged_commands.append("sleep 2")
+            privileged_commands.append("ifconfig utun123 198.18.0.1 198.18.0.1 up")
+    
+            networks = [
+                "1.0.0.0/8",
+                "2.0.0.0/7",
+                "4.0.0.0/6",
+                "8.0.0.0/5",
+                "16.0.0.0/4",
+                "32.0.0.0/3",
+                "64.0.0.0/2",
+                "128.0.0.0/1",
+                "198.18.0.0/15",
+            ]
+    
+            for network in networks:
+                privileged_commands.append(
+                    f"route add -net {network} 198.18.0.1"
+                )
+    
+            if not self.run_privileged_script(privileged_commands):
+                print("Failed to execute privileged commands")
+                return False
+    
+            return True
+        else:
+            print("Starting xray (wireguard-variant) service...")
+            PLIST_DIR = os.path.expanduser("~/.meile-gui/launchd")
+            xray_plist = f"{PLIST_DIR}/app.meile.xray.plist"
+            tun2_basename = "app.meile.tun2socks-xray.plist"
+            tun2_plist = f"{PLIST_DIR}/{tun2_basename}"
+            dest = "/Library/Application Support/Meile/launchd"
+        
+            # --- computed unprivileged, before routes are hijacked ---
+            gw_cmd = (
+                "route -n get default 2>/dev/null "
+                "| awk '/gateway:/ {print $2}'"
+            )
+            GW = subprocess.check_output(gw_cmd, shell=True, text=True).strip()
+            if not GW:
+                print("Could not determine default gateway; aborting.")
+                return False
+        
+            proxy_ip_file = path.join(ConfParams.KEYRINGDIR, "xray.proxy")
+            with open(proxy_ip_file, "r") as f:
+                XRAY_SERVER = f.read().strip()
+            if not XRAY_SERVER:
+                print("No server IP in xray.proxy; aborting.")
+                return False
+        
+            privileged_commands = [
+                f'mkdir -p "{dest}"',
+                f'cp "{xray_plist}" "{dest}/"',
+                f'cp "{tun2_plist}" "{dest}/"',
+                'chown -R root:wheel "/Library/Application Support/Meile"',
+                f'chmod 755 "/Library/Application Support/Meile" "{dest}"',
+                f'chmod 644 "{dest}/"*.plist',
+                "rm -rf /Library/LaunchDaemons/app.meile.tun2socks.plist",
+                "rm -rf /Library/LaunchDaemons/app.meile.wireguard.plist",
+                "rm -rf /Library/LaunchDaemons/app.meile.xray.plist",
+                "launchctl enable system/app.meile.xray",
+                f'launchctl bootstrap system "{dest}/app.meile.xray.plist"',
+                "sleep 3",
+                "curl --preproxy socks5://localhost:1080 -s https://icanhazip.com",
+                "sleep 1",
+                "launchctl enable system/app.meile.tun2socks-xray",
+                f'launchctl bootstrap system "{dest}/{tun2_basename}"',
+                "sleep 2",
+                "ifconfig utun123 198.18.0.1 198.18.0.1 up",
+                f"route add -host {XRAY_SERVER} {GW}",
+            ]
+        
+            networks = [
+                "1.0.0.0/8", "2.0.0.0/7", "4.0.0.0/6", "8.0.0.0/5",
+                "16.0.0.0/4", "32.0.0.0/3", "64.0.0.0/2", "128.0.0.0/1",
+                "198.18.0.0/15",
+            ]
+            for network in networks:
+                privileged_commands.append(f"route add -net {network} 198.18.0.1")
+        
+            if not self.run_privileged_script(privileged_commands):
+                print("Failed to execute privileged commands")
+                return False
+        
+            return True
+            
 
-        if not self.run_privileged_script(privileged_commands):
-            print("Failed to execute privileged commands")
-            return False
-
-        return True
-
-    def kill_daemon(self):
-        privileged_commands = []
-
-        networks = [
-            "1.0.0.0/8",
-            "2.0.0.0/7",
-            "4.0.0.0/6",
-            "8.0.0.0/5",
-            "16.0.0.0/4",
-            "32.0.0.0/3",
-            "64.0.0.0/2",
-            "128.0.0.0/1",
-            "198.18.0.0/15",
-        ]
-
-        for network in networks:
+    def kill_daemon(self, is_v2ray: bool = False):
+        if is_v2ray:
+            privileged_commands = []
+    
+            networks = [
+                "1.0.0.0/8",
+                "2.0.0.0/7",
+                "4.0.0.0/6",
+                "8.0.0.0/5",
+                "16.0.0.0/4",
+                "32.0.0.0/3",
+                "64.0.0.0/2",
+                "128.0.0.0/1",
+                "198.18.0.0/15",
+            ]
+    
+            for network in networks:
+                privileged_commands.append(
+                    f"route delete -net {network} 198.18.0.1"
+                )
+    
             privileged_commands.append(
-                f"route delete -net {network} 198.18.0.1"
+                "ifconfig utun123 198.18.0.1 198.18.0.1 down"
             )
-
-        privileged_commands.append(
-            "ifconfig utun123 198.18.0.1 198.18.0.1 down"
-        )
-        privileged_commands.append(f'launchctl bootout system "/Library/Application Support/Meile/launchd/app.meile.xray.plist" ; launchctl bootout system "/Library/Application Support/Meile/launchd/app.meile.tun2socks.plist" ; launchctl disable system/app.meile.xray ; launchctl disable system/app.meile.tun2socks')
-
-        self.run_privileged_script(privileged_commands)
-
-        for proc in self.processes:
-            proc.terminate()
-
-        return True
+            privileged_commands.append(f'launchctl bootout system "/Library/Application Support/Meile/launchd/app.meile.xray.plist" ; launchctl bootout system "/Library/Application Support/Meile/launchd/app.meile.tun2socks.plist" ; launchctl disable system/app.meile.xray ; launchctl disable system/app.meile.tun2socks')
+    
+            self.run_privileged_script(privileged_commands)
+    
+            for proc in self.processes:
+                proc.terminate()
+    
+            return True
+        else:
+            print("Stopping xray service...")
+            tun2_basename = "app.meile.tun2socks-xray.plist"
+            dest = "/Library/Application Support/Meile/launchd"
+        
+            # --- computed unprivileged, before routes are hijacked ---
+            gw_cmd = (
+                "route -n get default 2>/dev/null "
+                "| awk '/gateway:/ {print $2}'"
+            )
+            GW = subprocess.check_output(gw_cmd, shell=True, text=True).strip()
+            if not GW:
+                print("Could not determine default gateway; aborting.")
+                return False
+        
+            proxy_ip_file = path.join(ConfParams.KEYRINGDIR, "xray.proxy")
+            with open(proxy_ip_file, "r") as f:
+                XRAY_SERVER = f.read().strip()
+            if not XRAY_SERVER:
+                print("No server IP in xray.proxy; aborting.")
+                return False
+            privileged_commands = []
+            
+            privileged_commands.append(f"route delete -host {XRAY_SERVER} {GW}")
+    
+            networks = [
+                "1.0.0.0/8",
+                "2.0.0.0/7",
+                "4.0.0.0/6",
+                "8.0.0.0/5",
+                "16.0.0.0/4",
+                "32.0.0.0/3",
+                "64.0.0.0/2",
+                "128.0.0.0/1",
+                "198.18.0.0/15",
+            ]
+    
+            for network in networks:
+                privileged_commands.append(
+                    f"route delete -net {network} 198.18.0.1"
+                )
+    
+            privileged_commands.append(
+                "ifconfig utun123 198.18.0.1 198.18.0.1 down"
+            )
+            privileged_commands.append(f'launchctl bootout system "{dest}/app.meile.xray.plist" ; launchctl bootout system "{dest}/{tun2_basename}" ; launchctl disable system/app.meile.xray ; launchctl disable system/app.meile.tun2socks-xray')
+    
+            self.run_privileged_script(privileged_commands)
+    
+            for proc in self.processes:
+                proc.terminate()
+    
+            return True
+            
 
 # ---------------------------------------------------------------------------
 # Select the correct handler for the current platform

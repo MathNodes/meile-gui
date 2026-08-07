@@ -1,5 +1,6 @@
 #!/bin/bash
 STATE="$1"
+PROTO="$2" 
 
 if [[ ${STATE} == "up" ]]; then
 	${HOME}/.meile-gui/bin/xray run -c ${HOME}/.meile-gui/v2ray_config.json &
@@ -21,7 +22,7 @@ if [[ ${STATE} == "up" ]]; then
 	route add -net 128.0.0.0/1 198.18.0.1
 	route add -net 198.18.0.0/15 198.18.0.1
 	#curl -v https://icanhazip.com
-else
+elif [[ ${PROTO} == "v2ray" ]]; then
 	route delete -net 1.0.0.0/8 198.18.0.1
 	route delete -net 2.0.0.0/7 198.18.0.1
 	route delete -net 4.0.0.0/6 198.18.0.1
@@ -34,4 +35,19 @@ else
 	ifconfig utun123 198.18.0.1 198.18.0.1 down
 	pkill -9 tun2socks
 	pkill -9 xray
+else
+	GATEWAY=`route get default | grep "gateway" | cut -d ":" -f 2 | tr -d " "`
+	XRAY_SERVER=`cat ${HOME}/.meile-gui/xray.proxy`
+	route delete -host ${XRAY_SERVER} ${GATEWAY}
+	route delete -net 1.0.0.0/8 198.18.0.1
+	route delete -net 2.0.0.0/7 198.18.0.1
+	route delete -net 4.0.0.0/6 198.18.0.1
+	route delete -net 8.0.0.0/5 198.18.0.1
+	route delete -net 16.0.0.0/4 198.18.0.1
+	route delete -net 32.0.0.0/3 198.18.0.1
+	route delete -net 64.0.0.0/2 198.18.0.1
+	route delete -net 128.0.0.0/1 198.18.0.1
+	route delete -net 198.18.0.0/15 198.18.0.1
+	ifconfig utun123 198.18.0.1 198.18.0.1 down
+	
 fi

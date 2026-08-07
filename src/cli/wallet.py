@@ -1027,6 +1027,193 @@ class HandleWalletFunctions():
             remove(proxy_ip_file)
         with open(proxy_ip_file, "w", encoding="utf-8") as f:
             f.write(vmess_address)
+            
+    def write_xray_config(self, response, decode):
+        decode = json.loads(decode)
+        print(decode)
+    
+        # ---- Confirmed from sentinel-go-sdk xray/proxy.go and xray/transport.go ----
+        PROXY_PROTOCOL_MAP = {
+            1: "vless",
+            2: "vmess",
+            3: "trojan",
+            4: "shadowsocks-2022",
+        }
+        TRANSPORT_MAP = {
+            1: "tcp",
+            2: "websocket",
+            3: "grpc",
+            4: "httpupgrade",
+            5: "xhttp",
+        }
+        SECURITY_MAP = {
+            1: "none",
+            2: "tls",
+            3: "reality",
+        }
+        # Flow only matters for VLESS; 1=none, 2=xtls-rprx-vision
+        FLOW_MAP = {
+            1: "none",
+            2: "xtls-rprx-vision",
+        }
+        # -------------------------------------------------------------------------
+    
+        metadata_list = decode.get("metadata", [])
+        if not metadata_list:
+            print("No XRAY metadata entries found")
+            return False
+    
+        # Prefer Reality (transport_security==3), fall back to first entry
+        entry = None
+        for m in metadata_list:
+            if m.get("transport_security") == 3:
+                entry = m
+                break
+        if entry is None:
+            entry = metadata_list[0]
+    
+        server_addr   = resolve_address(response["result"]["addrs"][0])
+        server_port   = int(entry["port"])
+        proxy_proto   = PROXY_PROTOCOL_MAP.get(entry["proxy_protocol"])
+        transport     = TRANSPORT_MAP.get(entry["transport_protocol"], "tcp")
+        security      = SECURITY_MAP.get(entry["transport_security"], "none")
+        flow_val      = FLOW_MAP.get(entry["flow"], "none")
+    
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.bind(("", 0))
+        api_port = sock.getsockname()[1]
+        sock.close()
+    
+        print("xray server:", server_addr)
+        print("xray port:", server_port)
+        print("xray uuid:", self.uid_16)
+        print("xray proxy:", proxy_proto)
+        print("xray transport:", transport)
+        print("xray security:", security)
+        print("xray flow:", flow_val)
+        print("xray api_port:", api_port)
+    
+        # --- Build XRAY client JSON---
+    
+        # User object differs by protocol
+        if proxy_proto == "vless":
+            user_obj = {"id": f"{self.uid_16}", "encryption": "none"}
+            if entry["flow"] == 2:  # FlowVision
+                user_obj["flow"] = "xtls-rprx-vision"
+        elif proxy_proto == "trojan":
+            user_obj = {"password": f"{self.uid_16}"}
+        elif proxy_proto == "vmess":
+            user_obj = {"id": f"{self.uid_16}", "alterId": 0, "security": "auto"}
+        else:
+            user_obj = {"id": f"{self.uid_16}"}
+    
+        # vnext (vless/vmess) vs servers (trojan)
+        if proxy_proto in ("vless", "vmess"):
+            outbound_settings = {
+                "vnext": [{"address": server_addr, "port": server_port, "users": [user_obj]}]
+            }
+        elif proxy_proto == "trojan":
+            outbound_settings = {
+                "servers": [{"address": server_addr, "port": server_port, "password": f"{self.uid_16}"}]
+            }
+        else:
+            outbound_settings = {
+                "vnext": [{"address": server_addr, "port": server_port, "users": [user_obj]}]
+            }
+    
+        # streamSettings
+        stream = {"network": transport, "security": security}
+    
+        # Reality
+        if security == "reality":
+            stream["realitySettings"] = {
+                "serverName":  entry["reality_server_name"],
+                "publicKey":   entry["reality_public_key"],
+                "shortId":     entry["reality_short_id"],
+                "fingerprint": entry.get("reality_fingerprint") or "chrome",
+            }
+            # Reality requires TLS-level settings within realitySettings
+            if entry.get("reality_server_name"):
+                stream["realitySettings"]["serverName"] = entry["reality_server_name"]
+    
+        # TLS (with optional cert pinning)
+        elif security == "tls":
+            tls = {}
+            if entry.get("tls_pin"):
+                tls["pinnedPeerCertificateChainSha256"] = [entry["tls_pin"]]
+            if tls:
+                stream["tlsSettings"] = tls
+    
+        # Transport-specific settings (needed for gRPC, WS, etc.)
+        if transport == "grpc":
+            stream["grpcSettings"] = {"serviceName": ""}
+        elif transport == "websocket":
+            stream["wsSettings"] = {"path": "/"}
+        elif transport == "httpupgrade":
+            stream["httpupgradeSettings"] = {"path": "/"}
+    
+        xray_config = {
+            "log": {"loglevel": "none"},
+            "api": {
+                "tag": "api",
+                "services": ["HandlerService", "LoggerService", "StatsService"],
+            },
+            "stats": {},
+            "policy": {
+                "system": {
+                    "statsOutboundDownlink": True,
+                    "statsOutboundUplink": True,
+                }
+            },
+            "inbounds": [
+                {
+                    "port": 1080,
+                    "listen": "127.0.0.1",
+                    "protocol": "socks",
+                    "settings": {"udp": True},
+                    "tag": "proxy",
+                },
+                {
+                    "port": api_port,
+                    "listen": "127.0.0.1",
+                    "protocol": "dokodemo-door",
+                    "settings": {"address": "127.0.0.1"},
+                    "tag": "api-in",
+                },
+            ],
+            "outbounds": [
+                {
+                    "protocol": proxy_proto,
+                    "settings": outbound_settings,
+                    "streamSettings": stream,
+                    "tag": "proxy-out",
+                }
+            ],
+            "routing": {
+                "rules": [
+                    {
+                        "type": "field",
+                        "inboundTag": ["api-in"],
+                        "outboundTag": "api",
+                    }
+                ]
+            },
+        }
+    
+        config_file = path.join(ConfParams.KEYRINGDIR, "v2ray_config.json")
+        if path.isfile(config_file):
+            remove(config_file)
+        with open(config_file, "w", encoding="utf-8") as f:
+            json.dump(xray_config, f, indent=4)
+    
+        # Write proxy address file (same pattern as your v2ray.proxy)
+        proxy_ip_file = path.join(ConfParams.KEYRINGDIR, "xray.proxy")
+        if path.isfile(proxy_ip_file):
+            remove(proxy_ip_file)
+        with open(proxy_ip_file, "w", encoding="utf-8") as f:
+            f.write(server_addr)
+    
+        return True
     
     def connect(self, 
                 ID, 
@@ -1316,7 +1503,7 @@ class HandleWalletFunctions():
                                   "session_id" : session_id}
                 return
                     
-        else:  # v2ray
+        elif type == "V2Ray":  # v2ray
             if pltfrm == Arch.OSX:
                 chdir(MeileConfig.BASEBINDIR) 
             conndesc.write("Bringing up V2Ray socks tunnel...\n")
@@ -1326,7 +1513,7 @@ class HandleWalletFunctions():
             
             tuniface = False
             v2ray_handler = V2RayHandler(f"{v2ray_tun2routes_connect_bash} up")
-            if not v2ray_handler.start_daemon():
+            if not v2ray_handler.start_daemon(True):
                 try:
                     conndesc.write("Error connecting to V2Ray node...\n")
                     conndesc.flush()
@@ -1383,6 +1570,77 @@ class HandleWalletFunctions():
                                   "status": f"Error connecting to v2ray node: {tuniface}",
                                   "session_id" : session_id}
                 print(self.connected)
+                if pltfrm == Arch.OSX:
+                    chdir(MeileConfig.BASEDIR)
+                return
+            
+        elif type == "XRay":
+            if pltfrm == Arch.OSX:
+                chdir(MeileConfig.BASEBINDIR)
+            conndesc.write("Bringing up XRAY socks tunnel...\n")
+            conndesc.flush()
+        
+            if not self.write_xray_config(response, decode):
+                self.connected = {"v2ray_pid": None, "result": False,
+                                  "status": "Error writing XRAY config. Terminating...",
+                                  "session_id": session_id}
+                if pltfrm == Arch.OSX:
+                    chdir(MeileConfig.BASEDIR)
+                return
+        
+            tuniface = False
+            xray_handler = V2RayHandler(f"{v2ray_tun2routes_connect_bash} up")
+            if not xray_handler.start_daemon(False):
+                try:
+                    conndesc.write("Error connecting to XRAY node...\n")
+                    conndesc.flush()
+                    xray_handler.v2ray_script = f"{v2ray_tun2routes_connect_bash} down"
+                    xray_handler.kill_daemon()
+                    conndesc.close()
+                except Exception as e:
+                    print(str(e))
+                self.connected = {"v2ray_pid": xray_handler.v2ray_pid,
+                                  "result": False,
+                                  "status": "Error connecting to xray node",
+                                  "session_id": session_id}
+                if pltfrm == Arch.OSX:
+                    chdir(MeileConfig.BASEDIR)
+                return
+        
+            tuniface = wait_for_tunnel_iface(iface=["tun", "utun3", "utun123"], timeout=30)
+        
+            if tuniface is not None:
+                print("Tunnel interface is up:", tuniface)
+                conndesc.write("Checking network connection...\n")
+                conndesc.flush()
+                sleep(3.3)
+                if self.get_ip_address():
+                    self.connected = {"v2ray_pid": xray_handler.v2ray_pid,
+                                      "result": True, "status": tuniface,
+                                      "session_id": session_id}
+                else:
+                    self.connected = {"v2ray_pid": xray_handler.v2ray_pid,
+                                      "result": False,
+                                      "status": "Error establishing connection to internet. Try a different node.",
+                                      "session_id": session_id}
+                sleep(1)
+                conndesc.close()
+                if pltfrm == Arch.OSX:
+                    chdir(MeileConfig.BASEDIR)
+                return
+            else:
+                try:
+                    conndesc.write("Error connecting to XRAY node...\n")
+                    conndesc.flush()
+                    xray_handler.v2ray_script = f"{v2ray_tun2routes_connect_bash} down"
+                    xray_handler.kill_daemon()
+                    conndesc.close()
+                except Exception as e:
+                    print(str(e))
+                self.connected = {"v2ray_pid": xray_handler.v2ray_pid,
+                                  "result": False,
+                                  "status": f"Error connecting to xray node: {tuniface}",
+                                  "session_id": session_id}
                 if pltfrm == Arch.OSX:
                     chdir(MeileConfig.BASEDIR)
                 return

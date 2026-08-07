@@ -1,4 +1,6 @@
 #!/bin/bash
+# USE THIS FOR MANUAL INTERVENTION WITH THE WIREGUARD PROTOCOL
+# THIS BRINGS THE WIREGUARD INTERFACE DOWN
 set -euo pipefail
 
 WG_BIN="${HOME}/.meile-gui/bin/wg-quick"

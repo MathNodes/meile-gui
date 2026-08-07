@@ -1,4 +1,6 @@
 #!/bin/bash
+# USE THIS FOR MANUAL INTERVENTION WITH THE WIREGUARD PROTOCOL
+# THIS BRINGS THE WIREGUARD INTERFACE UP
 set -euo pipefail
 
 USER_PLIST="${HOME}/.meile-gui/launchd/app.meile.wireguard.plist"
