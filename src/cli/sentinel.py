@@ -609,11 +609,18 @@ class NodeTreeData():
 def disconnect(protocol):
     import platform
     pltfrm = platform.system()
-    if protocol == NodeKeys.ProtocolTypes[1]:
+    if protocol in [NodeKeys.ProtocolTypes[1],NodeKeys.ProtocolTypes[3]]:
         try:
-            V2Ray = V2RayHandler(v2ray_tun2routes_connect_bash + " down")
-            rc = V2Ray.kill_daemon()
-            return rc, False
+            if pltfrm == Arch.WINDOWS:
+                V2Ray = V2RayHandler(v2ray_tun2routes_connect_bash + " down")
+                chdir(MeileConfig.BASEBINDIR)
+                rc = V2Ray.kill_daemon(True) if protocol == NodeKeys.ProtocolTypes[1] else V2Ray.kill_daemon(False)
+                chdir(MeileConfig.BASEDIR)  
+                return rc, False
+            else:
+                V2Ray = V2RayHandler(v2ray_tun2routes_connect_bash + " down")
+                rc = V2Ray.kill_daemon(True) if protocol == NodeKeys.ProtocolTypes[1] else V2Ray.kill_daemon(False)
+                return rc, False
         except Exception as e:
             print(str(e))
             return 1, True

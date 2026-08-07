@@ -120,7 +120,24 @@ class MeileGuiConfig():
             "AbandonProcessGroup": True,
         }
         
-        if path.isfile(self.WG_LAUNCHDAEMON_PATH) and path.isfile(self.AWG_LAUNCHDAEMON_PATH) and path.isfile(self.XRAY_LAUNCHDAEMON_PATH) and path.isfile(self.TUN2SOCKS_LAUNCHDAEMON_PATH):
+        tun2socks_xray_plist_content = {
+            "Label": self.TUN2SOCKS_XRAY_LAUNCHDAEMON_LABEL,
+            "ProgramArguments": [
+                str(self.TUN2SOCKS_BIN_PATH),
+                "-device",
+                "utun123",
+                "-proxy",
+                "socks5://127.0.0.1:1080",
+            ],
+            "RunAtLoad": True,
+            "KeepAlive": True,
+            "StandardOutPath": "/var/log/tun2socks.log",
+            "StandardErrorPath": "/var/log/tun2socks.err",
+            "EnableTransactions": True,
+            "AbandonProcessGroup": True,
+        }
+        
+        if path.isfile(self.WG_LAUNCHDAEMON_PATH) and path.isfile(self.AWG_LAUNCHDAEMON_PATH) and path.isfile(self.XRAY_LAUNCHDAEMON_PATH) and path.isfile(self.TUN2SOCKS_LAUNCHDAEMON_PATH) and path.isfile(self.TUN2SOCKS_XRAY_LAUNCHDAEMON_PATH):
             print("EXISTS")
             return True
         else:
@@ -133,6 +150,8 @@ class MeileGuiConfig():
                 plistlib.dump(xray_plist_content, f)
             with open(self.TUN2SOCKS_LAUNCHDAEMON_PATH, "wb") as f:
                 plistlib.dump(tun2socks_plist_content, f)
+            with open(self.TUN2SOCKS_XRAY_LAUNCHDAEMON_PATH, "wb") as f:
+                plistlib.dump(tun2socks_xray_plist_content, f)
             return False
             
             
