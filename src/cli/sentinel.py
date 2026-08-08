@@ -610,17 +610,17 @@ class NodeTreeData():
 def disconnect(protocol):
     import platform
     pltfrm = platform.system()
-    if protocol in [NodeKeys.ProtocolTypes[1],NodeKeys.ProtocolTypes[3]]:
+    if protocol in [NodeKeys.ProtocolTypes[1],NodeKeys.ProtocolTypes[3],NodeKeys.ProtocolTypes[5]]:
         try:
             if pltfrm == Arch.WINDOWS:
                 V2Ray = V2RayHandler(v2ray_tun2routes_connect_bash + " down")
                 chdir(MeileConfig.BASEBINDIR)
-                rc = V2Ray.kill_daemon(True) if protocol == NodeKeys.ProtocolTypes[1] else V2Ray.kill_daemon(False)
+                rc = V2Ray.kill_daemon(protocol)
                 chdir(MeileConfig.BASEDIR)  
                 return rc, False
             else:
                 V2Ray = V2RayHandler(v2ray_tun2routes_connect_bash + " down")
-                rc = V2Ray.kill_daemon(True) if protocol == NodeKeys.ProtocolTypes[1] else V2Ray.kill_daemon(False)
+                rc = V2Ray.kill_daemon(protocol)
                 return rc, False
         except Exception as e:
             print(str(e))
@@ -680,7 +680,7 @@ def disconnect(protocol):
             return proc1.returncode, False
         elif pltfrm == Arch.LINUX:
             CONFFILE = path.join(ConfParams.KEYRINGDIR, 'wg99.conf')
-            wg_downCMD = ['pkexec', 'env', 'PATH=%s' % ConfParams.PATH, 'wg-quick', 'down', CONFFILE]
+            wg_downCMD = ['pkexec', 'env', 'PATH=%s' % ConfParams.PATH, 'awg-quick', 'down', CONFFILE]
                 
             proc1 = Popen(wg_downCMD)
             proc1.wait(timeout=30)
