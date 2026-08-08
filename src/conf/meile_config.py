@@ -98,6 +98,22 @@ class MeileGuiConfig():
             "AbandonProcessGroup": True,
         }
         
+        hysteria_plist_content = {
+            "Label": self.HYSTERIA_LAUNCHDAEMON_LABEL,
+            "ProgramArguments": [
+                str(self.HYSTERIA_BIN_PATH),
+                "client",
+                "-c",
+                str(self.HYSTERIA_CONF_PATH)
+            ],
+            "RunAtLoad": True,
+            "KeepAlive": True,
+            "StandardOutPath": "/var/log/hysteria.log",
+            "StandardErrorPath": "/var/log/hysteria.err",
+            "EnableTransactions": True,
+            "AbandonProcessGroup": True,
+        }
+        
         nic_cmd = "route get default | grep 'interface' | cut -d ':' -f 2 | tr -d ' '"
         nic = subprocess.check_output(nic_cmd, shell=True, text=True).strip()
         
@@ -137,7 +153,7 @@ class MeileGuiConfig():
             "AbandonProcessGroup": True,
         }
         
-        if path.isfile(self.WG_LAUNCHDAEMON_PATH) and path.isfile(self.AWG_LAUNCHDAEMON_PATH) and path.isfile(self.XRAY_LAUNCHDAEMON_PATH) and path.isfile(self.TUN2SOCKS_LAUNCHDAEMON_PATH) and path.isfile(self.TUN2SOCKS_XRAY_LAUNCHDAEMON_PATH):
+        if all(path.isfile(p) for p in self.LAUNCHDAEMON_PATHS):
             print("EXISTS")
             return True
         else:
@@ -148,6 +164,8 @@ class MeileGuiConfig():
                 plistlib.dump(awg_plist_content, f)
             with open(self.XRAY_LAUNCHDAEMON_PATH, "wb") as f:
                 plistlib.dump(xray_plist_content, f)
+            with open(self.HYSTERIA_LAUNCHDAEMON_PATH, "wb") as f:
+                plistlib.dump(hysteria_plist_content, f)
             with open(self.TUN2SOCKS_LAUNCHDAEMON_PATH, "wb") as f:
                 plistlib.dump(tun2socks_plist_content, f)
             with open(self.TUN2SOCKS_XRAY_LAUNCHDAEMON_PATH, "wb") as f:
