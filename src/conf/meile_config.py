@@ -22,21 +22,32 @@ class MeileGuiConfig():
     CONFIG                        = configparser.ConfigParser()
     WIREGUARD_CONF_PATH           = Path.home() / ".meile-gui" / "wg99.conf"
     XRAY_CONF_PATH                = Path.home() / ".meile-gui" / "v2ray_config.json"
+    HYSTERIA_CONF_PATH            = Path.home() / ".meile-gui" / "hysteria.yml"
     WIREGUARD_BIN_PATH            = Path.home() / ".meile-gui" / "bin" / "wg-quick"
     AWIREGUARD_BIN_PATH           = Path.home() / ".meile-gui" / "bin" / "awg-quick"
     XRAY_BIN_PATH                 = Path.home() / ".meile-gui" / "bin" / "xray"
+    HYSTERIA_BIN_PATH             = Path.home() / ".meile-gui" / "bin" / "hysteria"
     TUN2SOCKS_BIN_PATH            = Path.home() / ".meile-gui" / "bin" / "tun2socks"
     LAUNCHD_PATH                  = Path.home() / ".meile-gui" / "launchd"
     WG_LAUNCHDAEMON_LABEL         = "app.meile.wireguard"
     AWG_LAUNCHDAEMON_LABEL        = "app.meile.amnezia"
     XRAY_LAUNCHDAEMON_LABEL       = "app.meile.xray"
+    HYSTERIA_LAUNCHDAEMON_LABEL   = "app.meile.hysteria"
     TUN2SOCKS_LAUNCHDAEMON_LABEL  = "app.meile.tun2socks"
     TUN2SOCKS_XRAY_LAUNCHDAEMON_LABEL= "app.meile.tun2socks-xray"
     WG_LAUNCHDAEMON_PATH          = LAUNCHD_PATH / f"{WG_LAUNCHDAEMON_LABEL}.plist"
     AWG_LAUNCHDAEMON_PATH         = LAUNCHD_PATH / f"{AWG_LAUNCHDAEMON_LABEL}.plist"
     XRAY_LAUNCHDAEMON_PATH        = LAUNCHD_PATH / f"{XRAY_LAUNCHDAEMON_LABEL}.plist"
+    HYSTERIA_LAUNCHDAEMON_PATH    = LAUNCHD_PATH / f"{HYSTERIA_LAUNCHDAEMON_LABEL}.plist"
     TUN2SOCKS_LAUNCHDAEMON_PATH   = LAUNCHD_PATH / f"{TUN2SOCKS_LAUNCHDAEMON_LABEL}.plist"
     TUN2SOCKS_XRAY_LAUNCHDAEMON_PATH   = LAUNCHD_PATH / f"{TUN2SOCKS_XRAY_LAUNCHDAEMON_LABEL}.plist"
+    LAUNCHDAEMON_PATHS = [WG_LAUNCHDAEMON_PATH,
+                          AWG_LAUNCHDAEMON_PATH,
+                          XRAY_LAUNCHDAEMON_PATH,
+                          HYSTERIA_LAUNCHDAEMON_PATH,
+                          TUN2SOCKS_LAUNCHDAEMON_PATH,
+                          TUN2SOCKS_XRAY_LAUNCHDAEMON_PATH]
+                            
     
     def resource_path(self, relative_path):
         """ Get absolute path to resource, works for dev and for PyInstaller """
@@ -140,6 +151,22 @@ class MeileGuiConfig():
             "AbandonProcessGroup": True,
         }
         
+        hysteria_plist_content = {
+            "Label": self.HYSTERIA_LAUNCHDAEMON_LABEL,
+            "ProgramArguments": [
+                str(self.HYSTERIA_BIN_PATH),
+                "client",
+                "-c",
+                str(self.HYSTERIA_CONF_PATH)
+            ],
+            "RunAtLoad": True,
+            "KeepAlive": True,
+            "StandardOutPath": "/var/log/hysteria.log",
+            "StandardErrorPath": "/var/log/hysteria.err",
+            "EnableTransactions": True,
+            "AbandonProcessGroup": True,
+        }
+        
         nic_cmd = "route get default | grep 'interface' | cut -d ':' -f 2 | tr -d ' '"
         nic = subprocess.check_output(nic_cmd, shell=True, text=True).strip()
         
@@ -179,7 +206,7 @@ class MeileGuiConfig():
             "AbandonProcessGroup": True,
         }
         
-        if path.isfile(self.WG_LAUNCHDAEMON_PATH) and path.isfile(self.AWG_LAUNCHDAEMON_PATH) and path.isfile(self.XRAY_LAUNCHDAEMON_PATH) and path.isfile(self.TUN2SOCKS_LAUNCHDAEMON_PATH) and path.isfile(self.TUN2SOCKS_XRAY_LAUNCHDAEMON_PATH):
+        if all(path.isfile(p) for p in self.LAUNCHDAEMON_PATHS):
             print("EXISTS")
             return True
         else:
@@ -190,6 +217,8 @@ class MeileGuiConfig():
                 plistlib.dump(awg_plist_content, f)
             with open(self.XRAY_LAUNCHDAEMON_PATH, "wb") as f:
                 plistlib.dump(xray_plist_content, f)
+            with open(self.HYSTERIA_LAUNCHDAEMON_PATH, "wb") as f:
+                plistlib.dump(hysteria_plist_content, f)
             with open(self.TUN2SOCKS_LAUNCHDAEMON_PATH, "wb") as f:
                 plistlib.dump(tun2socks_plist_content, f)
             with open(self.TUN2SOCKS_XRAY_LAUNCHDAEMON_PATH, "wb") as f:

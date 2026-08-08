@@ -15,7 +15,7 @@ import grpc
 from json.decoder import JSONDecodeError 
 
 from conf.meile_config import MeileGuiConfig
-from typedef.konstants import IBCTokens, ConfParams, HTTParams, MEILE_PLAN_WALLET, Arch
+from typedef.konstants import IBCTokens, ConfParams, HTTParams, MEILE_PLAN_WALLET, Arch, NodeKeys
 from adapters import HTTPRequests, DNSRequests
 from cli.v2ray import V2RayHandler, V2RayConfiguration, V2RayFragmentConfiguration
 from helpers.wireguard import WgKey
@@ -742,6 +742,10 @@ class HandleWalletFunctions():
                 key = wgkey.pubkey
                 data = {'public_key': key}
                 data_bytes = json.dumps(data).encode('utf-8')
+            elif type == "Hysteria2":                       # ← new branch
+                self.uid_16 = uuid.uuid4()
+                data = {'uuid': str(self.uid_16)}          # ← plain string, NOT list(bytes)
+                data_bytes = json.dumps(data).encode('utf-8')
             else:  # NodeType.V2RAY
                 self.uid_16 = uuid.uuid4()
                 data = {'uuid': list(self.uid_16.bytes)}
@@ -1215,6 +1219,73 @@ class HandleWalletFunctions():
     
         return True
     
+    def write_hysteria_config(self, response, decode):
+        import yaml
+    
+        decode = json.loads(decode)
+        metadata_list = decode.get("metadata", [])
+        if not metadata_list:
+            print("No Hysteria metadata entries found")
+            return
+    
+        # Select first entry with a valid TLS pin (mirrors selectHysteria2Entry)
+        entry = None
+        for m in metadata_list:
+            pin = m.get("tls_pin", "")
+            stripped = pin.replace(":", "")
+            if len(stripped) == 64 and all(c in "0123456789abcdefABCDEF" for c in stripped):
+                entry = m
+                break
+        if not entry:
+            print("Hysteria node offers no TLS-pinned config")
+            return
+    
+        vmess_address = resolve_address(response["result"]["addrs"][0])
+        vmess_port = int(entry["port"])
+        if vmess_port <= 0 or vmess_port > 65535:
+            print("Hysteria node returned an invalid port")
+            return
+    
+        # Build the config dict exactly as the TypeScript builder does
+        config = {
+            "server": f"{vmess_address}:{vmess_port}",
+            "auth": str(self.uid_16),
+            "tls": {
+                "insecure": True,
+                "pinSHA256": entry["tls_pin"]
+            },
+            "socks5": {
+                "listen": "127.0.0.1:1080"
+            },
+            "lazy": True
+        }
+    
+        obfs_pw = entry.get("obfs_password", "")
+        if obfs_pw and len(obfs_pw) > 0:
+            config["obfs"] = {
+                "type": "salamander",
+                "salamander": {
+                    "password": obfs_pw
+                }
+            }
+    
+        # Write the YAML config (same path pattern as the others)
+        config_file = path.join(ConfParams.KEYRINGDIR, "hysteria.yml")
+        if path.isfile(config_file):
+            remove(config_file)
+        with open(config_file, "w", encoding="utf-8") as f:
+            yaml.dump(config, f, default_flow_style=False)
+    
+        # Write the proxy IP helper file (mirrors v2ray.proxy)
+        proxy_ip_file = path.join(ConfParams.KEYRINGDIR, "hysteria.proxy")
+        if path.isfile(proxy_ip_file):
+            remove(proxy_ip_file)
+        with open(proxy_ip_file, "w", encoding="utf-8") as f:
+            f.write(vmess_address)
+            
+        return True
+            
+            
     def connect(self, 
                 ID, 
                 address, 
@@ -1435,7 +1506,7 @@ class HandleWalletFunctions():
             print(self.connected)
             return
         
-        if type == "WireGuard" or type == "AmneziaWG":
+        if type in [NodeKeys.ProtocolTypes[0],NodeKeys.ProtocolTypes[4]]:
             iface = "wg99" 
             config_file = self.write_wireguard_config(
                 response, decode, wgkey, conndesc, iface, config_type=type
@@ -1503,7 +1574,7 @@ class HandleWalletFunctions():
                                   "session_id" : session_id}
                 return
                     
-        elif type == "V2Ray":  # v2ray
+        elif type == NodeKeys.ProtocolTypes[1]:  # v2ray
             if pltfrm == Arch.OSX:
                 chdir(MeileConfig.BASEBINDIR) 
             conndesc.write("Bringing up V2Ray socks tunnel...\n")
@@ -1513,12 +1584,12 @@ class HandleWalletFunctions():
             
             tuniface = False
             v2ray_handler = V2RayHandler(f"{v2ray_tun2routes_connect_bash} up")
-            if not v2ray_handler.start_daemon(True):
+            if not v2ray_handler.start_daemon(type):
                 try:
                     conndesc.write("Error connecting to V2Ray node...\n")
                     conndesc.flush()
                     v2ray_handler.v2ray_script = f"{v2ray_tun2routes_connect_bash} down"
-                    v2ray_handler.kill_daemon()
+                    v2ray_handler.kill_daemon(type)
                     conndesc.close()
                 except Exception as e:
                     print(str(e))
@@ -1550,6 +1621,8 @@ class HandleWalletFunctions():
                                       "result": False, 
                                       "status" : "Error establising connection to internet. Try a differnt node.", 
                                       "session_id" : session_id}
+                    v2ray_handler.v2ray_script = f"{v2ray_tun2routes_connect_bash} down"
+                    v2ray_handler.kill_daemon(type)
                 sleep(1)
                 conndesc.close()
                 if pltfrm == Arch.OSX:
@@ -1560,7 +1633,7 @@ class HandleWalletFunctions():
                     conndesc.write("Error connecting to V2Ray node...\n")
                     conndesc.flush()
                     v2ray_handler.v2ray_script = f"{v2ray_tun2routes_connect_bash} down"
-                    v2ray_handler.kill_daemon()
+                    v2ray_handler.kill_daemon(type)
                     conndesc.close()
                 except Exception as e:
                     print(str(e))
@@ -1574,7 +1647,7 @@ class HandleWalletFunctions():
                     chdir(MeileConfig.BASEDIR)
                 return
             
-        elif type == "XRay":
+        elif type == NodeKeys.ProtocolTypes[3]:
             if pltfrm == Arch.OSX:
                 chdir(MeileConfig.BASEBINDIR)
             conndesc.write("Bringing up XRAY socks tunnel...\n")
@@ -1590,12 +1663,12 @@ class HandleWalletFunctions():
         
             tuniface = False
             xray_handler = V2RayHandler(f"{v2ray_tun2routes_connect_bash} up")
-            if not xray_handler.start_daemon(False):
+            if not xray_handler.start_daemon(type):
                 try:
                     conndesc.write("Error connecting to XRAY node...\n")
                     conndesc.flush()
                     xray_handler.v2ray_script = f"{v2ray_tun2routes_connect_bash} down"
-                    xray_handler.kill_daemon()
+                    xray_handler.kill_daemon(type)
                     conndesc.close()
                 except Exception as e:
                     print(str(e))
@@ -1623,6 +1696,8 @@ class HandleWalletFunctions():
                                       "result": False,
                                       "status": "Error establishing connection to internet. Try a different node.",
                                       "session_id": session_id}
+                    xray_handler.v2ray_script = f"{v2ray_tun2routes_connect_bash} down"
+                    xray_handler.kill_daemon(type)
                 sleep(1)
                 conndesc.close()
                 if pltfrm == Arch.OSX:
@@ -1633,7 +1708,7 @@ class HandleWalletFunctions():
                     conndesc.write("Error connecting to XRAY node...\n")
                     conndesc.flush()
                     xray_handler.v2ray_script = f"{v2ray_tun2routes_connect_bash} down"
-                    xray_handler.kill_daemon()
+                    xray_handler.kill_daemon(type)
                     conndesc.close()
                 except Exception as e:
                     print(str(e))
@@ -1644,6 +1719,80 @@ class HandleWalletFunctions():
                 if pltfrm == Arch.OSX:
                     chdir(MeileConfig.BASEDIR)
                 return
+        elif type == NodeKeys.ProtocolTypes[5]:
+            if pltfrm == Arch.OSX:
+                chdir(MeileConfig.BASEBINDIR)
+            conndesc.write("Bringing up Hysteria2 socks tunnel...\n")
+            conndesc.flush()
+        
+            if not self.write_hysteria_config(response, decode):
+                self.connected = {"v2ray_pid": None, "result": False,
+                                  "status": "Error writing Hysteria2 config. Terminating...",
+                                  "session_id": session_id}
+                if pltfrm == Arch.OSX:
+                    chdir(MeileConfig.BASEDIR)
+                return
+        
+            tuniface = False
+            xray_handler = V2RayHandler(f"{v2ray_tun2routes_connect_bash} up")
+            if not xray_handler.start_daemon(type):
+                try:
+                    conndesc.write("Error connecting to Hysteria node...\n")
+                    conndesc.flush()
+                    xray_handler.v2ray_script = f"{v2ray_tun2routes_connect_bash} down"
+                    xray_handler.kill_daemon(type)
+                    conndesc.close()
+                except Exception as e:
+                    print(str(e))
+                self.connected = {"v2ray_pid": xray_handler.v2ray_pid,
+                                  "result": False,
+                                  "status": "Error connecting to hysteria node",
+                                  "session_id": session_id}
+                if pltfrm == Arch.OSX:
+                    chdir(MeileConfig.BASEDIR)
+                return
+        
+            tuniface = wait_for_tunnel_iface(iface=["tun", "utun3", "utun123"], timeout=30)
+        
+            if tuniface is not None:
+                print("Tunnel interface is up:", tuniface)
+                conndesc.write("Checking network connection...\n")
+                conndesc.flush()
+                sleep(3.3)
+                if self.get_ip_address():
+                    self.connected = {"v2ray_pid": xray_handler.v2ray_pid,
+                                      "result": True, 
+                                      "status": tuniface,
+                                      "session_id": session_id}
+                else:
+                    self.connected = {"v2ray_pid": xray_handler.v2ray_pid,
+                                      "result": False,
+                                      "status": "Error establishing connection to internet. Try a different node.",
+                                      "session_id": session_id}
+                    xray_handler.v2ray_script = f"{v2ray_tun2routes_connect_bash} down"
+                    xray_handler.kill_daemon(type)
+                sleep(1)
+                conndesc.close()
+                if pltfrm == Arch.OSX:
+                    chdir(MeileConfig.BASEDIR)
+                return
+            else:
+                try:
+                    conndesc.write("Error connecting to Hysteria node...\n")
+                    conndesc.flush()
+                    xray_handler.v2ray_script = f"{v2ray_tun2routes_connect_bash} down"
+                    xray_handler.kill_daemon(type)
+                    conndesc.close()
+                except Exception as e:
+                    print(str(e))
+                self.connected = {"v2ray_pid": xray_handler.v2ray_pid,
+                                  "result": False,
+                                  "status": f"Error connecting to Hysteria2 node: {tuniface}",
+                                  "session_id": session_id}
+                if pltfrm == Arch.OSX:
+                    chdir(MeileConfig.BASEDIR)
+                return
+
         if pltfrm == Arch.OSX:
             chdir(MeileConfig.BASEDIR)
         self.connected = {"v2ray_pid" : None,  
