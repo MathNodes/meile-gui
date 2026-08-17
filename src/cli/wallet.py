@@ -1288,7 +1288,11 @@ class HandleWalletFunctions():
                 proc_out, proc_err = proc2.communicate()
                 
             elif pltfrm == Arch.WINDOWS:
-                wgup = [gsudo, MeileConfig.WIREGUARD_BIN, "/installtunnelservice", config_file]
+                
+                wgup = [gsudo,
+                        MeileConfig.WIREGUARD_BIN if type == "WireGuard" else MeileConfig.AWIREGUARD_BIN 
+                        "/installtunnelservice", 
+                        config_file]
                 wg_process = subprocess.Popen(wgup)
                 
                 

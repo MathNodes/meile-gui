@@ -13,6 +13,8 @@ class MeileGuiConfig():
     BASEBINDIR                    = path.join(BASEDIR, 'bin')
     WIREGUARD_BIN                 = path.join(BASEBINDIR, "WireGuard", "wireguard.exe")
     WG_BIN                        = path.join(BASEBINDIR, "WireGuard", "wg.exe")
+    AWIREGUARD_BIN                = path.join(BASEBINDIR, "AmneziaWG", "amneziawg.exe")
+    AWG_BIN                       = path.join(BASEBINDIR, "AmneziaWG", "awg.exe")
     CONFFILE                      = path.join(BASEDIR, 'config.ini')
     IMGDIR                        = path.join(BASEDIR, 'img')
     CONFIG                        = configparser.ConfigParser()
