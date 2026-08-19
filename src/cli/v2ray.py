@@ -22,7 +22,7 @@ if sys.platform == 'win32':
     import json
     from os import path
     import win32gui, win32con
-    from typedef.konstants import ConfParams
+    from typedef.konstants import ConfParams,NodeKeys
 elif sys.platform == 'darwin':
     import tempfile
     from os import path
@@ -105,6 +105,7 @@ class _WindowsV2RayHandler():
     v2ray_pid    = None
     tunproc      = "tun2socks.exe"
     v2rayproc    = "xray.exe"
+    hysteriaproc = "hysteria.exe"
     CREATE_NO_WINDOW = 0x08000000
     CREATE_NEW_CONSOLE = 0x00000010
     WINDOW_TITLE = "meile_v2ray_daemon"
@@ -158,60 +159,184 @@ class _WindowsV2RayHandler():
             return result[0]
         return None
 
-    def start_daemon(self):
+    def start_daemon(self, proto: str = "V2Ray"):
+        if proto == NodeKeys.ProtocolTypes[1]: 
+            print("Starting v2ray service...")
 
-        print("Starting v2ray service...")
+            routes_bat = 'routes.bat'
+            gateways = netifaces.gateways()
 
-        routes_bat = 'routes.bat'
-        gateways = netifaces.gateways()
+            default_gateway = gateways[netifaces.AF_INET][0][0]
 
-        default_gateway = gateways[netifaces.AF_INET][0][0]
+            SERVER = self.read_v2ray_config()
 
-        SERVER = self.read_v2ray_config()
+            batfile = open(routes_bat, 'w')
 
-        batfile = open(routes_bat, 'w')
+            batfile.write('CD "%s"\n' % self.MeileConfig.BASEBINDIR)
+            batfile.write('START "" /B %s run -c %s\n' % (self.v2rayproc, path.join(self.MeileConfig.BASEDIR, "v2ray_config.json")))
+            batfile.write('timeout /t 1\n')
+            batfile.write('START "" /B %s -device tun://tun00 -proxy socks5://127.0.0.1:1080"\n' % self.tunproc)
+            batfile.write('timeout /t 2\n')
+            batfile.write('netsh interface ip set address "tun00" static address=10.10.10.2 mask=255.255.255.0 gateway=10.10.10.1\n')
+            batfile.write('netsh interface ip set dns name="tun00" static 1.1.1.1\n')
+            batfile.write('route add %s %s metric 5\n' % (SERVER, default_gateway))
+            batfile.write('route add 0.0.0.0 mask 0.0.0.0 10.10.10.1')
+            batfile.flush()
+            batfile.close()
 
-        batfile.write('CD "%s"\n' % self.MeileConfig.BASEBINDIR)
-        batfile.write('START "" /B %s run -c %s\n' % (self.v2rayproc, path.join(self.MeileConfig.BASEDIR, "v2ray_config.json")))
-        batfile.write('timeout /t 1\n')
-        batfile.write('START "" /B %s -device tun://tun00 -proxy socks5://127.0.0.1:1080"\n' % self.tunproc)
-        batfile.write('timeout /t 2\n')
-        batfile.write('netsh interface ip set address "tun00" static address=10.10.10.2 mask=255.255.255.0 gateway=10.10.10.1\n')
-        batfile.write('netsh interface ip set dns name="tun00" static 1.1.1.1\n')
-        batfile.write('route add %s %s metric 5\n' % (SERVER, default_gateway))
-        batfile.write('route add 0.0.0.0 mask 0.0.0.0 10.10.10.1')
-        batfile.flush()
-        batfile.close()
+            self.v2ray_script = routes_bat
 
-        self.v2ray_script = routes_bat
-
-        try:
-            self.fork_v2ray()
-        except Exception as e:
-            print(f"[start_daemon] fork_v2ray failed: {e!r}")
-            return False
-
-        result = {"ok": False}
-
-        def worker():
             try:
-                result["ok"] = wait_for_port("127.0.0.1", 1080, timeout=120)
+                self.fork_v2ray()
             except Exception as e:
-                print(f"[start_daemon] worker error: {e!r}")
-                result["ok"] = False
+                print(f"[start_daemon] fork_v2ray failed: {e!r}")
+                return False
 
-        t = threading.Thread(target=worker, daemon=True)
-        t.start()
+            result = {"ok": False}
 
-        while t.is_alive():
-            print(".", end="", flush=True)
-            time.sleep(0.3) 
+            def worker():
+                try:
+                    result["ok"] = wait_for_port("127.0.0.1", 1080, timeout=120)
+                except Exception as e:
+                    print(f"[start_daemon] worker error: {e!r}")
+                    result["ok"] = False
 
-        return result["ok"]
+            t = threading.Thread(target=worker, daemon=True)
+            t.start()
 
-    def kill_daemon(self):
+            while t.is_alive():
+                print(".", end="", flush=True)
+                time.sleep(0.3) 
 
-        SERVER = self.read_v2ray_config()
+            return result["ok"]
+        
+        elif proto == NodeKeys.ProtocolTypes[3]:
+            print("Starting xray service...")
+
+            routes_bat = 'routes.bat'
+            gateways = netifaces.gateways()
+
+            default_gateway = gateways[netifaces.AF_INET][0][0]
+
+            proxy_ip_file = path.join(ConfParams.KEYRINGDIR, "xray.proxy")
+            with open(proxy_ip_file, "r") as f:
+                SERVER = f.read().strip()
+            if not SERVER:
+                print("No server IP in xray.proxy; aborting.")
+                return False
+            
+            batfile = open(routes_bat, 'w')
+
+            batfile.write('CD "%s"\n' % self.MeileConfig.BASEBINDIR)
+            batfile.write('START "" /B %s run -c %s\n' % (self.v2rayproc, path.join(self.MeileConfig.BASEDIR, "v2ray_config.json")))
+            batfile.write('timeout /t 1\n')
+            batfile.write('START "" /B %s -device tun://tun00 -proxy socks5://127.0.0.1:1080"\n' % self.tunproc)
+            batfile.write('timeout /t 2\n')
+            batfile.write('netsh interface ip set address "tun00" static address=10.10.10.2 mask=255.255.255.0 gateway=10.10.10.1\n')
+            batfile.write('netsh interface ip set dns name="tun00" static 1.1.1.1\n')
+            batfile.write('route add %s %s metric 5\n' % (SERVER, default_gateway))
+            batfile.write('route add 0.0.0.0 mask 0.0.0.0 10.10.10.1')
+            batfile.flush()
+            batfile.close()
+
+            self.v2ray_script = routes_bat
+
+            try:
+                self.fork_v2ray()
+            except Exception as e:
+                print(f"[start_daemon] fork_v2ray failed: {e!r}")
+                return False
+
+            result = {"ok": False}
+
+            def worker():
+                try:
+                    result["ok"] = wait_for_port("127.0.0.1", 1080, timeout=120)
+                except Exception as e:
+                    print(f"[start_daemon] worker error: {e!r}")
+                    result["ok"] = False
+
+            t = threading.Thread(target=worker, daemon=True)
+            t.start()
+
+            while t.is_alive():
+                print(".", end="", flush=True)
+                time.sleep(0.3) 
+
+            return result["ok"]
+        elif proto == NodeKeys.ProtocolTypes[5]:
+            print("Starting hysteria service...")
+
+            routes_bat = 'routes.bat'
+            gateways = netifaces.gateways()
+
+            default_gateway = gateways[netifaces.AF_INET][0][0]
+
+            proxy_ip_file = path.join(ConfParams.KEYRINGDIR, "hysteria.proxy")
+            with open(proxy_ip_file, "r") as f:
+                SERVER = f.read().strip()
+            if not SERVER:
+                print("No server IP in xray.proxy; aborting.")
+                return False
+            
+            batfile = open(routes_bat, 'w')
+
+            batfile.write('CD "%s"\n' % self.MeileConfig.BASEBINDIR)
+            batfile.write('START "" /B %s client -c %s\n' % (self.hysteriaproc, path.join(self.MeileConfig.BASEDIR, "hysteria.yml")))
+            batfile.write('timeout /t 1\n')
+            batfile.write('START "" /B %s -device tun://tun00 -proxy socks5://127.0.0.1:1080"\n' % self.tunproc)
+            batfile.write('timeout /t 2\n')
+            batfile.write('netsh interface ip set address "tun00" static address=10.10.10.2 mask=255.255.255.0 gateway=10.10.10.1\n')
+            batfile.write('netsh interface ip set dns name="tun00" static 1.1.1.1\n')
+            batfile.write('route add %s %s metric 5\n' % (SERVER, default_gateway))
+            batfile.write('route add 0.0.0.0 mask 0.0.0.0 10.10.10.1')
+            batfile.flush()
+            batfile.close()
+
+            self.v2ray_script = routes_bat
+
+            try:
+                self.fork_v2ray()
+            except Exception as e:
+                print(f"[start_daemon] fork_v2ray failed: {e!r}")
+                return False
+
+            result = {"ok": False}
+
+            def worker():
+                try:
+                    result["ok"] = wait_for_port("127.0.0.1", 1080, timeout=120)
+                except Exception as e:
+                    print(f"[start_daemon] worker error: {e!r}")
+                    result["ok"] = False
+
+            t = threading.Thread(target=worker, daemon=True)
+            t.start()
+
+            while t.is_alive():
+                print(".", end="", flush=True)
+                time.sleep(0.3) 
+
+            return result["ok"]
+
+    def kill_daemon(self, proto: str = "V2Ray"):
+        if proto == NodeKeys.ProtocolTypes[1]:
+            SERVER = self.read_v2ray_config()
+        elif proto == NodeKeys.ProtocolTypes[3]:
+            proxy_ip_file = path.join(ConfParams.KEYRINGDIR, "xray.proxy")
+            with open(proxy_ip_file, "r") as f:
+                SERVER = f.read().strip()
+            if not SERVER:
+                print("No server IP in xray.proxy; aborting.")
+                return False
+        elif proto == NodeKeys.ProtocolTypes[5]:    
+            proxy_ip_file = path.join(ConfParams.KEYRINGDIR, "hysteria.proxy")
+            with open(proxy_ip_file, "r") as f:
+                SERVER = f.read().strip()
+            if not SERVER:
+                print("No server IP in xray.proxy; aborting.")
+                return False
+            
         gateways = netifaces.gateways()
         default_gateway = gateways[netifaces.AF_INET][0][0]
 
@@ -224,7 +349,10 @@ class _WindowsV2RayHandler():
         batfile.write('netsh interface set interface name="tun00" disable\n')
         batfile.write('timeout /t 3\n')
         batfile.write('TASKKILL /F /IM tun2socks.exe\n')
-        batfile.write('TASKKILL /F /IM xray.exe\n')
+        if proto in [NodeKeys.ProtocolTypes[1], NodeKeys.ProtocolTypes[3]]:
+            batfile.write('TASKKILL /F /IM xray.exe\n')
+        else:
+            batfile.write('TASKKILL /F /IM hysteria.exe\n')
         batfile.flush()
         batfile.close()
 
