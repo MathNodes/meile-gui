@@ -1401,7 +1401,6 @@ class HandleWalletFunctions():
                             print(tx_temp)
 
                         print(f"Sequence after tx: {self.sdk.subscriptions._account.next_sequence}")
-                        sleep(0.1)
                         k += 1
             except RpcError as rpc_error:
                 details = rpc_error.details()
