@@ -779,7 +779,17 @@ class MainWindow(Screen):
             self.start_dnscrypt()
         elif selection == self.MenuOptions[3]:
             #self.build_smspol_screen_interface()
-            pass
+            self.dialog = MDDialog(
+                    title="Not yet available for public consumption. Please check back later.",
+                    md_bg_color=get_color_from_hex(MeileColors.BLACK),
+                    buttons=[
+                            MDRaisedButton(
+                                text="OK",
+                                theme_text_color="Custom",
+                                text_color=get_color_from_hex(MeileColors.BLACK),
+                                on_release=self.closeDialog
+                            ),])
+            self.dialog.open()
         elif selection == self.MenuOptions[4]:
             self.disconnect_from_node()
             if self.dnscrypt:
@@ -902,7 +912,7 @@ class MainWindow(Screen):
         if not self.MeileMapBuilt:
             self.MeileMap = MapView(zoom=2,
                                     background_color=get_color_from_hex(MeileColors.MAP_BG_COLOR))
-            source = MapSource(url=MeileColors.CARTO_MAP,
+            source = MapSource(url=MeileColors.CARTO_MAP + f"?key={scrtsxx.CARTO_API}",
                                cache_key="cartodark",
                                tile_size=256,
                                image_ext="png",
