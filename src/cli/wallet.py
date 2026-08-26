@@ -1401,6 +1401,7 @@ class HandleWalletFunctions():
                             print(tx_temp)
 
                         print(f"Sequence after tx: {self.sdk.subscriptions._account.next_sequence}")
+                        sleep(0.1)
                         k += 1
             except RpcError as rpc_error:
                 details = rpc_error.details()
@@ -1547,7 +1548,7 @@ class HandleWalletFunctions():
             elif pltfrm == Arch.WINDOWS:
                 
                 wgup = [gsudo,
-                        MeileConfig.WIREGUARD_BIN if type == "WireGuard" else MeileConfig.AWIREGUARD_BIN 
+                        MeileConfig.WIREGUARD_BIN if type == "WireGuard" else MeileConfig.AWIREGUARD_BIN, 
                         "/installtunnelservice", 
                         config_file]
                 wg_process = subprocess.Popen(wgup)
@@ -1562,7 +1563,7 @@ class HandleWalletFunctions():
                                   "session_id" : session_id}
                 conndesc.write("Checking network connection...\n")
                 conndesc.flush()
-                sleep(2)
+                sleep(4)
                 if self.get_ip_address():
                     self.connected = {"v2ray_pid" : None,
                                       "result": True, 
@@ -1695,7 +1696,7 @@ class HandleWalletFunctions():
                 print("Tunnel interface is up:", tuniface)
                 conndesc.write("Checking network connection...\n")
                 conndesc.flush()
-                sleep(3.3)
+                sleep(5.3)
                 if self.get_ip_address():
                     self.connected = {"v2ray_pid": xray_handler.v2ray_pid,
                                       "result": True, "status": tuniface,
@@ -1767,7 +1768,7 @@ class HandleWalletFunctions():
                 print("Tunnel interface is up:", tuniface)
                 conndesc.write("Checking network connection...\n")
                 conndesc.flush()
-                sleep(3.3)
+                sleep(5.3)
                 if self.get_ip_address():
                     self.connected = {"v2ray_pid": xray_handler.v2ray_pid,
                                       "result": True, 

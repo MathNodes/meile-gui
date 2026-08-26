@@ -613,8 +613,8 @@ class IBCTokens():
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
-    VERSION           = "v2.7.0"
-    BUILD             = "17861730713"
+    VERSION = "v2.7.0-rc0"
+    BUILD = "1787307960798"
     RootTag           = "SENTINEL"
     WG_HASH           = ""
     WG_QUICK_HASH     = ""
@@ -674,6 +674,19 @@ class NodeKeys():
     NodeVersions  = [str(item).zfill(3) for item in range(70,1000)]
     Nodetypes = ['residential', 'business', 'hosting', 'edu']
     ProtocolTypes = ["WireGuard", "V2Ray", "OpenVPN", "XRay", "AmneziaWG", "Hysteria2"]
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -642,7 +642,7 @@ def disconnect(protocol):
             chdir(MeileConfig.BASEDIR)  
             
             return proc1.returncode, False
-        else:
+        elif pltfrm == Arc.LINUX:
             CONFFILE = path.join(ConfParams.KEYRINGDIR, 'wg99.conf')
             wg_downCMD = ['pkexec', 'env', 'PATH=%s' % ConfParams.PATH, 'wg-quick', 'down', CONFFILE]
                 
@@ -665,8 +665,8 @@ def disconnect(protocol):
         
         if pltfrm == Arch.WINDOWS:
             with open(path.join(MeileConfig.BASEBINDIR, 'disconnect.bat'), 'w') as DISBATFILE:
-                DISBATFILE.write("%s /uninstalltunnelservice wg99\n" % MeileConfig.WIREGUARD_BIN)
-                DISBATFILE.write("TASKKILL /F /IM WireGuard.exe\n")
+                DISBATFILE.write("%s /uninstalltunnelservice wg99\n" % MeileConfig.AWIREGUARD_BIN)
+                DISBATFILE.write("TASKKILL /F /IM AmneziaWG.exe\n")
                 DISBATFILE.flush()
                 DISBATFILE.close()
                
