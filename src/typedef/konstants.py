@@ -613,8 +613,8 @@ class IBCTokens():
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
-    VERSION = "v2.7.0-rc0"
-    BUILD = "1787307960798"
+    VERSION           = "v2.7.0"
+    BUILD             = "17877851293"
     RootTag           = "SENTINEL"
     WG_HASH           = ""
     WG_QUICK_HASH     = ""
@@ -655,7 +655,8 @@ class MeileColors():
     SIMPLE_SWAP              = "imgs/SimpleSwap.png"
     ARCGIS_MAP               = "https://server.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}.png"
     ARCGIS_MAP2              = "https://server.arcgisonline.com/arcgis/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}.png"
-    CARTO_MAP                = "https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png"
+    #CARTO_MAP                = "https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png"
+    CARTO_MAP                = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
     
 class NodeKeys():
     '''v1.8.0

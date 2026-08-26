@@ -53,6 +53,8 @@ sentinel_connect_bash          = path.join(ConfParams.KEYRINGDIR, "bin/sentinel-
 asentinel_connect_bash         = path.join(ConfParams.KEYRINGDIR, "bin/asentinel-connect.sh")
 v2ray_tun2routes_connect_bash  = path.join(ConfParams.KEYRINGDIR, "bin/tun2routes.sh")
 
+max_workers = 5
+
 class HandleWalletFunctions():
     connected =  {'v2ray_pid' : None, 'result' : False, 'status' : None}
     wg_process = None # Used to Poll in case user quits with disconnecting
@@ -1269,7 +1271,8 @@ class HandleWalletFunctions():
             f.write(vmess_address)
             
         return True
-            
+    
+    
             
     def connect(self, 
                 ID, 
@@ -1379,6 +1382,7 @@ class HandleWalletFunctions():
                     rand_index = random.randint(0, len(addresses))
                     addresses.insert(rand_index, address)
                     k = 1
+                    
                     for addr in addresses:
                         conndesc.write(f"Creating ring session {k}...\n")
                         conndesc.flush()
@@ -1401,8 +1405,9 @@ class HandleWalletFunctions():
                             print(tx_temp)
 
                         print(f"Sequence after tx: {self.sdk.subscriptions._account.next_sequence}")
-                        sleep(0.1)
+                        #sleep(0.1)
                         k += 1
+                
             except RpcError as rpc_error:
                 details = rpc_error.details()
                 print("details", details)
@@ -1446,7 +1451,18 @@ class HandleWalletFunctions():
                                   "session_id" : None}
                 print(self.connected)
                 return
-            
+        
+        if tx is None:
+            conndesc.write("Null transaction body... Exiting")
+            conndesc.flush()
+            conndesc.close()
+            self.connected = {"v2ray_pid" : None,  
+                              "result": False, 
+                              "status" : "Null transaction body... Exiting", 
+                              "session_id" : None}
+            print(self.connected)
+            return    
+        
         txret = self.check_tx_log(tx)    
         if txret == 420:
             try:
