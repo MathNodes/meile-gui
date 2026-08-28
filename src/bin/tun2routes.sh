@@ -1,6 +1,7 @@
 #!/bin/bash
 
 STATE="$1"
+PROTOCOL="$2"
 GATEWAY=`route -n | grep 'UG[ \t]' | awk '{print $2}' | tail -1 | tr -d '\n'`
 PRIMARY_IFACE=`route | grep '^default' | grep -o '[^ ]*$'`
 
@@ -17,14 +18,33 @@ if [[ ${STATE} = "up" ]]; then
         # save default route iface and gw ip
         echo ${GATEWAY} > /home/${USER}/.meile-gui/gateway
         echo ${PRIMARY_IFACE} > /home/${USER}/.meile-gui/iface
-
-        # start v2ray
-        echo "Running xray: /home/${USER}/.meile-gui/bin/v2ray run -c /home/${USER}/.meile-gui/v2ray_config.json &"
-        /home/${USER}/.meile-gui/bin/xray run -c /home/${USER}/.meile-gui/v2ray_config.json &
-        sleep 1
+        if [[ ${PROTOCOL} = "v2ray" ]]; then
+            # start v2ray
+            echo "Running xray (v2ray): /home/${USER}/.meile-gui/bin/v2ray run -c /home/${USER}/.meile-gui/v2ray_config.json &"
+            /home/${USER}/.meile-gui/bin/xray run -c /home/${USER}/.meile-gui/v2ray_config.json &
+            sleep 1
+        elif [[ ${PROTOCOL} = "xray" ]]; then
+            # start xray
+            echo "Running xray (xray): /home/${USER}/.meile-gui/bin/xray run -c /home/${USER}/.meile-gui/v2ray_config.json &"
+            /home/${USER}/.meile-gui/bin/xray run -c /home/${USER}/.meile-gui/v2ray_config.json &
+            sleep 1
+        elif [[ ${PROTOCOL} = "hysteria" ]]; then
+            # start hysteria
+            echo "Running hysteria: /home/${USER}/.meile-gui/bin/hysteria client -c /home/${USER}/.meile-gui/hysteria.yml &"
+            /home/${USER}/.meile-gui/bin/hysteria client -c /home/${USER}/.meile-gui/hysteria.yml &
+            sleep 1  
+        fi
+        
         
         # get v2ray proxy IP
-        PROXY_IP=`cat /home/${USER}/.meile-gui/v2ray.proxy`
+        if [[ ${PROTOCOL} = "v2ray" ]]; then
+            PROXY_IP=`cat /home/${USER}/.meile-gui/v2ray.proxy`
+        elif [[ ${PROTOCOL} = "xray" ]]; then
+            PROXY_IP=`cat /home/${USER}/.meile-gui/xray.proxy`
+        elif [[ ${PROTOCOL} = "hysteria" ]]; then
+            PROXY_IP=`cat /home/${USER}/.meile-gui/hysteria.proxy`
+        fi
+        #PROXY_IP=`cat /home/${USER}/.meile-gui/v2ray.proxy`
         #echo ${PROXY_IP} > /home/${USER}/.meile-gui/v2ray.proxy
         echo "Proxy IP: ${PROXY_IP}"
         sleep 1
@@ -73,11 +93,22 @@ else
 	    GATEWAY=`cat /home/${USER}/.meile-gui/gateway | cut -d " " -f 1`
 	    PRIMARY_IFACE=`cat /home/${USER}/.meile-gui/iface | cut -d " " -f 1`
 	    TUNIFACE=`cat /home/${USER}/.meile-gui/tuniface | cut -d " " -f 1`
-        PROXY_IP=`cat /home/${USER}/.meile-gui/v2ray.proxy`
+        if [[ ${PROTOCOL} = "v2ray" ]]; then
+            PROXY_IP=`cat /home/${USER}/.meile-gui/v2ray.proxy`
+        elif [[ ${PROTOCOL} = "xray" ]]; then
+            PROXY_IP=`cat /home/${USER}/.meile-gui/xray.proxy`
+        elif [[ ${PROTOCOL} = "hysteria" ]]; then
+            PROXY_IP=`cat /home/${USER}/.meile-gui/hysteria.proxy`
+        fi
         
         # terminate the v2ray setup
         pkill -9 tun2socks
-        pkill -9 xray
+        if [[ ${PROTOCOL} = "v2ray" || ${PROTOCOL} = "xray" ]]; then
+            pkill -9 xray
+        elif [[ ${PROTOCOL} = "hysteria" ]]; then
+            pkill -9 hysteria
+        fi
+        #pkill -9 xray
 	    sleep 5
 
         # bring down tun interface
