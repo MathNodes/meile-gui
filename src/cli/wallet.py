@@ -1267,7 +1267,7 @@ class HandleWalletFunctions():
                 # For AmneziaWG, you might need to use a different command
                 if type == "AmneziaWG":
                     # Assuming you have AmneziaWG tools installed (awg-quick instead of wg-quick)
-                    child = pexpect.spawn(f"pkexec sh -c 'ip link delete {iface}; awg-quick up {config_file}'")
+                    child = pexpect.spawn(f"pkexec sh -c 'ip link delete {iface}; {MeileConfig.AWGQUICK} up {config_file}'")
                 else:
                     child = pexpect.spawn(f"pkexec sh -c 'ip link delete {iface}; wg-quick up {config_file}'")
                 child.expect(pexpect.EOF)
