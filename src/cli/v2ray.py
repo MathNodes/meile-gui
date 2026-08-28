@@ -110,9 +110,9 @@ class _LinuxV2RayHandler():
         elif proto == NodeKeys.ProtocolTypes[5]: 
             print("Stopping hysteria service...")
             proto = "hysteria"
-            
+
         v2ray_daemon_cmd = (
-            'pkexec env PATH=%s %s down %s '
+            'pkexec env PATH=%s %s %s '
             % (ConfParams.PATH, self.v2ray_script, proto)
         )
         proc2 = Popen(v2ray_daemon_cmd, shell=True)
