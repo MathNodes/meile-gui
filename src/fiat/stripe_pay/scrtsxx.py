@@ -15,4 +15,4 @@ BTCPAYSERVER       = "https://btcpay.foo.bar"
 BTCPayEmail        = "btcpay@foo.bar"
 MEILE_PLAN_API     = "https://api.meile.foo.bar"
 MEILE_PLAN_ADD     = "/v1/add"
-
+CARTO_API          = "cartoapikey...."

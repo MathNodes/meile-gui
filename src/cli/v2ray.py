@@ -21,7 +21,7 @@ if sys.platform == 'win32':
     import json
     from os import path
     import win32gui, win32con
-    from typedef.konstants import ConfParams
+    from typedef.konstants import ConfParams,NodeKeys
     import threading
 elif sys.platform == 'darwin':
     import tempfile
@@ -29,7 +29,7 @@ elif sys.platform == 'darwin':
     from typedef.konstants import ConfParams,NodeKeys
 elif sys.platform.startswith('linux'):
     import psutil
-    from typedef.konstants import ConfParams
+    from typedef.konstants import ConfParams, NodeKeys
     import threading
 
 # ---------------------------------------------------------------------------
@@ -61,7 +61,7 @@ class _LinuxV2RayHandler():
 
     
 
-    def start_daemon(self):
+    def start_daemon(self, proto: str = "V2Ray"):
         '''
 
         print("Starting v2ray service...")
@@ -101,10 +101,19 @@ class _LinuxV2RayHandler():
 
         return result["ok"]
 
-    def kill_daemon(self):
+    def kill_daemon(self,  proto: str = "V2Ray"):
+        if proto == NodeKeys.ProtocolTypes[1]: 
+            print("Stopping v2ray service...")
+            proto = "v2ray"
+        elif proto == NodeKeys.ProtocolTypes[3]: 
+            print("Stopping xray service...")
+            proto = "xray"
+        elif proto == NodeKeys.ProtocolTypes[5]: 
+            print("Stopping hysteria service...")
+            proto = "hysteria"
         v2ray_daemon_cmd = (
-            'pkexec env PATH=%s %s'
-            % (ConfParams.PATH, self.v2ray_script)
+            'pkexec env PATH=%s %s %s'
+            % (ConfParams.PATH, self.v2ray_script, proto)
         )
         proc2 = Popen(v2ray_daemon_cmd, shell=True)
         proc2.wait(timeout=30)
