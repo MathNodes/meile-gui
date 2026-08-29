@@ -8,8 +8,15 @@ set -e -o pipefail
 shopt -s extglob
 export LC_ALL=C
 
+if test -z "$SUDO_USER"
+then
+    USER=$(getent passwd $PKEXEC_UID | cut -d: -f1)
+else
+    USER=$SUDO_USER
+fi
+
 SELF="$(readlink -f "${BASH_SOURCE[0]}")"
-export PATH="${HOME}/.meile-gui/bin:${SELF%/*}:$PATH"
+export PATH="/home/${USER}/.meile-gui/bin:${SELF%/*}:$PATH"
 
 WG_CONFIG=""
 INTERFACE=""

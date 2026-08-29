@@ -4,7 +4,7 @@ import re
 import requests
 from requests.exceptions import ReadTimeout, ConnectionError, HTTPError
 from urllib3.exceptions import InsecureRequestWarning, ResponseError
-from subprocess import Popen, PIPE, STDOUT
+from subprocess import Popen, PIPE, STDOUT, run
 from datetime import datetime,timedelta
 import time
 from urllib.parse import urlparse
@@ -677,15 +677,29 @@ def disconnect(protocol):
             chdir(MeileConfig.BASEDIR)  
             
             return proc1.returncode, False
-        elif pltfrm == Arch.LINUX:
-            CONFFILE = path.join(ConfParams.KEYRINGDIR, 'wg99.conf')
-            wg_downCMD = ['pkexec', 'env', 'PATH=%s' % ConfParams.PATH, 'awg-quick', 'down', CONFFILE]
+        elif pltfrm == Arch.LINUX: 
+            config_file = path.join(MeileConfig.BASEDIR, "wg99.conf")
+            command = (
+                f"{MeileConfig.AWGQUICK} down {config_file}"
+            )
+            
+            result = run(
+                ["pkexec", "sh", "-c", command],
+                stdout=PIPE,
+                stderr=STDOUT,
+                text=True
+            )
+
+            print(result.stdout)
+            print("Exit status:", result.returncode)
+            #CONFFILE = path.join(ConfParams.KEYRINGDIR, 'wg99.conf')
+            #wg_downCMD = ['pkexec', 'env', 'PATH=%s' % ConfParams.PATH, 'awg-quick', 'down', CONFFILE]
                 
-            proc1 = Popen(wg_downCMD)
-            proc1.wait(timeout=30)
+            #proc1 = Popen(wg_downCMD)
+            #proc1.wait(timeout=30)
         
-            proc_out,proc_err = proc1.communicate()
-            return proc1.returncode, False
+            #proc_out,proc_err = proc1.communicate()
+            return result.returncode, False
         
         else:
             wg_downCMD = [path.join(ConfParams.BASEBINDIR,'asentinel-disconnect.sh')]

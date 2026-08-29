@@ -6,6 +6,7 @@ import binascii
 import random
 import re
 import platform
+import sys
 from time import sleep 
 from os import path, remove, chdir
 from urllib.parse import urlparse
@@ -1305,8 +1306,8 @@ class HandleWalletFunctions():
         
         pltfrm = platform.system()
                 
-        if pltfrm == Arch.OSX or pltfrm == Arch.WINDOWS:
-            import subprocess
+        
+        import subprocess
         
         confile = path.join(ConfParams.KEYRINGDIR, "connect.log")
         conndesc = open(confile, 'w')
@@ -1527,10 +1528,43 @@ class HandleWalletFunctions():
                 # For AmneziaWG, you might need to use a different command
                 if type == "AmneziaWG":
                     # Assuming you have AmneziaWG tools installed (awg-quick instead of wg-quick)
-                    child = pexpect.spawn(f"pkexec sh -c 'ip link delete {iface}; {MeileConfig.AWGQUICK} up {config_file}'")
+                    #print(f"pkexec sh -c 'ip link delete {iface}; {MeileConfig.AWGQUICK} up {config_file}'")
+                    #child = pexpect.spawn(f"pkexec sh -c 'ip link delete {iface}; {MeileConfig.AWGQUICK} up {config_file}'",encoding="utf-8")
+                    #child.logfile_read = sys.stdout  # Print command output
+                    #child.expect(pexpect.EOF)
+
+                    #print(f"Exit status: {child.exitstatus}")
+                    command = (
+                        f"ip link delete {iface} 2>/dev/null || true; "
+                        f"{MeileConfig.AWGQUICK} up {config_file}"
+                    )
+                    
+                    result = subprocess.run(
+                        ["pkexec", "sh", "-c", command],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,
+                        text=True
+                    )
+
+                    print(result.stdout)
+                    print("Exit status:", result.returncode)
                 else:
-                    child = pexpect.spawn(f"pkexec sh -c 'ip link delete {iface}; wg-quick up {config_file}'")
-                child.expect(pexpect.EOF)
+                    ommand = (
+                        f"ip link delete {iface} 2>/dev/null || true; "
+                        f"wg-quick up {config_file}"
+                    )
+                    
+                    result = subprocess.run(
+                        ["pkexec", "sh", "-c", command],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,
+                        text=True
+                    )
+
+                    print(result.stdout)
+                    print("Exit status:", result.returncode)
+                    #child = pexpect.spawn(f"pkexec sh -c 'ip link delete {iface}; wg-quick up {config_file}'")
+                    #child.expect(pexpect.EOF)
                 
             elif pltfrm == Arch.OSX:
                 connectBASH = [sentinel_connect_bash if type == "WireGuard" else asentinel_connect_bash]
