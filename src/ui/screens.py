@@ -519,7 +519,7 @@ class MainWindow(Screen):
                         connected_content.ids.uri.text = uri
                         connected_content.ids.warning_comment.text = "Scan the QR code or import the URI string into the V2RayNG mobile app. You must do this before you disconnect in Meile. https://dvpn.my/v2ray"
                         connected_content.ids.qr_img.source = QRcode.generate_qr_code(uri, "v2ray")
-                    else:
+                    elif "WireGuard" in [proto,protocol]:
                         WG_PATH = path.join(ConfParams.KEYRINGDIR,"wg99.conf")
                         with open(WG_PATH, "r") as f:
                             wg_config = f.read()
@@ -527,6 +527,12 @@ class MainWindow(Screen):
                         connected_content.ids.uri.text = wg_config
                         connected_content.ids.warning_comment.text = "Scan the QR code or input the config with the official Wireguard app. You must do this before you disconnect in Meile. https://dvpn.my/wireguard"
                         connected_content.ids.qr_img.source = QRcode.generate_wg_qr_code(WG_PATH, self.NodeCarouselData['moniker'])
+
+                    else:
+                        uri = "NULL"
+                        connected_content.ids.uri.text = uri
+                        connected_content.ids.warning_comment.text = "Hysteria2, XRay, and AmneziaWG quick-connect QR-codes are not available at this time"
+                        connected_content.ids.qr_img.source = QRcode.generate_qr_code(uri, "v2ray")
                             
                     self.dialog = MDDialog(
                         title="Connected!",
@@ -913,7 +919,7 @@ class MainWindow(Screen):
             self.MeileMap = MapView(zoom=2,
                                     background_color=get_color_from_hex(MeileColors.MAP_BG_COLOR))
             source = MapSource(url=MeileColors.CARTO_MAP + f"?key={scrtsxx.CARTO_API}",
-                               cache_key="cartodark",
+                               cache_key="cartodarknew",
                                tile_size=256,
                                image_ext="png",
                                attribution="© OpenStreetMap © CARTO",

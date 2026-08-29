@@ -2531,8 +2531,8 @@ class NodeCarousel(MDBoxLayout):
                 print(str(e))
                 
             self.ids.mapview.map_source = MapSource(
-                url=MeileColors.CARTO_MAP,
-                cache_key="cartodark",
+                url=MeileColors.CARTO_MAP + f"?key={scrtsxx.CARTO_API}",
+                cache_key="cartodarknew",
                 min_zoom=0,
                 max_zoom=20,
                 attribution="© CARTO",

@@ -17,7 +17,7 @@ from treelib.exceptions import DuplicatedNodeIdError
 
 from geography.continents import OurWorld
 from conf.meile_config import MeileGuiConfig
-from typedef.konstants import ConfParams, HTTParams, IBCTokens, TextStrings, NodeKeys
+from typedef.konstants import ConfParams, HTTParams, IBCTokens, TextStrings, NodeKeys, Arch
 from adapters import HTTPRequests
 from cli.v2ray import V2RayHandler
 from helpers import helpers
