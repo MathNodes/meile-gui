@@ -2354,6 +2354,23 @@ WindowManager:
         size_hint_x: 1
         spacing: 20
         
+        MDTextField:
+            id: price
+            hint_text: "Price"
+            mode: "fill"
+            text: root.price_text
+            size_hint_y: None
+            height: dp(80)
+            multiline: True
+            readonly: True
+            size_hint_x: 1.3
+            fill_color_normal: get_color_from_hex(MeileColors.DIALOG_BG_COLOR)
+		    fill_color_focus: get_color_from_hex(MeileColors.DIALOG_BG_COLOR)
+		    text_color_normal: get_color_from_hex(MeileColors.MEILE)
+		    text_color_focus: get_color_from_hex(MeileColors.MEILE)
+		    hint_text_color_normal: 1, 1, 1, 0.7
+		    hint_text_color_focus: 1, 1, 1, 0.7
+            #opacity: 0
         
         MDTextField:
             id: deposit
@@ -2363,16 +2380,12 @@ WindowManager:
             size_hint_y: .65
             size_hint_x: 1.3
             readonly: True
-        
-        MDTextField:
-            id: price
-            hint_text: "Price"
-            mode: "fill"
-            text: root.price_text
-            size_hint_y: .65
-            readonly: True
-            size_hint_x: 1.3
-            opacity: 0
+            fill_color_normal: get_color_from_hex(MeileColors.DIALOG_BG_COLOR)
+		    fill_color_focus: get_color_from_hex(MeileColors.DIALOG_BG_COLOR)
+		    text_color_normal: get_color_from_hex(MeileColors.MEILE)
+		    text_color_focus: get_color_from_hex(MeileColors.MEILE)
+		    hint_text_color_normal: 1, 1, 1, 0.7
+		    hint_text_color_focus: 1, 1, 1, 0.7
             
         MDDropDownItem:
             id: drop_item
@@ -2494,8 +2507,25 @@ WindowManager:
 
     MDBoxLayout:
         orientation: "horizontal"
-        size_hint_x: .8
+        size_hint_x: 1
         spacing: 20
+        
+        MDTextField:
+            id: price
+            hint_text: "Price"
+            mode: "fill"
+            text: root.price_text
+            size_hint_y: .65
+            #width: "50sp"
+            #height: "30sp"
+            size_hint_x: 1.30
+            readonly: True
+            fill_color_normal: get_color_from_hex(MeileColors.DIALOG_BG_COLOR)
+		    fill_color_focus: get_color_from_hex(MeileColors.DIALOG_BG_COLOR)
+		    text_color_normal: get_color_from_hex(MeileColors.MEILE)
+		    text_color_focus: get_color_from_hex(MeileColors.MEILE)
+		    hint_text_color_normal: 1, 1, 1, 0.7
+		    hint_text_color_focus: 1, 1, 1, 0.7
 
         MDTextField:
             id: deposit
@@ -2503,23 +2533,20 @@ WindowManager:
             mode: "fill"
             text: ""
             size_hint_y: .65
-            width: "50sp"
-            height: "30sp"
+            #width: "50sp"
+            #height: "30sp"
+            size_hint_x: 1.30
             readonly: True
-
-        MDTextField:
-            id: price
-            hint_text: "Price"
-            mode: "fill"
-            text: root.price_text
-            size_hint_y: .65
-            width: "50sp"
-            height: "30sp"
-            readonly: True
+            fill_color_normal: get_color_from_hex(MeileColors.DIALOG_BG_COLOR)
+		    fill_color_focus: get_color_from_hex(MeileColors.DIALOG_BG_COLOR)
+		    text_color_normal: get_color_from_hex(MeileColors.MEILE)
+		    text_color_focus: get_color_from_hex(MeileColors.MEILE)
+		    hint_text_color_normal: 1, 1, 1, 0.7
+		    hint_text_color_focus: 1, 1, 1, 0.7
 
         MDDropDownItem:
             id: drop_item
-            pos_hint: {'center_x': .5, 'center_y': .5}
+            pos_hint: {'center_x': .7, 'center_y': .5}
             text: "p2p"
             on_release: root.menu.open()
             
