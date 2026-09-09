@@ -325,7 +325,7 @@ class SubscribeContent(BoxLayout):
                 "text": f"{i}",
                 "height": dp(56),
                 "on_release": lambda x=f"{i}": self.set_item(x),
-            } for i in IBCTokens.ibc_coins #+ ['xmr']
+            } for i in IBCTokens.ibc_coins[:-1] #+ ['xmr']
         ]
         self.menu = MDDropdownMenu(
             caller=self.ids.drop_item,
@@ -336,6 +336,7 @@ class SubscribeContent(BoxLayout):
         )
         self.menu.bind()
         self.ids.drop_item.current_item = IBCTokens.ibc_coins[0]
+        self.ids.price.text = self.price_text.replace(' ', '\n').rstrip()
         self.parse_coin_deposit(self.ids.drop_item.current_item)
         self.build()
         
@@ -519,7 +520,7 @@ class PlanSubscribeContent(BoxLayout):
                 "text": f"{i}",
                 "height": dp(56),
                 "on_release": lambda x=f"{i}": self.set_item(x),
-            } for i in IBCTokens.ibc_coins
+            } for i in IBCTokens.ibc_coins[:-1]
         ]
         self.menu = MDDropdownMenu(
             caller=self.ids.drop_item,
@@ -590,7 +591,7 @@ class PlanSubscribeContent(BoxLayout):
                         "text": f"{i}",
                         "height": dp(56),
                         "on_release": lambda x=f"{i}": self.set_item(x),
-                    } for i in IBCTokens.ibc_coins
+                    } for i in IBCTokens.ibc_coins[:-1]
                 ]
                 self.menu.items = menu_items
                 self.set_item(IBCTokens.ibc_coins[0])
@@ -636,13 +637,21 @@ class PlanSubscribeContent(BoxLayout):
             if mu_coin == "p2p":
                 value = float(price.strip())
             else:
-                value = round(
-                    float(price.strip()) *
-                    self.price_cache["p2p"]["price"] /
-                    self.price_cache[mu_coin]["price"], 8
-                )
-    
-            deposit_text = str(format(round(month * value, 8), '8f'))
+                try:
+                    value = round(
+                        float(price.strip()) *
+                        self.price_cache["p2p"]["price"] /
+                        round(self.price_cache[mu_coin]["price"],8), 8
+                    )
+                except:
+                    value = 0
+            if "btc" in mu_coin and value != 0:
+                deposit_text = f"{month * value:.8f}"
+            else:
+                if value != 0:
+                    deposit_text = f"{month * value:.5f}"
+                else:
+                    deposit_text = 0
             self.ids.deposit.text = deposit_text
     
             if self.deposit_callback:
@@ -1343,7 +1352,11 @@ class PlanRow(MDGridLayout):
     
                 # Generate QR Code
                 QRcode = QRCode()
-                self.invoice_content.ids.qr_img.source = QRcode.generate_qr_code(zaddress, mu_coin) 
+                if mu_coin == "arrr":
+                    coin_uri = f"pirate:{zaddress}?amount={total_arrr}"
+                else:
+                    coin_uri = f"{mu_coin}:{zaddress}?amount={total_arrr}"
+                self.invoice_content.ids.qr_img.source = QRcode.generate_qr_code(coin_uri, mu_coin) 
     
                 self.dialog = MDDialog(
                     title="Waiting for invoice to be paid...",
@@ -1383,7 +1396,8 @@ class PlanRow(MDGridLayout):
     
                 # Generate QR Code
                 QRcode = QRCode()
-                self.invoice_content.ids.qr_img.source = QRcode.generate_qr_code(zaddress, "firo") 
+                coin_uri = f"{mu_coin}:{zaddress}?amount={total_arrr}"
+                self.invoice_content.ids.qr_img.source = QRcode.generate_qr_code(coin_uri, "firo") 
     
                 self.dialog = MDDialog(
                     title="Waiting for invoice to be paid...",
@@ -1403,13 +1417,20 @@ class PlanRow(MDGridLayout):
                 yield 0.6
                 self.start_payment_thread_firo(total_arrr)
                 
-            elif mu_coin in ["zano", "fusd","bchx", "bnbx", "btcx", "daix", "ethx", "solx", "tonx"]:
+            elif mu_coin in ["zano", "fusd", "bchx", "bnbx", "btcx", "daix", "ethx", "solx", "tonx"]:
                 zaddress = IBCTokens.ZANO_WALLET
                 
                 price_api = GetPriceAPI()
                 arrrusd = price_api.get_usd(mu_coin)
                 cost = usd*ConfParams.BTCPAYADJ
-                total_arrr = round(float(cost) / float(arrrusd['price']),4)
+                if mu_coin in ["zano", "ton"]:
+                    total_arrr = round(float(cost) / float(arrrusd['price']),4)
+                elif mu_coin in ["fusd", "daix"]:
+                    total_arrr = round(float(cost) / float(arrrusd['price']),2)
+                elif mu_coin in ["bchx", "bnbx", "ethx", "solx"]:
+                    total_arrr = round(float(cost) / float(arrrusd['price']),6)
+                else:
+                    total_arrr = round(float(cost) / float(arrrusd['price']),8)
                 
                 if self.dialog:
                     self.dialog.dismiss()
@@ -1423,7 +1444,9 @@ class PlanRow(MDGridLayout):
     
                 # Generate QR Code
                 QRcode = QRCode()
-                self.invoice_content.ids.qr_img.source = QRcode.generate_qr_code(zaddress, mu_coin) 
+                aid = IBCTokens.ZANO_ASSETS[mu_coin]['asset_id']
+                coin_uri = f"zano:{zaddress}?asset_id={aid}&tx_amount={total_arrr}&message={self.ADDRESS}"
+                self.invoice_content.ids.qr_img.source = QRcode.generate_qr_code(coin_uri, mu_coin) 
     
                 self.dialog = MDDialog(
                     title="Waiting for invoice to be paid...",
@@ -1462,7 +1485,8 @@ class PlanRow(MDGridLayout):
     
                 # Generate QR Code
                 QRcode = QRCode()
-                self.invoice_content.ids.qr_img.source = QRcode.generate_qr_code(zaddress, mu_coin) 
+                coin_uri = f"zephyr:{zaddress}?tx_amount={total_arrr}"
+                self.invoice_content.ids.qr_img.source = QRcode.generate_qr_code(coin_uri, mu_coin) 
     
                 self.dialog = MDDialog(
                     title="Waiting for invoice to be paid...",

@@ -543,9 +543,9 @@ class IBCTokens():
     IBCSCRT  = 'ibc/31FEE1A2A9F9C01113F90BD0BBCCE8FD6BBB8585FAF109A2101827DD1D5B95B8'
     IBCATOM  = 'ibc/A8C2D23A1E6F95DA4E48BA349667E322BD7A6C996D8A4AAE8BA72E190F3D1477'
     IBCDEC   = 'ibc/B1C0DDB14F25279A2026BC8794E12B259F8BDA546A3C5132CCAEE4431CE36783'
-    IBCOSMO  = 'ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518'
-    IBCUNKWN = 'ibc/9BCB27203424535B6230D594553F1659C77EC173E36D9CF4759E7186EE747E84'
+    IBCOSMO  = 'ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518' 
     IBCNAM   = 'ibc/700A05A54B68723DAD9A7C97B39C5DDAB5E34B621A3400482C737E54456BDCD7'
+    IBCUNKWN = 'ibc/9BCB27203424535B6230D594553F1659C77EC173E36D9CF4759E7186EE747E84'
     
     ZANO_WALLET = "ZxDEXCMwvpwirJujwjZExHfKFEqNjMWdjLw5MGYXa5KxScvcsr2BNGm8TFyk4mvFAhAPtWh54tadWNgS5CxPAqXX1fpoQLkJJ"
     
@@ -602,6 +602,44 @@ class IBCTokens():
                     'ethx' : 'ethereum',
                     'solx' : 'solana',
                     'tonx' : 'the-open-network'}
+    ZANO_ASSETS = {
+        'zano': {
+            'asset_id': 'd6329b5b1f7c0805b5c345f4957554002a2f557845f64d7645dae0e051a6498a',
+            'divisor': 10 ** 12,
+        },
+        'fusd': {
+            'asset_id': '86143388bd056a8f0bab669f78f14873fac8e2dd8d57898cdb725a2d5e2e4f8f',
+            'divisor': 10 ** 4,
+        },
+        'bchx': {
+            'asset_id': '3de9ad7243afa49e0ade6839e97a9f10a527c4958ece2fc9cb1b87a44032167d',
+            'divisor': 10 ** 8,
+        },
+        'bnbx': {
+            'asset_id': '6ca3fa07f1b6a75b6e195d2918c32228765968b54ea691c75958affa1c4073fb',
+            'divisor': 10 ** 6,
+        },
+        'btcx': {
+            'asset_id': '040a180aca4194a158c17945dd115db42086f6f074c1f77838621a4927fffa91',
+            'divisor': 10 ** 8,
+        },
+        'daix': {
+            'asset_id': '24819c4b65786c3ac424e05d9ef4ab212de6222cc73bc5c4b012df5a3107eea4',
+            'divisor': 10 ** 6,
+        },
+        'ethx': {
+            'asset_id': '93da681503353509367e241cda3234299dedbbad9ec851de31e900490807bf0c',
+            'divisor': 10 ** 6,
+        },
+        'solx': {
+            'asset_id': '65b3bc549c8bc2c773781d5436f25f7af84644e61baaabd675d9867b007d17b4',
+            'divisor': 10 ** 6,
+        },
+        'tonx': {
+            'asset_id': 'bfa6609a94e39f418d9adb000f89edc7bd180fd120f1cd272201220e3070fb4f',
+            'divisor': 10 ** 6,
+        },
+    }
     
     NOWCOINS     = ["firo", "beam", "pivx", "zec", "dcr", "epic",
                     "bch", "kmd", "xno", "sol", "dgb", "xaut", "eth",
@@ -612,8 +650,8 @@ class IBCTokens():
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
-    VERSION           = "v2.7.0"
-    BUILD             = "17877851293"
+    VERSION = "v2.7.1"
+    BUILD = "1788953081370"
     RootTag           = "SENTINEL"
     WG_HASH           = ""
     WG_QUICK_HASH     = ""
@@ -680,4 +718,3 @@ class NodeKeys():
     NodeVersions  = [str(item).zfill(3) for item in range(70,1000)]
     Nodetypes = ['residential', 'business', 'hosting', 'edu']
     ProtocolTypes = ["WireGuard", "V2Ray", "OpenVPN", "XRay", "AmneziaWG", "Hysteria2"]
-
