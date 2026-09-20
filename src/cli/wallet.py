@@ -1542,7 +1542,20 @@ class HandleWalletFunctions():
                 # For AmneziaWG, you might need to use a different command
                 if type == "AmneziaWG":
                     # Assuming you have AmneziaWG tools installed (awg-quick instead of wg-quick)
-                    child = pexpect.spawn(f"pkexec sh -c 'ip link delete {iface}; awg-quick up {config_file}'")
+                    command = (
+                        f"ip link delete {iface} 2>/dev/null || true; "
+                        f"{MeileConfig.AWGQUICK} up {config_file}"
+                    )
+                    
+                    result = subprocess.run(
+                        ["pkexec", "sh", "-c", command],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,
+                        text=True
+                    )
+
+                    print(result.stdout)
+                    print("Exit status:", result.returncode)
                 else:
                     command = (
                         f"ip link delete {iface} 2>/dev/null || true; "
