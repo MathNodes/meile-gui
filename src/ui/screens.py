@@ -538,6 +538,7 @@ class MainWindow(Screen):
                     print("CONNECTED!!!")
                     self.CONNECTED = True
                     Moniker = self.NodeCarouselData['moniker']
+                    self.NodeCarouselDataConnectedNode = deepcopy(self.NodeCarouselData)
                     
                     if hourly:
                         self.setQuotaClock(units, True)
@@ -656,6 +657,7 @@ class MainWindow(Screen):
                
         else:
             self.disconnect_from_node()
+            self.NodeCarouselDataConnectedNode = None
             self.HourlyFirstRun = True
             self.reset_stopwatch()
             try: 
@@ -1327,7 +1329,7 @@ class MainWindow(Screen):
         try:
             if self.ConnectedDict['v2ray_pid'] is not None:
                 try:
-                    returncode, self.CONNECTED = Disconnect(self.NodeCarouselData['protocol'])
+                    returncode, self.CONNECTED = Disconnect(self.NodeCarouselDataConnectedNode['protocol'])
                     print("Disconnect RTNCODE: %s" % returncode)
                     thread = Thread(target=lambda: self.nonblock_get_ip_address(self.get_ip_address))
                     thread.start()
@@ -1337,7 +1339,7 @@ class MainWindow(Screen):
                     print("Something went wrong")
                     
             elif self.CONNECTED == None:
-                returncode, self.CONNECTED = Disconnect(self.NodeCarouselData['protocol'])
+                returncode, self.CONNECTED = Disconnect(self.NodeCarouselDataConnectedNode['protocol'])
                 print("Disconnect RTNCODE: %s" % returncode)
                 thread = Thread(target=lambda: self.nonblock_get_ip_address(self.get_ip_address))
                 thread.start()
@@ -1348,7 +1350,7 @@ class MainWindow(Screen):
                 return True
             
             else:
-                returncode, self.CONNECTED = Disconnect(self.NodeCarouselData['protocol'])
+                returncode, self.CONNECTED = Disconnect(self.NodeCarouselDataConnectedNode['protocol'])
                 print("Disconnect RTNCODE: %s" % returncode)
                 thread = Thread(target=lambda: self.nonblock_get_ip_address(self.get_ip_address))
                 thread.start()
@@ -1357,7 +1359,7 @@ class MainWindow(Screen):
             #self.warp_disconnect(None)
             self.dialog = None
             # Edit since everything will be done from NodeCarousel
-            rating_dialog = RatingContent(self.NodeCarouselData['moniker'], self.NodeCarouselData['address'])
+            rating_dialog = RatingContent(self.NodeCarouselDataConnectedNode['moniker'], self.NodeCarouselDataConnectedNode['address'])
             '''
             if self.PlanID:
                 rating_dialog = RatingContent(self.NodeCarouselData['moniker'], self.NodeCarouselData['address'])
