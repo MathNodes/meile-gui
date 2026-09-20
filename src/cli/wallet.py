@@ -1551,8 +1551,22 @@ class HandleWalletFunctions():
                     # Assuming you have AmneziaWG tools installed (awg-quick instead of wg-quick)
                     child = pexpect.spawn(f"pkexec sh -c 'ip link delete {iface}; awg-quick up {config_file}'")
                 else:
-                    child = pexpect.spawn(f"pkexec sh -c 'ip link delete {iface}; wg-quick up {config_file}'")
-                child.expect(pexpect.EOF)
+                    command = (
+                        f"ip link delete {iface} 2>/dev/null || true; "
+                        f"wg-quick up {config_file}"
+                    )
+                    
+                    result = subprocess.run(
+                        ["pkexec", "sh", "-c", command],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,
+                        text=True
+                    )
+
+                    print(result.stdout)
+                    print("Exit status:", result.returncode)
+                    #child = pexpect.spawn(f"pkexec sh -c 'ip link delete {iface}; wg-quick up {config_file}'")
+                    #child.expect(pexpect.EOF)
                 
             elif pltfrm == Arch.OSX:
                 connectBASH = [sentinel_connect_bash if type == "WireGuard" else asentinel_connect_bash]
