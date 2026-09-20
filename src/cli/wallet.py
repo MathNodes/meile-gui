@@ -1549,7 +1549,7 @@ class HandleWalletFunctions():
                     print(result.stdout)
                     print("Exit status:", result.returncode)
                 else:
-                    ommand = (
+                    command = (
                         f"ip link delete {iface} 2>/dev/null || true; "
                         f"wg-quick up {config_file}"
                     )
