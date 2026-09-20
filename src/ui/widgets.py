@@ -656,7 +656,7 @@ class PlanSubscribeContent(BoxLayout):
                     deposit_text = f"{month * value:.5f}"
                 else:
                     deposit_text = 0
-            self.ids.deposit.text = deposit_text
+            self.ids.deposit.text = str(deposit_text)
     
             if self.deposit_callback:
                 self.deposit_callback(deposit_text)
