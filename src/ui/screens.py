@@ -631,7 +631,6 @@ class MainWindow(Screen):
                
         else:
             self.disconnect_from_node()
-            self.NodeCarouselDataConnectedNode = None
             self.HourlyFirstRun = True
             self.reset_stopwatch()
             try: 
@@ -1365,6 +1364,7 @@ class MainWindow(Screen):
                                'allocated' : None,
                                'expirary' : None
                                }
+            self.NodeCarouselDataConnectedNode = None
             return True
         except Exception as e:
             print(str(e))
