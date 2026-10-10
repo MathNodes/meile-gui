@@ -17,7 +17,7 @@ echo "Setting venv..."
 source meile2.0/bin/activate
 sleep 3
 
-pyinstaller --windowed --icon icon.icns --onedir --osx-bundle-identifier 'com.mathnodes.meile' --codesign-identity "Developer ID Application: Pool Stats LLC (VQYLU43P5V)" --collect-all pyarmor --collect-all bip_utils --collect-all mospy --collect-all sentinel_protobuf --collect-all sentinel_sdk --collect-all stripe --collect-all kivy_garden --add-data src/fiat/stripe_pay/dist/pyarmor_runtime_002918:pyarmor_runtime_002918 --add-data src/fonts:fonts --add-data src/awoc/data/:data --add-data src/utils/fonts/:utils/fonts --add-data src/utils/coinimg/:utils/coinimg --add-data src/imgs/:imgs --add-data src/kv/:kv --add-data src/conf/config/:config --add-data src/bin/:bin src/main/meile-gui.py
+pyinstaller --windowed --icon icon.icns --onedir --osx-bundle-identifier 'com.mathnodes.meile' --codesign-identity "Developer ID Application: Pool Stats LLC (VQYLU43P5V)" --collect-all pyarmor --collect-all bip_utils --collect-all mospy --collect-all sentinel_protobuf --collect-all sentinel_sdk --collect-all stripe --collect-all kivy_garden --collect-all cairosvg --add-data src/fiat/stripe_pay/dist/pyarmor_runtime_002918:pyarmor_runtime_002918 --add-data src/fonts:fonts --add-data src/awoc/data/:data --add-data src/utils/fonts/:utils/fonts --add-data src/utils/coinimg/:utils/coinimg --add-data src/imgs/:imgs --add-data src/kv/:kv --add-data src/conf/config/:config --add-data src/bin/:bin src/main/meile-gui.py
 
 
 echo "Creating Meile.app..."
