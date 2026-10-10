@@ -2461,48 +2461,59 @@ WindowManager:
             MDBoxLayout:
                 orientation: "horizontal"
                 Check:
+                    size_hint: None, 1
                     on_active: root.on_checkbox_active("wallet", *args)
                 MDLabel:
                     text: "Wallet"
-                    size_hint: (None, 1.75)
+                    size_hint: (None, 1)
+                    width: sp(110)
                     font_size: sp(12)
                 TooltipMDIconButton:
+                    size_hint: None, 1
                     icon: "help-circle"
                     tooltip_text: "Pay with Wallet in P2P or IBC enabled coins"
 
             MDBoxLayout:
                 orientation: "horizontal"
                 Check:
+                    size_hint: None, 1
                     on_active: root.on_checkbox_active("btcpay", *args)
                 MDLabel:
                     text: "BTCPay"
-                    size_hint: (None, 1.75)
+                    size_hint: None, 1
+                    width: sp(110)
                     font_size: sp(12)
                 TooltipMDIconButton:
+                    size_hint: None, 1
                     icon: "help-circle"
                     tooltip_text: "Pay an invoice in BTC, BTC (lightning), XMR, LTC, DASH, or DOGE"
 
             MDBoxLayout:
                 orientation: "horizontal"
                 Check:
+                    size_hint: None, 1
                     on_active: root.on_checkbox_active("now", *args)
                 MDLabel:
                     text: "NOWPayments"
-                    size_hint: (None, 1.75)
+                    size_hint: None, 1
+                    width: sp(110)
                     font_size: sp(12)
                 TooltipMDIconButton:
+                    size_hint: None, 1
                     icon: "help-circle"
                     tooltip_text:  "Pay using FIRO,PIVX,ZEC,SOL with NOWPayments. User's browser will be opened to invoice."
             MDBoxLayout:
                 orientation: "horizontal"
                 Check:
+                    size_hint: None, 1
                     on_active: root.on_checkbox_active("pirate", *args)
                 MDLabel:
                     text: "Privacy Coins"
-                    size_hint: (None, 1.75)
-                    #width: sp(110)
+                    size_hint: None, 1
+                    width: sp(110)
                     font_size: sp(12)
                 TooltipMDIconButton:
+                    size_hint: None, 1
                     icon: "help-circle"
                     tooltip_text: "Pay using Pirate Chain (ARRR) and Firo"
 

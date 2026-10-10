@@ -59,6 +59,7 @@ from helpers.helpers import format_byte_size
 from helpers.v2ray import generate_v2ray_uri
 from fiat.stripe_pay.dist import scrtsxx
 from utils.qr import QRCode
+from utils.nowcurrencies import get_currency_logo_path, get_icon_url
 
 class WalletInfoContent(BoxLayout):
     def __init__(self, seed_phrase, name, address, password, **kwargs):
@@ -600,7 +601,7 @@ class PlanSubscribeContent(BoxLayout):
         self.ids.drop_item.set_item(text_item)
     
         def on_deposit_updated(deposit_text):
-            match = re.match(r"([0-9]+(?:\.[0-9]+)?)", deposit_text)
+            match = re.match(r"([0-9]+(?:\.[0-9]+)?)", str(deposit_text))
             amt = match.groups()[0] if match else 0.0
             self.get_usd(text_item, amt)
     
@@ -637,31 +638,34 @@ class PlanSubscribeContent(BoxLayout):
             if mu_coin == "p2p":
                 value = float(price.strip())
             else:
-                try:
-                    value = round(
-                        float(price.strip()) *
-                        self.price_cache["p2p"]["price"] /
-                        round(self.price_cache[mu_coin]["price"],8), 8
-                    )
-                except:
-                    value = 0
+                p2p_price = self.price_cache.get("p2p", {}).get("price", 0) or 0
+                coin_price = self.price_cache.get(mu_coin, {}).get("price", 0) or 0
+                # A failed price lookup is cached as 0. Guard against the
+                # resulting ZeroDivisionError so a single unavailable price
+                # (e.g. dcr) cannot crash the dialog.
+                if not p2p_price or not coin_price:
+                    raise KeyError(mu_coin)
+                value = round(
+                    float(price.strip()) *
+                    p2p_price /
+                    round(coin_price, 8), 8
+                )
             if "btc" in mu_coin and value != 0:
                 deposit_text = f"{month * value:.8f}"
+            elif value != 0:
+                deposit_text = f"{month * value:.5f}"
             else:
-                if value != 0:
-                    deposit_text = f"{month * value:.5f}"
-                else:
-                    deposit_text = 0
-            self.ids.deposit.text = str(deposit_text)
+                deposit_text = "0"
+            self.ids.deposit.text = deposit_text
     
             if self.deposit_callback:
                 self.deposit_callback(deposit_text)
     
         except KeyError as e:
             print(f"Missing price data: {e}")
-            self.ids.deposit.text = "Error"
+            self.ids.deposit.text = "Unavailable"
             if self.deposit_callback:
-                self.deposit_callback("Error")
+                self.deposit_callback("Unavailable")
 
     def refresh_price_async(self, mu_coin="p2p", cache=30, callback=None):
         def fetch_price():
@@ -674,7 +678,11 @@ class PlanSubscribeContent(BoxLayout):
                         "time": time.time()
                     }
                 except Exception as e:
-                    print(f"Error fetching price: {e}")
+                    print(f"Error fetching price for {mu_coin}: {e}")
+                    self.price_cache[mu_coin] = {
+                                            "price": 0,
+                                            "time": time.time()
+                                        }
             if callback:
                 Clock.schedule_once(callback, 0)
         Thread(target=fetch_price, daemon=True).start()
@@ -700,7 +708,7 @@ class PlanSubscribeContent(BoxLayout):
     # used for slider's on_touch_move
     def update_deposit_and_usd(self, coin):
         def on_deposit_updated(deposit_text):
-            match = re.match(r"([0-9]+(?:\.[0-9]+)?)", deposit_text)
+            match = re.match(r"([0-9]+(?:\.[0-9]+)?)", str(deposit_text))
             amt = match.groups()[0] if match else 0.0
             self.get_usd(coin, amt)
     
@@ -1054,6 +1062,16 @@ class PlanRow(MDGridLayout):
         self.plan_id = plan_id
     
         self.invoice_result = {"success" : False, "id": None }
+        
+        self.dialog = None
+        self.invoice_content = None
+        self.now_status = {}
+        self.now_payment_status = None
+        self.now_pay_address = None
+        self.now_pay_amount = None
+        self.now_pay_currency = None
+        self.now_pay_logo_path = None
+        
     def get_font(self):
         Config = MeileGuiConfig()
         return Config.resource_path(MeileColors.FONT_FACE)
@@ -1700,6 +1718,13 @@ class PlanRow(MDGridLayout):
         print(f"Method: 'pay_meile_plan_with_now', usd: {usd}")
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         buyer = mw.address
+        # ``coin`` is the drop-down value and may carry a network suffix
+        # (e.g. ``usdt-bsc``).  NOWPayments expects a de-hyphenated pay
+        # currency (``usdtbsc``), while the price API icon is remembered
+        # under the original drop-down value.
+        selected_coin = coin
+        coin = coin.replace('-', '')
+        
         
         Request = HTTPRequests.MakeRequest(TIMEOUT=120)
         http = Request.hadapter()
@@ -1754,8 +1779,29 @@ class PlanRow(MDGridLayout):
             return
         
         
-        url = HTTParams.NOWURL % (invoiceID, self.paymentID)
-        webbrowser.open(url)    
+        pay_currency = payment_response.get('pay_currency', coin)
+        
+        # Resolve the currency logo on the worker thread so the UI thread
+        # never blocks on a network download / rasterisation.  The icon URL
+        # comes from the CoinStats response cached when the coin was selected
+        # from the drop-down (see utils.nowcurrencies.remember_icon_url).
+        self.now_pay_logo_path = None
+        try:
+            icon_url = get_icon_url(selected_coin) or get_icon_url(pay_currency)
+            if not icon_url:
+                icon_url = GetPriceAPI().get_usd(selected_coin).get('icon')
+            self.now_pay_logo_path = get_currency_logo_path(
+                selected_coin, logo_url=icon_url)
+        except Exception as e:
+            print(f"Error resolving NOWPayments logo: {e}")
+        
+        # Display the payment address and QR code inside the application
+        # instead of redirecting the user to the browser.
+        Clock.schedule_once(
+            lambda dt: self.show_now_qr_dialog(
+                payment_response.get('pay_address'),
+                payment_response.get('pay_amount'),
+                pay_currency), 0)
         
         try:
             headers = {
@@ -1783,7 +1829,61 @@ class PlanRow(MDGridLayout):
         elif self.stop_event.is_set():
             print("Payment process was canceled.")
             Clock.schedule_once(lambda dt: self.update_ui_after_payment(True), 0)
-                
+         
+    def show_now_qr_dialog(self, pay_address, pay_amount, pay_currency):
+        '''Display the NOWPayments deposit address and QR code inside the app.'''
+        print(f"Method: 'show_now_qr_dialog', address: {pay_address}, amount: {pay_amount} {pay_currency}")
+        
+        if self.dialog:
+            self.dialog.dismiss()
+        self.dialog = None
+        
+        if not pay_address:
+            self.dialog = MDDialog(
+                title="Error creating NOW payment request",
+                md_bg_color=get_color_from_hex(MeileColors.BLACK),
+                buttons=[
+                    MDFlatButton(
+                        text="OK",
+                        theme_text_color="Custom",
+                        text_color=get_color_from_hex(MeileColors.MEILE),
+                        on_release=self.cancel_payment
+                    ),
+                ]
+            )
+            self.dialog.open()
+            return
+        
+        self.now_pay_address = pay_address
+        self.now_pay_amount = pay_amount
+        self.now_pay_currency = pay_currency
+        
+        self.invoice_content = QRDialogContent()
+        self.invoice_content.ids.zaddress_field.text = str(pay_address)
+        self.invoice_content.ids.price_field.text = f"{pay_amount} {pay_currency}"
+        self.invoice_content.ids.status.text = "Waiting for payment..."
+        
+        # Generate QR Code
+        QRcode = QRCode()
+        self.invoice_content.ids.qr_img.source = QRcode.generate_payment_qr_code(
+            str(pay_address), pay_currency, logo_path=self.now_pay_logo_path)
+        
+        self.dialog = MDDialog(
+            title="Waiting for invoice to be paid...",
+            type="custom",
+            content_cls=self.invoice_content,
+            md_bg_color=get_color_from_hex(MeileColors.BLACK),
+            buttons=[
+                    MDFlatButton(
+                        text="CANCEL",
+                        theme_text_color="Custom",
+                        text_color=get_color_from_hex(MeileColors.MEILE),
+                        on_release=self.cancel_payment
+                    ),
+                ]
+        )
+        self.dialog.open()
+        
     def pay_meile_plan_with_pirate(self, arrr, coin):
         print(f"Method: 'pay_meile_plan_with_pirate', {coin}: {arrr}")
         
@@ -1895,21 +1995,36 @@ class PlanRow(MDGridLayout):
         print("Checking if invoice is paid...")
         Request = HTTPRequests.MakeRequest(TIMEOUT=120)
         http = Request.hadapter()
-            
-        if self.now_status['payment_status'] != "confirming":
-            print("invoice not yet confirmed....")
+        
+        try:
+            headers = {
+                        "x-api-key": scrtsxx.NOWPAYMENTS
+                      }
+            response = http.get(HTTParams.NOWSTATUS % self.paymentID, headers=headers)
+            self.now_status = response.json()
+            print(self.now_status)
+        except Exception as e:
+            print(str(e))
+            self.ret_now = (False, "Error getting NOW invoice status")
+            return
+        
+        payment_status = self.now_status.get('payment_status')
+        
+        # Refresh the in-app QR dialog whenever the payment status changes
+        if payment_status != self.now_payment_status:
+            self.now_payment_status = payment_status
+            pay_currency = self.now_status.get('pay_currency', self.now_pay_currency)
             try:
-                headers = {
-                            "x-api-key": scrtsxx.NOWPAYMENTS
-                          }
-                response = http.get(HTTParams.NOWSTATUS % self.paymentID, headers=headers)
-                self.now_status = response.json()
-                print(self.now_status)
-            except Exception as e:
-                print(str(e))
-                self.ret_now = (False, "Error getting NOW invoice status")
-        else:
-            #print(self.fetched_invoice)
+                pay_amount = float(self.now_status.get('pay_amount') or 0)
+                actually_paid = float(self.now_status.get('actually_paid') or 0)
+            except (TypeError, ValueError):
+                pay_amount = 0
+                actually_paid = 0
+            remaining_amt = round(pay_amount - actually_paid, 8)
+            Clock.schedule_once(
+                lambda dt: self.update_payment_ui(remaining_amt, pay_currency, payment_status), 0)
+        
+        if payment_status in ["confirming", "confirmed", "sending", "finished"]:
             self.invoice_result = {"success" : True, "id": self.now_status['payment_id'] }
         
     def check_invoice_status_pirate(self, address=False, coin="arrr", invoice=False, arrr=0):
@@ -2213,17 +2328,35 @@ class PlanRow(MDGridLayout):
                         "confirmations": self.zephyr_confirmations
                     }
     
-    def update_payment_ui(self, remaining_amt, coin):
-        if remaining_amt > 0:
-            self.dialog.title = "Deposit detected, but not full amount... waiting for remaining balance..."
-            self.invoice_content.ids.price_field.text = f"{remaining_amt} {coin}"
-            self.invoice_content.ids.status.text = "Deposit detected, but not full amount... waiting for remaining balance..."
+    def update_payment_ui(self, remaining_amt, coin, payment_status=None):
+        status_messages = {
+            "waiting": "Waiting for payment...",
+            "partially_paid": "Deposit detected, but not full amount... waiting for remaining balance...",
+            "confirming": "Deposit detected... waiting for confirmations...",
+            "confirmed": "Payment confirmed... waiting for completion...",
+            "sending": "Payment confirmed... sending funds...",
+            "finished": "Payment complete!",
+            "failed": "Payment failed. Please try again.",
+            "refunded": "Payment was refunded.",
+            "expired": "Invoice expired. Please try again.",
+        }
+        
+        message = status_messages.get(payment_status)
+        
+        if message is None:
+            if remaining_amt > 0:
+                message = "Deposit detected, but not full amount... waiting for remaining balance..."
+            else:
+                message = "Deposit detected... waiting for confirmations..."
+        
+        if self.dialog:
+            self.dialog.title = message
+        
+        if self.invoice_content:
+            self.invoice_content.ids.status.text = message
+            if payment_status in (None, "partially_paid"):
+                self.invoice_content.ids.price_field.text = f"{remaining_amt} {coin}"
             
-        else:
-            self.dialog.title = "Deposit detected... waiting for confirmations..."
-            self.invoice_content.ids.status.text = "Deposit detected... waiting for confirmations..."
-            self.invoice_content.ids.price_field.text = f"{remaining_amt} {coin}"
-                            
     def update_ui_after_payment(self, canceled):
         if canceled:
             if self.dialog:
