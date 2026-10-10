@@ -11,6 +11,8 @@ from conf.meile_config import MeileGuiConfig
 
 from typedef.konstants import MeileColors
 
+from utils.nowcurrencies import get_currency_logo_path
+
 
 class QRCode():
     IMGDIR = None
@@ -158,4 +160,80 @@ class QRCode():
         else:
             background.save(path.join(self.IMGDIR, ADDRESS + ".png"))
             return path.join(self.IMGDIR, ADDRESS + ".png")
-        
+
+    def generate_payment_qr_code(self, ADDRESS, coin=None, logo_path=None):
+        '''Generate a QR code for a payment address.
+
+        Unlike :meth:`generate_qr_code` this routine does not require the
+        coin logo asset to be present, so it also works for coins that do
+        not ship an icon with the application (e.g. NOWPayments currencies).
+
+        The logo used as an overlay is resolved in the following order:
+
+        1. an explicit ``logo_path`` (e.g. a logo already downloaded from the
+           CoinStats icon URL for a NOWPayments currency),
+        2. a coin icon bundled with the application (``utils/coinimg``),
+        3. the icon URL returned by the CoinStats price API and remembered
+           when ``coin`` was selected (see :mod:`utils.nowcurrencies`).
+        '''
+        coinLogo = logo_path
+
+        if not (coinLogo and path.exists(coinLogo)) and coin:
+            bundled = self.MeileConfig.resource_path('utils/coinimg/' + coin + '.png')
+            if path.exists(bundled):
+                coinLogo = bundled
+
+        if not (coinLogo and path.exists(coinLogo)) and coin:
+            # Coins without a bundled icon (most NOWPayments currencies) can
+            # fall back to the CoinStats icon remembered for the currency.
+            try:
+                coinLogo = get_currency_logo_path(coin)
+            except Exception as e:
+                print(f"Error resolving NOWPayments logo for {coin}: {e}")
+                coinLogo = None
+
+        QRcode = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_H)
+        QRcode.add_data(ADDRESS)
+        QRcode.make()
+
+        QRimg = QRcode.make_image(fill_color='Black', back_color="white").convert('RGB')
+
+        if coinLogo and path.exists(coinLogo):
+            logo = Image.open(coinLogo)
+            basewidth = 100
+            wpercent = (basewidth / float(logo.size[0]))
+            hsize = int((float(logo.size[1]) * float(wpercent)))
+            logo = logo.resize((basewidth, hsize))
+            pos = (
+                (QRimg.size[0] - logo.size[0]) // 2,
+                (QRimg.size[1] - logo.size[1]) // 2,
+            )
+            if logo.mode in ('RGBA', 'LA') or (logo.mode == 'P' and 'transparency' in logo.info):
+                logo = logo.convert('RGBA')
+                QRimg.paste(logo, pos, logo)
+            else:
+                QRimg.paste(logo, pos)
+
+        # crop a bit
+        border = (0, 4, 0, 30)  # left, top, right, bottom
+        QRimg = ImageOps.crop(QRimg, border)
+
+        if len(ADDRESS) <= 50:
+            fontSize = 13
+        elif len(ADDRESS) <= 75:
+            fontSize = 12
+        else:
+            fontSize = 11
+
+        background = Image.new('RGBA', (QRimg.size[0], QRimg.size[1] + 15), (255, 255, 255, 255))
+        robotoFont = ImageFont.truetype(self.MeileConfig.resource_path('utils/fonts/Roboto-BoldItalic.ttf'), fontSize)
+
+        draw = ImageDraw.Draw(background)
+        _, _, w, h = draw.textbbox((0, 0), text=str(ADDRESS), font=robotoFont)
+        draw.text(((QRimg.size[0] + 15 - w) / 2, QRimg.size[1] - 2), ADDRESS, (0, 0, 0), font=robotoFont)
+
+        background.paste(QRimg, (0, 0))
+
+        safe_name = ''.join(c if c.isalnum() else '_' for c in ADDRESS)[:120]
+        background.save(path.join(self.IMGDIR, 'pay_' + safe_name + ".png"))
+        return path.join(self.IMGDIR, 'pay_' + safe_name + ".png")

@@ -67,7 +67,8 @@ setup(
         "pywgkey",
         "sentinel-sdk",
         "bcrypt",
-        "jwcrypto"
+        "jwcrypto",
+        "cairosvg"
     ],
     package_data={
         "conf": ["config/config.ini", "config/dnscrypt-proxy.toml"],

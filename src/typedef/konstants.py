@@ -603,7 +603,34 @@ class IBCTokens():
                     'daix' : 'dai',
                     'ethx' : 'ethereum',
                     'solx' : 'solana',
-                    'tonx' : 'the-open-network'}
+                    'tonx' : 'the-open-network',
+                    'usdt'       : 'tether',
+                    "usdt-bsc"   : "tether",
+                    "usdt-erc20" : "tether",
+                    "usdt-matic" : "tether",
+                    "usdt-sol"   : "tether",
+                    "usdt-trc20" : "tether",
+                    "usdtbsc"    : "tether",
+                    "usdterc20"  : "tether",
+                    "usdtmatic"  : "tether",
+                    "usdtsol"    : "tether",
+                    "usdttrc20"  : "tether",
+                    "usdc"       : "usd-coin",
+                    "usdctrc20"  : "usd-coin",
+                    "usdcbsc"    : "usd-coin",
+                    "usdcmatic"  : "usd-coin",
+                    "usdcsol"    : "usd-coin",
+                    "usdcarc20"  : "usd-coin",
+                    "usdcbase"   : "usd-coin",
+                    "usdc-trc20" : "usd-coin",
+                    "usdc-bsc"   : "usd-coin",
+                    "usdc-matic" : "usd-coin",
+                    "usdc-sol"   : "usd-coin",
+                    "usdc-arc20" : "usd-coin",
+                    "usdc-base"  : "usd-coin",
+                    'bsudbsc'    : 'binance-usd',
+                    'bsud-bsc'   : 'binance-usd'
+                    }
     ZANO_ASSETS = {
         'zano': {
             'asset_id': 'd6329b5b1f7c0805b5c345f4957554002a2f557845f64d7645dae0e051a6498a',
@@ -643,10 +670,11 @@ class IBCTokens():
         },
     }
     
-    NOWCOINS     = ["firo", "beam", "pivx", "zec", "dcr", "epic",
-                    "bch", "kmd", "xno", "sol", "dgb", "xaut", "eth",
-                    "ada", "inj", "dot" ]
-    BTCPAYCOINS  = ["xmr", "btc", "zec", "ltc", "doge", "dash"]
+    NOWCOINS     = ["dcr", "epic",
+                    "bch","sol", "xaut", "eth",
+                    "ada", "inj", "dot","bsud-bsc",
+                    "usdt-bsc","usdt-erc20","usdt-matic","usdt-sol","usdc-trc20","usdc-bsc","usdc","usdc-matic","usdc-sol","usdc-arc20", "usdc-base" ]
+    BTCPAYCOINS  = ["xmr", "btc", "ltc", "zec", "doge", "dash"]
     PRIVACYCOINS = ["arrr", "firo", "pivx", "zano", "fusd", "zeph", "zsd", "bchx", "bnbx", "btcx", "daix", "ethx", "solx", "tonx"]
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
