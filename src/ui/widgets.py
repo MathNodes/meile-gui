@@ -1064,6 +1064,7 @@ class PlanRow(MDGridLayout):
         print(f"uuid: {self.uuid}, id: {self.id}, plan_id: {self.plan_id}")
     
         self.invoice_result = {"success" : False, "id": None }
+        self.now_invoice_id = None
         
         self.dialog = None
         self.invoice_content = None
@@ -1115,7 +1116,6 @@ class PlanRow(MDGridLayout):
         self.dialog.open()
         
     
-    @delayable
     def add_wallet_2plan(self, wallet, plan_id, duration, sub_id, uuid, amt, denom):
         plan_details = {"data": {"wallet" : wallet, "plan_id" : plan_id, "duration" : duration, "sub_id" : sub_id, "uuid" : uuid, "amt" : amt, "denom" : denom}}
         print(plan_details)
@@ -1123,51 +1123,53 @@ class PlanRow(MDGridLayout):
         API            = scrtsxx.MEILE_PLAN_ADD
         USERNAME       = scrtsxx.PLANUSERNAME
         PASSWORD       = scrtsxx.PLANPASSWORD
-        Request = HTTPRequests.MakeRequest(TIMEOUT=120)
-        http = Request.hadapter()
-        try:
-            print("Sending plan add request...")
-            tx = http.post(SERVER_ADDRESS + API, json=plan_details, auth=HTTPBasicAuth(USERNAME, PASSWORD))
-            txJSON = tx.json()
-            if txJSON['status']:
-                self.dialog.dismiss()
-                self.dialog = None
-                self.dialog = MDDialog(
-                        title=f"{wallet} added to plan: {plan_id}",
-                        md_bg_color=get_color_from_hex(MeileColors.BLACK),
-                        buttons=[
-                            MDRaisedButton(
-                                text="CLOSE",
-                                theme_text_color="Custom",
-                                text_color=MeileColors.BLACK,
-                                on_release=self.closeDialog
-                            ),
-                        ],
-                    )
-                self.dialog.open()
-                yield 0.6
-            else:
-                self.dialog.dismiss()
-                self.dialog = None
-                self.dialog = MDDialog(
-                        title=f"Error processing adding wallet to plan. If the invoice was paid, please email support@mathnodes.com to gain assistance",
-                        buttons=[
-                            MDRaisedButton(
-                                text="CLOSE",
-                                theme_text_color="Custom",
-                                text_color=MeileColors.BLACK,
-                                on_release=self.closeDialog
-                            ),
-                        ],
-                    )
-                self.dialog.open()
-                yield 0.6
-        except Exception as e:
-            print(str(e))
+
+        def worker():
+            # The API adds the subscription on-chain which can take a while,
+            # so the blocking request must never run on the Kivy UI thread.
+            success = False
+            try:
+                Request = HTTPRequests.MakeRequest(TIMEOUT=120)
+                http = Request.hadapter()
+                print("Sending plan add request...")
+                tx = http.post(SERVER_ADDRESS + API, json=plan_details, auth=HTTPBasicAuth(USERNAME, PASSWORD))
+                txJSON = tx.json()
+                success = bool(txJSON.get('status'))
+            except Exception as e:
+                print(str(e))
+                success = False
+            # Update the dialog back on the UI thread.
+            Clock.schedule_once(
+                lambda dt: self.show_add_wallet_result(
+                    f"{wallet} added to plan: {plan_id}",
+                    "Error processing adding wallet to plan. If the invoice was paid, "
+                    "please email support@mathnodes.com to gain assistance",
+                    success), 0)
+
+        Thread(target=worker, daemon=True).start()
+
+    def show_add_wallet_result(self, success_title, error_title, success):
+        '''Show the result of an add-wallet request (must run on the UI thread).'''
+        if self.dialog:
             self.dialog.dismiss()
-            self.dialog = None
+        self.dialog = None
+        dialog_kwargs = {}
+        if success:
+            dialog_kwargs['md_bg_color'] = get_color_from_hex(MeileColors.BLACK)
+        self.dialog = MDDialog(
+                title=success_title if success else error_title,
+                buttons=[
+                    MDRaisedButton(
+                        text="CLOSE",
+                        theme_text_color="Custom",
+                        text_color=MeileColors.BLACK,
+                        on_release=self.closeDialog
+                    ),
+                ],
+                **dialog_kwargs
+            )
+        self.dialog.open()
             
-    @delayable
     def add_wallet_2alloc(self, wallet, node, gb):
         plan_details = {'wallet' : wallet, 'gb' : gb, 'node' : node}
         print(plan_details)
@@ -1175,49 +1177,30 @@ class PlanRow(MDGridLayout):
         API            = "/v1/allocate"
         USERNAME       = scrtsxx.PLANUSERNAME
         PASSWORD       = scrtsxx.PLANPASSWORD
-        Request = HTTPRequests.MakeRequest(TIMEOUT=120)
-        http = Request.hadapter()
-        try:
-            print("Sending allocate add request...")
-            tx = http.post(SERVER_ADDRESS + API, json=plan_details, auth=HTTPBasicAuth(USERNAME, PASSWORD))
-            txJSON = tx.json()
-            if txJSON['status']:
-                self.dialog.dismiss()
-                self.dialog = None
-                self.dialog = MDDialog(
-                        title=f"{wallet} successfully added to subscription.",
-                        md_bg_color=get_color_from_hex(MeileColors.BLACK),
-                        buttons=[
-                            MDRaisedButton(
-                                text="CLOSE",
-                                theme_text_color="Custom",
-                                text_color=MeileColors.BLACK,
-                                on_release=self.closeDialog
-                            ),
-                        ],
-                    )
-                self.dialog.open()
-                yield 0.6
-            else:
-                self.dialog.dismiss()
-                self.dialog = None
-                self.dialog = MDDialog(
-                        title=f"Error processing adding wallet to plan. If the invoice was paid, please email support@mathnodes.com to gain assistance",
-                        buttons=[
-                            MDRaisedButton(
-                                text="CLOSE",
-                                theme_text_color="Custom",
-                                text_color=MeileColors.BLACK,
-                                on_release=self.closeDialog
-                            ),
-                        ],
-                    )
-                self.dialog.open()
-                yield 0.6
-        except Exception as e:
-            print(str(e))
-            self.dialog.dismiss()
-            self.dialog = None
+
+        def worker():
+            # The API allocates the subscription on-chain which can take a
+            # while, so the blocking request must never run on the UI thread.
+            success = False
+            try:
+                Request = HTTPRequests.MakeRequest(TIMEOUT=120)
+                http = Request.hadapter()
+                print("Sending allocate add request...")
+                tx = http.post(SERVER_ADDRESS + API, json=plan_details, auth=HTTPBasicAuth(USERNAME, PASSWORD))
+                txJSON = tx.json()
+                success = bool(txJSON.get('status'))
+            except Exception as e:
+                print(str(e))
+                success = False
+            # Update the dialog back on the UI thread.
+            Clock.schedule_once(
+                lambda dt: self.show_add_wallet_result(
+                    f"{wallet} successfully added to subscription.",
+                    "Error processing adding wallet to plan. If the invoice was paid, "
+                    "please email support@mathnodes.com to gain assistance",
+                    success), 0)
+
+        Thread(target=worker, daemon=True).start()
 
     
     @delayable
@@ -1697,14 +1680,17 @@ class PlanRow(MDGridLayout):
             
             if self.invoice_result['success']:
                 self.stop_event.set()
-                Clock.schedule_once(lambda dt: self.update_ui_after_payment(False), 0)
+                invoice_ref = self.new_invoice['id']
                 print(self.invoice_result)
                 self.invoice_result = {"success" : False, "id": None }
+                Clock.schedule_once(
+                    lambda dt, ref=invoice_ref: self.update_ui_after_payment(False, invoice_ref=ref), 0)
                 return
         
         if self.stop_event.is_set() and self.invoice_result['success']:
             print("Invoice has been paid.")
-            Clock.schedule_once(lambda dt: self.update_ui_after_payment(False), 0)
+            Clock.schedule_once(
+                lambda dt: self.update_ui_after_payment(False, invoice_ref=self.new_invoice['id']), 0)
         elif self.stop_event.is_set():
             print("Payment process was canceled.")
             Clock.schedule_once(lambda dt: self.update_ui_after_payment(True), 0)
@@ -1747,6 +1733,7 @@ class PlanRow(MDGridLayout):
             invoice_response = response.json()
             print(invoice_response)
             invoiceID = invoice_response['id']
+            self.now_invoice_id = invoiceID
         except Exception as e:
             print(str(e))
             self.ret_now = (False, "Error creating NOW invoice request")
@@ -1813,14 +1800,17 @@ class PlanRow(MDGridLayout):
             
             if self.invoice_result['success']:
                 self.stop_event.set()
-                Clock.schedule_once(lambda dt: self.update_ui_after_payment(False), 0)
+                invoice_ref = self.now_invoice_id
                 print(self.invoice_result)
                 self.invoice_result = {"success" : False, "id": None }
+                Clock.schedule_once(
+                    lambda dt, ref=invoice_ref: self.update_ui_after_payment(False, invoice_ref=ref), 0)
                 return
         
         if self.stop_event.is_set() and self.invoice_result['success']:
             print("Invoice has been paid.")
-            Clock.schedule_once(lambda dt: self.update_ui_after_payment(False), 0)
+            Clock.schedule_once(
+                lambda dt: self.update_ui_after_payment(False, invoice_ref=self.now_invoice_id), 0)
         elif self.stop_event.is_set():
             print("Payment process was canceled.")
             Clock.schedule_once(lambda dt: self.update_ui_after_payment(True), 0)
@@ -1891,14 +1881,16 @@ class PlanRow(MDGridLayout):
             
             if self.invoice_result['success']:
                 self.stop_event.set()
-                Clock.schedule_once(lambda dt: self.update_ui_after_payment(False), 0)
                 print(self.invoice_result)
                 self.invoice_result = {"success" : False, "id": None }
+                Clock.schedule_once(
+                    lambda dt, amt=arrr, c=coin: self.update_ui_after_payment(False, amount=amt, coin=c), 0)
                 return
         
         if self.stop_event.is_set() and self.invoice_result['success']:
             print("Invoice has been paid.")
-            Clock.schedule_once(lambda dt: self.update_ui_after_payment(False), 0)
+            Clock.schedule_once(
+                lambda dt: self.update_ui_after_payment(False, amount=arrr, coin=coin), 0)
         elif self.stop_event.is_set():
             print("Payment process was canceled.")
             Clock.schedule_once(lambda dt: self.update_ui_after_payment(True), 0)
@@ -1915,14 +1907,16 @@ class PlanRow(MDGridLayout):
             
             if self.invoice_result['success']:
                 self.stop_event.set()
-                Clock.schedule_once(lambda dt: self.update_ui_after_payment(False), 0)
                 print(self.invoice_result)
                 self.invoice_result = {"success" : False, "id": None }
+                Clock.schedule_once(
+                    lambda dt, amt=firo: self.update_ui_after_payment(False, amount=amt, coin="Firo"), 0)
                 return
         
         if self.stop_event.is_set() and self.invoice_result['success']:
             print("Invoice has been paid.")
-            Clock.schedule_once(lambda dt: self.update_ui_after_payment(False), 0)
+            Clock.schedule_once(
+                lambda dt: self.update_ui_after_payment(False, amount=firo, coin="Firo"), 0)
         elif self.stop_event.is_set():
             print("Payment process was canceled.")
             Clock.schedule_once(lambda dt: self.update_ui_after_payment(True), 0)
@@ -1939,14 +1933,16 @@ class PlanRow(MDGridLayout):
             
             if self.invoice_result['success']:
                 self.stop_event.set()
-                Clock.schedule_once(lambda dt: self.update_ui_after_payment(False), 0)
                 print(self.invoice_result)
                 self.invoice_result = {"success" : False, "id": None }
+                Clock.schedule_once(
+                    lambda dt, amt=zano, c=coin: self.update_ui_after_payment(False, amount=amt, coin=c), 0)
                 return
         
         if self.stop_event.is_set() and self.invoice_result['success']:
             print("Invoice has been paid.")
-            Clock.schedule_once(lambda dt: self.update_ui_after_payment(False), 0)
+            Clock.schedule_once(
+                lambda dt: self.update_ui_after_payment(False, amount=zano, coin=coin), 0)
         elif self.stop_event.is_set():
             print("Payment process was canceled.")
             Clock.schedule_once(lambda dt: self.update_ui_after_payment(True), 0)
@@ -1963,14 +1959,16 @@ class PlanRow(MDGridLayout):
             
             if self.invoice_result['success']:
                 self.stop_event.set()
-                Clock.schedule_once(lambda dt: self.update_ui_after_payment(False), 0)
                 print(self.invoice_result)
                 self.invoice_result = {"success" : False, "id": None }
+                Clock.schedule_once(
+                    lambda dt, amt=zeph, c=coin: self.update_ui_after_payment(False, amount=amt, coin=c), 0)
                 return
         
         if self.stop_event.is_set() and self.invoice_result['success']:
             print("Invoice has been paid.")
-            Clock.schedule_once(lambda dt: self.update_ui_after_payment(False), 0)
+            Clock.schedule_once(
+                lambda dt: self.update_ui_after_payment(False, amount=zeph, coin=coin), 0)
         elif self.stop_event.is_set():
             print("Payment process was canceled.")
             Clock.schedule_once(lambda dt: self.update_ui_after_payment(True), 0)
@@ -2358,7 +2356,7 @@ class PlanRow(MDGridLayout):
             if payment_status in (None, "partially_paid"):
                 self.invoice_content.ids.price_field.text = f"{remaining_amt} {coin}"
             
-    def update_ui_after_payment(self, canceled):
+    def update_ui_after_payment(self, canceled, invoice_ref=None, amount=None, coin=None):
         if canceled:
             if self.dialog:
                 self.dialog.title = "Payment was canceled."
@@ -2368,13 +2366,27 @@ class PlanRow(MDGridLayout):
                 self.dialog.dismiss()
                 self.dialog = None
             self.dialog = MDDialog(
-                title=f"Invoice {self.invoice_result['id']} has been marked as paid! Finishing up...",
+                title=self.paid_dialog_title(invoice_ref, amount, coin),
                 md_bg_color=get_color_from_hex(MeileColors.BLACK),
             )
             self.dialog.open()
 
             # Simulate some delay before calling on_success_subscription
             Clock.schedule_once(self.call_on_success_subscription, 0.6)
+
+    def paid_dialog_title(self, invoice_ref=None, amount=None, coin=None):
+        '''Build the "payment detected" dialog title.
+
+        Prefer the invoice/order number.  Payment methods that settle directly
+        to an address (pirate, firo, zano, zephyr) have no invoice number, so
+        fall back to the amount and coin that was paid.
+        '''
+        if invoice_ref:
+            return f"Invoice {invoice_ref} has been marked as paid! Finishing up..."
+        if amount is not None:
+            label = f"{amount} {coin}".strip() if coin else f"{amount}"
+            return f"Payment of {label} received! Finishing up..."
+        return "Payment received! Finishing up..."
             
     def call_on_success_subscription(self, dt):
         if not self.payg:
