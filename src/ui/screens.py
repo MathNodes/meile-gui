@@ -1,8 +1,8 @@
 from geography.continents import OurWorld
-from ui.interfaces import LatencyContent, TooltipMDIconButton, ConnectionDialog, ProtectedLabel, IPAddressTextField, ProtocolTextField, ConnectedNode, QuotaPct,BandwidthBar,BandwidthLabel, MapCenterButton, UploadLabel, DownloadLabel,QRDialogV2RayContent, TimeLabel
+from ui.interfaces import LatencyContent, TooltipMDIconButton, ConnectionDialog, ProtectedLabel, IPAddressTextField, ProtocolTextField, ConnectedNode, QuotaPct,BandwidthBar,BandwidthLabel, MapCenterButton, UploadLabel, DownloadLabel,QRDialogV2RayContent, TimeLabel, QRDialogContent
 from typedef.win import WindowNames
 from cli.sentinel import  NodeTreeData
-from typedef.konstants import NodeKeys, TextStrings, MeileColors, HTTParams, IBCTokens, ConfParams
+from typedef.konstants import NodeKeys, TextStrings, MeileColors, HTTParams, IBCTokens, ConfParams, SMSConf
 from cli.sentinel import disconnect as Disconnect
 import main.main as Meile
 from ui.widgets import WalletInfoContent, SeedInfoContent, MDMapCountryButton, RatingContent, NodeRV, NodeRV2, NodeAccordion, NodeRow, NodeDetails, PlanAccordion, PlanRow, PlanDetails, NodeCarousel, SubTypeDialog, SubscribeContent, LoadingSpinner, ShareTypeDialog
@@ -60,7 +60,7 @@ from functools import partial
 from shutil import rmtree
 from os import path, chdir, remove
 #from save_thread_result import ThreadWithResult
-from threading import Thread
+from threading import Thread, Event
 from unidecode import unidecode
 from datetime import datetime, timedelta
 import json
@@ -823,7 +823,8 @@ class MainWindow(Screen):
         elif selection == self.MenuOptions[2]:
             self.start_dnscrypt()
         elif selection == self.MenuOptions[3]:
-            #self.build_smspol_screen_interface()
+            self.build_smspol_screen_interface()
+            '''
             self.dialog = MDDialog(
                     title="Not yet available for public consumption. Please check back later.",
                     md_bg_color=get_color_from_hex(MeileColors.BLACK),
@@ -835,6 +836,7 @@ class MainWindow(Screen):
                                 on_release=self.closeDialog
                             ),])
             self.dialog.open()
+            '''
         elif selection == self.MenuOptions[4]:
             self.disconnect_from_node()
             if self.dnscrypt:
@@ -2773,244 +2775,1066 @@ class SettingsScreen(Screen):
         Meile.app.root.current = WindowNames.MAIN_WINDOW
         
         
+class SMSCountryRow(MDCard, HoverBehavior):
+    '''One country entry of the searchable RecycleView on SMSPoolScreen.'''
+    country_text  = StringProperty("")
+    flag_source   = StringProperty("")
+    country_index = NumericProperty(-1)
+    is_selected   = BooleanProperty(False)
+    hovered       = BooleanProperty(False)
+
+    def select(self, *args):
+        try:
+            screen = Meile.app.root.get_screen(WindowNames.SMS)
+            screen.select_country(self.country_index)
+        except Exception as e:
+            print("SMSCountryRow.select: %s" % str(e))
+
+    def on_touch_down(self, touch):
+        if self.collide_point(*touch.pos):
+            self.select()
+        return super().on_touch_down(touch)
+
+    def on_enter(self, *args):
+        self.hovered = True
+        Window.set_system_cursor('hand')
+
+    def on_leave(self, *args):
+        self.hovered = False
+        Window.set_system_cursor('arrow')
+
+
+class SMSServiceRow(MDCard, HoverBehavior):
+    '''One service entry of the searchable RecycleView on SMSPoolScreen.
+
+    The row carries the service name (not an index) so a re-render of the
+    filtered list can never make a click land on the wrong service.
+    '''
+
+    service_text = StringProperty("")
+    is_selected  = BooleanProperty(False)
+    hovered      = BooleanProperty(False)
+
+    def select(self, *args):
+        try:
+            screen = Meile.app.root.get_screen(WindowNames.SMS)
+            screen.select_service(self.service_text)
+        except Exception as e:
+            print("SMSServiceRow.select: %s" % str(e))
+
+    def on_touch_down(self, touch):
+        if self.collide_point(*touch.pos):
+            self.select()
+        return super().on_touch_down(touch)
+
+    def on_enter(self, *args):
+        self.hovered = True
+        Window.set_system_cursor('hand')
+
+    def on_leave(self, *args):
+        self.hovered = False
+        Window.set_system_cursor('arrow')
+
+
 class SMSPoolScreen(Screen):
+    '''SMS Pool ("Virtual Number Terminal").
+
+    Two services are combined here:
+
+      * SMSPool (https://api.smspool.net) buys and tracks the virtual numbers.
+      * The Meile plan-rest API keeps the user's USD SMS balance ledger
+        (see meile-plan-rest/meile_plan_api.py) so every top-up (Pirate Chain),
+        purchase debit and cancel/refund is accounted for server side.
+    '''
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.countries = {}
-        self.services = {}
-        self.pools = {}
-        self.current_order = None
-        self.sms_check_event = None
-        Clock.schedule_once(lambda dt: self._load_initial_data(), 0.3)
-        self.API_KEY = ""
+        # SMSPool credentials (kept in the git-ignored secrets module)
+        self.API_KEY = getattr(scrtsxx, "SMSPOOL_API_KEY", "") or "RkjSU0lPQpy2yRB7YgJUhAOWu5ci45YB"
 
-    # ---------- API helper ----------
-    def _api_post(self, path, form_data, on_success, on_error=None):
-        url = BASE_URL + path
-        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        self.uuid             = None
+        self.balance          = 0.0
+        self.markup           = float(SMSConf.MARKUP_PERCENT)
+        self.topup_amount     = float(SMSConf.TOPUP_PRESETS[1])
+
+        self.countries        = []          # list of normalised country dicts
+        self.selected_index   = -1
+        self.selected_country = None
+        self.country_filter   = ""
+
+        self.services         = {}          # name -> SMSPool service id
+        self.selected_service = None        # name of the picked service
+        self.service_filter   = ""
+        self._other_service   = SMSConf.OTHER_SERVICE_LABEL
+        self.current_order    = None
+
+        self.sms_check_event  = None
+        self.countdown_event  = None
+        self.order_deadline   = None
+        self._order_expiration = None       # unix ts reported by /purchase/sms
+
+        self._pending_service = None
+        self._pending_price   = 0.0
+
+        # Pirate Chain (ARRR) top-up state
+        self.stop_event        = Event()
+        self.topup_dialog      = None
+        self.topup_content     = None
+        self.topup_poll_event  = None
+        self.topup_started     = False
+        self.topup_crediting   = False
+        self.topup_arrr        = 0.0
+        self.zaddress          = None
+        self.zaddress_balance  = 0.0
+
+        Clock.schedule_once(lambda dt: self._startup(), 0.3)
+
+    # ------------------------------------------------------------------
+    # Generic helpers
+    # ------------------------------------------------------------------
+    def _plan_auth(self):
+        return HTTPBasicAuth(scrtsxx.PLANUSERNAME, scrtsxx.PLANPASSWORD)
+
+    def _get_uuid(self):
+        try:
+            return Meile.app.root.get_screen(WindowNames.PRELOAD).UUID
+        except Exception:
+            MeileConfig = MeileGuiConfig()
+            CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
+            return CONFIG['wallet'].get('uuid')
+
+    def _sync_uuid_label(self):
+        '''Mirror the wallet UUID into the header box (see <SMSPoolScreen>).'''
+        try:
+            self.ids.uuid_label.text = str(self.uuid) if self.uuid else "-"
+        except Exception:
+            pass
+
+    @staticmethod
+    def _parse(result):
+        if isinstance(result, (dict, list)):
+            return result
+        try:
+            return json.loads(result)
+        except Exception:
+            return None
+
+    def _debug(self, text):
+        try:
+            self.ids.debug_label.text = str(text)
+        except Exception:
+            pass
+
+    def _toast(self, text):
+        try:
+            toast(str(text))
+        except Exception:
+            pass
+
+    def _set_status(self, text, ok=None):
+        try:
+            self.ids.order_status.text = text
+        except Exception:
+            pass
+        # Recolour the little status dot (see <StatusDot> in meile.kv).
+        try:
+            if ok is True:
+                self.ids.status_dot.dot_color = "#3ecc6d"
+            elif ok is False:
+                self.ids.status_dot.dot_color = "#c0392b"
+            else:
+                self.ids.status_dot.dot_color = MeileColors.MEILE
+        except Exception:
+            pass
+
+    # ---------- SMSPool (api.smspool.net) ----------
+    def _sppost(self, path, form, on_success, on_error=None):
         if on_error is None:
-            on_error = self._default_error
-        body = "&".join(f"{k}={v}" for k, v in form_data.items())
+            on_error = self._on_sms_error
+        body = "&".join("%s=%s" % (k, v) for k, v in form.items())
         UrlRequest(
-            url,
+            BASE_URL + path,
             on_success=on_success,
             on_failure=on_error,
             on_error=on_error,
-            req_headers=headers,
+            req_headers={"Content-Type": "application/x-www-form-urlencoded"},
             req_body=body,
             method='POST',
-            timeout=15,
+            timeout=20,
         )
 
-    def _default_error(self, request, error):
-        self._set_status(f"Network error: {error}", ok=False)
-        self.debug_label.text = f"ERR: {error}"
+    def _on_sms_error(self, request, error):
+        self._set_status("SMSPool error: %s" % str(error)[:120], ok=False)
+        self._debug("SMSPool ERR: %s" % str(error))
 
-    def _set_status(self, text, ok=None):
-        self.order_status.text = text
-        # Update status dot color
-        from kivy.graphics import Color, Ellipse
-        self.status_dot.canvas.clear()
-        with self.status_dot.canvas:
-            if ok is True:
-                Color(0.30, 0.90, 0.55, 1)
-            elif ok is False:
-                Color(0.95, 0.28, 0.38, 1)
-            else:
-                Color(0.60, 0.68, 0.78, 1)
-            Ellipse(pos=self.status_dot.pos, size=self.status_dot.size)
+    # ---------- Meile plan-rest API ----------
+    def _plan_call(self, method, path, payload, on_success, on_error=None):
+        if on_error is None:
+            on_error = self._on_plan_error
+        headers = {
+            "Content-Type" : "application/json",
+            "Authorization": "Basic " + base64.b64encode(
+                ("%s:%s" % (scrtsxx.PLANUSERNAME, scrtsxx.PLANPASSWORD)).encode()
+            ).decode(),
+        }
+        kwargs = {
+            "on_success" : on_success,
+            "on_failure" : on_error,
+            "on_error"   : on_error,
+            "req_headers": headers,
+            "timeout"    : 20,
+        }
+        if method == "POST":
+            kwargs["req_body"] = json.dumps(payload or {})
+            kwargs["method"] = "POST"
+        UrlRequest(HTTParams.PLAN_API + path, **kwargs)
 
-    # ---------- Initial load ----------
-    def _load_initial_data(self):
-        self._api_post("/country/retrieve_all", {}, self._on_countries)
-        self._api_post("/service/retrieve_all", {}, self._on_services)
-        Clock.schedule_interval(self._refresh_balance, 60)
+    def _on_plan_error(self, request, error):
+        self._set_status("Plan API error: %s" % str(error)[:120], ok=False)
+        self._debug("Plan API ERR: %s" % str(error))
 
-    def _refresh_balance(self, dt):
-        if not self.API_KEY.strip():
+    # ------------------------------------------------------------------
+    # Startup
+    # ------------------------------------------------------------------
+    def _startup(self):
+        self.uuid = self._get_uuid()
+        self._sync_uuid_label()
+        if self.uuid:
+            self.fetch_balance()
+        else:
+            self._set_status("No wallet UUID - balances unavailable", ok=False)
+        self.load_countries()
+        self.load_services()
+        self._update_topup_button()
+
+    # ------------------------------------------------------------------
+    # Balance ledger (Meile plan-rest API)
+    # ------------------------------------------------------------------
+    def refresh_balance(self, *args):
+        self.fetch_balance()
+
+    def fetch_balance(self):
+        if not self.uuid:
             return
-        self._api_post(
-            "/request/balance",
-            {"key": self.API_KEY.strip()},
-            self._on_balance,
-        )
+        self._plan_call("GET", HTTParams.API_SMS_BALANCE % self.uuid, None,
+                        self._on_balance_ok, on_error=self._on_balance_failure)
 
-    def _on_balance(self, request, result):
+    def create_account(self):
+        self._plan_call("POST", HTTParams.API_SMS_ACCOUNT, {"uuid": self.uuid},
+                        self._on_balance_ok)
+
+    def _on_balance_failure(self, request, error):
+        status = getattr(request, "resp_status", None)
+        if status == 404:
+            # No ledger yet for this wallet: create it on the fly.
+            self.create_account()
+        else:
+            self._set_status("Balance error (HTTP %s)" % str(status), ok=False)
+            self._debug("Balance failure: %s" % str(error)[:200])
+
+    def _on_balance_ok(self, request, result):
+        data = self._parse(result)
+        if not isinstance(data, dict) or data.get("balance") is None:
+            self._debug("Balance response: %s" % str(result)[:200])
+            if isinstance(data, dict) and data.get("error"):
+                self.create_account()
+            return
+        self._apply_balance_payload(data)
+
+    def _apply_balance_payload(self, data):
+        '''Apply a Meile plan-rest balance payload (balance + markup).
+
+        Used by both the periodic balance fetch and the top-up credit so the
+        server side markup always wins over SMSConf.MARKUP_PERCENT.
+        '''
+        if data.get("markup") is not None:
+            try:
+                self.markup = float(data["markup"])
+            except Exception:
+                pass
         try:
-            data = json.loads(result) if isinstance(result, str) else result
-            self.balance_label.text = f"Balance: ${data.get('balance', 'N/A')}"
+            self._apply_balance(float(data.get("balance", 0.0)))
+        except Exception:
+            pass
+
+    def _apply_balance(self, bal):
+        self.balance = bal
+        try:
+            self.ids.balance_label.text = "$%.2f" % bal
+        except Exception:
+            pass
+        try:
+            self.ids.balance_big.text = "$%.2f" % bal
+        except Exception:
+            pass
+
+    # ------------------------------------------------------------------
+    # Top-up with Pirate Chain (ARRR)
+    # ------------------------------------------------------------------
+    def set_topup_amount(self, text):
+        try:
+            self.topup_amount = float(text)
+        except Exception:
+            self.topup_amount = 0.0
+        self._update_topup_button()
+
+    def set_topup(self, amount):
+        try:
+            self.ids.topup_amount_input.text = str(amount)
+        except Exception:
+            pass
+        self.topup_amount = float(amount)
+        self._update_topup_button()
+
+    def _update_topup_button(self):
+        try:
+            self.ids.topup_btn.text = "TOP UP $%.2f" % float(self.topup_amount or 0.0)
+        except Exception:
+            pass
+
+    def start_topup(self):
+        if not self.uuid:
+            self._set_status("No wallet UUID - cannot top up", ok=False)
+            return
+        if self.topup_started:
+            return
+        amount = float(self.topup_amount or 0.0)
+        if amount < float(SMSConf.MIN_TOPUP_USD):
+            self._set_status("Minimum top-up is $%.2f" % float(SMSConf.MIN_TOPUP_USD), ok=False)
+            return
+        self.topup_started   = True
+        self.topup_crediting = False
+        self._set_status("Creating %s invoice..." % SMSConf.TOPUP_COIN.upper(), ok=None)
+        endpoint = "/v1/pirate/newaddress" if SMSConf.TOPUP_COIN == "arrr" else "/v1/pivx/newaddress"
+        self._plan_call("GET", endpoint, None, self._on_topup_address,
+                        on_error=self._on_topup_address_error)
+
+    def _on_topup_address_error(self, request, error):
+        self.topup_started = False
+        self._set_status("Could not create invoice", ok=False)
+        self._debug("newaddress ERR: %s" % str(error)[:200])
+
+    def _on_topup_address(self, request, result):
+        data    = self._parse(result) or {}
+        address = data.get("result") if isinstance(data, dict) else None
+        if not address or address == "NULL":
+            self.topup_started = False
+            self._set_status("Could not create invoice", ok=False)
+            self._debug("newaddress result: %s" % str(result)[:200])
+            return
+        self.zaddress         = address
+        self.zaddress_balance = 0.0
+        # Fetching the live price is a blocking HTTP call -> worker thread.
+        Thread(target=lambda: self._prepare_topup_dialog(address), daemon=True).start()
+
+    def _prepare_topup_dialog(self, address):
+        coin = SMSConf.TOPUP_COIN
+        try:
+            price = float(GetPriceAPI().get_usd(coin)["price"])
         except Exception as e:
-            self.balance_label.text = "Balance: err"
-            self.debug_label.text = f"Balance parse: {e}"
+            print("SMS top-up price error: %s" % str(e))
+            price = 0.0
+        if price <= 0:
+            Clock.schedule_once(lambda dt: self._topup_abort(
+                "Could not fetch %s price" % coin.upper()))
+            return
+        coin_amount = round((float(self.topup_amount) * ConfParams.BTCPAYADJ) / price, 2)
+        if coin_amount <= 0:
+            coin_amount = round(float(self.topup_amount) / price, 8)
+        Clock.schedule_once(
+            lambda dt: self._show_topup_dialog(address, coin_amount, coin), 0)
+
+    def _topup_abort(self, message):
+        self.topup_started   = False
+        self.topup_crediting = False
+        self._set_status(message, ok=False)
+
+    def _show_topup_dialog(self, address, coin_amount, coin):
+        self.stop_event.clear()
+        self.topup_arrr = coin_amount
+
+        content = QRDialogContent()
+        content.ids.zaddress_field.text = address
+        content.ids.price_field.text    = "%s %s" % (coin_amount, coin)
+        QRcode = QRCode()
+        if coin == "arrr":
+            coin_uri = "pirate:%s?amount=%s" % (address, coin_amount)
+        else:
+            coin_uri = "%s:%s?amount=%s" % (coin, address, coin_amount)
+        content.ids.qr_img.source = QRcode.generate_qr_code(coin_uri, coin)
+        self.topup_content = content
+
+        if self.topup_dialog:
+            try:
+                self.topup_dialog.dismiss()
+            except Exception:
+                pass
+            self.topup_dialog = None
+        self.topup_dialog = MDDialog(
+            title="Waiting for %s invoice to be paid..." % coin.upper(),
+            type="custom",
+            content_cls=content,
+            md_bg_color=get_color_from_hex(MeileColors.BLACK),
+            buttons=[
+                MDFlatButton(
+                    text="CANCEL",
+                    theme_text_color="Custom",
+                    text_color=get_color_from_hex(MeileColors.MEILE),
+                    on_release=self.cancel_topup
+                ),
+            ]
+        )
+        self.topup_dialog.open()
+        self._set_status("Waiting for %s payment..." % coin.upper(), ok=None)
+        if self.topup_poll_event:
+            self.topup_poll_event.cancel()
+        self.topup_poll_event = Clock.schedule_interval(self._check_topup, 6)
+
+    def _check_topup(self, dt):
+        if not self.topup_started or not self.zaddress:
+            return False
+        endpoint = "/v1/pirate/getbalance" if SMSConf.TOPUP_COIN == "arrr" else "/v1/pivx/getbalance"
+        self._plan_call("POST", endpoint,
+                        {"address": self.zaddress, "conf": 0},
+                        self._on_topup_balance)
+        return True
+
+    def _on_topup_balance(self, request, result):
+        data = self._parse(result) or {}
+        try:
+            balance = float(data.get("result", 0.0))
+        except Exception:
+            balance = 0.0
+        self.zaddress_balance = balance
+        try:
+            if self.topup_content:
+                self.topup_content.ids.status.text = "Received %s of %s %s" % (
+                    balance, self.topup_arrr, SMSConf.TOPUP_COIN.upper())
+        except Exception:
+            pass
+        if balance >= self.topup_arrr and self.topup_arrr > 0 and not self.topup_crediting:
+            self.topup_crediting = True
+            self._credit_topup()
+
+    def _credit_topup(self):
+        self._set_status("Payment detected - crediting balance...", ok=None)
+        self._plan_call("POST", HTTParams.API_SMS_TOPUP, {
+            "uuid"   : self.uuid,
+            "amount" : float(self.topup_amount),
+            "denom"  : "USD",
+            "coin"   : SMSConf.TOPUP_COIN,
+            "address": self.zaddress,
+        }, self._on_topup_credited)
+
+    def _on_topup_credited(self, request, result):
+        data = self._parse(result) or {}
+        if isinstance(data, dict) and data.get("balance") is not None:
+            self._apply_balance_payload(data)
+        self._close_topup_dialog()
+        self.topup_started   = False
+        self.topup_crediting = False
+        self._set_status("Top-up complete: $%.2f added" % float(self.topup_amount), ok=True)
+        self._toast("SMS balance topped up")
+
+    def _close_topup_dialog(self):
+        if self.topup_poll_event:
+            self.topup_poll_event.cancel()
+            self.topup_poll_event = None
+        self.stop_event.set()
+        if self.topup_dialog:
+            try:
+                self.topup_dialog.dismiss()
+            except Exception:
+                pass
+            self.topup_dialog = None
+        self.topup_content = None
+
+    def cancel_topup(self, *args):
+        self._close_topup_dialog()
+        self.topup_started   = False
+        self.topup_crediting = False
+        self._set_status("Top-up cancelled", ok=None)
+
+    # ------------------------------------------------------------------
+    # Countries (searchable list with flags)
+    # ------------------------------------------------------------------
+    def load_countries(self):
+        self._sppost("/country/retrieve_all", {}, self._on_countries)
 
     def _on_countries(self, request, result):
+        data = self._parse(result)
+        if not isinstance(data, list):
+            self._debug("Country load error: %s" % str(result)[:200])
+            return
+        self.countries = []
+        for country in data:
+            if not isinstance(country, dict):
+                continue
+            cid  = country.get("ID", country.get("id"))
+            name = country.get("name") or country.get("country")
+            if cid is None or not name:
+                continue
+            self.countries.append({"id": cid, "name": str(name), "raw": country})
+        self.countries.sort(key=lambda c: c["name"].lower())
+        for index, country in enumerate(self.countries):
+            country["index"] = index
+        self._render_countries(self._filtered_countries())
+        self._debug("Loaded %d countries" % len(self.countries))
+
+    def _filtered_countries(self):
+        if not self.country_filter:
+            return self.countries
+        return [c for c in self.countries if self.country_filter in c["name"].lower()]
+
+    def filter_countries(self, text):
+        self.country_filter = (text or "").strip().lower()
+        self._render_countries(self._filtered_countries())
+
+    def _render_countries(self, matches):
+        data = []
+        for country in matches[:500]:
+            data.append({
+                "country_text" : country["name"],
+                "flag_source"  : self._flag_source(country["raw"]),
+                "country_index": country["index"],
+                "is_selected"  : country["index"] == self.selected_index,
+            })
         try:
-            data = json.loads(result) if isinstance(result, str) else result
-            self.countries = {c["name"]: c["ID"] for c in data}
-            self.country_spinner.values = sorted(self.countries.keys())
+            rv = self.ids.country_rv
+            rv.data = data
+            rv.refresh_from_data()
         except Exception as e:
-            self.debug_label.text = f"Country load error: {e}"
+            print("SMSPoolScreen._render_countries: %s" % str(e))
+
+    def select_country(self, index):
+        try:
+            index = int(index)
+        except Exception:
+            return
+        if index < 0 or index >= len(self.countries):
+            return
+        self.selected_index   = index
+        self.selected_country = self.countries[index]
+        try:
+            self.ids.selected_country_label.text = self.selected_country["name"]
+            self.ids.selected_flag.source = self._flag_source(self.selected_country["raw"])
+        except Exception:
+            pass
+        # Re-render so the highlight follows the selection.
+        self._render_countries(self._filtered_countries())
+
+    @staticmethod
+    def _country_iso2(raw):
+        if not isinstance(raw, dict):
+            return ""
+        for key in ("short_name", "country_code", "code", "iso", "iso2",
+                    "alpha2", "iso_code"):
+            value = raw.get(key)
+            if value:
+                value = str(value).strip().lower()
+                if len(value) == 2:
+                    return value
+        name = raw.get("name") or raw.get("country")
+        if name:
+            try:
+                return OurWorld.our_world.get_country_ISO2(str(name)).lower()
+            except Exception:
+                pass
+        return ""
+
+    def _flag_source(self, raw):
+        iso2 = self._country_iso2(raw)
+        if not iso2:
+            return ""
+        relative = path.join("imgs", "flags", "%s.png" % iso2)
+        if path.exists(relative):
+            return relative
+        absolute = path.join(path.dirname(path.dirname(path.abspath(__file__))),
+                             "imgs", "flags", "%s.png" % iso2)
+        if path.exists(absolute):
+            return absolute
+        return relative
+
+    # ------------------------------------------------------------------
+    # Services (searchable list + "Not Listed / Other" fallback)
+    # ------------------------------------------------------------------
+    def load_services(self):
+        self._sppost("/service/retrieve_all", {}, self._on_services)
 
     def _on_services(self, request, result):
+        data = self._parse(result)
+        if not isinstance(data, list):
+            self._debug("Service load error: %s" % str(result)[:200])
+            return
+        self.services = {}
+        for service in data:
+            if not isinstance(service, dict):
+                continue
+            sid  = service.get("ID", service.get("id"))
+            name = service.get("name")
+            if sid is None or not name:
+                continue
+            self.services[str(name)] = sid
+        self._other_service = self._find_other_service()
+        if self.selected_service not in self.services:
+            # Preselect a real service so PURCHASE works straight away (the
+            # behaviour the old Spinner had with its first entry).
+            normal = sorted(n for n in self.services if n != self._other_service)
+            self.selected_service = normal[0] if normal else self._other_service
+        self._sync_selected_service()
+        self._debug("Loaded %d services" % len(self.services))
+
+    def _find_other_service(self):
+        '''Name of SMSPool's catch-all service ("Not Listed / Other / Any").
+
+        SMSPool ships that service with a real id, so the option is fully
+        purchasable.  Should SMSPool ever rename or drop it, the configured
+        label is added with no id instead: the option stays visible and
+        purchase() reports the problem rather than silently doing nothing.
+        '''
+        for name in sorted(self.services):
+            normalised = " ".join(str(name).strip().lower().split())
+            if normalised in SMSConf.OTHER_SERVICE_NAMES:
+                return name
+            if normalised.startswith("not listed"):
+                return name
+        label = SMSConf.OTHER_SERVICE_LABEL
+        if label not in self.services:
+            self.services[label] = None
+        return label
+
+    def _filtered_services(self):
+        names = sorted(n for n in self.services if n != self._other_service)
+        if self.service_filter:
+            names = [n for n in names if self.service_filter in n.lower()]
+        # The catch-all entry is always part of the list; when a search finds
+        # nothing it becomes the only row, so an unlisted service never
+        # dead-ends in an empty list.
+        if self._other_service and (not self.service_filter or not names):
+            names.append(self._other_service)
+        return names
+
+    def filter_services(self, text):
+        self.service_filter = (text or "").strip().lower()
+        self._render_services(self._filtered_services())
+
+    def _render_services(self, matches):
+        data = []
+        for name in matches:
+            data.append({
+                "service_text": name,
+                "is_selected" : name == self.selected_service,
+            })
         try:
-            data = json.loads(result) if isinstance(result, str) else result
-            self.services = {s["name"]: s["ID"] for s in data}
-            self.service_spinner.values = sorted(self.services.keys())
+            rv = self.ids.service_rv
+            rv.data = data
+            rv.refresh_from_data()
         except Exception as e:
-            self.debug_label.text = f"Service load error: {e}"
+            print("SMSPoolScreen._render_services: %s" % str(e))
 
-    def _fetch_pools(self, *_):
-        country = self.country_spinner.text
-        service = self.service_spinner.text
-        if country == "Select Country" or service == "Select Service":
+    def select_service(self, name):
+        name = str(name or "")
+        if name not in self.services:
             return
-        cid = self.countries.get(country)
-        sid = self.services.get(service)
-        if cid and sid:
-            self._api_post(
-                "/pool/retrieve_valid",
-                {"service": str(sid), "country": str(cid), "web": "1"},
-                self._on_pools,
-            )
+        self.selected_service = name
+        self._sync_selected_service()
 
-    def _on_pools(self, request, result):
+    def _sync_selected_service(self):
         try:
-            data = json.loads(result) if isinstance(result, str) else result
-            if isinstance(data, list):
-                self.pools = {p["name"]: p["pool"] for p in data if "name" in p}
-            else:
-                self.pools = {}
-            self.pool_spinner.values = ["Auto (Any)"] + list(self.pools.keys())
-        except Exception as e:
-            self.debug_label.text = f"Pool load error: {e}"
-
-    # ---------- Purchase ----------
-    def _purchase(self):
-        key = self.API_KEY.strip()
-        if not key:
-            self._set_status("Enter API key first", ok=False)
-            return
-        country = self.country_spinner.text
-        service = self.service_spinner.text
-        if country == "Select Country" or service == "Select Service":
-            self._set_status("Select country and service", ok=False)
-            return
-
-        cid = self.countries[country]
-        sid = self.services[service]
-        pool = self.pool_spinner.text
-        form = {
-            "key": key,
-            "service": str(sid),
-            "country": str(cid),
-        }
-        if pool != "Auto (Any)" and pool in self.pools:
-            form["pool"] = str(self.pools[pool])
-
-        self._set_status("Ordering...", ok=None)
-        self.debug_label.text = ""
-        # Correct endpoint per SMSPool docs
-        self._api_post(
-            "/purchase/sms",
-            form,
-            self._on_order_success,
-            self._on_order_error,
-        )
-
-    def _on_order_success(self, request, result):
-        raw = result if isinstance(result, str) else json.dumps(result)
-        self.debug_label.text = f"Order response:\n{raw}"
-        try:
-            data = json.loads(result) if isinstance(result, str) else result
+            self.ids.selected_service_label.text = (self.selected_service
+                                                    or "No service selected")
         except Exception:
-            self._set_status("Invalid response", ok=False)
-            return
+            pass
+        # Re-render so the highlight follows the selection.
+        self._render_services(self._filtered_services())
 
-        # SMSPool returns success=1 (int) on success
-        if str(data.get("success")) == "1":
-            self.current_order = {
-                "id": data.get("order_id") or data.get("orderid"),
-                "number": data.get("number") or data.get("phonenumber"),
-            }
-            self._set_status(
-                f"Order #{self.current_order['id']} active", ok=True
-            )
-            self.phone_label.text = str(self.current_order["number"])
-            self.sms_output.text = ""
-            if self.sms_check_event:
-                self.sms_check_event.cancel()
-            self.sms_check_event = Clock.schedule_interval(self._check_sms, 5)
-            self._refresh_balance(0)
-        else:
-            msg = data.get("message") or data.get("errors") or "unknown"
-            self._set_status(f"Order failed: {msg}", ok=False)
+    # ------------------------------------------------------------------
+    # Price / purchase
+    # ------------------------------------------------------------------
+    def service_id(self):
+        '''Id of the service currently selected in the list (or None).'''
+        if not self.selected_service:
+            return None
+        return self.services.get(self.selected_service)
+
+    def purchase(self):
+        if not self.API_KEY.strip():
+            self._set_status("SMSPool key missing in secrets", ok=False)
+            return
+        if self.selected_country is None:
+            self._set_status("Select a country first", ok=False)
+            return
+        if not self.selected_service:
+            self._set_status("Select a service", ok=False)
+            return
+        sid = self.service_id()
+        if sid is None:
+            self._set_status("Not listed on SMSPool - contact support", ok=False)
+            return
+        self._pending_service = self.selected_service
+        self._set_status("Fetching price...", ok=None)
+        try:
+            self.ids.purchase_btn.disabled = True
+        except Exception:
+            pass
+        self._sppost("/request/price", {
+            "key"    : self.API_KEY.strip(),
+            "country": str(self.selected_country["id"]),
+            "service": str(sid),
+        }, self._on_price)
+
+    def _on_price(self, request, result):
+        try:
+            self.ids.purchase_btn.disabled = False
+        except Exception:
+            pass
+        data  = self._parse(result) or {}
+        price = None
+        if isinstance(data, dict):
+            for key in ("price", "cost", "cost_price"):
+                if data.get(key) is not None:
+                    try:
+                        price = float(data[key])
+                        break
+                    except Exception:
+                        pass
+        if price is None or price <= 0:
+            message = data.get("message") if isinstance(data, dict) else None
+            self._set_status("Price unavailable: %s" % (message or "no pool"), ok=False)
+            self._debug("price response: %s" % str(result)[:200])
+            return
+        total = round(price * (1.0 + self.markup / 100.0), 6)
+        if self.balance < total:
+            missing = total - self.balance
+            self._set_status("Insufficient balance - top up $%.2f" % missing, ok=False)
+            self._toast("Insufficient balance (need $%.2f)" % total)
+            return
+        self._do_purchase(price)
+
+    def _do_purchase(self, price):
+        self._pending_price = price
+        self._set_status("Ordering number...", ok=None)
+        try:
+            self.ids.purchase_btn.disabled = True
+        except Exception:
+            pass
+        self._sppost("/purchase/sms", {
+            "key"    : self.API_KEY.strip(),
+            "country": str(self.selected_country["id"]),
+            "service": str(self.service_id()),
+        }, self._on_order_success, self._on_order_error)
 
     def _on_order_error(self, request, error):
-        self._set_status(f"Order error: {error}", ok=False)
-        self.debug_label.text = f"ERR: {error}"
-
-    # ---------- SMS polling ----------
-    def _check_sms(self, dt):
-        if not self.current_order:
-            return False
-        form = {
-            "key": self.API_KEY.strip(),
-            "orderid": str(self.current_order["id"]),
-        }
-        # Correct endpoint per SMSPool docs
-        self._api_post("/sms/check", form, self._on_sms_received)
-
-    def _on_sms_received(self, request, result):
         try:
-            data = json.loads(result) if isinstance(result, str) else result
+            self.ids.purchase_btn.disabled = False
         except Exception:
-            return
-        # status 3 = SMS received per SMSPool
-        status = str(data.get("status", ""))
-        sms = data.get("sms") or data.get("full_sms")
-        if status == "3" and sms:
-            existing = self.sms_output.text or ""
-            if sms not in existing:
-                self.sms_output.text = f"[RECEIVED]\n{sms}\n\n" + existing
-                self._set_status("SMS received", ok=True)
-        elif status == "6":
-            self._set_status("Order refunded/cancelled", ok=False)
-            if self.sms_check_event:
-                self.sms_check_event.cancel()
-                self.sms_check_event = None
+            pass
+        self._set_status("Order error: %s" % str(error)[:120], ok=False)
+        self._debug("Purchase ERR: %s" % str(error))
 
-    # ---------- Cancel ----------
-    def _cancel_order(self):
-        if not self.current_order:
-            self._set_status("No active order", ok=False)
+    def _on_order_success(self, request, result):
+        try:
+            self.ids.purchase_btn.disabled = False
+        except Exception:
+            pass
+        self._debug("Order response: %s" % str(result)[:300])
+        data = self._parse(result)
+        if not isinstance(data, dict):
+            self._set_status("Invalid order response", ok=False)
             return
-        form = {
-            "key": self.API_KEY.strip(),
-            "orderid": str(self.current_order["id"]),
+        if str(data.get("success")) != "1":
+            message = data.get("message") or data.get("errors") or "unknown"
+            self._set_status("Order failed: %s" % message, ok=False)
+            return
+
+        try:
+            cost = float(data.get("cost"))
+        except Exception:
+            cost = float(self._pending_price or 0.0)
+
+        self.current_order = {
+            "id"        : data.get("order_id") or data.get("orderid"),
+            "number"    : data.get("number") or data.get("phonenumber"),
+            "country"   : self.selected_country["name"],
+            "country_id": self.selected_country["id"],
+            "service"   : self._pending_service,
+            "service_id": self.service_id(),
+            "cost"      : cost,
+            "refunded"  : False,
         }
-        # Correct endpoint per SMSPool docs
-        self._api_post("/sms/cancel", form, self._on_cancel_success)
+        try:
+            self.ids.phone_label.text = str(self.current_order["number"])
+            self.ids.sms_output.text  = ""
+        except Exception:
+            pass
+        # /purchase/sms reports the real expiry ("expiration" unix ts or
+        # "expires_in" seconds). Prefer it over the configured fallback.
+        self._order_expiration = None
+        expiration = data.get("expiration")
+        if expiration:
+            try:
+                self._order_expiration = float(expiration)
+            except Exception:
+                self._order_expiration = None
+        if self._order_expiration is None:
+            try:
+                expires_in = float(data.get("expires_in") or 0)
+            except Exception:
+                expires_in = 0.0
+            if expires_in > 0:
+                self._order_expiration = time() + expires_in
+        self._set_status("Order #%s active" % str(self.current_order["id"]), ok=True)
+        # Debit the Meile ledger, then start the countdown/inbox polling.
+        self._debit_order(cost)
+        self._start_order_tracking()
+
+    def _debit_order(self, cost):
+        order = self.current_order
+        if not order:
+            return
+        self._plan_call("POST", HTTParams.API_SMS_PURCHASE, {
+            "uuid"      : self.uuid,
+            "order_id"  : str(order["id"]),
+            "country_id": str(order["country_id"]),
+            "country"   : order["country"],
+            "service_id": str(order["service_id"]),
+            "service"   : str(order["service"]),
+            "phone"     : str(order["number"]),
+            "cost"      : cost,
+        }, self._on_order_debited, on_error=self._on_order_debit_error)
+
+    def _on_order_debited(self, request, result):
+        data = self._parse(result) or {}
+        if isinstance(data, dict) and data.get("balance") is not None:
+            self._apply_balance_payload(data)
+        # SMSPool may charge a different price than quoted; remember it so a
+        # refund credits back exactly what was taken.
+        if isinstance(data, dict) and data.get("charged") is not None:
+            try:
+                self.current_order["charged"] = float(data["charged"])
+            except Exception:
+                pass
+
+    def _on_order_debit_error(self, request, error):
+        self._debug("Debit failed: %s" % str(error)[:200])
+        self._set_status("Balance debit failed - releasing number...", ok=False)
+        # Never leave a provider order running that was not paid for.
+        if self.current_order and self.current_order.get("id"):
+            self._sppost("/sms/cancel", {
+                "key"    : self.API_KEY.strip(),
+                "orderid": str(self.current_order["id"]),
+            }, self._on_rollback_cancel, self._on_rollback_cancel_error)
+        else:
+            self._reset_order()
+
+    def _on_rollback_cancel(self, request, result):
+        self._reset_order()
+        self._set_status("Order cancelled (balance debit failed)", ok=False)
+
+    def _on_rollback_cancel_error(self, request, error):
+        self._reset_order()
+        self._set_status("Debit failed and provider release failed", ok=False)
+
+    # ------------------------------------------------------------------
+    # Order tracking (countdown + inbox polling)
+    # ------------------------------------------------------------------
+    def _start_order_tracking(self):
+        self._stop_polling()
+        self.order_deadline = self._order_expiration
+        if not self.order_deadline or self.order_deadline <= time():
+            self.order_deadline = time() + float(SMSConf.ORDER_SECONDS)
+        self.countdown_event = Clock.schedule_interval(self._tick_countdown, 1)
+        self._tick_countdown(0)
+        self.sms_check_event = Clock.schedule_interval(
+            self._check_sms, float(SMSConf.POLL_INTERVAL))
+
+    def _stop_polling(self):
         if self.sms_check_event:
             self.sms_check_event.cancel()
             self.sms_check_event = None
+        if self.countdown_event:
+            self.countdown_event.cancel()
+            self.countdown_event = None
+
+    def _tick_countdown(self, dt):
+        if not self.order_deadline:
+            return False
+        remaining = int(self.order_deadline - time())
+        if remaining <= 0:
+            try:
+                self.ids.countdown_label.text = "expired"
+            except Exception:
+                pass
+            self.countdown_event = None
+            self._set_status("Number expired - cancel to refund", ok=False)
+            return False
+        minutes, seconds = divmod(remaining, 60)
+        try:
+            self.ids.countdown_label.text = "%02d:%02d" % (minutes, seconds)
+        except Exception:
+            pass
+        return True
+
+    def _check_sms(self, dt):
+        if not self.current_order or not self.current_order.get("id"):
+            self.sms_check_event = None
+            return False
+        if not self.API_KEY.strip():
+            self.sms_check_event = None
+            return False
+        self._sppost("/sms/check", {
+            "key"    : self.API_KEY.strip(),
+            "orderid": str(self.current_order["id"]),
+        }, self._on_sms_received, self._on_sms_check_error)
+        return True
+
+    def _on_sms_check_error(self, request, error):
+        self._debug("sms/check error: %s" % str(error)[:150])
+
+    def _on_sms_received(self, request, result):
+        data = self._parse(result)
+        if not isinstance(data, dict):
+            return
+        status = str(data.get("status", ""))
+        sms    = data.get("sms") or data.get("full_sms")
+        if status == "3" and sms:
+            existing = ""
+            try:
+                existing = self.ids.sms_output.text or ""
+            except Exception:
+                pass
+            if sms not in existing:
+                try:
+                    self.ids.sms_output.text = "[RECEIVED]\n%s\n\n%s" % (sms, existing)
+                except Exception:
+                    pass
+            self._set_status("SMS received", ok=True)
+            self._stop_polling()
+        elif status in ("2", "5", "6"):
+            # Terminal states documented by SMSPool: 2 expired, 5 cancelled,
+            # 6 refunded (the provider already credited its own balance back).
+            labels = {
+                "2": "Number expired - refunding",
+                "5": "Order cancelled by provider - refunding",
+                "6": "Number released by provider - refunding",
+            }
+            self._set_status(labels.get(status, "Order closed"), ok=False)
+            self._stop_polling()
+            self._refund_order()
+
+    # ------------------------------------------------------------------
+    # Cancel + refund
+    # ------------------------------------------------------------------
+    def cancel_order(self):
+        if not self.current_order or not self.current_order.get("id"):
+            self._set_status("No active order", ok=False)
+            return
+        if not self.API_KEY.strip():
+            self._set_status("SMSPool key missing in secrets", ok=False)
+            return
+        self._set_status("Cancelling order...", ok=None)
+        self._stop_polling()
+        self._sppost("/sms/cancel", {
+            "key"    : self.API_KEY.strip(),
+            "orderid": str(self.current_order["id"]),
+        }, self._on_cancel_success, self._on_cancel_error)
 
     def _on_cancel_success(self, request, result):
-        try:
-            data = json.loads(result) if isinstance(result, str) else result
-        except Exception:
-            self._set_status("Cancel: bad response", ok=False)
-            return
-        if str(data.get("success")) == "1":
-            self._set_status("Order cancelled", ok=None)
-            self.phone_label.text = "---"
-            self.current_order = None
-            self.sms_output.text = "[CANCELLED]\n\n" + (self.sms_output.text or "")
-            self._refresh_balance(0)
+        data = self._parse(result)
+        if isinstance(data, dict) and str(data.get("success")) == "1":
+            try:
+                self.ids.sms_output.text = "[CANCELLED]\n\n" + (self.ids.sms_output.text or "")
+            except Exception:
+                pass
+            self._set_status("Order cancelled - refunding balance...", ok=None)
+            self._refund_order()
         else:
-            msg = data.get("message", "unknown")
-            self._set_status(f"Cancel failed: {msg}", ok=False)
-            
+            message = data.get("message") if isinstance(data, dict) else None
+            self._set_status("Cancel failed: %s" % (message or "unknown"), ok=False)
+
+    def _on_cancel_error(self, request, error):
+        self._set_status("Cancel error: %s" % str(error)[:120], ok=False)
+
+    def _refund_order(self):
+        order = self.current_order
+        if not order or not order.get("id") or order.get("refunded"):
+            return
+        order["refunded"] = True
+        payload = {"uuid": self.uuid, "order_id": str(order["id"])}
+        if order.get("charged") is not None:
+            payload["amount"] = order["charged"]
+        self._plan_call("POST", HTTParams.API_SMS_REFUND, payload,
+                        self._on_refunded, on_error=self._on_refund_error)
+
+    def _on_refunded(self, request, result):
+        data = self._parse(result) or {}
+        if isinstance(data, dict) and data.get("balance") is not None:
+            self._apply_balance_payload(data)
+        if isinstance(data, dict) and data.get("amount") is not None:
+            self._toast("Refunded $%s" % str(data["amount"]))
+        self._set_status("Order cancelled & refunded", ok=None)
+        self._reset_order()
+
+    def _on_refund_error(self, request, error):
+        self._debug("Refund failed: %s" % str(error)[:200])
+        self._set_status("Cancelled, but refund failed - contact support", ok=False)
+        self._reset_order()
+
+    # ------------------------------------------------------------------
+    # Misc
+    # ------------------------------------------------------------------
+    def copy_number(self):
+        try:
+            number = self.ids.phone_label.text
+        except Exception:
+            number = ""
+        if number and number not in ("---", ""):
+            Clipboard.copy(number)
+            self._toast("Phone number copied")
+        else:
+            self._toast("No number to copy")
+
+    def copy_uuid(self, *args):
+        '''Copy the wallet UUID shown in the header box to the clipboard.'''
+        if not self.uuid:
+            self._toast("No wallet UUID to copy")
+            return
+        try:
+            Clipboard.copy(str(self.uuid))
+            self._toast("Wallet address copied")
+        except Exception as e:
+            self._debug("Clipboard error: %s" % str(e)[:120])
+
+    def open_arrr_exchange(self, *args):
+        '''Send the user to the exchange where ARRR can be bought.
+
+        The invoice in the top-up dialog is paid in Pirate Chain (ARRR), which
+        is not sold on the usual exchanges - so the top-up card offers a
+        one click hop to NonKYC (see SMSConf.ARRR_EXCHANGE_URL).
+        '''
+        import webbrowser
+
+        webbrowser.open(SMSConf.ARRR_EXCHANGE_URL)
+
+    def _reset_order(self):
+        self.current_order     = None
+        self.order_deadline    = None
+        self._order_expiration = None
+        self._stop_polling()
+        try:
+            self.ids.phone_label.text     = "---"
+            self.ids.countdown_label.text = "--:--"
+        except Exception:
+            pass
+
     def set_previous_screen(self):
+        self._stop_polling()
+        self._close_topup_dialog()
         Meile.app.root.remove_widget(self)
         Meile.app.root.transistion = SlideTransition(direction="down")
         Meile.app.root.current = WindowNames.MAIN_WINDOW
+
+
+
+
+
