@@ -2824,7 +2824,7 @@ class SMSPoolScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         # SMSPool credentials (kept in the git-ignored secrets module)
-        self.API_KEY = getattr(scrtsxx, "SMSPOOL_API_KEY", "") or "RkjSU0lPQpy2yRB7YgJUhAOWu5ci45YB"
+        self.API_KEY = getattr(scrtsxx, "SMSPOOL_API_KEY", "") or ""
 
         self.uuid             = None
         self.balance          = 0.0
