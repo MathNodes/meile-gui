@@ -3377,40 +3377,57 @@ WindowManager:
             
             
 # SMS POOL SCREEN
+#
+# Palette: MeileColors.MEILE is the primary/accent colour, every panel and
+# control sits on MeileColors.DIALOG_BG_COLOR2 or #191919 so the screen
+# matches the rest of the Meile GUI.
 
-#:import Window kivy.core.window.Window
-#:set BG_DARK [0.06, 0.08, 0.12, 1]
-#:set BG_CARD [0.10, 0.13, 0.19, 1]
-#:set BG_INPUT [0.14, 0.17, 0.24, 1]
-#:set ACCENT [0.0, 0.85, 0.75, 1]
-#:set ACCENT_DIM [0.0, 0.55, 0.50, 1]
-#:set DANGER [0.95, 0.28, 0.38, 1]
-#:set TEXT_MAIN [0.92, 0.95, 1.0, 1]
-#:set TEXT_DIM [0.60, 0.68, 0.78, 1]
-#:set SUCCESS [0.30, 0.90, 0.55, 1]
+#:set MEILE get_color_from_hex(MeileColors.MEILE)
+#:set MEILE_DIM get_color_from_hex("#c9940d")
+#:set BG_DARK get_color_from_hex(MeileColors.DIALOG_BG_COLOR2)
+#:set BG_CARD get_color_from_hex("#191919")
+#:set BG_INPUT get_color_from_hex(MeileColors.DIALOG_BG_COLOR2)
+#:set BG_HOVER get_color_from_hex("#2b2b2b")
+#:set BORDER get_color_from_hex("#2f2f2f")
+#:set TEXT_MAIN get_color_from_hex("#ededed")
+#:set TEXT_DIM get_color_from_hex("#8d8d8d")
 
 <NeonLabel@Label>:
-    color: TEXT_MAIN
-    font_size: '14sp'
+    color: TEXT_DIM
+    font_size: '12sp'
     halign: 'left'
     valign: 'middle'
     text_size: self.size
     size_hint_y: None
-    height: '24dp'
+    height: '26dp'
 
 <SectionTitle@Label>:
-    color: ACCENT
+    color: MEILE
     font_size: '11sp'
     bold: True
     halign: 'left'
     valign: 'middle'
     text_size: self.size
     size_hint_y: None
-    height: '20dp'
+    height: '18dp'
 
+# Little state light in the ACTIVE ORDER card, recoloured by
+# SMSPoolScreen._set_status (green / red / meile hex string).
+<StatusDot@Widget>:
+    dot_color: '#8d8d8d'
+    size_hint: None, None
+    size: '10dp', '10dp'
+    canvas:
+        Color:
+            rgba: get_color_from_hex(self.dot_color)
+        Ellipse:
+            pos: self.pos
+            size: self.size
+
+# Dark panel every block of the SMS screen lives in
 <Card@BoxLayout>:
     orientation: 'vertical'
-    padding: '14dp'
+    padding: '12dp'
     spacing: '8dp'
     size_hint_y: None
     canvas.before:
@@ -3421,7 +3438,7 @@ WindowManager:
             size: self.size
             radius: [10,]
         Color:
-            rgba: 0.15, 0.20, 0.30, 1
+            rgba: BORDER
         Line:
             rounded_rectangle: (self.x, self.y, self.width, self.height, 10)
             width: 1
@@ -3429,13 +3446,13 @@ WindowManager:
 <StyledInput@TextInput>:
     background_color: 0, 0, 0, 0
     foreground_color: TEXT_MAIN
-    cursor_color: ACCENT
+    cursor_color: MEILE
     hint_text_color: TEXT_DIM
-    selection_color: ACCENT_DIM
-    padding: ['12dp', '10dp']
-    font_size: '14sp'
+    selection_color: MEILE_DIM
+    padding: ['10dp', '8dp']
+    font_size: '13sp'
     size_hint_y: None
-    height: '42dp'
+    height: '38dp'
     multiline: False
     canvas.before:
         Color:
@@ -3445,261 +3462,602 @@ WindowManager:
             size: self.size
             radius: [8,]
         Color:
-            rgba: ACCENT if self.focus else (0.20, 0.25, 0.35, 1)
+            rgba: MEILE if self.focus else BORDER
         Line:
             rounded_rectangle: (self.x, self.y, self.width, self.height, 8)
             width: 1.2 if self.focus else 1
 
-<StyledSpinner@Spinner>:
+# Flat action button: MeileColors.MEILE background, black label
+<MeileButton@Button>:
     background_color: 0, 0, 0, 0
     background_normal: ''
-    color: TEXT_MAIN
-    font_size: '14sp'
-    size_hint_y: None
-    height: '42dp'
+    color: (0, 0, 0, 1) if not self.disabled else (0.35, 0.35, 0.35, 1)
+    bold: True
+    font_size: '13sp'
+    size_hint: None, None
+    height: '40dp'
     canvas.before:
         Color:
-            rgba: BG_INPUT
+            rgba: BG_HOVER if self.disabled else (MEILE_DIM if self.state == 'down' else MEILE)
         RoundedRectangle:
             pos: self.pos
             size: self.size
             radius: [8,]
-        Color:
-            rgba: 0.20, 0.25, 0.35, 1
-        Line:
-            rounded_rectangle: (self.x, self.y, self.width, self.height, 8)
-            width: 1
 
-<PrimaryButton@Button>:
+# Pill shaped preset button ($5, $10, ... - see SMSConf.TOPUP_PRESETS)
+<ChipButton@Button>:
     background_color: 0, 0, 0, 0
     background_normal: ''
-    color: 0.02, 0.05, 0.08, 1
+    color: (0, 0, 0, 1) if not self.disabled else (0.35, 0.35, 0.35, 1)
     bold: True
-    font_size: '15sp'
-    size_hint_y: None
-    height: '48dp'
+    font_size: '12sp'
+    size_hint: None, None
+    width: '52dp'
+    height: '30dp'
     canvas.before:
         Color:
-            rgba: ACCENT if self.state == 'normal' else ACCENT_DIM
+            rgba: BG_HOVER if self.disabled else (MEILE_DIM if self.state == 'down' else MEILE)
         RoundedRectangle:
             pos: self.pos
             size: self.size
-            radius: [10,]
+            radius: [15,]
 
-<DangerButton@Button>:
-    background_color: 0, 0, 0, 0
-    background_normal: ''
-    color: 1, 1, 1, 1
-    bold: True
-    font_size: '14sp'
+# One selectable country of the searchable RecycleView on SMSPoolScreen
+<SMSCountryRow>:
+    orientation: 'horizontal'
+    padding: '8dp', '2dp'
+    spacing: '8dp'
     size_hint_y: None
-    height: '44dp'
-    canvas.before:
-        Color:
-            rgba: DANGER if self.state == 'normal' else (0.75, 0.20, 0.28, 1)
-        RoundedRectangle:
-            pos: self.pos
-            size: self.size
-            radius: [10,]
+    height: '36dp'
+    radius: [6,]
+    elevation: 0
+    ripple_behavior: False
+    md_bg_color: MEILE if root.is_selected else (BG_HOVER if root.hovered else BG_CARD)
+
+    Image:
+        source: root.flag_source
+        size_hint: None, None
+        size: '26dp', '18dp'
+        pos_hint: {'center_y': .5}
+        allow_stretch: True
+        keep_ratio: True
+
+    Label:
+        text: root.country_text
+        color: (0, 0, 0, 1) if root.is_selected else (TEXT_MAIN if root.hovered else TEXT_DIM)
+        font_size: '13sp'
+        bold: root.is_selected
+        halign: 'left'
+        valign: 'middle'
+        text_size: self.size
+        shorten: True
+        shorten_from: 'right'
+
+# One selectable service of the searchable RecycleView on SMSPoolScreen
+<SMSServiceRow>:
+    orientation: 'horizontal'
+    padding: '8dp', '2dp'
+    spacing: '8dp'
+    size_hint_y: None
+    height: '36dp'
+    radius: [6,]
+    elevation: 0
+    ripple_behavior: False
+    md_bg_color: MEILE if root.is_selected else (BG_HOVER if root.hovered else BG_CARD)
+
+    Label:
+        text: root.service_text
+        color: (0, 0, 0, 1) if root.is_selected else (TEXT_MAIN if root.hovered else TEXT_DIM)
+        font_size: '13sp'
+        bold: root.is_selected
+        halign: 'left'
+        valign: 'middle'
+        text_size: self.size
+        shorten: True
+        shorten_from: 'right'
 
 <SMSPoolScreen>:
     balance_label: balance_label
-    country_spinner: country_spinner
-    service_spinner: service_spinner
-    pool_spinner: pool_spinner
+    balance_big: balance_big
+    uuid_block: uuid_block
+    uuid_label: uuid_label
+    uuid_hint: uuid_hint
+    copy_uuid_btn: copy_uuid_btn
+    topup_amount_input: topup_amount_input
+    topup_btn: topup_btn
+    get_arrr_btn: get_arrr_btn
+    country_search: country_search
+    country_rv: country_rv
+    selected_flag: selected_flag
+    selected_country_label: selected_country_label
+    service_search: service_search
+    service_rv: service_rv
+    selected_service_label: selected_service_label
     purchase_btn: purchase_btn
     order_status: order_status
-    phone_label: phone_label
-    debug_label: debug_label
-    sms_output: sms_output
-    cancel_btn: cancel_btn
     status_dot: status_dot
+    phone_label: phone_label
+    copy_btn: copy_btn
+    countdown_label: countdown_label
+    cancel_btn: cancel_btn
+    sms_output: sms_output
+    debug_label: debug_label
 
-    orientation: 'vertical'
-    padding: '14dp'
-    spacing: '12dp'
-
-    canvas.before:
-        Color:
-            rgba: BG_DARK
-        Rectangle:
-            pos: self.pos
-            size: self.size
-
-    # Header
+    # Kivy's Screen is a RelativeLayout, so the header and the body need an
+    # explicit vertical BoxLayout to be stacked instead of overlapping.
     BoxLayout:
-        size_hint_y: None
-        height: '56dp'
+        orientation: 'vertical'
+        padding: '12dp'
         spacing: '10dp'
 
-        Widget:
-            size_hint_x: None
-            width: '8dp'
-            canvas:
-                Color:
-                    rgba: ACCENT
-                RoundedRectangle:
-                    pos: self.pos
-                    size: self.size
-                    radius: [3,]
+        canvas.before:
+            Color:
+                rgba: BG_DARK
+            Rectangle:
+                pos: self.pos
+                size: self.size
 
+        # ── Header: back arrow, title, wallet UUID and wallet readout ──
         BoxLayout:
-            orientation: 'vertical'
-            Label:
-                text: 'SMSPOOL'
-                color: TEXT_MAIN
-                font_size: '22sp'
-                bold: True
-                halign: 'left'
-                valign: 'bottom'
-                text_size: self.size
-            Label:
-                text: 'Virtual Number Terminal'
-                color: TEXT_DIM
-                font_size: '11sp'
-                halign: 'left'
-                valign: 'top'
-                text_size: self.size
-
-        BoxLayout:
-            size_hint_x: None
-            width: '160dp'
-            padding: '10dp', '6dp'
-            canvas.before:
-                Color:
-                    rgba: BG_CARD
-                RoundedRectangle:
-                    pos: self.pos
-                    size: self.size
-                    radius: [8,]
-            Label:
-                id: balance_label
-                text: 'Balance: ---'
-                color: SUCCESS
-                font_size: '13sp'
-                bold: True
-
-    ScrollView:
-        do_scroll_x: False
-        bar_width: '4dp'
-        bar_color: ACCENT
-        bar_inactive_color: 0.2, 0.2, 0.3, 0.5
-
-        BoxLayout:
-            orientation: 'vertical'
             size_hint_y: None
-            height: self.minimum_height
-            spacing: '12dp'
-            padding: 0, 0, 0, '10dp'
+            height: '62dp'
+            spacing: '10dp'
 
-            # Selection card
-            Card:
-                height: self.minimum_height
-                SectionTitle:
-                    text: 'ORDER CONFIGURATION'
-                NeonLabel:
-                    text: 'Country'
-                StyledSpinner:
-                    id: country_spinner
-                    text: 'Select Country'
-                NeonLabel:
-                    text: 'Service'
-                StyledSpinner:
-                    id: service_spinner
-                    text: 'Select Service'
-                NeonLabel:
-                    text: 'Pool (optional)'
-                StyledSpinner:
-                    id: pool_spinner
-                    text: 'Auto (Any)'
-                PrimaryButton:
-                    id: purchase_btn
-                    text: 'PURCHASE NUMBER'
-                    on_press: root._purchase()
+            MDIconButton:
+                icon: 'arrow-left'
+                size_hint_x: None
+                width: '38dp'
+                pos_hint: {'center_y': .5}
+                theme_text_color: 'Custom'
+                text_color: MEILE
+                on_release: root.set_previous_screen()
 
-            # Order status card
-            Card:
-                height: self.minimum_height
-                SectionTitle:
-                    text: 'ACTIVE ORDER'
-                BoxLayout:
-                    size_hint_y: None
-                    height: '28dp'
-                    spacing: '8dp'
-                    Widget:
-                        id: status_dot
-                        size_hint: None, None
-                        size: '10dp', '10dp'
-                        pos_hint: {'center_y': 0.5}
-                        canvas:
-                            Color:
-                                rgba: TEXT_DIM
-                            Ellipse:
-                                pos: self.pos
-                                size: self.size
-                    NeonLabel:
-                        id: order_status
-                        text: 'Idle'
-                        height: '28dp'
-                BoxLayout:
-                    size_hint_y: None
-                    height: '48dp'
-                    padding: '10dp', '8dp'
-                    canvas.before:
-                        Color:
-                            rgba: BG_INPUT
-                        RoundedRectangle:
-                            pos: self.pos
-                            size: self.size
-                            radius: [8,]
-                    Label:
-                        id: phone_label
-                        text: '---'
-                        color: ACCENT
-                        font_size: '18sp'
-                        bold: True
-                        halign: 'center'
-                DangerButton:
-                    id: cancel_btn
-                    text: 'CANCEL ORDER'
-                    on_press: root._cancel_order()
-
-            # SMS Card
-            Card:
-                height: '260dp'
-                SectionTitle:
-                    text: 'INBOX'
-                StyledInput:
-                    id: sms_output
-                    readonly: True
-                    multiline: True
-                    hint_text: 'Waiting for SMS...'
-                    size_hint_y: 1
-                    height: self.height
-
-            # Debug
-            Card:
-                height: self.minimum_height
-                SectionTitle:
-                    text: 'DEBUG LOG'
+            # Fixed width (same as the wallet readout on the right) so the
+            # wallet address block between the two sits in the middle.
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint_x: None
+                width: '150dp'
                 Label:
-                    id: debug_label
-                    text: ''
+                    text: 'MEILESMS'
+                    color: TEXT_MAIN
+                    font_size: '19sp'
+                    bold: True
+                    halign: 'left'
+                    valign: 'bottom'
+                    text_size: self.size
+                Label:
+                    text: 'Virtual Number Terminal'
                     color: TEXT_DIM
-                    font_size: '11sp'
+                    font_size: '10sp'
                     halign: 'left'
                     valign: 'top'
-                    text_size: self.width, None
-                    size_hint_y: None
-                    height: max(self.texture_size[1], 40)
-    ActionBar:
-        background_normal: ''
-        background_down: ''
-        background_color: get_color_from_hex("#121212")
+                    text_size: self.size
 
-        ActionView:
-            ActionPrevious:
-                icon: "arrow-left-circle"
-                title: 'Go Back'
-                with_previous: True
-                on_release: root.set_previous_screen()
+            Widget:
+
+            # ── Wallet address (UUID) + copy icon ──
+            BoxLayout:
+                id: uuid_block
+                orientation: 'vertical'
+                size_hint_x: None
+                width: '460dp'
+                spacing: '2dp'
+
+                Widget:
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: '42dp'
+                    spacing: '6dp'
+
+                    Label:
+                        id: uuid_label
+                        text: '-'
+                        color: MEILE
+                        font_size: '12sp'
+                        bold: True
+                        halign: 'center'
+                        valign: 'middle'
+                        text_size: self.size
+                        shorten: True
+                        shorten_from: 'center'
+                        canvas.before:
+                            Color:
+                                rgba: BG_INPUT
+                            RoundedRectangle:
+                                pos: self.pos
+                                size: self.size
+                                radius: [8,]
+                            Color:
+                                rgba: BORDER
+                            Line:
+                                rounded_rectangle: (self.x, self.y, self.width, self.height, 8)
+                                width: 1
+
+                    MDIconButton:
+                        id: copy_uuid_btn
+                        icon: 'content-copy'
+                        icon_size: '18sp'
+                        theme_text_color: 'Custom'
+                        text_color: MEILE
+                        on_release: root.copy_uuid()
+
+                Label:
+                    id: uuid_hint
+                    text: 'This is your wallet address. Please save this somewhere safe.'
+                    color: TEXT_DIM
+                    font_size: '9sp'
+                    halign: 'left'
+                    valign: 'top'
+                    text_size: self.size
+                    shorten: True
+                    shorten_from: 'right'
+                    size_hint_y: None
+                    height: '14dp'
+
+                Widget:
+
+            Widget:
+
+            BoxLayout:
+                size_hint_x: None
+                width: '150dp'
+                padding: '10dp', '4dp'
+                orientation: 'vertical'
+                canvas.before:
+                    Color:
+                        rgba: BG_CARD
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [8,]
+                    Color:
+                        rgba: BORDER
+                    Line:
+                        rounded_rectangle: (self.x, self.y, self.width, self.height, 8)
+                        width: 1
+                Label:
+                    text: 'SMS WALLET'
+                    color: TEXT_DIM
+                    font_size: '9sp'
+                    bold: True
+                    halign: 'left'
+                    valign: 'middle'
+                    text_size: self.size
+                Label:
+                    id: balance_label
+                    text: '---'
+                    color: MEILE
+                    font_size: '14sp'
+                    bold: True
+                    halign: 'left'
+                    valign: 'middle'
+                    text_size: self.size
+
+        ScrollView:
+            do_scroll_x: False
+            bar_width: '4dp'
+            bar_color: MEILE
+            bar_inactive_color: 0.3, 0.3, 0.3, 0.4
+
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint_y: None
+                height: self.minimum_height
+                spacing: '10dp'
+                padding: 0, 0, 0, '10dp'
+    
+                # ── Country | Service (two columns, one row) ──
+                BoxLayout:
+                    size_hint_y: None
+                    height: self.minimum_height
+                    spacing: '10dp'
+    
+                    Card:
+                        size_hint_x: 0.55
+                        size_hint_y: None
+                        height: '330dp'
+                        SectionTitle:
+                            text: 'COUNTRY'
+                        StyledInput:
+                            id: country_search
+                            hint_text: 'Search country...'
+                            on_text: root.filter_countries(self.text)
+                        BoxLayout:
+                            size_hint_y: None
+                            height: '22dp'
+                            spacing: '8dp'
+                            Image:
+                                id: selected_flag
+                                size_hint: None, None
+                                size: '26dp', '18dp'
+                                pos_hint: {'center_y': .5}
+                                allow_stretch: True
+                                keep_ratio: True
+                            Label:
+                                id: selected_country_label
+                                text: 'No country selected'
+                                color: TEXT_DIM
+                                font_size: '12sp'
+                                halign: 'left'
+                                valign: 'middle'
+                                text_size: self.size
+                        RecycleView:
+                            id: country_rv
+                            viewclass: 'SMSCountryRow'
+                            size_hint_y: 1
+                            scroll_type: ['bars', 'content']
+                            bar_width: '3dp'
+                            bar_color: MEILE
+                            bar_inactive_color: 0.3, 0.3, 0.3, 0.4
+                            RecycleBoxLayout:
+                                default_size: None, dp(36)
+                                default_size_hint: 1, None
+                                size_hint_y: None
+                                height: self.minimum_height
+                                orientation: 'vertical'
+                                spacing: '4dp'
+    
+                    Card:
+                        size_hint_x: 0.45
+                        size_hint_y: None
+                        height: '330dp'
+                        SectionTitle:
+                            text: 'SERVICE'
+                        StyledInput:
+                            id: service_search
+                            hint_text: 'Search service...'
+                            on_text: root.filter_services(self.text)
+                        BoxLayout:
+                            size_hint_y: None
+                            height: '22dp'
+                            spacing: '8dp'
+                            Label:
+                                id: selected_service_label
+                                text: 'No service selected'
+                                color: TEXT_DIM
+                                font_size: '12sp'
+                                halign: 'left'
+                                valign: 'middle'
+                                text_size: self.size
+                        RecycleView:
+                            id: service_rv
+                            viewclass: 'SMSServiceRow'
+                            size_hint_y: 1
+                            scroll_type: ['bars', 'content']
+                            bar_width: '3dp'
+                            bar_color: MEILE
+                            bar_inactive_color: 0.3, 0.3, 0.3, 0.4
+                            RecycleBoxLayout:
+                                default_size: None, dp(36)
+                                default_size_hint: 1, None
+                                size_hint_y: None
+                                height: self.minimum_height
+                                orientation: 'vertical'
+                                spacing: '4dp'
+                        BoxLayout:
+                            size_hint_y: None
+                            height: '46dp'
+                            spacing: '8dp'
+                            NeonLabel:
+                                text: "Rented from an SMS provider on purchase. Cancel inside the countdown for an automatic refund. If you don't receive the SMS within 5 minutes, cancel for a refund and try ordering another one'
+                                font_size: '11sp'
+                                height: '46dp'
+                            MeileButton:
+                                id: purchase_btn
+                                text: 'PURCHASE NUMBER'
+                                width: '180dp'
+                                on_press: root.purchase()
+    
+                # ── Wallet | Top up with Pirate Chain ──
+                BoxLayout:
+                    size_hint_y: None
+                    height: self.minimum_height
+                    spacing: '10dp'
+    
+                    Card:
+                        size_hint_x: 0.4
+                        size_hint_y: None
+                        height: '180dp'
+                        SectionTitle:
+                            text: 'SMS WALLET'
+                        Label:
+                            id: balance_big
+                            text: '$0.00'
+                            color: MEILE
+                            font_size: '28sp'
+                            bold: True
+                            halign: 'left'
+                            valign: 'middle'
+                            text_size: self.size
+                            size_hint_y: None
+                            height: '40dp'
+                        NeonLabel:
+                            text: 'Balance is held in USD. Refunds land here instantly.'
+                            font_size: '11sp'
+                        Widget:
+                        MeileButton:
+                            id: refresh_btn
+                            text: 'REFRESH'
+                            width: '110dp'
+                            height: '36dp'
+                            pos_hint: {'x': 0}
+                            on_release: root.refresh_balance()
+    
+                    Card:
+                        size_hint_x: 0.6
+                        size_hint_y: None
+                        height: '180dp'
+                        SectionTitle:
+                            text: 'TOP UP WITH PIRATE CHAIN (ARRR)'
+                        BoxLayout:
+                            size_hint_y: None
+                            height: '30dp'
+                            spacing: '8dp'
+                            ChipButton:
+                                text: '$5'
+                                on_release: root.set_topup(5)
+                            ChipButton:
+                                text: '$10'
+                                on_release: root.set_topup(10)
+                            ChipButton:
+                                text: '$20'
+                                on_release: root.set_topup(20)
+                            ChipButton:
+                                text: '$50'
+                                on_release: root.set_topup(50)
+                            Widget:
+                        BoxLayout:
+                            size_hint_y: None
+                            height: '38dp'
+                            spacing: '8dp'
+                            StyledInput:
+                                id: topup_amount_input
+                                text: '10'
+                                hint_text: 'Custom amount (USD)'
+                                input_filter: 'float'
+                                size_hint_x: None
+                                width: '150dp'
+                                on_text: root.set_topup_amount(self.text)
+                            MeileButton:
+                                id: topup_btn
+                                text: 'TOP UP $10.00'
+                                width: '150dp'
+                                on_press: root.start_topup()
+                            Widget:
+                        # ARRR is not listed on the big exchanges - one click
+                        # hop to where the coins for the invoice can be bought.
+                        BoxLayout:
+                            size_hint_y: None
+                            height: '38dp'
+                            spacing: '8dp'
+                            MeileButton:
+                                id: get_arrr_btn
+                                text: 'GET ARRR'
+                                width: '150dp'
+                                on_release: root.open_arrr_exchange()
+                            Widget:
+                        # Keeps the top-up content top aligned with the wallet card
+                        Widget:
+    
+                # ── Active order (compact) ──
+                Card:
+                    size_hint_y: None
+                    height: '180dp'
+                    SectionTitle:
+                        text: 'ACTIVE ORDER'
+                    BoxLayout:
+                        size_hint_y: None
+                        height: '22dp'
+                        spacing: '8dp'
+                        StatusDot:
+                            id: status_dot
+                            pos_hint: {'center_y': 0.5}
+                        Label:
+                            id: order_status
+                            text: 'Idle'
+                            color: TEXT_MAIN
+                            font_size: '12sp'
+                            halign: 'left'
+                            valign: 'middle'
+                            text_size: self.size
+                    BoxLayout:
+                        size_hint_y: None
+                        height: '46dp'
+                        spacing: '8dp'
+                        BoxLayout:
+                            size_hint_x: None
+                            width: '170dp'
+                            padding: '8dp', '4dp'
+                            canvas.before:
+                                Color:
+                                    rgba: BG_INPUT
+                                RoundedRectangle:
+                                    pos: self.pos
+                                    size: self.size
+                                    radius: [6,]
+                                Color:
+                                    rgba: MEILE
+                                Line:
+                                    rounded_rectangle: (self.x, self.y, self.width, self.height, 6)
+                                    width: 1
+                            Label:
+                                id: phone_label
+                                text: '---'
+                                color: MEILE
+                                font_size: '17sp'
+                                bold: True
+                                halign: 'center'
+                                valign: 'middle'
+                                text_size: self.size
+                        MeileButton:
+                            id: copy_btn
+                            text: 'COPY'
+                            width: '80dp'
+                            height: '38dp'
+                            on_release: root.copy_number()
+                        BoxLayout:
+                            size_hint_x: None
+                            width: '120dp'
+                            orientation: 'vertical'
+                            Label:
+                                text: 'EXPIRES IN'
+                                color: TEXT_DIM
+                                font_size: '9sp'
+                                halign: 'left'
+                                valign: 'middle'
+                                text_size: self.size
+                            Label:
+                                id: countdown_label
+                                text: '--:--'
+                                color: TEXT_MAIN
+                                font_size: '15sp'
+                                bold: True
+                                halign: 'left'
+                                valign: 'middle'
+                                text_size: self.size
+                        Widget:
+                    BoxLayout:
+                        size_hint_y: None
+                        height: '38dp'
+                        spacing: '8dp'
+                        MeileButton:
+                            id: cancel_btn
+                            text: 'CANCEL ORDER (REFUND)'
+                            width: '190dp'
+                            height: '38dp'
+                            on_press: root.cancel_order()
+                        Widget:
+    
+                # ── Inbox ──
+                Card:
+                    size_hint_y: None
+                    height: '260dp'
+                    SectionTitle:
+                        text: 'INBOX'
+                    StyledInput:
+                        id: sms_output
+                        readonly: True
+                        multiline: True
+                        hint_text: 'Waiting for SMS...'
+                        font_size: '14sp'
+                        size_hint_y: 1
+                        height: self.height
+    
+                # ── Debug ──
+                Card:
+                    size_hint_y: None
+                    height: self.minimum_height
+                    SectionTitle:
+                        text: 'DEBUG LOG'
+                    Label:
+                        id: debug_label
+                        text: ''
+                        color: TEXT_DIM
+                        font_size: '10sp'
+                        halign: 'left'
+                        valign: 'top'
+                        text_size: self.width, None
+                        size_hint_y: None
+                        height: max(self.texture_size[1], 24)

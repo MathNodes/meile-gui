@@ -32,6 +32,33 @@ class ConfParams():
     SUBFEE           = 0.1
     SUBFEEMULT       = 10
 
+class SMSConf():
+    '''Configuration for the SMS Pool ("Virtual Number Terminal") screen.
+
+    The Meile plan-rest API keeps the user's USD SMS balance ledger (see
+    meile-plan-rest/meile_plan_api.py). MARKUP_PERCENT below is only a fallback:
+    the API reports the authoritative markup with every balance response, so a
+    single change on the server side is picked up here automatically.
+    '''
+    MARKUP_PERCENT  = 5.0            # fallback markup % on the SMSPool cost
+    TOPUP_PRESETS   = [5, 10, 20, 50]
+    TOPUP_COIN      = "arrr"         # coin used to top up the SMS balance
+    MIN_TOPUP_USD   = 1.0
+
+    # Where the "GET ARRR" button of the top-up card sends the user: the
+    # exchange that sells the coins for the invoice (NonKYC referral link).
+    ARRR_EXCHANGE_URL = "https://nonkyc.io?ref=695e014fe07f1444fdceaff6"
+    ORDER_SECONDS   = 1200           # SMSPool order lifetime (countdown)
+    POLL_INTERVAL   = 5              # seconds between /sms/check calls
+
+    # SMSPool ships a catch-all service ("Not Listed / Other / Any", id 817).
+    # It is pinned at the bottom of the service list and is the only entry shown
+    # when the search box matches nothing, so an unlisted service never leaves
+    # the user staring at an empty list.
+    OTHER_SERVICE_LABEL = "Not Listed / Other"
+    OTHER_SERVICE_NAMES = ("not listed / other / any", "not listed / other",
+                           "not listed", "other", "any", "unknown")
+
 class HTTParams():
     # Note http://128.199.90.172:26657 is testnet ONLY!
     TIMEOUT                = 5
@@ -125,6 +152,12 @@ class HTTParams():
     NOWPAYMENT             = "https://api.nowpayments.io/v1/invoice-payment"
     NOWSTATUS              = "https://api.nowpayments.io/v1/payment/%s"
     NOWURL                 = "https://nowpayments.io/payment?iid=%s&paymentId=%s"
+    # Meile plan-rest SMS balance ledger (see meile-plan-rest/meile_plan_api.py)
+    API_SMS_BALANCE        = "/v1/sms/balance/%s"      # variable is the app UUID
+    API_SMS_ACCOUNT        = "/v1/sms/account"
+    API_SMS_TOPUP          = "/v1/sms/topup"
+    API_SMS_PURCHASE       = "/v1/sms/purchase"
+    API_SMS_REFUND         = "/v1/sms/refund"
     RESOLVERS              = [
                               "adfilter-adl",
                               "adfilter-adl-ipv6",
