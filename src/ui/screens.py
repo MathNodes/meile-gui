@@ -442,7 +442,7 @@ class MainWindow(Screen):
         def connect():
             CONNFILE_OPENED = False            
             self.cd = ConnectionDialog()
-            self.set_conn_dialog(self.cd, " ")
+            self.set_conn_dialog(self.cd, "")
             yield 0.3
             
             confile = path.join(ConfParams.KEYRINGDIR, "connect.log")
@@ -485,7 +485,7 @@ class MainWindow(Screen):
                         conndesc = open(confile, 'r')
                         CONNFILE_OPENED = True
                     elif path.isfile(confile):
-                        self.update_conn_dialog_title(conndesc.readlines()[-1])
+                        self.update_conn_status(conndesc.readlines()[-1])
                 except IndexError:
                     pass
                     
@@ -1566,19 +1566,23 @@ class MainWindow(Screen):
             print(str(e))
             pass
 
-    def set_conn_dialog(self, cd, title):
+    def set_conn_dialog(self, cd, message):
         self.dialog = None
         self.dialog = MDDialog(
-                        title=title,
                         type="custom",
                         content_cls=cd,
                         md_bg_color=get_color_from_hex(MeileColors.BLACK),
                     )
+        # The message used to be the (bold, centered) dialog title.  It now
+        # belongs to the small status line of the ConnectionDialog itself.
+        cd.set_status(message)
         self.dialog.open()
         
-    def update_conn_dialog_title(self, new_title):
+    def update_conn_status(self, status):
+        '''Feed the wallet's latest connect.log line to the open dialog: it walks
+        the status line under the progress bar and the stage pipeline.'''
         if self.dialog:
-            self.cd.ids.status.text = new_title
+            self.dialog.content_cls.set_status(status)
             
 
     def load_country_nodes(self, country, *kwargs):
@@ -2107,14 +2111,16 @@ class SubscriptionScreen(MDBoxLayout):
         self.address = CONFIG['wallet'].get("address")
 
     @mainthread
-    def set_conn_dialog(self, cd, title):
+    def set_conn_dialog(self, cd, message):
         self.dialog = None
         self.dialog = MDDialog(
-                        title=title,
                         type="custom",
                         content_cls=cd,
                         md_bg_color=get_color_from_hex(MeileColors.BLACK),
                     )
+        # See MainWindow.set_conn_dialog: the message lives in the dialog's own
+        # status line, not in the dialog title.
+        cd.set_status(message)
         self.dialog.open()
 
     @mainthread
@@ -2791,6 +2797,17 @@ class SMSPoolScreen(Screen):
         purchase debit and cancel/refund is accounted for server side.
     '''
 
+    # Static copy of the PRICE QUOTE card (see <SMSPoolScreen> in meile.kv).
+    QUOTE_IDLE_HINT = ("Pick a country and a service - the cost and the "
+                       "provider's success rate show up here.")
+    QUOTE_RATE_HINT = ("Success rate: how often this provider has actually "
+                       "delivered an SMS for the selected service and country.")
+    # Rate light colours (same green/red as the ACTIVE ORDER status dot).
+    RATE_GOOD = "#3ecc6d"
+    RATE_FAIR = "#e0a33a"
+    RATE_POOR = "#c0392b"
+    PLACEHOLDER = "#8d8d8d"
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         # SMSPool credentials (kept in the git-ignored secrets module)
@@ -2811,6 +2828,12 @@ class SMSPoolScreen(Screen):
         self.service_filter   = ""
         self._other_service   = SMSConf.OTHER_SERVICE_LABEL
         self.current_order    = None
+
+        # Price quote for the current country + service selection (see
+        # request_quote / _on_quote and the PRICE QUOTE card in meile.kv).
+        self.quote            = None        # last /request/price answer
+        self.quote_event      = None        # debounce handle
+        self.quote_seq        = 0           # drops superseded answers
 
         self.sms_check_event  = None
         self.countdown_event  = None
@@ -2862,6 +2885,53 @@ class SMSPoolScreen(Screen):
             return json.loads(result)
         except Exception:
             return None
+
+    @staticmethod
+    def _price_from_payload(data):
+        '''(price, success_rate) carried by a /request/price answer.
+
+        Documented 200 body: {"pool": 7, "high_price": "0.24", "price": "0.24",
+        "success_rate": 100}.  Both values are also what the documented 400
+        "missing parameter" reply omits, so either may come back as None.
+        '''
+        price = None
+        rate  = None
+        if isinstance(data, dict):
+            for key in ("price", "cost", "cost_price"):
+                if data.get(key) is not None:
+                    try:
+                        price = float(data[key])
+                        break
+                    except Exception:
+                        pass
+            for key in ("success_rate", "successrate", "rate"):
+                if data.get(key) is not None:
+                    try:
+                        rate = float(str(data[key]).strip().rstrip("%"))
+                        break
+                    except Exception:
+                        pass
+        return price, rate
+
+    @staticmethod
+    def _error_message(data):
+        '''Readable text of a documented SMSPool error payload.
+
+        SMSPool answers with {"success": 0, "errors": [{"message": ...,
+        "param": ...}]} - or a plain "message" on the order endpoints.
+        '''
+        if not isinstance(data, dict):
+            return ""
+        errors = data.get("errors")
+        if isinstance(errors, list):
+            for item in errors:
+                if isinstance(item, dict) and item.get("message"):
+                    return str(item["message"])
+                if isinstance(item, str) and item:
+                    return item
+        elif isinstance(errors, str) and errors:
+            return errors
+        return str(data.get("message") or "")
 
     def _debug(self, text):
         try:
@@ -2943,6 +3013,7 @@ class SMSPoolScreen(Screen):
     def _startup(self):
         self.uuid = self._get_uuid()
         self._sync_uuid_label()
+        self._render_quote()        # PRICE QUOTE card starts in its idle state
         if self.uuid:
             self.fetch_balance()
         else:
@@ -3011,6 +3082,10 @@ class SMSPoolScreen(Screen):
             self.ids.balance_big.text = "$%.2f" % bal
         except Exception:
             pass
+        # Keep the affordability line of the PRICE QUOTE card in step with the
+        # ledger (a fresh wallet top-up can turn "top up $x" into "balance $y").
+        if self.quote:
+            self._render_quote()
 
     # ------------------------------------------------------------------
     # Top-up with Pirate Chain (ARRR)
@@ -3266,6 +3341,8 @@ class SMSPoolScreen(Screen):
             pass
         # Re-render so the highlight follows the selection.
         self._render_countries(self._filtered_countries())
+        # Country picked: quote it as soon as a service is known too.
+        self.request_quote()
 
     @staticmethod
     def _country_iso2(raw):
@@ -3391,6 +3468,172 @@ class SMSPoolScreen(Screen):
             pass
         # Re-render so the highlight follows the selection.
         self._render_services(self._filtered_services())
+        # Service picked: refresh the price/success-rate quote for it.
+        self.request_quote()
+
+    # ------------------------------------------------------------------
+    # Price quote (country + service -> cost & success rate)
+    # ------------------------------------------------------------------
+    def request_quote(self, *args):
+        '''Ask SMSPool what a number costs for the current selection.
+
+        POST /request/price (SMSPool docs, "Retrieve specific price & Success
+        Rate") answers with the pool price *and* the historic success rate of
+        that provider for the picked country/service - both are shown in the
+        PRICE QUOTE card.  The call is debounced so clicking through the lists
+        only fires once the user settles, and every new selection invalidates
+        answers still in flight (see quote_seq / _on_quote).
+        '''
+        self.quote_seq += 1
+        if self.quote_event:
+            self.quote_event.cancel()
+            self.quote_event = None
+        if self.selected_country is None or self.service_id() is None:
+            self.quote = None
+            self._render_quote()
+            return
+        if not self.API_KEY.strip():
+            self.quote = None
+            self._render_quote(error="SMSPool key missing in secrets")
+            return
+        # Drop the previous combination's numbers right away: they no longer
+        # describe what the user has picked.
+        self.quote = None
+        self._render_quote(loading=True)
+        self.quote_event = Clock.schedule_once(
+            lambda dt: self._fetch_quote(self.quote_seq),
+            float(SMSConf.QUOTE_DEBOUNCE))
+
+    def _fetch_quote(self, token=None):
+        self.quote_event = None
+        if token is None:
+            token = self.quote_seq
+        if token != self.quote_seq:
+            return                      # a newer selection won the race
+        country = self.selected_country
+        sid     = self.service_id()
+        if country is None or sid is None:
+            return
+        self._render_quote(loading=True)
+        self._sppost("/request/price", {
+            "key"    : self.API_KEY.strip(),
+            "country": str(country["id"]),
+            "service": str(sid),
+        }, lambda request, result: self._on_quote(token, request, result))
+
+    def _on_quote(self, token, request, result):
+        '''Paint the answer, unless a newer selection already replaced it.'''
+        if token != self.quote_seq:
+            return
+        data = self._parse(result) or {}
+        price, rate = self._price_from_payload(data)
+        if price is None or price <= 0:
+            message = self._error_message(data) or "No pool for this combination"
+            self.quote = None
+            self._render_quote(error=message)
+            self._debug("quote response: %s" % str(result)[:200])
+            return
+        self._store_quote(price, rate)
+
+    def _store_quote(self, price, rate):
+        '''Remember a provider price (SMSPool cost) and show it with markup.'''
+        price = float(price)
+        self.quote = {
+            "price"       : price,
+            "total"       : round(price * (1.0 + float(self.markup or 0.0) / 100.0), 6),
+            "success_rate": rate,
+            "country"     : self.selected_country["name"] if self.selected_country else "",
+            "service"     : self.selected_service or "",
+        }
+        self._render_quote()
+
+    def _rate_style(self, rate):
+        '''(text, word, colour) for a provider success rate in percent.'''
+        if rate is None:
+            return "n/a", "", self.PLACEHOLDER
+        rate = max(0.0, min(100.0, float(rate)))
+        if rate >= float(SMSConf.SUCCESS_GOOD):
+            return "%.0f%%" % rate, "Excellent", self.RATE_GOOD
+        if rate >= float(SMSConf.SUCCESS_FAIR):
+            return "%.0f%%" % rate, "Fair", self.RATE_FAIR
+        return "%.0f%%" % rate, "Poor", self.RATE_POOR
+
+    def _render_quote(self, loading=False, error=""):
+        '''Paint the PRICE QUOTE card from self.quote / the given state.
+
+        Four states: idle (nothing picked yet), loading, error and ready - the
+        latter carries the cost to purchase *plus* the provider's success rate.
+        '''
+        quote  = self.quote or {}
+        total  = quote.get("total")
+        price  = quote.get("price")
+        markup = float(self.markup or 0.0)
+        rate_colour  = self.PLACEHOLDER
+        detail_colour = self.PLACEHOLDER
+
+        if loading:
+            total_text  = "..."
+            rate_text   = "..."
+            rate_word   = "checking"
+            detail_text = "Asking the provider for a price..."
+            hint_text   = self.QUOTE_RATE_HINT
+        elif error:
+            total_text    = "---"
+            rate_text     = "---"
+            rate_word     = ""
+            detail_text   = str(error)
+            rate_colour   = self.RATE_POOR
+            detail_colour = self.RATE_POOR
+            hint_text     = self.QUOTE_IDLE_HINT
+        elif total is None or price is None:
+            total_text  = "---"
+            rate_text   = "---"
+            rate_word   = ""
+            detail_text = "Provider cost + Meile markup"
+            hint_text   = self.QUOTE_IDLE_HINT
+        else:
+            total_text  = "$%.2f" % total
+            rate_text, rate_word, rate_colour = self._rate_style(quote.get("success_rate"))
+            detail_text = "Provider $%.2f" % (total)
+            hint_text   = self.QUOTE_RATE_HINT
+            # Only compare against the wallet once a balance is actually known.
+            if self.uuid:
+                if self.balance >= total:
+                    detail_text += " - balance $%.2f" % self.balance
+                else:
+                    detail_text  += " - top up $%.2f" % (total - self.balance)
+                    detail_colour = self.RATE_POOR
+
+        try:
+            self.ids.quote_total_label.text = total_text
+        except Exception:
+            pass
+        try:
+            label = self.ids.quote_rate_label
+            label.text  = rate_text
+            label.color = get_color_from_hex(rate_colour)
+        except Exception:
+            pass
+        try:
+            label = self.ids.quote_rate_note
+            label.text  = rate_word
+            label.color = get_color_from_hex(rate_colour)
+        except Exception:
+            pass
+        try:
+            self.ids.quote_rate_dot.dot_color = rate_colour
+        except Exception:
+            pass
+        try:
+            label = self.ids.quote_detail_label
+            label.text  = detail_text
+            label.color = get_color_from_hex(detail_colour)
+        except Exception:
+            pass
+        try:
+            self.ids.quote_hint_label.text = hint_text
+        except Exception:
+            pass
 
     # ------------------------------------------------------------------
     # Price / purchase
@@ -3433,21 +3676,17 @@ class SMSPoolScreen(Screen):
         except Exception:
             pass
         data  = self._parse(result) or {}
-        price = None
-        if isinstance(data, dict):
-            for key in ("price", "cost", "cost_price"):
-                if data.get(key) is not None:
-                    try:
-                        price = float(data[key])
-                        break
-                    except Exception:
-                        pass
+        price, rate = self._price_from_payload(data)
         if price is None or price <= 0:
-            message = data.get("message") if isinstance(data, dict) else None
-            self._set_status("Price unavailable: %s" % (message or "no pool"), ok=False)
+            message = self._error_message(data) or "no pool"
+            self._set_status("Price unavailable: %s" % message, ok=False)
+            self.quote = None
+            self._render_quote(error=message)
             self._debug("price response: %s" % str(result)[:200])
             return
         total = round(price * (1.0 + self.markup / 100.0), 6)
+        # The price fetched for the purchase is the freshest quote there is.
+        self._store_quote(price, rate)
         if self.balance < total:
             missing = total - self.balance
             self._set_status("Insufficient balance - top up $%.2f" % missing, ok=False)
@@ -3727,7 +3966,8 @@ class SMSPoolScreen(Screen):
     # ------------------------------------------------------------------
     # Misc
     # ------------------------------------------------------------------
-    def copy_number(self):
+    def copy_number(self, *args):
+        '''Copy the rented number (ACTIVE ORDER copy icon) to the clipboard.'''
         try:
             number = self.ids.phone_label.text
         except Exception:
@@ -3774,6 +4014,9 @@ class SMSPoolScreen(Screen):
     def set_previous_screen(self):
         self._stop_polling()
         self._close_topup_dialog()
+        if self.quote_event:
+            self.quote_event.cancel()
+            self.quote_event = None
         Meile.app.root.remove_widget(self)
         Meile.app.root.transistion = SlideTransition(direction="down")
         Meile.app.root.current = WindowNames.MAIN_WINDOW

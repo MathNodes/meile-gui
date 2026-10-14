@@ -2138,33 +2138,133 @@ WindowManager:
 
 <Tab>
 
+<ConnectionRing>
+    # Halos first so they glow behind, the crisp status ring on top.
+    canvas.before:
+        Color:
+            rgba: root.outer_rgba
+        Line:
+            circle: self.center_x, self.center_y, root.ring_radius + dp(7)
+            width: root.outer_width
+        Color:
+            rgba: root.inner_rgba
+        Line:
+            circle: self.center_x, self.center_y, root.ring_radius + dp(3)
+            width: root.inner_width
+        Color:
+            rgba: root.ring_rgba
+        Line:
+            circle: self.center_x, self.center_y, root.ring_radius
+            width: root.ring_width
+    Image:
+        source: root.icon_source
+        allow_stretch: True
+        keep_ratio: True
+        opacity: root.icon_opacity
+        size_hint: None, None
+        size: min(root.width, root.height) - root.icon_inset * 2, min(root.width, root.height) - root.icon_inset * 2
+        pos_hint: {"center_x": .5, "center_y": .5}
+
+
+<ConnectionStage>
+    size_hint_x: None
+    # Wider than the ring so the two-word captions stay on one line.
+    width: "78sp"
+    # Top anchored: the caption below the ring must never move the ring itself
+    # (a BoxLayout would centre the space it has left over, and the captions
+    # differ in height while they are being measured).
+    AnchorLayout:
+        anchor_x: "center"
+        anchor_y: "top"
+        MDBoxLayout:
+            orientation: "vertical"
+            size_hint_y: None
+            height: self.minimum_height
+            spacing: "2sp"
+            ConnectionRing:
+                id: ring
+                size_hint_x: 1
+                size_hint_y: None
+                height: "46sp"
+                icon_source: root.source
+                icon_opacity: root.icon_opacity
+                ring_rgba: root.ring_rgba
+                ring_width: root.ring_width
+                inner_rgba: root.inner_rgba
+                inner_width: root.inner_width
+                outer_rgba: root.outer_rgba
+                outer_width: root.outer_width
+            MDLabel:
+                id: caption
+                text: root.caption
+                font_size: "10sp"
+                halign: "center"
+                valign: "middle"
+                size_hint_y: None
+                height: self.texture_size[1]
+                text_size: self.width, None
+                theme_text_color: "Custom"
+                text_color: root.caption_color
+
+
 <ConnectionDialog>
     size_hint_y: None
     orientation: "vertical"
-    height: "30sp"  # Adjusted height for visibility
-    padding: "10sp"
+    height: "128sp"
+    padding: "6sp"
     spacing: "10sp"
+    # Connectors between the stages (points/alpha come from ConnectionDialog).
+    canvas.before:
+        Color:
+            rgba: root.link1_rgba
+        Line:
+            points: root.link1_points
+            width: root.link_width
+            cap: "round"
+        Color:
+            rgba: root.link2_rgba
+        Line:
+            points: root.link2_points
+            width: root.link_width
+            cap: "round"
     MDBoxLayout:
-        orientation: "vertical"
+        id: stage_row
+        orientation: "horizontal"
         size_hint_y: None
-        height: self.minimum_height
-        MDLabel:
-            id: status
-            text: "Connecting..."
-            halign: "center"  # Center align the text for better visibility
-            size_hint_y: None
-            height: self.texture_size[1] + sp(10)  # Ensure the label has a height
-            
-        MDProgressBar:
-            id: pb
-            value: 0.01
-            min: 0
-            max: 1
-            color: get_color_from_hex(MeileColors.MEILE)
-            size_hint_y: None
-            height: "10sp"  # Set explicit height for the progress bar
-            size_hint_x: .85
-            pos_hint: {'center_x': .5}
+        height: "70sp"
+        spacing: "8sp"
+        ConnectionStage:
+            id: stage_session
+        Widget:
+            size_hint_x: 1
+        ConnectionStage:
+            id: stage_credentials
+        Widget:
+            size_hint_x: 1
+        ConnectionStage:
+            id: stage_internet
+    MDProgressBar:
+        id: pb
+        value: 0.01
+        min: 0
+        max: 1
+        color: get_color_from_hex(MeileColors.MEILE)
+        size_hint_y: None
+        height: "10sp"  # Set explicit height for the progress bar
+        size_hint_x: .85
+        pos_hint: {'center_x': .5}
+    MDLabel:
+        id: status
+        # The line the wallet writes to connect.log, once the dialog title.
+        text: root.status_text
+        halign: "center"
+        valign: "middle"
+        font_size: "11sp"
+        theme_text_color: "Custom"
+        text_color: get_color_from_hex("#9a9a9a")
+        size_hint_y: None
+        height: "16sp"
+        text_size: self.width, None
 
 <WalletInfoContent>
     orientation: "vertical"
@@ -3573,6 +3673,12 @@ WindowManager:
     service_search: service_search
     service_rv: service_rv
     selected_service_label: selected_service_label
+    quote_total_label: quote_total_label
+    quote_rate_label: quote_rate_label
+    quote_rate_note: quote_rate_note
+    quote_rate_dot: quote_rate_dot
+    quote_detail_label: quote_detail_label
+    quote_hint_label: quote_hint_label
     purchase_btn: purchase_btn
     order_status: order_status
     status_dot: status_dot
@@ -3675,10 +3781,11 @@ WindowManager:
                                 rounded_rectangle: (self.x, self.y, self.width, self.height, 8)
                                 width: 1
 
-                    MDIconButton:
+                    ToolTipMDIconButton:
                         id: copy_uuid_btn
                         icon: 'content-copy'
                         icon_size: '18sp'
+                        tooltip_text: 'Copy wallet address'
                         theme_text_color: 'Custom'
                         text_color: MEILE
                         on_release: root.copy_uuid()
@@ -3841,7 +3948,7 @@ WindowManager:
                             height: '46dp'
                             spacing: '8dp'
                             NeonLabel:
-                                text: "Rented from an SMS provider on purchase. Cancel inside the countdown for an automatic refund. If you don't receive the SMS within 5 minutes, cancel for a refund and try ordering another one'
+                                text: "Rented from an SMS provider on purchase. Cancel inside the countdown for an automatic refund. If you don't receive the SMS within 5 minutes, cancel for a refund and try ordering another one."
                                 font_size: '11sp'
                                 height: '46dp'
                             MeileButton:
@@ -3850,6 +3957,119 @@ WindowManager:
                                 width: '180dp'
                                 on_press: root.purchase()
     
+                # ── Price quote: what a number costs + provider success rate ──
+                # Filled by SMSPoolScreen._render_quote() the moment a country
+                # *and* a service are selected (POST /request/price).
+                Card:
+                    size_hint_y: None
+                    height: '96dp'
+                    SectionTitle:
+                        text: 'PRICE QUOTE'
+                    BoxLayout:
+                        size_hint_y: None
+                        height: '44dp'
+                        spacing: '14dp'
+
+                        # Cost to purchase a number (provider price + markup)
+                        BoxLayout:
+                            size_hint_x: None
+                            width: '190dp'
+                            orientation: 'vertical'
+                            Label:
+                                text: 'TOTAL TO PAY'
+                                color: TEXT_DIM
+                                font_size: '9sp'
+                                halign: 'left'
+                                valign: 'middle'
+                                text_size: self.size
+                                size_hint_y: None
+                                height: '13dp'
+                            Label:
+                                id: quote_total_label
+                                text: '---'
+                                color: MEILE
+                                font_size: '18sp'
+                                bold: True
+                                halign: 'left'
+                                valign: 'middle'
+                                text_size: self.size
+                                size_hint_y: None
+                                height: '29dp'
+
+                        # How often that provider actually delivers an SMS
+                        BoxLayout:
+                            size_hint_x: None
+                            width: '210dp'
+                            spacing: '6dp'
+                            StatusDot:
+                                id: quote_rate_dot
+                                pos_hint: {'center_y': .5}
+                            BoxLayout:
+                                orientation: 'vertical'
+                                Label:
+                                    text: 'SUCCESS RATE'
+                                    color: TEXT_DIM
+                                    font_size: '9sp'
+                                    halign: 'left'
+                                    valign: 'middle'
+                                    text_size: self.size
+                                    size_hint_y: None
+                                    height: '13dp'
+                                BoxLayout:
+                                    size_hint_y: None
+                                    height: '31dp'
+                                    spacing: '6dp'
+                                    Label:
+                                        id: quote_rate_label
+                                        text: '---'
+                                        color: TEXT_MAIN
+                                        font_size: '18sp'
+                                        bold: True
+                                        halign: 'left'
+                                        valign: 'middle'
+                                        text_size: self.size
+                                        size_hint_x: None
+                                        width: '66dp'
+                                    Label:
+                                        id: quote_rate_note
+                                        text: ''
+                                        color: TEXT_DIM
+                                        font_size: '11sp'
+                                        halign: 'left'
+                                        valign: 'middle'
+                                        text_size: self.size
+                                        size_hint_x: None
+                                        width: '96dp'
+                                    Widget:
+
+                        # Provider price, Meile markup and wallet side effects
+                        BoxLayout:
+                            orientation: 'vertical'
+                            Label:
+                                id: quote_detail_label
+                                text: 'Provider cost + Meile markup'
+                                color: TEXT_DIM
+                                font_size: '11sp'
+                                halign: 'left'
+                                valign: 'middle'
+                                text_size: self.size
+                                size_hint_y: None
+                                height: '20dp'
+                                shorten: True
+                                shorten_from: 'right'
+                            Label:
+                                id: quote_hint_label
+                                text: "Pick a country and a service - the cost and the provider's success rate show up here."
+                                color: TEXT_DIM
+                                font_size: '9sp'
+                                halign: 'left'
+                                valign: 'middle'
+                                text_size: self.size
+                                size_hint_y: None
+                                height: '22dp'
+                                shorten: True
+                                shorten_from: 'right'
+
                 # ── Wallet | Top up with Pirate Chain ──
                 BoxLayout:
                     size_hint_y: None
@@ -3991,11 +4211,18 @@ WindowManager:
                                 halign: 'center'
                                 valign: 'middle'
                                 text_size: self.size
-                        MeileButton:
+                        # Material copy icon, same glyph as the wallet address
+                        # box in the header (plain 'COPY' text before).
+                        ToolTipMDIconButton:
                             id: copy_btn
-                            text: 'COPY'
-                            width: '80dp'
-                            height: '38dp'
+                            icon: 'content-copy'
+                            icon_size: '20sp'
+                            tooltip_text: 'Copy phone number'
+                            size_hint: None, None
+                            size: '38dp', '38dp'
+                            pos_hint: {'center_y': .5}
+                            theme_text_color: 'Custom'
+                            text_color: MEILE
                             on_release: root.copy_number()
                         BoxLayout:
                             size_hint_x: None
