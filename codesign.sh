@@ -56,45 +56,45 @@ DMG_ICON_Y=290
 
 
 echo "Hard signing Meile.app..."
-codesign --force --options runtime --timestamp --sign "Developer ID Application: Pool Stats LLC (VQYLU43P5V)" /Users/freqnik/eclipse-workspace/Meile2.0/dist/Meile/Meile.app
+codesign --force --options runtime --timestamp --sign "$SIGN_ID" /Users/freqnik/eclipse-workspace/Meile2.0/dist/Meile/Meile.app
 
 sleep 2
 echo "Signing hysteria..."
-codesign --force --options runtime --timestamp --sign "Developer ID Application: Pool Stats LLC (VQYLU43P5V)" /Users/freqnik/eclipse-workspace/Meile2.0/dist/Meile/Meile.app/Contents/Resources/bin/hysteria
+codesign --force --options runtime --timestamp --sign "$SIGN_ID" /Users/freqnik/eclipse-workspace/Meile2.0/dist/Meile/Meile.app/Contents/Resources/bin/hysteria
 
 sleep 2
 echo "Signing xray..."
-codesign --force --options runtime --timestamp --sign "Developer ID Application: Pool Stats LLC (VQYLU43P5V)" /Users/freqnik/eclipse-workspace/Meile2.0/dist/Meile/Meile.app/Contents/Resources/bin/xray
+codesign --force --options runtime --timestamp --sign "$SIGN_ID" /Users/freqnik/eclipse-workspace/Meile2.0/dist/Meile/Meile.app/Contents/Resources/bin/xray
 
 sleep 2
 echo "Signing amneziawg-go.."
-codesign --force --options runtime --timestamp --sign "Developer ID Application: Pool Stats LLC (VQYLU43P5V)" /Users/freqnik/eclipse-workspace/Meile2.0/dist/Meile/Meile.app/Contents/Resources/bin/amneziawg-go
+codesign --force --options runtime --timestamp --sign "$SIGN_ID" /Users/freqnik/eclipse-workspace/Meile2.0/dist/Meile/Meile.app/Contents/Resources/bin/amneziawg-go
 
 sleep 2
 echo "Signing wireguard-go.."
-codesign --force --options runtime --timestamp --sign "Developer ID Application: Pool Stats LLC (VQYLU43P5V)" /Users/freqnik/eclipse-workspace/Meile2.0/dist/Meile/Meile.app/Contents/Resources/bin/wireguard-go
+codesign --force --options runtime --timestamp --sign "$SIGN_ID" /Users/freqnik/eclipse-workspace/Meile2.0/dist/Meile/Meile.app/Contents/Resources/bin/wireguard-go
 
 sleep 2
 echo "Signing tun2socks..."
-codesign --force --options runtime --timestamp --sign "Developer ID Application: Pool Stats LLC (VQYLU43P5V)" /Users/freqnik/eclipse-workspace/Meile2.0/dist/Meile/Meile.app/Contents/Resources/bin/tun2socks
+codesign --force --options runtime --timestamp --sign "$SIGN_ID" /Users/freqnik/eclipse-workspace/Meile2.0/dist/Meile/Meile.app/Contents/Resources/bin/tun2socks
 
 sleep 2
 echo "Signing awg..."
-codesign --force --options runtime --timestamp --sign "Developer ID Application: Pool Stats LLC (VQYLU43P5V)" /Users/freqnik/eclipse-workspace/Meile2.0/dist/Meile/Meile.app/Contents/Resources/bin/awg
+codesign --force --options runtime --timestamp --sign "$SIGN_ID" /Users/freqnik/eclipse-workspace/Meile2.0/dist/Meile/Meile.app/Contents/Resources/bin/awg
 
 sleep 2
 echo "Signing wg..."
-codesign --force --options runtime --timestamp --sign "Developer ID Application: Pool Stats LLC (VQYLU43P5V)" /Users/freqnik/eclipse-workspace/Meile2.0/dist/Meile/Meile.app/Contents/Resources/bin/wg
+codesign --force --options runtime --timestamp --sign "$SIGN_ID" /Users/freqnik/eclipse-workspace/Meile2.0/dist/Meile/Meile.app/Contents/Resources/bin/wg
 
 sleep 2
 echo "Signing pyarmor..."
-codesign --force --options runtime --timestamp --sign "Developer ID Application: Pool Stats LLC (VQYLU43P5V)" /Users/freqnik/eclipse-workspace/Meile2.0/dist/Meile/Meile.app/Contents/Resources/pyarmor_runtime_002918/pyarmor_runtime.so
-codesign --force --options runtime --timestamp --sign "Developer ID Application: Pool Stats LLC (VQYLU43P5V)" /Users/freqnik/eclipse-workspace/Meile2.0/dist/Meile/Meile.app/Contents/Resources/pyarmor/cli/core/pyarmor_runtime.so
-codesign --force --options runtime --timestamp --sign "Developer ID Application: Pool Stats LLC (VQYLU43P5V)" /Users/freqnik/eclipse-workspace/Meile2.0/dist/Meile/Meile.app/Contents/Resources/pyarmor/cli/core/pytransform3.so
+codesign --force --options runtime --timestamp --sign "$SIGN_ID" /Users/freqnik/eclipse-workspace/Meile2.0/dist/Meile/Meile.app/Contents/Resources/pyarmor_runtime_002918/pyarmor_runtime.so
+codesign --force --options runtime --timestamp --sign "$SIGN_ID" /Users/freqnik/eclipse-workspace/Meile2.0/dist/Meile/Meile.app/Contents/Resources/pyarmor/cli/core/pyarmor_runtime.so
+codesign --force --options runtime --timestamp --sign "$SIGN_ID" /Users/freqnik/eclipse-workspace/Meile2.0/dist/Meile/Meile.app/Contents/Resources/pyarmor/cli/core/pytransform3.so
 
 sleep 2
 echo "Signing meile-gui..."
-codesign --force --options runtime --timestamp --sign "Developer ID Application: Pool Stats LLC (VQYLU43P5V)" /Users/freqnik/eclipse-workspace/Meile2.0/dist/Meile/Meile.app/Contents/MacOS/meile-gui
+codesign --force --options runtime --timestamp --sign "$SIGN_ID" /Users/freqnik/eclipse-workspace/Meile2.0/dist/Meile/Meile.app/Contents/MacOS/meile-gui
 
 sleep 2
 echo "Displaying hardsigning verification..."
@@ -138,6 +138,26 @@ if command -v tiffutil >/dev/null 2>&1; then
 	fi
 fi
 
+# --- Clear stale Meile mountpoints -----------------------------------------
+# create-dmg 1.1.0 attaches its scratch image without -mountpoint and its
+# "unmount leftover dmg" step detaches whichever device hdiutil happens to
+# list first, not the one sitting on MOUNT_DIR.  So a leftover /Volumes/Meile -
+# an interrupted run, or another Meile image the user mounted - pushes the
+# scratch volume onto "/Volumes/Meile 1" while create-dmg keeps writing to
+# "/Volumes/Meile", and the background copy dies with "Read-only file system"
+# (or silently bakes the wrong artwork).  Eject our mountpoints up front so the
+# scratch image lands where create-dmg expects it.
+for vol in /Volumes/Meile /Volumes/Meile\ [0-9]*; do
+	[[ -d "$vol" ]] || continue
+	echo "Unmounting leftover volume '$vol'..."
+	if ! hdiutil detach "$vol" >/dev/null 2>&1; then
+		hdiutil detach -force "$vol" >/dev/null 2>&1 || {
+			echo "ERROR: '$vol' is still mounted - eject it and retry" >&2
+			exit 1
+		}
+	fi
+done
+
 #hdiutil create -volname Meile -srcfolder "$APP" -ov -format UDBZ "$BUILD_DIR/Meile.dmg"
 create-dmg \
   --volname "Meile" \
@@ -151,7 +171,10 @@ create-dmg \
   --hide-extension "Meile.app" \
   --app-drop-link "$DMG_LINK_X" "$DMG_ICON_Y" \
   "$DMG_PATH" \
-  "$SRC_FOLDER"
+  "$SRC_FOLDER" || {
+	echo "ERROR: create-dmg failed - no disk image at $DMG_PATH" >&2
+	exit 1
+}
 sleep 2
 
 echo "Signing disk image..."
