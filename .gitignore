@@ -167,3 +167,7 @@ src/meile_gui.egg-info/
 
 # OS X
 .DS_Store
+
+# DMG folder artwork; regenerated from assets/banner.png by
+# make_dmg_background.py (invoked from codesign.sh)
+assets/dmg/
