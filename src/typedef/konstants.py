@@ -51,6 +51,15 @@ class SMSConf():
     ORDER_SECONDS   = 1200           # SMSPool order lifetime (countdown)
     POLL_INTERVAL   = 5              # seconds between /sms/check calls
 
+    # "PRICE QUOTE" card: once a country *and* a service are selected the screen
+    # asks POST /request/price (SMSPool docs "Retrieve specific price & Success
+    # Rate") for the pool cost plus the provider's historic success rate for that
+    # exact combination.  QUOTE_DEBOUNCE keeps a quick click through the lists
+    # from firing one request per row.
+    QUOTE_DEBOUNCE  = 0.35           # seconds a selection must settle first
+    SUCCESS_GOOD    = 80             # >= this % of orders deliver an SMS
+    SUCCESS_FAIR    = 50             # >= this % is fair, below it is poor
+
     # SMSPool ships a catch-all service ("Not Listed / Other / Any", id 817).
     # It is pinned at the bottom of the service list and is the only entry shown
     # when the search box matches nothing, so an unlisted service never leaves
@@ -747,6 +756,15 @@ class MeileColors():
     SUBSCRIBE_BUTTON         = "imgs/SubscribeButton.png"
     GETINFO_BUTTON           = "imgs/GetInfoButton.png"
     SPINNER                  = "imgs/spinner.png"
+    # Pipeline icons of the connection dialog (ui.interfaces.ConnectionDialog)
+    SESSION_ICON             = "imgs/session.png"
+    CREDENTIALS_ICON         = "imgs/credentials.png"
+    INTERNET_ICON            = "imgs/internet.png"
+    # Ring around a connection stage that has not run yet / that failed.  A
+    # running stage glows UPLOAD (blue) and a finished one settles on DOWNLOAD
+    # (green); the connectors between finished stages are DOWNLOAD too.
+    CONN_STAGE_IDLE          = "#3a3a3a"
+    CONN_STAGE_FAILED        = "#c0392b"
     HEALTH_ICON              = "shield-plus"
     SICK_ICON                = "emoticon-sick"
     WIREGUARD_ICON           = "utils/coinimg/wireguard.png"
@@ -756,7 +774,40 @@ class MeileColors():
     ARCGIS_MAP2              = "https://server.arcgisonline.com/arcgis/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}.png"
     #CARTO_MAP                = "https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png"
     CARTO_MAP                = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
-    
+
+class ConnectStages():
+    '''Pipeline drawn by the connection dialog (ui.interfaces.ConnectionDialog).
+
+    ``STAGES`` is ordered: (icon, caption, keywords).  ``keywords`` are matched
+    case-insensitively against the last line of connect.log, which
+    cli.wallet.HandleWalletFunctions.connect() writes while it works, so a stage
+    lights up the moment its work starts.  The first stage carries no keyword:
+    it is the one that runs until another stage matches.
+    '''
+    SESSION_CAPTION     = "Session"
+    CREDENTIALS_CAPTION = "Credentials"
+    INTERNET_CAPTION    = "Internet"
+
+    # connect() writes "Creating new session(s)...", fetch_credentials() writes
+    # "Fetching credentials from node..." and the per-protocol writers bring the
+    # tunnel up ("Bringing up dVPN tunnel...") followed by an optional
+    # "Checking network connection..." (WireGuard has no separate check).
+    STAGES = (
+        (MeileColors.SESSION_ICON,     SESSION_CAPTION,     ()),
+        (MeileColors.CREDENTIALS_ICON, CREDENTIALS_CAPTION, ("fetching credentials",)),
+        (MeileColors.INTERNET_ICON,    INTERNET_CAPTION,    ("checking network",
+                                                             "checking internet",
+                                                             "bringing up")),
+    )
+
+    # Any of these in a status line means the running stage failed, so its ring
+    # freezes red instead of showing the success green.
+    FAILED_KEYWORDS = ("error", "failed", "exiting", "terminat", "timeout",
+                       "incorrect", "bad response", "cancel")
+
+    # Shown until the wallet reports a real status line.
+    DEFAULT_STATUS  = "Connecting..."
+
 class NodeKeys():
     '''v1.8.0
     NodesInfoKeys = ["Moniker","Address","Price","Hourly Price", "Country","Speed","Latency","Peers","Handshake","Type","Version","Status"]
