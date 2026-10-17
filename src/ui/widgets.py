@@ -1323,7 +1323,6 @@ class PlanRow(MDGridLayout):
             
             
             if mu_coin in ["arrr", "pivx"]:
-            
                 zaddress = self.check_invoice_status_pirate(address=True, coin=mu_coin)
                 
                 price_api = GetPriceAPI()
@@ -2726,7 +2725,7 @@ class NodeCarousel(MDBoxLayout):
                 
             self.ids.mapview.map_source = MapSource(
                 url=MeileColors.CARTO_MAP + f"?key={scrtsxx.CARTO_API}",
-                cache_key="cartodarknew",
+                cache_key="cartodarknew2",
                 min_zoom=0,
                 max_zoom=20,
                 attribution="© CARTO",
