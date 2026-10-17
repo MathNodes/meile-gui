@@ -918,7 +918,8 @@ class MainWindow(Screen):
 
 
     def build_node_data(self, ncountry):
-        floc = "imgs/"
+        from typedef.konstants import MeileColors
+        floc = MeileColors.FLOC
         NodeCountries = {}
 
         try:
@@ -939,7 +940,7 @@ class MainWindow(Screen):
             self.MeileMap = MapView(zoom=2,
                                     background_color=get_color_from_hex(MeileColors.MAP_BG_COLOR))
             source = MapSource(url=MeileColors.CARTO_MAP + f"?key={scrtsxx.CARTO_API}",
-                               cache_key="cartodark",
+                               cache_key="cartodarknew2",
                                tile_size=256,
                                image_ext="png",
                                attribution="© OpenStreetMap © CARTO",
@@ -1912,8 +1913,9 @@ class WalletScreen(Screen):
 
     def return_coin_logo(self, coin):
         self.MeileConfig = MeileGuiConfig()
+        from typedef.konstants import MeileColors
 
-        predir = "imgs/"
+        predir = MeileColors.FLOC
         logoDict = {}
         for c in IBCTokens.ibc_coins:
             logoDict[c] = predir + c + ".png"
@@ -3388,10 +3390,12 @@ class SMSPoolScreen(Screen):
         return ""
 
     def _flag_source(self, raw):
+        MeileConfig = MeileGuiConfig()
+        from typedef.konstants import MeileColors
         iso2 = self._country_iso2(raw)
         if not iso2:
             return ""
-        relative = path.join("imgs", "flags", "%s.png" % iso2)
+        relative = MeileConfig.resource_path(path.join(MeileColors.FLOC, "flags", "%s.png" % iso2))
         if path.exists(relative):
             return relative
         absolute = path.join(path.dirname(path.dirname(path.abspath(__file__))),

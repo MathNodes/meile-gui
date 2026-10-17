@@ -160,6 +160,10 @@ class QRCode():
         else:
             background.save(path.join(self.IMGDIR, ADDRESS + ".png"))
             return path.join(self.IMGDIR, ADDRESS + ".png")
+        else:
+            hashed_address = hashlib.sha256(ADDRESS.encode()).hexdigest()
+            background.save(path.join(self.IMGDIR, hashed_address + ".png"))
+            return path.join(self.IMGDIR, hashed_address + ".png")
 
     def generate_payment_qr_code(self, ADDRESS, coin=None, logo_path=None):
         '''Generate a QR code for a payment address.
@@ -226,7 +230,7 @@ class QRCode():
             fontSize = 11
 
         background = Image.new('RGBA', (QRimg.size[0], QRimg.size[1] + 15), (255, 255, 255, 255))
-        robotoFont = ImageFont.truetype(self.MeileConfig.resource_path('utils/fonts/Roboto-BoldItalic.ttf'), fontSize)
+        robotoFont = ImageFont.truetype(self.MeileConfig.resource_path('../utils/fonts/Roboto-BoldItalic.ttf'), fontSize)
 
         draw = ImageDraw.Draw(background)
         _, _, w, h = draw.textbbox((0, 0), text=str(ADDRESS), font=robotoFont)

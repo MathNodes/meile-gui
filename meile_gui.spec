@@ -4,9 +4,11 @@ from PyInstaller.utils.hooks import collect_all, collect_submodules, copy_metada
 from kivy_deps import sdl2, glew
 
 #('C:\\Users\\freqn\\AppData\\Local\\Programs\\Python\\Python39\\Lib\\site-packages\\coincurve\\*', 'coincurve'),
-datas = [('src\\kv', 'kv'), ('src\\imgs','imgs'), ('src\\awoc\\datum', 'datum'), ('src\\bin', 'bin'), ('src\\conf\\config', 'config'), ('src\\utils\\coinimg', 'utils\coinimg'), ('src\\utils\\fonts' , 'utils\\fonts'), ('src\\fonts', 'fonts')]
+datas = [('src\\fiat\\stripe_pay\\dist\\pyarmor_runtime_002918', 'pyarmor_runtime_002918'),('src\\kv', 'kv'), ('src\\imgs','imgs'), ('src\\awoc\\datum', 'datum'), ('src\\bin', 'bin'), ('src\\conf\\config', 'config'), ('src\\utils\\coinimg', 'utils\coinimg'), ('src\\utils\\fonts' , 'utils\\fonts'), ('src\\fonts', 'fonts')]
 binaries = []
 hiddenimports = []
+#tmp_ret = collect_all('pyarmor')
+#datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 tmp_ret = collect_all('bip_utils')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 tmp_ret = collect_all('mospy')
@@ -47,9 +49,16 @@ a = Analysis(
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,
-    noarchive=True,
+    noarchive=False,
 )
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+
+splash = Splash('splash_screen.png',
+                binaries=a.binaries,
+                datas=a.datas,
+                text_pos=(10, 50),
+                text_size=12,
+                text_color='black')
 
 exe = EXE(
     pyz,
@@ -57,6 +66,8 @@ exe = EXE(
     a.binaries,
     a.zipfiles,
     a.datas,
+    splash,
+    splash.binaries,
     *[Tree(p) for p in (sdl2.dep_bins + glew.dep_bins)],
     name='Meile',
     debug=False,
