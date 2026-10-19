@@ -53,6 +53,10 @@ DMG_TEXT_SIZE=14
 DMG_APP_X=190
 DMG_LINK_X=450
 DMG_ICON_Y=290
+# Finder hard-codes near-black caption text for any icon view that has a custom
+# background picture, so the artwork carries a light plate behind each caption.
+DMG_CAPTION_Y=357
+DMG_APP_NAME="$(basename "$APP" .app)"
 
 
 echo "Hard signing Meile.app..."
@@ -125,7 +129,10 @@ if [[ -z "$PYTHON_BIN" ]]; then
 fi
 echo "Building window background from $BANNER..."
 "$PYTHON_BIN" "$BG_HELPER" --banner "$BANNER" --out-dir "$BG_DIR" \
-	--width "$DMG_W" --height "$DMG_H" --arrow-y "$DMG_ICON_Y" || exit 1
+	--width "$DMG_W" --height "$DMG_H" --arrow-y "$DMG_ICON_Y" \
+	--caption "$DMG_APP_X:$DMG_APP_NAME" \
+	--caption "$DMG_LINK_X:Applications" \
+	--caption-y "$DMG_CAPTION_Y" || exit 1
 
 # Finder only draws the background crisply on a Retina screen when the 1x and
 # the 2x image are packed into a single multi-resolution TIFF.
