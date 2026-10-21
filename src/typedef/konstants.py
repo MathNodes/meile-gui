@@ -89,7 +89,7 @@ class HTTParams():
     APIURL                 = {"Name" : "MathNodes", "Country" : "Global", "url" : "https://api.sentinel.mathnodes.com"}
     APIS_URL = [APIURL,
         {"Name" : "Ungovernable", "Country" : "Canada", "url" : "https://api.ungovernable.dev"},
-        {"Name" : "Noncompliance", "Country" : "US" , "url" : "https://api.sentinel.noncompliant.network"},
+        {"Name" : "Noncompliance", "Country" : "US" , "url" : "https://api.sentinel.noncompliance.org"},
         {"Name" : "BlueFren", "Country" : "Singapore" , "url" : "https://api.bluefren.net:443"},
         {"Name" : "BusurNodes", "Country" : "Global" , "url" : "https://api-sentinel.busurnode.com:443"},
         {"Name" : "Sentinel DAO", "Country" : "Global" , "url" : "https://api.sentineldao.com:443"},
