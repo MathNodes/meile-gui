@@ -47,6 +47,59 @@ class SMSConf():
     TOPUP_COIN      = "arrr"         # coin used to top up the SMS balance
     MIN_TOPUP_USD   = 1.0
 
+    # Second top-up rail: a BTCPay ("BitPay compatible") invoice of the same
+    # USD amount, paid in any coin the Meile store has enabled.  Every entry is
+    # one row of the picker dialog (SMSPoolScreen.open_btcpay_dialog):
+    #   code       - BTCPay payment method id (key of "addresses" /
+    #                "paymentCodes" / "paymentSubtotals" in the invoice answer)
+    #   label      - what the picker dialog shows
+    #   icon       - bundled logo, lookup is by name in src/utils/coinimg
+    #   uri        - wallet URI scheme of the coin ("" = bare address only)
+    #   amount_key - URI parameter carrying the amount, because Monero wallets
+    #                expect "tx_amount" while every BIP21 wallet uses "amount"
+    #                ("" = the amount is part of the address, e.g. BOLT11)
+    #   units      - how many of the smallest unit make one coin (satoshi 1e8,
+    #                piconero 1e12, ...), because the legacy dictionaries of an
+    #                invoice (paymentTotals/paymentSubtotals) report the amount
+    #                in that unit: 33806464744 is 0.033806464744 XMR, not 33
+    #                billion XMR (see _btcpay_whole_coins)
+    # Regtest stores (and stores that only have the crypto code enabled from the
+    # summary page) return a different id, so _btcpay_payment_method normalises
+    # the keys of the answer and falls back to the "paymentMethods" list of the
+    # newer API.
+    BTCPAY_ICON     = "imgs/btcpay-button.png"
+    BTCPAY_TOOLTIP  = "Pay with BTCPay"
+    BTCPAY_COINS    = [
+        {"code" : "BTC-LN",   "label" : "Bitcoin (Lightning)", "icon" : "ln",
+         "uri"  : "lightning", "amount_key" : "", "units" : 100000000},
+        {"code" : "XMR",      "label" : "Monero",              "icon" : "xmr",
+         "uri"  : "monero",    "amount_key" : "tx_amount",
+         "units" : 1000000000000},
+        {"code" : "LTC-MWEB", "label" : "Litecoin (MWEB)",     "icon" : "mweb",
+         "uri"  : "litecoin",  "amount_key" : "amount",
+         "units" : 100000000},
+        {"code" : "ZEC",      "label" : "Zcash",               "icon" : "zec",
+         "uri"  : "zcash",     "amount_key" : "amount",
+         "units" : 100000000},
+        {"code" : "DASH",     "label" : "Dash",                "icon" : "dash",
+         "uri"  : "dash",      "amount_key" : "amount",
+         "units" : 100000000},
+    ]
+    # Stores running a recent BTCPay name some methods differently in the
+    # invoice's paymentMethods list than the legacy dictionaries do (Lightning
+    # is "BTC-LightningNetwork" instead of "BTC-LN").  Both spellings have to
+    # resolve to the coin above, otherwise a store that enables Lightning and
+    # on-chain Bitcoin at once answers the Lightning pick with its BTC address.
+    BTCPAY_METHOD_ALIASES = {
+        "BTC-LIGHTNINGNETWORK" : "BTC-LN",
+        "BTC-LIGHTNING"        : "BTC-LN",
+    }
+    BTCPAY_POLL     = 10             # seconds between invoice status checks
+    # Legacy invoice statuses (https://bitpay.com/api): an invoice that reached
+    # one of these is paid, anything in BTCPAY_DEAD will never be paid.
+    BTCPAY_PAID     = ("paid", "confirmed", "complete")
+    BTCPAY_DEAD     = ("expired", "invalid")
+
     # Where the "GET ARRR" button of the top-up card sends the user: the
     # exchange that sells the coins for the invoice (NonKYC referral link).
     ARRR_EXCHANGE_URL = "https://nonkyc.io?ref=695e014fe07f1444fdceaff6"

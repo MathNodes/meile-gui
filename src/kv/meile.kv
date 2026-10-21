@@ -2,6 +2,7 @@
 #: import get_color_from_hex kivy.utils.get_color_from_hex
 #: import MapView kivy_garden.mapview.MapView
 #: import MeileColors typedef.konstants.MeileColors
+#: import SMSConf typedef.konstants.SMSConf
 
 WindowManager:
 
@@ -3637,6 +3638,73 @@ WindowManager:
         shorten: True
         shorten_from: 'right'
 
+# Bitmap button of the SMS top-up card: the official BTCPay artwork paints
+# the face of a transparent flat button, root.image_source is resolved by
+# SMSPoolScreen (see ImageTooltipButton._asset).
+<ImageTooltipButton>:
+    # MDFlatButton paints no background of its own and binds width/height to
+    # the size of its (empty) label, so those two rules are cleared (-) and the
+    # button keeps the 534x223 aspect ratio of the BTCPay artwork.
+    -width: '91dp'
+    -height: '38dp'
+    padding: 0, 0, 0, 0
+    size_hint: None, None
+    Image:
+        source: root.image_source
+        size_hint: None, None
+        size: root.width, root.height
+        allow_stretch: True
+        keep_ratio: True
+
+# One selectable coin of the BTCPay top-up dialog (see SMSPoolScreen.
+# open_btcpay_dialog and BTCPayCoinContent.add_coin); clicking a row creates
+# the invoice for that coin.
+<BTCPayCoinRow>:
+    orientation: 'horizontal'
+    padding: '8dp', '2dp'
+    spacing: '10dp'
+    size_hint_y: None
+    height: '40dp'
+    radius: [6,]
+    elevation: 0
+    ripple_behavior: False
+    md_bg_color: MEILE if root.hovered else BG_CARD
+
+    Image:
+        source: root.coin_icon
+        size_hint: None, None
+        size: '26dp', '26dp'
+        pos_hint: {'center_y': .5}
+        allow_stretch: True
+        keep_ratio: True
+
+    Label:
+        text: root.coin_label
+        color: (0, 0, 0, 1) if root.hovered else TEXT_MAIN
+        font_size: '13sp'
+        bold: root.hovered
+        halign: 'left'
+        valign: 'middle'
+        text_size: self.size
+        shorten: True
+        shorten_from: 'right'
+
+# Body of the BTCPay coin picker (the rows are added from Python because the
+# coin list lives in SMSConf.BTCPAY_COINS).
+<BTCPayCoinContent>:
+    orientation: 'vertical'
+    spacing: '6dp'
+    padding: '8dp', '8dp'
+    size_hint_y: None
+    height: '260dp'
+
+    BoxLayout:
+        id: coins_box
+        orientation: 'vertical'
+        spacing: '6dp'
+        size_hint_y: None
+        height: self.minimum_height
+
 <SMSPoolScreen>:
     balance_label: balance_label
     balance_big: balance_big
@@ -4126,6 +4194,16 @@ WindowManager:
                                 text: 'TOP UP $10.00'
                                 width: '150dp'
                                 on_press: root.start_topup()
+                            # Second top-up rail: the same USD amount paid
+                            # through a BTCPay invoice in BTC (Lightning),
+                            # Monero, Litecoin MWEB, Zcash or Dash - the
+                            # artwork is resolved at start up, the dialog is
+                            # SMSPoolScreen.open_btcpay_dialog.
+                            ImageTooltipButton:
+                                id: btcpay_btn
+                                image_source: root.btcpay_icon
+                                tooltip_text: SMSConf.BTCPAY_TOOLTIP
+                                on_release: root.open_btcpay_dialog()
                             Widget:
                         # ARRR is not listed on the big exchanges - one click
                         # hop to where the coins for the invoice can be bought.

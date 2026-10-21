@@ -4,7 +4,7 @@ from kivymd.uix.tab import MDTabsBase
 from kivy.uix.screenmanager import ScreenManager
 from kivymd.uix.relativelayout import MDRelativeLayout
 from kivy.properties import  StringProperty, NumericProperty, ListProperty, \
-    OptionProperty
+    OptionProperty, ObjectProperty, BooleanProperty
 from kivy.animation import Animation
 from kivy.clock import Clock
 from kivy.metrics import dp
@@ -16,10 +16,11 @@ from kivy.uix.recyclegridlayout import RecycleGridLayout
 from kivy.uix.image import Image
 from kivy.uix.boxlayout import BoxLayout
 from kivymd.uix.button import MDFlatButton, MDRaisedButton, MDIconButton
+from kivymd.uix.card import MDCard
 from kivymd.uix.tooltip import MDTooltip
 from kivy.uix.switch import Switch
 from kivy_garden.mapview.view import MapView
-from kivymd.uix.behaviors import RoundedRectangularElevationBehavior, CircularElevationBehavior, RectangularRippleBehavior, CircularRippleBehavior
+from kivymd.uix.behaviors import RoundedRectangularElevationBehavior, CircularElevationBehavior, RectangularRippleBehavior, CircularRippleBehavior, HoverBehavior
 from kivymd.uix.fitimage.fitimage import FitImage
 from kivy.uix.behaviors import ButtonBehavior 
 from kivymd.uix.textfield.textfield import MDTextField
@@ -399,6 +400,78 @@ class ConnectionDialog(MDBoxLayout):
         wx, wy = widget.to_window(*position)
         dx, dy = self.to_window(0, 0)
         return wx - dx, wy - dy
+
+class ImageTooltipButton(MDFlatButton, MDTooltip):
+    '''Flat button whose face is a bitmap instead of a text label.
+
+    The BTCPay button of the SMS top-up card paints the official vendor
+    artwork and still behaves like every other control of that card (tooltip
+    on hover, no themed background).  ``image_source`` is set from Python
+    because the artwork is looked up in the resource directory at start up
+    (see SMSPoolScreen._asset).
+    '''
+
+    image_source = StringProperty("")
+
+
+class BTCPayCoinRow(MDCard, HoverBehavior):
+    '''One selectable coin of the BTCPay top-up picker.
+
+    ``pick_callback`` is the callback of the owning screen
+    (SMSPoolScreen.start_btcpay) and receives the BTCPay crypto code of the
+    coin, so the row carries no knowledge about invoices or wallet URIs.
+    It is not called ``on_pick``: kivy.uix.widget hands every ``on_*`` keyword
+    of a constructor to EventDispatcher.bind instead of setting the property,
+    so an ``on_pick=...`` argument would silently be dropped.
+    '''
+
+    coin_code     = StringProperty("")
+    coin_label    = StringProperty("")
+    coin_icon     = StringProperty("")
+    hovered       = BooleanProperty(False)
+    pick_callback = ObjectProperty(None, allownone=True)
+
+    def pick(self, *args):
+        if not callable(self.pick_callback):
+            return
+        try:
+            self.pick_callback(self.coin_code)
+        except Exception as e:
+            print("BTCPayCoinRow.pick: %s" % str(e))
+
+    def on_touch_down(self, touch):
+        if self.collide_point(*touch.pos):
+            self.pick()
+        return super().on_touch_down(touch)
+
+    def on_enter(self, *args):
+        self.hovered = True
+
+    def on_leave(self, *args):
+        self.hovered = False
+
+
+class BTCPayCoinContent(MDBoxLayout):
+    '''Body of the BTCPay coin picker dialog.
+
+    The rows are added from SMSPoolScreen because the coin list (and the path
+    of every logo) lives in Python: SMSConf.BTCPAY_COINS and
+    SMSPoolScreen._btcpay_coins.
+    '''
+
+    def add_coin(self, coin, pick_callback):
+        '''Append one row for a SMSConf.BTCPAY_COINS entry.'''
+        try:
+            box = self.ids.coins_box
+        except Exception:
+            return
+        box.add_widget(BTCPayCoinRow(
+            coin_code     = coin["code"],
+            coin_label    = coin["label"],
+            coin_icon     = coin.get("icon_path", coin.get("icon", "")),
+            pick_callback = pick_callback,
+        ))
+
 
 class QRDialogContent(MDBoxLayout):
     pass

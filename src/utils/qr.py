@@ -6,6 +6,8 @@ from PIL import ImageOps
 
 from os import path
 
+import tempfile
+
 from conf.meile_config import MeileGuiConfig
 
 from typedef.konstants import MeileColors
@@ -23,6 +25,36 @@ class QRCode():
         self.IMGDIR      = MeileGuiConfig.IMGDIR
         self.MeileConfig = MeileGuiConfig()
         
+    def _font(self, name, fontSize):
+        '''A font of the application at ``fontSize``, never an exception.
+
+        MeileGuiConfig.resource_path() resolves into the frozen bundle
+        (sys._MEIPASS) once packaged and next to conf/meile_config.py while the
+        application runs from a checkout - a directory that holds neither
+        "fonts" nor "utils/fonts".  The font is therefore looked up next to
+        this module first (src/utils/fonts in a checkout, <bundle>/utils/fonts
+        when packaged) and PIL's built-in font is used when no candidate
+        exists, so a missing font can never blank out a QR code.
+        '''
+        here = path.dirname(path.abspath(__file__))
+        candidates = [
+            path.join(here, 'fonts', name),
+            self.MeileConfig.resource_path('utils/fonts/' + name),
+            self.MeileConfig.resource_path('fonts/' + name),
+            self.MeileConfig.resource_path('../utils/fonts/' + name),
+            self.MeileConfig.resource_path('../fonts/' + name),
+        ]
+        for candidate in candidates:
+            if not path.exists(candidate):
+                continue
+            try:
+                return ImageFont.truetype(candidate, fontSize)
+            except Exception as e:
+                print("QR font %s unusable: %s" % (candidate, e))
+        print("QR font %s not found, using the default font" % name)
+        return ImageFont.load_default()
+
+
     def generate_wg_qr_code(self, conf_path, label=None):
 
         
@@ -34,7 +66,7 @@ class QRCode():
         if not label:
             label = path.basename(conf_path)
 
-        robotoFont = ImageFont.truetype(self.MeileConfig.resource_path(MeileColors.FONT_FACE), 13)
+        robotoFont = self._font(path.basename(MeileColors.FONT_FACE), 13)
    
         wg_logo_path = self.MeileConfig.resource_path(MeileColors.WIREGUARD_ICON)
         has_logo = path.exists(wg_logo_path)
@@ -78,12 +110,7 @@ class QRCode():
             (QRimg.size[0], QRimg.size[1] + 15),
             (255, 255, 255, 255),
         )
-        robotoFont = ImageFont.truetype(
-            self.MeileConfig.resource_path(
-                'utils/fonts/Roboto-BoldItalic.ttf'
-            ),
-            fontSize,
-        )
+        robotoFont = self._font('Roboto-BoldItalic.ttf', fontSize)
 
         draw = ImageDraw.Draw(background)
         _, _, w, h = draw.textbbox((0, 0), text=str(label), font=robotoFont)
@@ -143,24 +170,29 @@ class QRCode():
             
         background = Image.new('RGBA', (QRimg.size[0], QRimg.size[1] + 15), (255,255,255,255))
         #robotoFont = ImageFont.truetype(pkg_resources.resource_filename(__name__, os.path.join('fonts', 'Roboto-BoldItalic.ttf')), fontSize)
-        robotoFont = ImageFont.truetype(self.MeileConfig.resource_path('utils/fonts/Roboto-BoldItalic.ttf'), fontSize)
+        robotoFont = self._font('Roboto-BoldItalic.ttf', fontSize)
     
         draw = ImageDraw.Draw(background)
         
-        _, _, w, h = draw.textbbox((0, 0), text=str(DepositAddress))
+        # The caption has to be centred with the metrics of the font it is
+        # drawn with (the default font metrics would put it off centre).
+        _, _, w, h = draw.textbbox((0, 0), text=str(DepositAddress), font=robotoFont)
         draw.text(((QRimg.size[0]+15 - w)/2,QRimg.size[1]-2),DepositAddress, (0,0,0), font=robotoFont)
         
         background.paste(QRimg, (0,0))
-        if ADDRESS.startswith(("vmess", "vless")):
-            background.save(path.join(self.IMGDIR, ADDRESS[:5] + ".png"))
-            return path.join(self.IMGDIR, ADDRESS[0:5] + ".png")
-        else:
-            background.save(path.join(self.IMGDIR, ADDRESS + ".png"))
-            return path.join(self.IMGDIR, ADDRESS + ".png")
-        else:
-            hashed_address = hashlib.sha256(ADDRESS.encode()).hexdigest()
-            background.save(path.join(self.IMGDIR, hashed_address + ".png"))
-            return path.join(self.IMGDIR, hashed_address + ".png")
+
+        # eCryptFS (the filesystem of the encrypted data volume) rejects file
+        # names longer than 143 characters, so wallet URIs and config strings
+        # are sanitised and truncated before they are used as a file name -
+        # generate_payment_qr_code() does the same for its output.  Short
+        # alphanumeric addresses keep their name because
+        # get_qr_code_address() looks the wallet QR code up as
+        # "<address>.png".
+        name = ADDRESS[:5] if ADDRESS.startswith(("vmess", "vless")) else ADDRESS
+        safe_name = ''.join(c if c.isalnum() else '_' for c in name)[:100]
+        out_path = path.join(self.IMGDIR, safe_name + ".png")
+        background.save(out_path)
+        return out_path
 
     def generate_payment_qr_code(self, ADDRESS, coin=None, logo_path=None):
         '''Generate a QR code for a payment address.
@@ -199,21 +231,27 @@ class QRCode():
 
         QRimg = QRcode.make_image(fill_color='Black', back_color="white").convert('RGB')
 
+        # The logo is decoration only: an icon file that cannot be opened must
+        # not cost the payment QR code, and the logo never covers more than a
+        # fifth of the code (ERROR_CORRECT_H restores what it covers).
         if coinLogo and path.exists(coinLogo):
-            logo = Image.open(coinLogo)
-            basewidth = 100
-            wpercent = (basewidth / float(logo.size[0]))
-            hsize = int((float(logo.size[1]) * float(wpercent)))
-            logo = logo.resize((basewidth, hsize))
-            pos = (
-                (QRimg.size[0] - logo.size[0]) // 2,
-                (QRimg.size[1] - logo.size[1]) // 2,
-            )
-            if logo.mode in ('RGBA', 'LA') or (logo.mode == 'P' and 'transparency' in logo.info):
-                logo = logo.convert('RGBA')
-                QRimg.paste(logo, pos, logo)
-            else:
-                QRimg.paste(logo, pos)
+            try:
+                logo = Image.open(coinLogo)
+                basewidth = max(24, min(100, int(QRimg.size[0] * 0.2)))
+                wpercent = (basewidth / float(logo.size[0]))
+                hsize = max(1, int((float(logo.size[1]) * float(wpercent))))
+                logo = logo.resize((basewidth, hsize))
+                pos = (
+                    (QRimg.size[0] - logo.size[0]) // 2,
+                    (QRimg.size[1] - logo.size[1]) // 2,
+                )
+                if logo.mode in ('RGBA', 'LA') or (logo.mode == 'P' and 'transparency' in logo.info):
+                    logo = logo.convert('RGBA')
+                    QRimg.paste(logo, pos, logo)
+                else:
+                    QRimg.paste(logo, pos)
+            except Exception as e:
+                print("QR logo %s skipped: %s" % (coinLogo, e))
 
         # crop a bit
         border = (0, 4, 0, 30)  # left, top, right, bottom
@@ -227,14 +265,42 @@ class QRCode():
             fontSize = 11
 
         background = Image.new('RGBA', (QRimg.size[0], QRimg.size[1] + 15), (255, 255, 255, 255))
-        robotoFont = ImageFont.truetype(self.MeileConfig.resource_path('../utils/fonts/Roboto-BoldItalic.ttf'), fontSize)
+        robotoFont = self._font('Roboto-BoldItalic.ttf', fontSize)
 
         draw = ImageDraw.Draw(background)
-        _, _, w, h = draw.textbbox((0, 0), text=str(ADDRESS), font=robotoFont)
-        draw.text(((QRimg.size[0] + 15 - w) / 2, QRimg.size[1] - 2), ADDRESS, (0, 0, 0), font=robotoFont)
+        # The caption is the wallet URI, which is a lot wider than the QR code
+        # itself (a BOLT11 invoice alone is ~250 characters), so it is
+        # shortened until it fits the image - a caption wider than the image
+        # would leave a wide white strip next to the code in the dialog.  The
+        # complete address/URI is the text field of the dialog.
+        caption = str(ADDRESS)
+        try:
+            while len(caption) > 8:
+                if draw.textbbox((0, 0), caption + '...', font=robotoFont)[2] <= QRimg.size[0] - 10:
+                    break
+                caption = caption[:-1]
+        except Exception as e:
+            print("QR caption could not be measured: %s" % e)
+            caption = str(ADDRESS)[:32]
+        if caption != str(ADDRESS):
+            caption = caption + '...'
+        _, _, w, h = draw.textbbox((0, 0), text=caption, font=robotoFont)
+        draw.text(((QRimg.size[0] + 15 - w) / 2, QRimg.size[1] - 2), caption, (0, 0, 0), font=robotoFont)
 
         background.paste(QRimg, (0, 0))
 
-        safe_name = ''.join(c if c.isalnum() else '_' for c in ADDRESS)[:120]
-        background.save(path.join(self.IMGDIR, 'pay_' + safe_name + ".png"))
-        return path.join(self.IMGDIR, 'pay_' + safe_name + ".png")
+        # eCryptFS rejects file names longer than 143 characters, prefix and
+        # ".png" included (see generate_qr_code), so the URI is cut down to
+        # 100 characters - the QR code itself still carries all of it.
+        safe_name = ''.join(c if c.isalnum() else '_' for c in ADDRESS)[:100]
+        out_path = path.join(self.IMGDIR, 'pay_' + safe_name + ".png")
+        try:
+            background.save(out_path)
+            return out_path
+        except Exception as e:
+            print("QR image %s could not be saved: %s" % (out_path, e))
+        # An unwritable image folder must not stop a payment: the dialog only
+        # needs a path that exists.
+        out_path = path.join(tempfile.gettempdir(), 'meile_pay_' + safe_name + ".png")
+        background.save(out_path)
+        return out_path
