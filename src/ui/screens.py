@@ -1,5 +1,5 @@
 from geography.continents import OurWorld
-from ui.interfaces import LatencyContent, TooltipMDIconButton, ConnectionDialog, ProtectedLabel, IPAddressTextField, ProtocolTextField, ConnectedNode, QuotaPct,BandwidthBar,BandwidthLabel, MapCenterButton, UploadLabel, DownloadLabel,QRDialogV2RayContent, TimeLabel, QRDialogContent
+from ui.interfaces import LatencyContent, TooltipMDIconButton, ConnectionDialog, ProtectedLabel, IPAddressTextField, ProtocolTextField, ConnectedNode, QuotaPct,BandwidthBar,BandwidthLabel, MapCenterButton, UploadLabel, DownloadLabel,QRDialogV2RayContent, TimeLabel, QRDialogContent, BTCPayCoinContent
 from typedef.win import WindowNames
 from cli.sentinel import  NodeTreeData
 from typedef.konstants import NodeKeys, TextStrings, MeileColors, HTTParams, IBCTokens, ConfParams, SMSConf
@@ -8,6 +8,7 @@ import main.main as Meile
 from ui.widgets import WalletInfoContent, SeedInfoContent, MDMapCountryButton, RatingContent, NodeRV, NodeRV2, NodeAccordion, NodeRow, NodeDetails, PlanAccordion, PlanRow, PlanDetails, NodeCarousel, SubTypeDialog, SubscribeContent, LoadingSpinner, ShareTypeDialog
 from utils.qr import QRCode
 from cli.wallet import HandleWalletFunctions
+from cli.btcpay import BTCPayDB
 from conf.meile_config import MeileGuiConfig
 from cli.warp import WarpHandler
 from adapters import HTTPRequests, DNSRequests
@@ -53,6 +54,7 @@ import sys
 import copy
 from copy import deepcopy
 import re
+from urllib.parse import unquote
 from time import sleep, time
 from functools import partial
 from shutil import rmtree
@@ -64,6 +66,9 @@ from datetime import datetime, timedelta
 import json
 from treelib.exceptions import NodeIDAbsentError
 import base64
+import subprocess
+import traceback
+from pathlib import Path
 
 BASE_URL = "https://api.smspool.net"
 
@@ -2810,6 +2815,12 @@ class SMSPoolScreen(Screen):
     RATE_POOR = "#c0392b"
     PLACEHOLDER = "#8d8d8d"
 
+    # Face of the "Pay with BTCPay" button of the top-up card (see
+    # <ImageTooltipButton> in meile.kv).  Resolved at start up because the
+    # artwork sits next to the executable in a frozen build and inside src/
+    # when the application runs from a checkout (see _asset).
+    btcpay_icon = StringProperty("")
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         # SMSPool credentials (kept in the git-ignored secrets module)
@@ -2856,6 +2867,25 @@ class SMSPoolScreen(Screen):
         self.zaddress          = None
         self.zaddress_balance  = 0.0
 
+        # BTCPay top-up state (BTC Lightning, Monero, Litecoin MWEB, Zcash,
+        # Dash - see open_btcpay_dialog and SMSConf.BTCPAY_COINS).  The invoice
+        # is created for the picked coin and then polled from a worker thread
+        # (btcpay_stop ends that thread), so the two top-up rails never share
+        # state with the ARRR one above.
+        self.btcpay_icon        = ""        # resolved in _startup (kv binding)
+        self.btcpay_client      = None      # btcpay.BTCPayClient of the store
+        self.btcpay_coin_dialog = None      # coin picker dialog
+        self.btcpay_dialog      = None      # invoice / QR dialog
+        self.btcpay_content     = None
+        self.btcpay_coin        = None      # picked SMSConf.BTCPAY_COINS entry
+        self.btcpay_code        = ""        # method id the invoice answered with
+        self.btcpay_invoice_id  = ""
+        self.btcpay_address     = ""
+        self.btcpay_amount      = None
+        self.btcpay_started     = False
+        self.btcpay_crediting   = False
+        self.btcpay_stop        = Event()
+
         Clock.schedule_once(lambda dt: self._startup(), 0.3)
 
     # ------------------------------------------------------------------
@@ -2887,6 +2917,21 @@ class SMSPoolScreen(Screen):
             return json.loads(result)
         except Exception:
             return None
+
+    def _asset(self, relative):
+        '''Absolute path of a bundled asset (image, font, ...).
+
+        MeileGuiConfig.resource_path() points into the frozen bundle
+        (sys._MEIPASS) once the application is packaged and at src/conf while
+        it runs from a checkout, so a development run falls back to the src
+        directory this module lives in - the same fallback _flag_source uses.
+        '''
+        resolved = MeileGuiConfig().resource_path(relative)
+        if path.exists(resolved):
+            return resolved
+        absolute = path.join(path.dirname(path.dirname(path.abspath(__file__))),
+                             relative)
+        return absolute if path.exists(absolute) else resolved
 
     @staticmethod
     def _price_from_payload(data):
@@ -3016,6 +3061,8 @@ class SMSPoolScreen(Screen):
         self.uuid = self._get_uuid()
         self._sync_uuid_label()
         self._render_quote()        # PRICE QUOTE card starts in its idle state
+        # Artwork of the "Pay with BTCPay" button (kv binds root.btcpay_icon).
+        self.btcpay_icon = self._asset(SMSConf.BTCPAY_ICON)
         if self.uuid:
             self.fetch_balance()
         else:
@@ -3117,7 +3164,7 @@ class SMSPoolScreen(Screen):
         if not self.uuid:
             self._set_status("No wallet UUID - cannot top up", ok=False)
             return
-        if self.topup_started:
+        if self.topup_started or self.btcpay_started:
             return
         amount = float(self.topup_amount or 0.0)
         if amount < float(SMSConf.MIN_TOPUP_USD):
@@ -3275,6 +3322,546 @@ class SMSPoolScreen(Screen):
         self.topup_started   = False
         self.topup_crediting = False
         self._set_status("Top-up cancelled", ok=None)
+
+    # ------------------------------------------------------------------
+    # Top-up with BTCPay (BTC Lightning, Monero, Litecoin MWEB, Zcash, Dash)
+    # ------------------------------------------------------------------
+    def _btcpay_coins(self):
+        '''SMSConf.BTCPAY_COINS with the logo of every coin resolved on disk.
+
+        The ``icon`` name is kept because utils.qr looks a bundled logo up by
+        name, ``icon_path`` is the absolute file the picker dialog paints.
+        '''
+        coins = []
+        for entry in SMSConf.BTCPAY_COINS:
+            coin = dict(entry)
+            coin["icon_path"] = self._asset("utils/coinimg/%s.png" % coin["icon"])
+            coins.append(coin)
+        return coins
+
+    @staticmethod
+    def _btcpay_code(value):
+        '''Normalise a BTCPay payment method id ("btc_ln" -> "BTC-LN").'''
+        return str(value or "").strip().upper().replace("_", "-")
+
+    def _btcpay_coin(self, code):
+        '''The SMSConf.BTCPAY_COINS entry of a crypto code (or None).'''
+        wanted = self._btcpay_code(code)
+        for coin in self._btcpay_coins():
+            if self._btcpay_code(coin["code"]) == wanted:
+                return coin
+        return None
+
+    @classmethod
+    def _btcpay_lookup(cls, mapping, code):
+        '''Case insensitive lookup of ``code`` in a BTCPay invoice dict.
+
+        The keys of the legacy dictionaries (``addresses``, ``paymentCodes``,
+        ``paymentSubtotals``, ...) are the payment method ids of the store, so
+        a recent store names its Lightning entry "BTC-LightningNetwork" where
+        SMSConf.BTCPAY_COINS says "BTC-LN" (see SMSConf.BTCPAY_METHOD_ALIASES).
+        '''
+        if not isinstance(mapping, dict):
+            return None
+        wanted = cls._btcpay_code(code)
+        for key, value in mapping.items():
+            found = cls._btcpay_code(key)
+            if found == wanted or SMSConf.BTCPAY_METHOD_ALIASES.get(found) == wanted:
+                return value
+        return None
+
+    @classmethod
+    def _btcpay_bare_address(cls, value):
+        '''Bare address (or BOLT11 invoice) carried by a BTCPay answer.
+
+        ``addresses`` maps a payment method to its address / bolt11 string,
+        while ``paymentCodes`` and ``paymentUrls`` carry whole wallet URIs
+        ("monero:8AT...?amount=1.23") and payment links, so the scheme and the
+        query string are stripped off here.
+        '''
+        if isinstance(value, dict):
+            for key in ("BIP21", "bip21", "BOLT11", "bolt11", "address",
+                        "uri", "URL", "url"):
+                if value.get(key):
+                    return cls._btcpay_bare_address(value[key])
+            return ""
+        text = str(value or "").strip()
+        if ":" in text:
+            text = text.split(":", 1)[1]
+            if text.startswith("//"):
+                text = text[2:]
+        return text.split("?", 1)[0].strip()
+
+    @classmethod
+    def _btcpay_uri_amount(cls, value):
+        '''Amount BTCPay itself put into a wallet URI (or None).
+
+        The ``paymentCodes`` / ``paymentUrls`` of an invoice are meant to be
+        opened by a wallet, so their ``amount`` / ``tx_amount`` is in whole
+        coins - unlike the legacy ``paymentTotals`` / ``paymentSubtotals``,
+        which the BitPay format reports in the smallest unit of the chain
+        (satoshi, piconero, ...), where "14900" would mean 0.00014900 BTC.
+        The amount of the URI is only read when the invoice has no legacy
+        amount at all (see ``_btcpay_whole_coins``).
+        '''
+        if isinstance(value, dict):
+            for key in ("BIP21", "bip21", "BOLT11", "bolt11", "uri", "URL", "url"):
+                found = cls._btcpay_uri_amount(value.get(key))
+                if found is not None:
+                    return found
+            return None
+        text = str(value or "")
+        if "?" not in text:
+            return None
+        for pair in text.split("?", 1)[1].split("&"):
+            name, _, raw = pair.partition("=")
+            if name.strip().lower() not in ("amount", "tx_amount", "txamount"):
+                continue
+            try:
+                return float(unquote(raw))
+            except (TypeError, ValueError):
+                return None
+        return None
+
+    @classmethod
+    def _btcpay_whole_coins(cls, amount, coin):
+        '''Whole coins instead of a whole number of the smallest unit.
+
+        The legacy dictionaries of a BitPay compatible invoice report every
+        amount in the smallest unit of its chain - "paymentTotals": {"XMR":
+        33806464744} is 0.033806464744 XMR while "BTC-LN": 24228 is 0.00024228
+        BTC - and the size of that unit differs per coin: 8 decimals for the
+        BTC family (satoshi, litoshi, zatoshi, duff) but 12 for Monero
+        (piconero), so it is read from SMSConf.BTCPAY_COINS["units"].
+
+        An integral amount is such a smallest-unit amount and is divided by the
+        units of the coin; a wallet URI amount or a "paymentMethods" amount of
+        the newer API already has decimals (whole coins) and is returned
+        untouched, as is an amount of a coin without a "units" entry.
+        '''
+        try:
+            value = float(amount)
+        except (TypeError, ValueError):
+            return amount
+        units = float(coin.get("units") or 0)
+        if units > 1 and value >= 1 and value.is_integer():
+            return value / units
+        return amount
+
+    @classmethod
+    def _btcpay_method_ids(cls, method):
+        '''Every id a ``paymentMethods`` entry of an invoice can be found by.
+
+        The method of a recent store is named by the API ("BTC-LightningNetwork")
+        while SMSConf.BTCPAY_COINS uses the id of the legacy dictionaries
+        ("BTC-LN"), so every known alias is added to the ids of the entry.
+        '''
+        ids = []
+        for key in ("cryptoCode", "paymentMethod", "paymentMethodId", "code"):
+            if method.get(key):
+                ids.append(cls._btcpay_code(method[key]))
+        crypto = cls._btcpay_code(method.get("cryptoCode"))
+        sub    = cls._btcpay_code(method.get("paymentMethod")
+                                  or method.get("paymentMethodId"))
+        if crypto and sub and not sub.startswith(crypto):
+            ids.append("%s-%s" % (crypto, sub))
+        for raw in list(ids):
+            alias = SMSConf.BTCPAY_METHOD_ALIASES.get(raw)
+            if alias and alias not in ids:
+                ids.append(alias)
+        return ids
+
+    def open_btcpay_dialog(self):
+        '''Pick the coin the BTCPay invoice of the entered amount is paid in.'''
+        if not self.uuid:
+            self._set_status("No wallet UUID - cannot top up", ok=False)
+            return
+        if self.btcpay_started:
+            return
+        if self.topup_started:
+            self._set_status("A Pirate Chain top-up is already running", ok=False)
+            return
+        amount = float(self.topup_amount or 0.0)
+        if amount < float(SMSConf.MIN_TOPUP_USD):
+            self._set_status("Minimum top-up is $%.2f" % float(SMSConf.MIN_TOPUP_USD), ok=False)
+            return
+        coins = self._btcpay_coins()
+        if not coins:
+            self._set_status("No BTCPay coins configured", ok=False)
+            return
+        content = BTCPayCoinContent()
+        for coin in coins:
+            content.add_coin(coin, self.start_btcpay)
+        self._close_btcpay_dialog()
+        self.btcpay_coin_dialog = MDDialog(
+            title="Pay $%.2f with BTCPay" % amount,
+            type="custom",
+            content_cls=content,
+            md_bg_color=get_color_from_hex(MeileColors.BLACK),
+            buttons=[
+                MDFlatButton(
+                    text="CANCEL",
+                    theme_text_color="Custom",
+                    text_color=get_color_from_hex(MeileColors.MEILE),
+                    on_release=self.cancel_btcpay
+                ),
+            ]
+        )
+        self.btcpay_coin_dialog.open()
+        self._set_status("Pick the coin to pay $%.2f in" % amount, ok=None)
+
+    def start_btcpay(self, code):
+        '''Create the BTCPay invoice for the coin the user picked.'''
+        coin = self._btcpay_coin(code)
+        if not coin or self.btcpay_started:
+            return
+        self._close_btcpay_dialog()
+        self.btcpay_started    = True
+        self.btcpay_crediting  = False
+        self.btcpay_coin       = coin
+        self.btcpay_code       = coin["code"]
+        self.btcpay_invoice_id = ""
+        self.btcpay_address    = ""
+        self.btcpay_amount     = None
+        self.btcpay_stop.clear()
+        self._set_status("Creating BTCPay invoice...", ok=None)
+        # Creating the invoice is a blocking HTTP call -> worker thread.
+        Thread(target=self._btcpay_create_invoice, args=(coin,),
+               daemon=True).start()
+
+    def _btcpay_create_invoice(self, coin):
+        '''Ask BTCPay for a USD invoice (blocking HTTP, worker thread).
+
+        An invoice is quoted in USD and answers with one payment method per
+        coin the store has enabled, so it is created once and the address of
+        the picked coin is read out of the answer (see
+        _btcpay_payment_method).  The merchant token of the pickled client is
+        filled in by btcpay.BTCPayClient, it does not select a coin.
+        '''
+        try:
+            btcpay  = BTCPayDB()
+            pickled = btcpay.get_remote_btcpay_client()
+            if not pickled:
+                raise RuntimeError("no pickled BTCPay client data")
+            self.btcpay_client = btcpay.unpickle_btc_client(pickled)
+            email = getattr(scrtsxx, "BTCPayEmail", "") or ""
+            invoice = self.btcpay_client.create_invoice({
+                "price"            : float(self.topup_amount),
+                "currency"         : "USD",
+                "merchantName"     : "Meile dVPN",
+                "itemDesc"         : "Meile SMS balance top-up",
+                "notificationEmail": email,
+                "transactionSpeed" : "high",
+                "buyer"            : {"name"  : str(self.uuid),
+                                      "email" : email,
+                                      "notify": True}
+            })
+        except Exception as e:
+            print("BTCPay invoice error: %s" % str(e))
+            self._debug("BTCPay invoice ERR: %s" % str(e)[:200])
+            Clock.schedule_once(lambda dt: self._btcpay_abort(
+                "Could not create BTCPay invoice"), 0)
+            return
+        print("BTCPay invoice: %s" % str(invoice))
+        Clock.schedule_once(lambda dt: self._btcpay_invoice_ready(coin, invoice), 0)
+
+    @classmethod
+    def _btcpay_available(cls, invoice):
+        '''Ids of every payment method an invoice answers with (for messages).'''
+        if not isinstance(invoice, dict):
+            return ""
+        ids = []
+        for key in ("addresses", "paymentCodes", "paymentUrls", "paymentSubtotals"):
+            value = invoice.get(key)
+            if isinstance(value, dict):
+                ids.extend(cls._btcpay_code(k) for k in value.keys())
+        methods = invoice.get("paymentMethods")
+        if isinstance(methods, list):
+            for method in methods:
+                if isinstance(method, dict):
+                    ids.extend(cls._btcpay_method_ids(method))
+        unique = []
+        for item in ids:
+            if item and item not in unique:
+                unique.append(item)
+        return ", ".join(unique)
+
+    def _btcpay_payment_method(self, invoice, coin):
+        '''Address, amount and real method id of ``coin`` inside an invoice.
+
+        A legacy ("BitPay compatible") invoice answers with one entry per
+        payment method enabled on the store::
+
+            "addresses"       : {"BTC-LN": "lnbc1...", "XMR": "8AT..."}
+            "paymentCodes"    : {"XMR": {"BIP21": "monero:8AT...?amount=1.2"}}
+            "paymentUrls"     : {"XMR": {"BIP21": "monero:...", "BIP72": "..."}}
+            "paymentTotals"   : {"XMR": 1234000000000}
+
+        while the newer API answers with a ``paymentMethods`` list of
+        {"cryptoCode": "XMR", "paymentMethod": "XMR", "destination": "8AT...",
+        "amount": "1.234", "paymentLink": "..."} entries - both shapes are read
+        here.  When a store does not expose the id of the coin method (BTCPay
+        names the Lightning method "BTC-LN" and the MWEB method "LTC-MWEB", a
+        store can also be limited to the plain coin) the bare crypto code is
+        tried as a fallback so the invoice stays payable, and the ``code`` that
+        actually matched is the one the dialog shows.
+
+        The address is the bare address (or BOLT11 string) of the method while
+        the amount is in whole coins.  ``paymentTotals`` (what the invoice asks
+        for, network fee included) is the first choice because that is the
+        number the store itself shows, then the amount BTCPay put into the
+        wallet URI and finally the "amount" of the newer paymentMethods list;
+        every one of them goes through ``_btcpay_whole_coins`` because the
+        legacy fields are smallest-unit amounts.
+        '''
+        if not isinstance(invoice, dict):
+            return None
+        wanted = [self._btcpay_code(coin["code"])]
+        base   = wanted[0].split("-")[0]
+        if base and base != wanted[0]:
+            wanted.append(base)
+
+        addresses = invoice.get("addresses")
+        codes     = invoice.get("paymentCodes")
+        urls      = invoice.get("paymentUrls")
+        totals    = invoice.get("paymentTotals") or invoice.get("paymentSubtotals")
+        methods   = invoice.get("paymentMethods")
+
+        for code in wanted:
+            source  = self._btcpay_lookup(codes, code) or self._btcpay_lookup(urls, code)
+            address = self._btcpay_bare_address(
+                self._btcpay_lookup(addresses, code) or source)
+            # An integral legacy amount is a smallest-unit amount of this chain
+            # (33806464744 XMR -> 0.033806464744 XMR, 24228 BTC-LN satoshis ->
+            # 0.00024228), see _btcpay_whole_coins.
+            amount  = self._btcpay_whole_coins(
+                self._btcpay_lookup(totals, code), coin)
+            if amount in (None, ""):
+                amount = self._btcpay_whole_coins(
+                    self._btcpay_uri_amount(source), coin)
+            if isinstance(methods, list):
+                for method in methods:
+                    if not isinstance(method, dict):
+                        continue
+                    if code not in self._btcpay_method_ids(method):
+                        continue
+                    if not address:
+                        address = self._btcpay_bare_address(
+                            method.get("destination") or method.get("address"))
+                    if amount in (None, ""):
+                        # "amount" / "due" are decimal strings in this API.
+                        try:
+                            amount = float(method.get("amount")
+                                           or method.get("due"))
+                        except (TypeError, ValueError):
+                            amount = None
+                        amount = self._btcpay_whole_coins(amount, coin)
+                    break
+            if address:
+                return {"code": code, "address": address, "amount": amount}
+        return None
+
+    @staticmethod
+    def _btcpay_amount_text(amount, coin=None):
+        '''Readable crypto amount ("0.00123456") or "".
+
+        BTCPay reports the amount of a payment method as a float, so it is
+        printed with as many digits as the smallest unit of ``coin`` needs - 8
+        for the BTC family, 12 for Monero, whose amounts would be cut off by a
+        fixed "%.8f" (0.033806464744 XMR must not become 0.03380646) - and
+        trailing zeroes are dropped.
+        '''
+        try:
+            value = float(amount)
+        except (TypeError, ValueError):
+            return ""
+        digits = 8
+        units  = int((coin or {}).get("units") or 0)
+        if units > 1:
+            digits = len(str(units)) - 1
+        return (("%." + str(digits) + "f") % value).rstrip("0").rstrip(".")
+
+    @classmethod
+    def _btcpay_uri(cls, coin, address, amount):
+        '''Wallet URI of ``address`` (see SMSConf.BTCPAY_COINS).
+
+        A BOLT11 invoice carries its amount itself, Monero wallets read the
+        amount from ``tx_amount`` while every BIP21 wallet expects ``amount``.
+        '''
+        address = str(address or "").strip()
+        if not address:
+            return ""
+        scheme = coin.get("uri") or ""
+        if scheme == "lightning":
+            if address.lower().startswith("lightning:"):
+                return address
+            return "lightning:" + address
+        text = cls._btcpay_amount_text(amount, coin)
+        if scheme and text and coin.get("amount_key"):
+            return "%s:%s?%s=%s" % (scheme, address, coin["amount_key"], text)
+        return ("%s:%s" % (scheme, address)) if scheme else address
+
+    def _btcpay_invoice_ready(self, coin, invoice):
+        '''Show the QR code of the invoice and start watching it (main thread).'''
+        if not self.btcpay_started:
+            return
+        payment = self._btcpay_payment_method(invoice, coin)
+        if not payment:
+            self._debug("BTCPay %s invoice: %s" % (coin["code"], str(invoice)[:400]))
+            self._btcpay_abort("BTCPay invoice has no %s method (has: %s)" % (
+                coin["code"], self._btcpay_available(invoice) or "none"))
+            return
+        self.btcpay_invoice_id = str(invoice.get("id") or "")
+        self.btcpay_address    = payment["address"]
+        self.btcpay_amount     = payment["amount"]
+        # The store reports the method it really used ("BTC-LN", "XMR", ...).
+        self.btcpay_code       = payment["code"]
+        uri = self._btcpay_uri(coin, self.btcpay_address, self.btcpay_amount)
+        self._debug("BTCPay %s invoice %s" % (self.btcpay_code, self.btcpay_invoice_id))
+        self._show_btcpay_dialog(coin, uri)
+        Thread(target=self._btcpay_watch, args=(self.btcpay_invoice_id,),
+               daemon=True).start()
+
+    def _show_btcpay_dialog(self, coin, uri):
+        '''QR dialog of the created invoice (same layout as the ARRR top-up).'''
+        amount  = self._btcpay_amount_text(self.btcpay_amount, coin)
+        content = QRDialogContent()
+        content.ids.zaddress_field.text = self.btcpay_address
+        content.ids.price_field.text    = ("%s %s" % (amount, self.btcpay_code)
+                                           if amount else self.btcpay_code)
+        content.ids.status.text         = "Waiting for the %s payment..." % coin["label"]
+        # A QR that cannot be drawn must say so instead of leaving an empty
+        # white box in the dialog: the address (the wallet URI for Monero and
+        # the BIP21 chains) is in the field below either way.
+        qr_path = ""
+        try:
+            qr_path = QRCode().generate_payment_qr_code(
+                uri, logo_path=coin["icon_path"])
+        except Exception as e:
+            print("BTCPay QR error: %s" % str(e))
+            traceback.print_exc()
+        if qr_path and path.exists(qr_path):
+            content.ids.qr_img.source = qr_path
+        else:
+            print("BTCPay QR missing for %s (%s)" % (self.btcpay_code, qr_path))
+            content.ids.status.text = ("Could not draw the QR code - pay the "
+                                       "address below")
+        self.btcpay_content = content
+
+        if self.btcpay_dialog:
+            try:
+                self.btcpay_dialog.dismiss()
+            except Exception:
+                pass
+            self.btcpay_dialog = None
+        self.btcpay_dialog = MDDialog(
+            title="Waiting for BTCPay invoice to be paid...",
+            type="custom",
+            content_cls=content,
+            md_bg_color=get_color_from_hex(MeileColors.BLACK),
+            buttons=[
+                MDFlatButton(
+                    text="CANCEL",
+                    theme_text_color="Custom",
+                    text_color=get_color_from_hex(MeileColors.MEILE),
+                    on_release=self.cancel_btcpay
+                ),
+            ]
+        )
+        self.btcpay_dialog.open()
+        self._set_status("Waiting for BTCPay %s payment..." % self.btcpay_code, ok=None)
+
+    def _btcpay_watch(self, invoice_id):
+        '''Poll the BTCPay invoice until it is paid (worker thread).
+
+        The invoice carries its own payment state, so no price lookup or
+        address balance check is needed (unlike the ARRR top-up) - the
+        btcpay-stop event ends the loop when the user cancels the dialog.
+        '''
+        while not self.btcpay_stop.is_set():
+            if self.btcpay_stop.wait(float(SMSConf.BTCPAY_POLL)):
+                break
+            try:
+                invoice = self.btcpay_client.get_invoice(invoice_id)
+            except Exception as e:
+                print("BTCPay invoice check error: %s" % str(e))
+                continue
+            status = str((invoice or {}).get("status", "")).lower()
+            print("BTCPay invoice %s status: %s" % (invoice_id, status))
+            Clock.schedule_once(lambda dt: self._btcpay_show_status(invoice), 0)
+            if status in SMSConf.BTCPAY_PAID:
+                Clock.schedule_once(lambda dt: self._btcpay_credit(), 0)
+                return
+            if status in SMSConf.BTCPAY_DEAD:
+                Clock.schedule_once(lambda dt: self._btcpay_abort(
+                    "BTCPay invoice %s" % status), 0)
+                return
+
+    def _btcpay_show_status(self, invoice):
+        '''Mirror the invoice status into the open dialog (main thread).'''
+        status = str((invoice or {}).get("status", "")).upper()
+        if not status or not self.btcpay_content:
+            return
+        try:
+            self.btcpay_content.ids.status.text = "BTCPay invoice: %s" % status
+        except Exception:
+            pass
+
+    def _btcpay_credit(self):
+        '''Invoice paid - credit the USD amount on the Meile ledger.'''
+        if self.btcpay_crediting:
+            return
+        self.btcpay_crediting = True
+        self._set_status("Payment detected - crediting balance...", ok=None)
+        self._plan_call("POST", HTTParams.API_SMS_TOPUP, {
+            "uuid"   : self.uuid,
+            "amount" : float(self.topup_amount),
+            "denom"  : "USD",
+            "coin"   : self.btcpay_code,
+            "address": self.btcpay_address,
+        }, self._on_btcpay_credited)
+
+    def _on_btcpay_credited(self, request, result):
+        '''Credit answer of the ledger - refresh the balance card.'''
+        data = self._parse(result) or {}
+        if isinstance(data, dict) and data.get("balance") is not None:
+            self._apply_balance_payload(data)
+        else:
+            self._debug("BTCPay credit response: %s" % str(result)[:200])
+            self.fetch_balance()
+        self._close_btcpay_dialog()
+        self.btcpay_started   = False
+        self.btcpay_crediting = False
+        self._set_status("Top-up complete: $%.2f added" % float(self.topup_amount), ok=True)
+        self._toast("SMS balance topped up")
+
+    def _close_btcpay_dialog(self):
+        '''Stop the invoice poller and close both BTCPay dialogs.'''
+        self.btcpay_stop.set()
+        for attr in ("btcpay_dialog", "btcpay_coin_dialog"):
+            dialog = getattr(self, attr, None)
+            if not dialog:
+                continue
+            try:
+                dialog.dismiss()
+            except Exception:
+                pass
+            setattr(self, attr, None)
+        self.btcpay_content = None
+
+    def cancel_btcpay(self, *args):
+        self._close_btcpay_dialog()
+        self.btcpay_started    = False
+        self.btcpay_crediting  = False
+        self.btcpay_invoice_id = ""
+        self._set_status("Top-up cancelled", ok=None)
+
+    def _btcpay_abort(self, message):
+        '''Give up on the current invoice (creation or polling failure).'''
+        self._close_btcpay_dialog()
+        self.btcpay_started   = False
+        self.btcpay_crediting = False
+        self._set_status(message, ok=False)
 
     # ------------------------------------------------------------------
     # Countries (searchable list with flags)
