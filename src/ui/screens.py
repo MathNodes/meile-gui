@@ -354,7 +354,7 @@ class MainWindow(Screen):
     menu = None
     MeileLand = None
     SortOptions = ['None', "Moniker", "Price"]
-    MenuOptions = ['Refresh', 'Sort', 'DNSCrypt', 'SMS Verify', 'Exit']
+    MenuOptions = ['Refresh', 'Sort', 'DNSCrypt', 'Help', 'Exit']
     Sort = SortOptions[1]
     MeileMap = None
     MeileMapBuilt = False
@@ -415,7 +415,7 @@ class MainWindow(Screen):
         item_height = 100
         max_height = len(self.MenuOptions) * item_height
         
-        menu_icons = ["cloud-refresh", "sort", "shield-lock", "phone-message", "exit-to-app"]
+        menu_icons = ["cloud-refresh", "sort", "shield-lock", "help-circle-outline", "exit-to-app"]
         menu_items = [
             {
                 "viewclass" : "IconListItem",
@@ -826,20 +826,7 @@ class MainWindow(Screen):
         elif selection == self.MenuOptions[2]:
             self.start_dnscrypt()
         elif selection == self.MenuOptions[3]:
-            self.build_smspol_screen_interface()
-            '''
-            self.dialog = MDDialog(
-                    title="Not yet available for public consumption. Please check back later.",
-                    md_bg_color=get_color_from_hex(MeileColors.BLACK),
-                    buttons=[
-                            MDRaisedButton(
-                                text="OK",
-                                theme_text_color="Custom",
-                                text_color=get_color_from_hex(MeileColors.BLACK),
-                                on_release=self.closeDialog
-                            ),])
-            self.dialog.open()
-            '''
+            self.build_help_screen_interface()
         elif selection == self.MenuOptions[4]:
             self.disconnect_from_node()
             if self.dnscrypt:
