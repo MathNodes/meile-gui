@@ -1,6 +1,8 @@
 from os import path, environ
 
 MEILE_PLAN_WALLET = "sent1tdgva8fhl9rgawrj2am9sv8prw2h44mc8g3qch"
+import platform
+pltfrm = platform.system()
 
 class Arch():
     LINUX   = "Linux"
@@ -33,39 +35,14 @@ class ConfParams():
     SUBFEEMULT       = 10
 
 class SMSConf():
-    '''Configuration for the SMS Pool ("Virtual Number Terminal") screen.
-
-    The Meile plan-rest API keeps the user's USD SMS balance ledger (see
-    meile-plan-rest/meile_plan_api.py). MARKUP_PERCENT below is only a fallback:
-    the API reports the authoritative markup with every balance response, so a
-    single change on the server side is picked up here automatically.
-    '''
-    MARKUP_PERCENT  = 5.0            # fallback markup % on the SMSPool cost
+    # Configuration for the MEILESMS ("Virtual Number Terminal") screen.
+    
+    MARKUP_PERCENT  = 5.0 #fallback
     TOPUP_PRESETS   = [5, 10, 20, 50]
-    TOPUP_COIN      = "arrr"         # coin used to top up the SMS balance
+    TOPUP_COIN      = "arrr"
     MIN_TOPUP_USD   = 1.0
 
-    # Second top-up rail: a BTCPay ("BitPay compatible") invoice of the same
-    # USD amount, paid in any coin the Meile store has enabled.  Every entry is
-    # one row of the picker dialog (SMSPoolScreen.open_btcpay_dialog):
-    #   code       - BTCPay payment method id (key of "addresses" /
-    #                "paymentCodes" / "paymentSubtotals" in the invoice answer)
-    #   label      - what the picker dialog shows
-    #   icon       - bundled logo, lookup is by name in src/utils/coinimg
-    #   uri        - wallet URI scheme of the coin ("" = bare address only)
-    #   amount_key - URI parameter carrying the amount, because Monero wallets
-    #                expect "tx_amount" while every BIP21 wallet uses "amount"
-    #                ("" = the amount is part of the address, e.g. BOLT11)
-    #   units      - how many of the smallest unit make one coin (satoshi 1e8,
-    #                piconero 1e12, ...), because the legacy dictionaries of an
-    #                invoice (paymentTotals/paymentSubtotals) report the amount
-    #                in that unit: 33806464744 is 0.033806464744 XMR, not 33
-    #                billion XMR (see _btcpay_whole_coins)
-    # Regtest stores (and stores that only have the crypto code enabled from the
-    # summary page) return a different id, so _btcpay_payment_method normalises
-    # the keys of the answer and falls back to the "paymentMethods" list of the
-    # newer API.
-    BTCPAY_ICON     = "imgs/btcpay-button.png"
+    BTCPAY_ICON     = "../imgs/btcpay-button.png" if pltfrm == "Linux" else "imgs/btcpay-button.png"
     BTCPAY_TOOLTIP  = "Pay with BTCPay"
     BTCPAY_COINS    = [
         {"code" : "BTC-LN",   "label" : "Bitcoin (Lightning)", "icon" : "ln",
@@ -83,40 +60,23 @@ class SMSConf():
          "uri"  : "dash",      "amount_key" : "amount",
          "units" : 100000000},
     ]
-    # Stores running a recent BTCPay name some methods differently in the
-    # invoice's paymentMethods list than the legacy dictionaries do (Lightning
-    # is "BTC-LightningNetwork" instead of "BTC-LN").  Both spellings have to
-    # resolve to the coin above, otherwise a store that enables Lightning and
-    # on-chain Bitcoin at once answers the Lightning pick with its BTC address.
+
     BTCPAY_METHOD_ALIASES = {
         "BTC-LIGHTNINGNETWORK" : "BTC-LN",
         "BTC-LIGHTNING"        : "BTC-LN",
     }
-    BTCPAY_POLL     = 10             # seconds between invoice status checks
-    # Legacy invoice statuses (https://bitpay.com/api): an invoice that reached
-    # one of these is paid, anything in BTCPAY_DEAD will never be paid.
+    BTCPAY_POLL     = 7             
     BTCPAY_PAID     = ("paid", "confirmed", "complete")
     BTCPAY_DEAD     = ("expired", "invalid")
 
-    # Where the "GET ARRR" button of the top-up card sends the user: the
-    # exchange that sells the coins for the invoice (NonKYC referral link).
     ARRR_EXCHANGE_URL = "https://nonkyc.io?ref=695e014fe07f1444fdceaff6"
-    ORDER_SECONDS   = 1200           # SMSPool order lifetime (countdown)
+    ORDER_SECONDS   = 1200           # MEILESMS order lifetime (countdown)
     POLL_INTERVAL   = 5              # seconds between /sms/check calls
 
-    # "PRICE QUOTE" card: once a country *and* a service are selected the screen
-    # asks POST /request/price (SMSPool docs "Retrieve specific price & Success
-    # Rate") for the pool cost plus the provider's historic success rate for that
-    # exact combination.  QUOTE_DEBOUNCE keeps a quick click through the lists
-    # from firing one request per row.
     QUOTE_DEBOUNCE  = 0.35           # seconds a selection must settle first
-    SUCCESS_GOOD    = 80             # >= this % of orders deliver an SMS
-    SUCCESS_FAIR    = 50             # >= this % is fair, below it is poor
+    SUCCESS_GOOD    = 80             
+    SUCCESS_FAIR    = 50             
 
-    # SMSPool ships a catch-all service ("Not Listed / Other / Any", id 817).
-    # It is pinned at the bottom of the service list and is the only entry shown
-    # when the search box matches nothing, so an unlisted service never leaves
-    # the user staring at an empty list.
     OTHER_SERVICE_LABEL = "Not Listed / Other"
     OTHER_SERVICE_NAMES = ("not listed / other / any", "not listed / other",
                            "not listed", "other", "any", "unknown")
@@ -142,19 +102,14 @@ class HTTParams():
     # Note http://128.199.90.172:26657 is testnet ONLY!
     RPCS = [RPC] + [
         "https://rpc.sentinel.co:443",
-        "https://rpc.dvpn.me443",
         "https://rpc.sentinel.noncompliance.org:443",
-        "https://rpc.ro.mathnodes.com:443",
         "https://rpc.bluefren.net:443",
         "https://rpc-sentinel.whispernode.com:443",
         "https://rpc.sentinel.chaintools.tech:443",
         "https://rpc.sentinel.quokkastake.io:443",
         "https://rpc.dvpn.roomit.xyz:443",
-        "https://sentinel-rpc.badgerbite.io:443",
         "https://sentinel-rpc.publicnode.com:443",
         "https://sentinel-rpc.validatornode.com:443",
-        "https://rpc.trinityvalidator.com:443",
-        "https://rpc.sentinelgrowthdao.com:443",
         "https://sentinel-rpc.polkachu.com:443",
         "https://rpc-sentinel.busurnode.com:443"
     ]
@@ -204,7 +159,12 @@ class HTTParams():
     API_PLANS_SUBS         = "/v1/subscription/%s" # variable is Meile wallet address
     API_PLANS_ADD          = "/v1/add"
     API_PLANS_NODES        = "/v1/nodes/%s" # variable is plan uuid
-    SESSIONS_API_URL       = '/sentinel/accounts/%s/sessions'
+    API_SMS_BALANCE        = "/v1/sms/balance/%s"      # variable is the app UUID
+    API_SMS_ACCOUNT        = "/v1/sms/account"
+    API_SMS_TOPUP          = "/v1/sms/topup"
+    API_SMS_PURCHASE       = "/v1/sms/purchase"
+    API_SMS_REFUND         = "/v1/sms/refund"
+    SESSIONS_API_URL       = ' /sentinel/session/v3/accounts/%s/sessions'
     BALANCES_ENDPOINT      = "/cosmos/bank/v1beta1/balances/"
     ICANHAZURL             = "https://icanhazip.com"
     ICANHAZDNS             = "icanhazip.com"
@@ -216,12 +176,7 @@ class HTTParams():
     NOWPAYMENT             = "https://api.nowpayments.io/v1/invoice-payment"
     NOWSTATUS              = "https://api.nowpayments.io/v1/payment/%s"
     NOWURL                 = "https://nowpayments.io/payment?iid=%s&paymentId=%s"
-    # Meile plan-rest SMS balance ledger (see meile-plan-rest/meile_plan_api.py)
-    API_SMS_BALANCE        = "/v1/sms/balance/%s"      # variable is the app UUID
-    API_SMS_ACCOUNT        = "/v1/sms/account"
-    API_SMS_TOPUP          = "/v1/sms/topup"
-    API_SMS_PURCHASE       = "/v1/sms/purchase"
-    API_SMS_REFUND         = "/v1/sms/refund"
+    
     RESOLVERS              = [
                               "adfilter-adl",
                               "adfilter-adl-ipv6",
@@ -774,21 +729,19 @@ class IBCTokens():
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
 class TextStrings():
     dash = "-"
-    VERSION = "v2.7.2"
+    VERSION = "v2.8.1"
     BUILD = "17899728033"
     RootTag           = "SENTINEL"
     WG_HASH           = ""
     WG_QUICK_HASH     = ""
     XRAY_HASH         = ""
-    TUN2SOCKS_HASH    = " "
+    TUN2SOCKS_HASH    = ""
+    AMNEZIA_HASH      = ""
+    HYSTERIA_HASH     = ""
     GITHUB_API_URL    = "https://api.github.com/repos/MathNodes/meile-gui/releases/latest"
-    DOWNLOAD_URL      = "https://meile.app"
-    PassedHealthCheck = "Passed Sentinel Health Check"
-    FailedHealthCheck = "Failed Sentinel Health Check"
+    DOWNLOAD_URL      = "https://dvpn.app"
     
 class MeileColors():
-    import platform
-    pltfrm = platform.system()
     BLACK                    = "#000000"
     WHITE                    = "#FFFFFF"
     MEILE                    = "#fcb711"
@@ -801,6 +754,8 @@ class MeileColors():
     ROW_HOVER                = "#39363c"
     DOWNLOAD                 = "#2fe548"
     UPLOAD                   = "#2fa1e5"
+    CONN_STAGE_IDLE          = "#3a3a3a"
+    CONN_STAGE_FAILED        = "#c0392b"
     FLOC                     = "../imgs/" if pltfrm == "Linux" else "imgs/"
     FONT_FACE                = "../fonts/mplus-2c-bold.ttf" if pltfrm == "Linux" else "fonts/mplus-2c-bold.ttf"
     FONT_FACE_ARIAL          = "../fonts/arial-unicode-ms.ttf" if pltfrm == "Linux" else "fonts/arial-unicode-ms.ttf"
@@ -822,39 +777,21 @@ class MeileColors():
     WIREGUARD_ICON           = "../utils/coinimg/wireguard.png" if pltfrm == "Linux" else "utils/coinimg/wireguard.png"
     EXOLIX                   = "../imgs/ExolixSwap.png" if pltfrm == "Linux" else "imgs/ExolixSwap.png"
     SIMPLE_SWAP              = "../imgs/SimpleSwap.png" if pltfrm == "Linux" else "imgs/SimpleSwap.png"
-    # Pipeline icons of the connection dialog (ui.interfaces.ConnectionDialog)
     SESSION_ICON             = "../imgs/session.png" if pltfrm == "Linux" else "imgs/session.png"
     CREDENTIALS_ICON         = "../imgs/credentials.png" if pltfrm == "Linux" else "imgs/credentials.png"
     INTERNET_ICON            = "../imgs/internet.png" if pltfrm == "Linux" else "imgs/internet.png"
-    # Ring around a connection stage that has not run yet / that failed.  A
-    # running stage glows UPLOAD (blue) and a finished one settles on DOWNLOAD
-    # (green); the connectors between finished stages are DOWNLOAD too.
-    CONN_STAGE_IDLE          = "#3a3a3a"
-    CONN_STAGE_FAILED        = "#c0392b"
-    HEALTH_ICON              = "shield-plus"
-    SICK_ICON                = "emoticon-sick"
     ARCGIS_MAP               = "https://server.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}.png"
     ARCGIS_MAP2              = "https://server.arcgisonline.com/arcgis/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}.png"
     #CARTO_MAP                = "https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png"
     CARTO_MAP                = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
 
 class ConnectStages():
-    '''Pipeline drawn by the connection dialog (ui.interfaces.ConnectionDialog).
+    # drawn by the connection dialog (ui.interfaces.ConnectionDialog).
 
-    ``STAGES`` is ordered: (icon, caption, keywords).  ``keywords`` are matched
-    case-insensitively against the last line of connect.log, which
-    cli.wallet.HandleWalletFunctions.connect() writes while it works, so a stage
-    lights up the moment its work starts.  The first stage carries no keyword:
-    it is the one that runs until another stage matches.
-    '''
     SESSION_CAPTION     = "Session"
     CREDENTIALS_CAPTION = "Credentials"
     INTERNET_CAPTION    = "Internet"
 
-    # connect() writes "Creating new session(s)...", fetch_credentials() writes
-    # "Fetching credentials from node..." and the per-protocol writers bring the
-    # tunnel up ("Bringing up dVPN tunnel...") followed by an optional
-    # "Checking network connection..." (WireGuard has no separate check).
     STAGES = (
         (MeileColors.SESSION_ICON,     SESSION_CAPTION,     ()),
         (MeileColors.CREDENTIALS_ICON, CREDENTIALS_CAPTION, ("fetching credentials",)),
@@ -863,23 +800,12 @@ class ConnectStages():
                                                              "bringing up")),
     )
 
-    # Any of these in a status line means the running stage failed, so its ring
-    # freezes red instead of showing the success green.
     FAILED_KEYWORDS = ("error", "failed", "exiting", "terminat", "timeout",
                        "incorrect", "bad response", "cancel")
 
-    # Shown until the wallet reports a real status line.
     DEFAULT_STATUS  = "Connecting..."
 
 class NodeKeys():
-    '''v1.8.0
-    NodesInfoKeys = ["Moniker","Address","Price","Hourly Price", "Country","Speed","Latency","Peers","Handshake","Type","Version","Status"]
-    SubsInfoKeys  = ["ID", "Owner", "Inactive Date", "Status", "Node", "Gigabytes", "Hours", "Deposit", "Plan", "Denom"]
-    # [ "ID", "Moniker", "Node", "Gigabytes", "Deposit", "Country", "Allocated", "Consumed", "Type", "Inactive Date", "Hours"]
-    FinalSubsKeys = [SubsInfoKeys[0], NodesInfoKeys[0],SubsInfoKeys[4],SubsInfoKeys[5], SubsInfoKeys[7], NodesInfoKeys[4], "Allocated", "Consumed", NodesInfoKeys[9],SubsInfoKeys[2],SubsInfoKeys[6]]
-    NodeVersions  = [str(item).zfill(3) for item in range(30,1000)]
-    Nodetypes = ['residential', 'business', 'hosting', 'edu']
-    '''
     
     NodesInfoKeys = ["Moniker","Address","Price","Hourly Price", "Country","City","Latitude","Longitude","Download","Upload","Peers","Max Peers","Handshake","Type","Version", "ISP Type", "Score", "Votes", "Formula"]
     SubsInfoKeys  = ["ID", "Owner", "Inactive Date", "Status", "Node", "Gigabytes", "Hours", "Deposit", "Plan", "Denom"]
