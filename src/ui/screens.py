@@ -5,7 +5,7 @@ from cli.sentinel import  NodeTreeData
 from typedef.konstants import NodeKeys, TextStrings, MeileColors, HTTParams, IBCTokens, ConfParams, SMSConf
 from cli.sentinel import disconnect as Disconnect
 import main.main as Meile
-from ui.widgets import WalletInfoContent, SeedInfoContent, MDMapCountryButton, RatingContent, NodeRV, NodeRV2, NodeAccordion, NodeRow, NodeDetails, PlanAccordion, PlanRow, PlanDetails, NodeCarousel, SubTypeDialog, SubscribeContent, LoadingSpinner, ShareTypeDialog
+from ui.widgets import WalletInfoContent, SeedInfoContent, MDMapCountryButton, RatingContent, NodeRV, NodeRV2, NodeAccordion, NodeRow, NodeDetails, PlanCard, NodeCarousel, SubTypeDialog, SubscribeContent, LoadingSpinner, ShareTypeDialog
 from utils.qr import QRCode
 from cli.wallet import HandleWalletFunctions
 from cli.btcpay import BTCPayDB
@@ -2323,34 +2323,52 @@ class NodeScreen(MDBoxLayout):
         mw.carousel.load_slide(mw.carousel.slides[0])
 
 class PlanScreen(MDBoxLayout):
+    instructions = StringProperty("Tick a plan to filter the node list to its nodes")
+    status_text  = StringProperty("Loading plans...")
+
     def __init__(self, **kwargs):
+        # `name` is handed over by the carousel but is not a BoxLayout
+        # property, so the kwargs are intentionally not forwarded.
         super(PlanScreen, self).__init__()
         self.PlanData       = []
         self.TotalCountries = []
         self.TotalNodes     = []
-        
+        self.cards          = []
+        self.user_enrolled_plans = []
+
         self.mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
-        self.label = MDLabel()
-        
-        
-        self.spinner = LoadingSpinner()
-        self.spinner.opacity = 1
-        self.ids.rv.add_widget(self.label)
-        self.ids.rv.add_widget(self.spinner)
+        self.p2p_price = 0
+        self.load_failed = False
+
         Clock.schedule_once(self.pre_build, 1)
-        #self.build()
-    
+
     def pre_build(self, *args):
+        self.status_text = "Loading plans..."
         try:
-            t = Thread(target=lambda: self.build())
+            t = Thread(target=lambda: self.build(), daemon=True)
             t.start()
             print("Running Thread...")
-            
+
         except Exception as e:
             print(str(e))
+            self.status_text = str(e)
             return None
+
     def build(self):
-        
+        '''
+        Load the plans on a worker thread and always finish the screen, even
+        when the plan API is unreachable, so the spinner never runs forever.
+        '''
+        try:
+            self._load_plans()
+        except Exception as e:
+            print(f"PlanScreen.build: {str(e)}")
+            self.load_failed = True
+            self.status_text = "Could not load plans"
+        finally:
+            Clock.schedule_once(self.finished)
+
+    def _load_plans(self):
         MeileConfig = MeileGuiConfig()
         CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
         wallet = CONFIG['wallet'].get('address', None)
@@ -2359,7 +2377,7 @@ class PlanScreen(MDBoxLayout):
 
         req = http.get(HTTParams.PLAN_API + HTTParams.API_PLANS, auth=HTTPBasicAuth(scrtsxx.PLANUSERNAME, scrtsxx.PLANPASSWORD))
         plan_data = req.json() if req.ok and req.status_code != 404 else []
-        #print(plan_data)
+        print(plan_data)
 
         # Prevent plan parsing when wallet is not initialized
         self.user_enrolled_plans = []
@@ -2394,14 +2412,34 @@ class PlanScreen(MDBoxLayout):
             self.TotalNodes.append(no_of_nodes)
             
         price_api = GetPriceAPI()
-        self.p2p_price = price_api.get_usd("p2p")['price']
+        try:
+            self.p2p_price = price_api.get_usd("p2p")['price']
+        except Exception as e:
+            # A failing price API must not leave the screen spinning forever
+            print(f"PlanScreen.build: {str(e)}")
+            self.p2p_price = 0
 
-        Clock.schedule_once(self.finished)
         
+    @staticmethod
+    def _sub_field(plan, keys, default=''):
+        '''
+        Read one field of a `/v1/subscription/<wallet>` record.
+
+        The payload of the plan API is not versioned, so every known spelling
+        of a field is tried in order (canonical name first) and the first one
+        that carries a value is returned.
+        '''
+        for key in keys:
+            value = plan.get(key)
+            if value not in (None, ''):
+                return value
+        return default
+
     def build_plans(self, data, plans, no_of_nodes, no_of_countries):
         plan = None
         for p in plans:
-            if data['uuid'] == p['uuid']:
+            plan_uuid = self._sub_field(p, ('uuid', 'plan_uuid'))
+            if plan_uuid and plan_uuid == data['uuid']:
                 plan = p
                 break
 
@@ -2409,40 +2447,86 @@ class PlanScreen(MDBoxLayout):
         #print(f"data: {data}")
         # In the future cost should be both in dvpn and euro (fuck usd)
         # Can use coin_api to get dvpn price and translate cost
-        
-        plancost = int(data['plan_price'] / IBCTokens.SATOSHI)
-        plancost_usd = round(float(plancost * self.p2p_price),2)
-        item = PlanAccordion(
-            node=PlanRow(
-                plan_name=data['plan_name'],
-                num_of_nodes=str(no_of_nodes),
-                num_of_countries=str(no_of_countries),
-                cost=str(plancost) + data['plan_denom'].replace('dvpn', ' p2p') + f"[color=fcb711]    ${plancost_usd}[/color]",
-                logo_image=data['logo'],
-                uuid=data['uuid'],
-                id=str(plan['subscription_id']) if plan else str(0),
-                plan_id=str(data['plan_id'])
-            ),
-            content=PlanDetails(
-                uuid=plan['uuid'] if plan else data['uuid'],
-                id=str(plan['subscription_id']) if plan else str(data['subscription_id']),
-                expires=plan['expires'] if plan else "NULL",
-                deposit=str(round(float(plan['amt_paid']),2)) if plan else "NULL",
-                coin=plan['amt_denom'] if plan else "NULL",
-            )
+
+        plancost = data['plan_price'] / IBCTokens.SATOSHI
+        plancost_usd = round(float(plancost * self.p2p_price), 2)
+        plan_name = data['plan_name']
+        print(f"Plan Name: {plan_name}")
+        premium = 'premium' in plan_name.lower()
+
+        sub_id       = str(self._sub_field(plan, ('subscription_id', 'sub_id', 'id'))) if plan else ""
+        expires      = str(self._sub_field(plan, ('expires', 'expiry', 'expires_at'))) if plan else ""
+        amount_denom = str(self._sub_field(plan, ('amt_denom', 'amount_denom', 'denom'))) if plan else ""
+        try:
+            amount_paid = "%.2f" % float(self._sub_field(
+                plan, ('amt_paid', 'amount_paid', 'amount'), default=0)) if plan else ""
+        except (TypeError, ValueError):
+            amount_paid = ""
+
+        card = PlanCard(
+            plan_name,
+            str(no_of_nodes),
+            str(no_of_countries),
+            ("%d" % plancost) if float(plancost).is_integer() else ("%.2f" % plancost),
+            data['logo'],
+            data['uuid'],
+            sub_id,
+            str(data['plan_id']),
+            denom=(data.get('plan_denom') or 'p2p').replace('udvpn', 'p2p').replace('dvpn', 'p2p'),
+            usd_price=plancost_usd,
+            expires=expires,
+            amount_paid=amount_paid,
+            amount_denom=amount_denom,
+            icon="crown" if premium else "shield-check",
+            accent=MeileColors.MEILE if premium else MeileColors.UPLOAD,
+            plan_screen=self,
         )
 
-        self.ids.rv.add_widget(item)
+        self.cards.append(card)
+        self.ids.plans_box.add_widget(card)
+
+    def toggle_plan(self, card, active):
+        '''
+        Called by the checkbox of a card. Only one plan can filter the node
+        list at a time, so every other card is unchecked without touching the
+        node list (`notify_map=False`), the selected card does the filtering.
+        '''
+        if active:
+            for other in self.cards:
+                if other is not card:
+                    other.apply_selection(False, notify_map=False)
+        card.apply_selection(active)
 
     def set_previous_screen(self):
         self.mw.carousel.remove_widget(self.mw.NodeWidget)
         self.mw.carousel.load_previous()
         
     def finished(self, *args):
-        self.ids.rv.remove_widget(self.label)
-        self.ids.rv.remove_widget(self.spinner)
+        # Nothing left to load, stop the spinner and report the plan count
+        spinner = self.ids.get('spinner')
+        if spinner is not None and spinner.parent is not None:
+            spinner.parent.remove_widget(spinner)
+
+        # A rebuild must replace the cards instead of stacking a second set
+        plans_box = self.ids.get('plans_box')
+        if plans_box is not None:
+            plans_box.clear_widgets()
+        self.cards = []
+
         for pd, nodes, countries in zip(self.PlanData, self.TotalNodes, self.TotalCountries):
             self.build_plans( pd, self.user_enrolled_plans, nodes, countries)
+
+        if plans_box is not None:
+            # A single plan uses the full width instead of one narrow column
+            plans_box.cols = 2 if len(self.cards) > 1 else 1
+
+        if len(self.cards) == 0:
+            # keep the error of a failed build instead of overwriting it
+            if not self.load_failed:
+                self.status_text = "No plans available right now"
+        else:
+            self.load_failed = False
+            self.status_text = "%d plans available" % len(self.cards)
 '''
 This is the card class of the country cards on the left panel
 '''
