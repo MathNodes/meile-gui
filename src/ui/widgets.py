@@ -1029,28 +1029,66 @@ class NodeAccordion(ButtonBehavior, MDGridLayout):
             self.content.y = dp(72)
             self.add_widget(self.content)
             
-class PlanRow(MDGridLayout):
-    
-    plan_name = StringProperty()
-    num_of_nodes = StringProperty()
+class PlanCard(MDCard):
+    '''
+    Subscription plan card of the PlanScreen.
+
+    Renders every piece of information of a plan (name, price, reachable
+    nodes/countries, subscription state) and keeps the whole invoice /
+    subscription flow that used to live in the old `PlanRow`.
+
+    Selecting the card (checkbox of the card) sets `MainWindow.PlanID` and
+    filters the node list to the nodes that belong to the plan, so the card
+    replaced the expand/collapse filtering of the old `PlanAccordion`.
+    '''
+
+    plan_name        = StringProperty()
+    # Upper case variant rendered by the card. Kivy silently drops bindings of
+    # the form `root.<property>.<method>()` (e.g. `root.plan_name.upper()`), so
+    # the display string is kept in Python, see `on_plan_name`.
+    plan_title       = StringProperty()
+
+    num_of_nodes     = StringProperty()
     num_of_countries = StringProperty()
-    cost = StringProperty()
-    logo_image = StringProperty()
-    uuid = StringProperty()
-    id = StringProperty()
-    plan_id = StringProperty()
-    
+    cost             = StringProperty()
+    denom            = StringProperty("p2p")
+    logo_image       = StringProperty()
+    uuid             = StringProperty()
+    sub_id           = StringProperty()
+    plan_id          = StringProperty()
+
+    # Presentation
+    price_usd   = StringProperty()
+    price_coin  = StringProperty()
+    usd_price   = NumericProperty(0)
+    icon        = StringProperty("shield-check")
+    accent      = StringProperty(MeileColors.UPLOAD)
+    badge_text  = StringProperty("PLAN")
+
+    # Subscription details (empty when the wallet is not subscribed)
+    expires      = StringProperty()
+    amount_paid  = StringProperty()
+    amount_denom = StringProperty()
+
+    has_subscription = BooleanProperty(False)
+    selected         = BooleanProperty(False)
+
+    plan_screen = ObjectProperty(None, allownone=True)
+
+    _syncing_selector = False
+
     dialog = None
-    
+
     def __init__(self, plan_name,
                        num_of_nodes,
                        num_of_countries,
                        cost,
                        logo_image,
                        uuid,
-                       id,
-                       plan_id):
-        super(PlanRow, self).__init__()
+                       sub_id,
+                       plan_id,
+                       **kwargs):
+        super(PlanCard, self).__init__(**kwargs)
         self.stop_event = Event()
         self.plan_name = plan_name
         self.num_of_nodes = num_of_nodes
@@ -1058,12 +1096,15 @@ class PlanRow(MDGridLayout):
         self.cost = cost
         self.logo_image = logo_image
         self.uuid = uuid
-        self.id = id
+        self.sub_id = sub_id
         self.plan_id = plan_id
-    
+        self._sync_price_text()
+
+        print(f"uuid: {self.uuid}, plan_name: {self.plan_name}, sub_id: {self.sub_id}, plan_id: {self.plan_id}")
+
         self.invoice_result = {"success" : False, "id": None }
         self.now_invoice_id = None
-        
+
         self.dialog = None
         self.invoice_content = None
         self.now_status = {}
@@ -1072,21 +1113,120 @@ class PlanRow(MDGridLayout):
         self.now_pay_amount = None
         self.now_pay_currency = None
         self.now_pay_logo_path = None
-        
+
     def get_font(self):
         Config = MeileGuiConfig()
         return Config.resource_path(MeileColors.FONT_FACE)
-    
-    def get_button(self, text):
-        Config = MeileGuiConfig()
-        if text == "info":
-            return Config.resource_path(MeileColors.GETINFO_BUTTON)
-        elif text == "subscribe":
-            return Config.resource_path(MeileColors.SUBSCRIBE_BUTTON)
-    
+
+    def get_main_window(self):
+        try:
+            return Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
+        except Exception as e:
+            # The cards can be built before the main window is registered
+            print(f"PlanCard.get_main_window: {str(e)}")
+            return None
+
+    def on_sub_id(self, instance, value):
+        '''An empty `sub_id` means the wallet is not subscribed to the plan.'''
+        self.has_subscription = bool(value)
+
+    def on_plan_name(self, instance, value):
+        self.plan_title = (value or "").upper()
+
+    def on_cost(self, instance, value):
+        self._sync_price_text()
+
+    def on_denom(self, instance, value):
+        self._sync_price_text()
+
+    def on_usd_price(self, instance, value):
+        self._sync_price_text()
+
+    def _sync_price_text(self, *args):
+        '''
+        Build the two strings rendered by the card, `cost` holds the plan
+        price in P2P and `usd_price` its p2p equivalent in USD.
+        '''
+        denom = (self.denom or "p2p").strip() or "p2p"
+        self.price_coin = "%s %s" % (self.cost or "0", denom.upper())
+        try:
+            self.price_usd = "$%.2f" % float(self.usd_price)
+        except (TypeError, ValueError):
+            self.price_usd = "$0.00"
+
+    @property
+    def dialog_price(self):
+        '''Price string expected by `PlanSubscribeContent` ("420 p2p").'''
+        return "%s %s" % (self.cost or "0", "p2p")
+
+    def on_selector_active(self, active):
+        '''
+        Called by the checkbox of the card, but also when the checkbox is
+        updated programmatically (`apply_selection`). `_syncing_selector`
+        guards the second case so the selection is not dispatched twice.
+        '''
+        if self._syncing_selector:
+            return
+
+        if self.plan_screen is not None:
+            self.plan_screen.toggle_plan(self, active)
+        else:
+            self.apply_selection(active)
+
+    def apply_selection(self, active, notify_map=True):
+        '''
+        Single place that keeps the checkbox, the card styling and the node
+        filter in sync. `notify_map` is False when another card takes over the
+        selection, so the node list is filtered only once.
+        '''
+        active = bool(active) and self.has_subscription
+        self.selected = active
+
+        if 'selector' in self.ids:
+            self._syncing_selector = True
+            self.ids.selector.active = active
+            self._syncing_selector = False
+
+        if not notify_map:
+            return
+
+        mw = self.get_main_window()
+        if mw is None:
+            return
+
+        if active:
+            mw.PlanID = self.sub_id
+            t = Thread(target=lambda: self.filter_nodes(), daemon=True)
+            t.start()
+        else:
+            mw.restore_results()
+
+    def filter_nodes(self):
+        '''
+        Restrict the node list of the main window to the nodes of this plan.
+        Runs on a worker thread, the actually UI refresh is scheduled on the
+        main thread.
+        '''
+        try:
+            Request = HTTPRequests.MakeRequest()
+            http = Request.hadapter()
+            req = http.get(HTTParams.PLAN_API + HTTParams.API_PLANS_NODES % self.uuid, auth=HTTPBasicAuth(scrtsxx.PLANUSERNAME, scrtsxx.PLANPASSWORD))
+
+            plan_nodes_data = req.json() if req.status_code == 200 else None
+
+            mw = self.get_main_window()
+            if mw is None:
+                return
+            mw.NodeTree.search(key=NodeKeys.NodesInfoKeys[1], value=plan_nodes_data, perfect_match=True, is_list=True)
+        except Exception as e:
+            print(f"PlanCard.filter_nodes: {str(e)}")
+            return
+
+        Clock.schedule_once(lambda dt: self.get_main_window().refresh_country_recycler())
+
     def open_subscribe(self):
         
-        item =  { "price": self.cost, "white_label": self.plan_name, "nnodes": self.num_of_nodes, "logo_image": self.logo_image }
+        item =  { "price": self.dialog_price, "white_label": self.plan_name, "nnodes": self.num_of_nodes, "logo_image": self.logo_image }
         
         subscribe_dialog = PlanSubscribeContent(**item)
         self.dialog = None
@@ -1256,7 +1396,7 @@ class PlanRow(MDGridLayout):
                                                                         wallet=self.ADDRESS,
                                                                         plan_id=self.plan_id,
                                                                         duration=subscribe_dialog.ids.slider1.value,
-                                                                        sub_id=self.id,
+                                                                        sub_id=self.sub_id,
                                                                         uuid=self.uuid,
                                                                         amt=int(float(deposit) * IBCTokens.SATOSHI) if mu_coin in IBCTokens.ibc_coins else float(deposit),
                                                                         denom=mu_coin
@@ -2409,213 +2549,6 @@ class PlanRow(MDGridLayout):
         if self.dialog:
             self.dialog.dismiss()
 
-class PlanDetails(MDGridLayout):
-    uuid = StringProperty()
-    id = StringProperty()
-    expires  = StringProperty()
-    deposit = StringProperty()
-    coin = StringProperty()
-    
-    '''
-    def filter_nodes(self):
-        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
-        
-        Request = HTTPRequests.MakeRequest()
-        http = Request.hadapter()
-        req = http.get(HTTParams.PLAN_API + HTTParams.API_PLANS_NODES % self.uuid, auth=HTTPBasicAuth(scrtsxx.PLANUSERNAME, scrtsxx.PLANPASSWORD))
-    
-        plan_nodes_data = req.json()
-            
-        mw.NodeTree.search(key=NodeKeys.NodesInfoKeys[1], value=plan_nodes_data, perfect_match=True, is_list=True)
-        
-        mw.refresh_country_recycler()
-    '''
-        
-class PlanAccordion(ButtonBehavior, MDGridLayout):
-    node = ObjectProperty()  # Main node info
-
-    # https://github.com/kivymd/KivyMD/blob/master/kivymd/uix/expansionpanel/expansionpanel.py
-    content = ObjectProperty()  # Node details....
-    """
-    Content of panel. Must be `Kivy` widget.
-
-    :attr:`content` is an :class:`~kivy.properties.ObjectProperty`
-    and defaults to `None`.
-    """
-
-    opening_transition = StringProperty("out_cubic")
-    """
-    The name of the animation transition type to use when animating to
-    the :attr:`state` `'open'`.
-
-    :attr:`opening_transition` is a :class:`~kivy.properties.StringProperty`
-    and defaults to `'out_cubic'`.
-    """
-
-    opening_time = NumericProperty(0.2)
-    """
-    The time taken for the panel to slide to the :attr:`state` `'open'`.
-
-    :attr:`opening_time` is a :class:`~kivy.properties.NumericProperty`
-    and defaults to `0.2`.
-    """
-
-    closing_transition = StringProperty("out_sine")
-    """
-    The name of the animation transition type to use when animating to
-    the :attr:`state` 'close'.
-
-    :attr:`closing_transition` is a :class:`~kivy.properties.StringProperty`
-    and defaults to `'out_sine'`.
-    """
-
-    closing_time = NumericProperty(0.2)
-    """
-    The time taken for the panel to slide to the :attr:`state` `'close'`.
-
-    :attr:`closing_time` is a :class:`~kivy.properties.NumericProperty`
-    and defaults to `0.2`.
-    """
-    
-    _state = StringProperty("close")
-    _anim_playing = False
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
-        self.register_event_type("on_open")
-        self.register_event_type("on_close")
-        
-        Clock.schedule_once(self.finish_init,0)
-
-    def finish_init(self, dt):    
-        self.add_widget(self.node)        
-    '''    
-    def on_release(self):
-
-        if len(self.children) == 1:
-            self.add_widget(self.content)
-            self.open_panel()
-            self.dispatch("on_open")
-        else:
-            self.remove_widget(self.children[0])
-            self.close_panel()
-            self.dispatch("on_close")
-    '''
-    def on_release(self):
-        if len(self.children) == 1:
-            self.open_panel()
-            self.dispatch("on_open")
-        else:
-            self.close_panel()
-            self.dispatch("on_close")
-            
-    @delayable
-    def on_open(self, *args):
-        """Called when a panel is opened."""
-        self.mw.PlanID = self.content.id
-        
-        t = Thread(target=lambda: self.filter_nodes())
-        t.start()
-        
-        while t.is_alive():
-            print(".", end="")
-            yield 0.5
-        
-        self.mw.refresh_country_recycler()
-        
-
-    def on_close(self, *args):
-        """Called when a panel is closed."""
-        self.mw.PlanID = None
-        self.mw.restore_results()
-    
-    def close_panel(self) -> None:
-        if self._anim_playing:
-            return
-    
-        self._anim_playing = True
-        self._state = "close"
-    
-        # Store the target height BEFORE removing
-        target_h = self.node.height
-    
-        anim = Animation(
-            height=target_h,
-            d=self.closing_time,
-            t=self.closing_transition,
-        )
-        anim.bind(on_complete=self._on_close_complete)
-        anim.start(self)    
-        
-    def _on_close_complete(self, *args):
-        self._anim_playing = False
-        # Remove content AFTER animation finishes
-        if self.content in self.children:
-            self.remove_widget(self.content)
-    
-    def open_panel(self, *args) -> None:
-        if self._anim_playing:
-            return
-    
-        self._anim_playing = True
-        self._state = "open"
-    
-        # Add content first so we can measure it
-        if self.content not in self.children:
-            self.add_widget(self.content)
-    
-        # Current node height + content height
-        target_h = self.node.height + self.content.height
-    
-        # Temporarily keep current height so animation works
-        current_h = self.node.height
-        self.height = current_h
-    
-        anim = Animation(
-            height=target_h,
-            d=self.opening_time,
-            t=self.opening_transition,
-        )
-        anim.bind(on_complete=self._disable_anim)
-        anim.start(self)
-        
-    
-    def get_state(self) -> str:
-        """Returns the state of panel. Can be `close` or `open` ."""
-
-        return self._state
-    '''
-    def add_widget(self, widget, index=0, canvas=None):
-        if isinstance(widget, NodeDetails):
-            self.height = widget.height
-        return super().add_widget(widget)
-    '''
-    def add_widget(self, widget, index=0, canvas=None):
-        # Don't override height here — let the animation handle it
-        return super().add_widget(widget, index=index, canvas=canvas)
-    
-    def _disable_anim(self, *args):
-        self._anim_playing = False
-
-    def _add_content(self, *args):
-        if self.content:
-            self.content.y = dp(72)
-            self.add_widget(self.content)
-            
-    def filter_nodes(self):
-        
-        try: 
-            Request = HTTPRequests.MakeRequest()
-            http = Request.hadapter()
-            req = http.get(HTTParams.PLAN_API + HTTParams.API_PLANS_NODES % self.content.uuid, auth=HTTPBasicAuth(scrtsxx.PLANUSERNAME, scrtsxx.PLANPASSWORD))
-        
-            plan_nodes_data = req.json() if req.status_code == 200 else None
-                
-            self.mw.NodeTree.search(key=NodeKeys.NodesInfoKeys[1], value=plan_nodes_data, perfect_match=True, is_list=True)
-        except:
-            pass
-
 
 class NodeCarousel(MDBoxLayout):
     moniker         = StringProperty()
@@ -2871,7 +2804,10 @@ class NodeCarousel(MDBoxLayout):
             mw.dialog = None
         
         if sub_node[-1] == "xmr":
-            plan_sub = PlanRow("payg", str(1), str(1), deposit, "1.jpg", str(420), str(0), str(0))
+            # The card is only used as a vehicle for the PAYG invoice, it is
+            # never rendered, so the plan metadata stays empty.
+            plan_sub = PlanCard("payg", "1", "1", deposit, "1.jpg", "420", "", "0",
+                                denom=sub_node[-1])
             plan_sub.subscribe(None, payg=True, payg_dialog=subscribe_dialog, data=sub_node)
             
         else: 
