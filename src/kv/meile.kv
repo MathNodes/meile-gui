@@ -3,6 +3,22 @@
 #: import MapView kivy_garden.mapview.MapView
 #: import MeileColors typedef.konstants.MeileColors
 #: import SMSConf typedef.konstants.SMSConf
+# Palette shared by the plan cards and the SMS screen. Declared at the very
+# top of the file so every rule below can use the same colours.
+#:set MEILE get_color_from_hex(MeileColors.MEILE)
+#:set MEILE_DIM get_color_from_hex("#c9940d")
+#:set BG_DARK get_color_from_hex(MeileColors.DIALOG_BG_COLOR2)
+#:set BG_CARD get_color_from_hex("#191919")
+#:set BG_CARD_SEL get_color_from_hex("#232323")
+#:set BG_INPUT get_color_from_hex(MeileColors.DIALOG_BG_COLOR2)
+#:set BG_HOVER get_color_from_hex("#2b2b2b")
+#:set BORDER get_color_from_hex("#2f2f2f")
+#:set TEXT_MAIN get_color_from_hex("#ededed")
+#:set TEXT_DIM get_color_from_hex("#8d8d8d")
+#:set ACCENT_BLUE get_color_from_hex(MeileColors.UPLOAD)
+#:set OK_GREEN get_color_from_hex(MeileColors.INDICATOR)
+
+
 
 WindowManager:
 
@@ -1117,129 +1133,87 @@ WindowManager:
                 padding: [10, 10, 10, 50]
                 spacing: 10
                 id: rv
+
 <PlanScreen>:
+    orientation: "vertical"
     size_hint_x: .99
     pos_hint: {"center_x": 0.5}
-    MDGridLayout:
-        rows: 5
-        size_hint_x: .9
+    padding: dp(4), dp(6)
+    spacing: "10dp"
+
+    # -- Header ------------------------------------------------------------
+    MDBoxLayout:
+        orientation: "horizontal"
+        size_hint_y: None
+        height: "52dp"
+        spacing: "10dp"
+
+        MDBoxLayout:
+            orientation: "vertical"
+            spacing: "2dp"
+
+            Label:
+                text: "Subscription Plans"
+                color: MEILE
+                bold: True
+                font_size: "20sp"
+                halign: "left"
+                valign: "bottom"
+                text_size: self.size
+
+            Label:
+                text: root.instructions
+                color: TEXT_DIM
+                font_size: "10sp"
+                halign: "left"
+                valign: "top"
+                text_size: self.size
+                shorten: True
+                shorten_from: "right"
+
+        TooltipMDIconButton:
+            icon: "earth"
+            tooltip_text: "Map"
+            pos_hint: {"center_y": .5}
+            theme_text_color: "Custom"
+            text_color: MEILE
+            on_release: root.set_previous_screen()
+
+    # -- Loading / status line ---------------------------------------------
+    MDBoxLayout:
+        id: status_row
+        orientation: "horizontal"
+        size_hint_y: None
+        height: "40dp"
+        spacing: "8dp"
+
+        LoadingSpinner:
+            id: spinner
+            size_hint: None, None
+            size: "40dp", "40dp"
+            pos_hint: {"center_y": .5}
+
+        Label:
+            text: root.status_text
+            color: TEXT_DIM
+            font_size: "11sp"
+            halign: "left"
+            valign: "middle"
+            text_size: self.size
+
+    # -- Plan cards, two columns -------------------------------------------
+    ScrollView:
+        do_scroll_x: False
+        do_scroll_y: True
+        bar_width: dp(8)
+
         MDGridLayout:
-            cols: 6
-            height: 25
+            id: plans_box
+            cols: 2
+            spacing: "14dp"
+            padding: 0, 0, 0, dp(12)
             adaptive_height: True
-            padding: [15, 25, 0, 25]
-    
-            MDLabel:
-                text: "Plan"
-                bold: True
-                size_hint_x: 2.9
-                
-    
-            MDLabel:
-                text: "Nodes"
-                bold: True
-                size_hint_x: 1.1
-            
-            MDLabel:
-                text: "Countries"
-                bold: True
-                size_hint_x: 1.5
-    
-            MDLabel:
-                text: "Cost"
-                bold: True
-                size_hint_x: 1.4
-    
-            MDLabel:
-                text: 
-                bold: True
-                size_hint_x: 1
-            
-            TooltipMDIconButton:
-                icon: "earth"
-                tooltip_text: "Map"
-                size_hint_x: .25
-                theme_text_color: "Custom"
-                text_color: app.theme_cls.primary_color
-                on_release: root.set_previous_screen()
-                
-        MDGridLayout:
-        	cols: 1
-        	rows: 4
-            height: sp(25)
-            adaptive_height: True
-            padding: [15, 25, 0, 25]        
-	        MDLabel:
-	        	height: sp(35)
-	            font_size: sp(15)
-	            theme_text_color: "Custom"
-	        	text_color: get_color_from_hex(MeileColors.WHITE) 
-	        	text: "In order to use plans that you subscribe to, click on the subscribed plan to expand it. This will select the plan and automatically filter the nodes on the left bar which are on the plan (i.e., connectible). Navigate to your desired node, click on it, and then press connect."
-        	MDLabel:
-        	MDLabel:
-        	
-    	MDGridLayout:
-        	cols: 1
-            height: sp(25)
-            adaptive_height: True
-            padding: [15, 25, 0, 25]        
-	        MDLabel:
-	        	height: sp(35)
-	            font_size: sp(14)
-	            theme_text_color: "Custom"
-	        	text_color: get_color_from_hex(MeileColors.WHITE) 
-	        	text: ""
-    	MDGridLayout:
-        	cols: 2
-            height: sp(25)
-            adaptive_height: True
-            padding: [15, 25, 0, 25] 
-            AsyncImage:
-                source: "../imgs/plans_basic.png" 
-                size_hint: 1, None
-                size: dp(215), dp(396)
-                pos_hint: {"center_x": 0.5}
-                allow_stretch: True
-                keep_ratio: True
-                padding: [15, 10, 15, 10]
-            AsyncImage:
-                source: "../imgs/plans_premium.png" 
-                size_hint: 1, None
-                size: dp(225), dp(396)
-                pos_hint: {"center_x": 0.5}
-                allow_stretch: True
-                keep_ratio: True
-                padding: [15, 10, 15, 10]
-                
-        #RecycleView:
-        #    do_scroll_y: True
-        #    size_hint_x: 1
-        #    size_hint_y: None
-        #    height: sp(200)
-        #    MDBoxLayout:
-        #        size_hint_y: None
-        #        size_hint_x: 1
-        #        adaptive_height: True
-        #        orientation: "vertical"
-        #        padding: [10, 10, 10, 50]
-        #        spacing: 10
-        #    	id: rv
-        ScrollView:
-            do_scroll_y: True
-            do_scroll_x: False
-            size_hint_x: 1
-            size_hint_y: None
-            height: sp(400)
-            bar_width: dp(10)
-            MDBoxLayout:
-                id: rv
-                size_hint_y: None
-                size_hint_x: 1
-                height: self.minimum_height
-                orientation: "vertical"
-                padding: [10, 10, 10, 50]
-                spacing: 10   
-        
+
 <NodeScreen>:
 	size_hint_x: .95
     pos_hint: {"center_x": 0.5}
@@ -1288,61 +1262,257 @@ WindowManager:
         NodeRV2:
             id: rv
 
-<PlanRow>:
-    rows: 2
-    cols: 6
+<PlanCard>:
+    orientation: "vertical"
+    size_hint_x: .5
     size_hint_y: None
     height: self.minimum_height
-    AsyncImage:
-        size_hint_x: .1
-        width: 100
-        source: root.logo_image
-    MDLabel:
-        padding: [10, 0, 0, 0]
-        text: root.plan_name
-        markup: True
-        size_hint_x: 2.5
-        theme_text_color: "Custom"
-        font_style: "H6"
-        font_size: sp(16)
-        font_name: root.get_font()
-        text_color: get_color_from_hex(MeileColors.MEILE)
+    padding: "16dp", "16dp", "16dp", "14dp"
+    spacing: "8dp"
+    radius: [16,]
+    elevation: 0
+    ripple_behavior: False
+    md_bg_color: BG_CARD_SEL if root.selected else BG_CARD
 
-    MDLabel:
-        text: root.num_of_nodes
-        markup: True
-        size_hint_x: 1.4
-        font_name: root.get_font()
-    MDLabel:
-        text: root.num_of_countries
-        markup: True
-        size_hint_x: 1.4
-        font_name: root.get_font()
+    # Selection ring, the accent colour of the plan is used as highlight
+    canvas.after:
+        Color:
+            rgba: get_color_from_hex(root.accent) if root.selected else BORDER
+        Line:
+            width: 2 if root.selected else 1
+            rounded_rectangle: self.x, self.y, self.width, self.height, 16
 
-    MDLabel:
-        text: root.cost
-        markup: True
-        size_hint_x: 1.8
-        font_name: root.get_font()
+    # -- Name / tier -------------------------------------------------------
+    MDBoxLayout:
+        orientation: "horizontal"
+        size_hint_y: None
+        height: "40dp"
+        spacing: "10dp"
 
-    MDFlatButton:        
-        #md_bg_color: get_color_from_hex("#121212")
-        pos_hint: {'x' : .67, 'y': .275}
-        size_hint_x: .5
-        on_release: root.open_subscribe()
-        Image:
-            id: subscribe_button
-            size_hint: 1.5,1.5
-            source: root.get_button("subscribe")
-        
-            
-    HSeparator:
-    HSeparator:
-    HSeparator:
-    HSeparator:
-    HSeparator:
-    HSeparator:
-            
+        MDIcon:
+            icon: root.icon
+            font_size: "26sp"
+            theme_text_color: "Custom"
+            text_color: get_color_from_hex(root.accent)
+            pos_hint: {"center_y": .5}
+
+        MDBoxLayout:
+            orientation: "vertical"
+            spacing: 0
+
+            # `root.plan_name.upper()` would silently never bind (Kivy drops
+            # `root.<property>.<method>()` bindings), the upper case string is
+            # prepared in `PlanCard.on_plan_name`.
+            Label:
+                text: root.plan_title
+                color: TEXT_MAIN
+                bold: True
+                font_size: "14sp"
+                halign: "left"
+                valign: "bottom"
+                text_size: self.size
+
+            Label:
+                text: "Plan #" + root.plan_id
+                color: TEXT_DIM
+                font_size: "9sp"
+                halign: "left"
+                valign: "top"
+                text_size: self.size
+
+        MDIcon:
+            icon: "check-circle"
+            font_size: "18sp"
+            theme_text_color: "Custom"
+            text_color: OK_GREEN
+            opacity: 1 if root.has_subscription else 0
+            pos_hint: {"center_y": .5}
+
+    # -- Price -------------------------------------------------------------
+    MDBoxLayout:
+        orientation: "horizontal"
+        size_hint_y: None
+        height: "36dp"
+
+        Label:
+            text: root.price_usd
+            color: MEILE
+            bold: True
+            font_size: "24sp"
+            halign: "left"
+            valign: "middle"
+            text_size: self.size
+            size_hint_x: .6
+
+        Label:
+            text: root.price_coin
+            color: TEXT_DIM
+            font_size: "10sp"
+            halign: "left"
+            valign: "bottom"
+            text_size: self.size
+
+    # -- Divider -----------------------------------------------------------
+    Widget:
+        size_hint_y: None
+        height: "1dp"
+        canvas:
+            Color:
+                rgba: BORDER
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+    # -- Reachability ------------------------------------------------------
+    MDBoxLayout:
+        orientation: "horizontal"
+        size_hint_y: None
+        height: "44dp"
+
+        MDBoxLayout:
+            orientation: "vertical"
+            spacing: 0
+
+            Label:
+                text: root.num_of_nodes
+                color: TEXT_MAIN
+                bold: True
+                font_size: "20sp"
+                halign: "left"
+                valign: "bottom"
+                text_size: self.size
+
+            Label:
+                text: "NODES"
+                color: TEXT_DIM
+                font_size: "9sp"
+                halign: "left"
+                valign: "top"
+                text_size: self.size
+
+        MDBoxLayout:
+            orientation: "vertical"
+            spacing: 0
+
+            Label:
+                text: root.num_of_countries
+                color: TEXT_MAIN
+                bold: True
+                font_size: "20sp"
+                halign: "left"
+                valign: "bottom"
+                text_size: self.size
+
+            Label:
+                text: "COUNTRIES"
+                color: TEXT_DIM
+                font_size: "9sp"
+                halign: "left"
+                valign: "top"
+                text_size: self.size
+
+    # -- Subscription of this wallet ---------------------------------------
+    MDCard:
+        orientation: "vertical"
+        size_hint_y: None
+        height: "70dp"
+        padding: "10dp", "8dp"
+        spacing: "2dp"
+        radius: [10,]
+        elevation: 0
+        ripple_behavior: False
+        md_bg_color: BG_DARK
+
+        Label:
+            text: "SUBSCRIPTION ACTIVE" if root.has_subscription else "NO ACTIVE SUBSCRIPTION"
+            color: OK_GREEN if root.has_subscription else TEXT_DIM
+            bold: True
+            font_size: "9sp"
+            size_hint_y: None
+            height: "12dp"
+            halign: "left"
+            valign: "middle"
+            text_size: self.size
+
+        Label:
+            text: ("Expires " + root.expires) if root.has_subscription else "Subscribe to connect to these nodes"
+            color: TEXT_MAIN if root.has_subscription else TEXT_DIM
+            font_size: "11sp"
+            size_hint_y: None
+            height: "18dp"
+            halign: "left"
+            valign: "middle"
+            text_size: self.size
+            shorten: True
+            shorten_from: "right"
+
+        Label:
+            text: ("Sub #" + root.sub_id + "  ·  " + root.amount_paid + " " + root.amount_denom) if root.has_subscription else ""
+            color: TEXT_DIM
+            font_size: "9sp"
+            size_hint_y: None
+            height: "14dp"
+            halign: "left"
+            valign: "middle"
+            text_size: self.size
+            shorten: True
+            shorten_from: "right"
+
+    # -- Tick to filter the node list --------------------------------------
+    MDBoxLayout:
+        orientation: "horizontal"
+        size_hint_y: None
+        height: "30dp"
+        spacing: "4dp"
+
+        Widget:
+
+        MDCheckbox:
+            id: selector
+            size_hint: None, None
+            size: "30dp", "30dp"
+            pos_hint: {"center_y": .5}
+            disabled: not root.has_subscription
+            color_active: get_color_from_hex(root.accent)
+            color_inactive: BORDER
+            on_active: root.on_selector_active(self.active)
+
+        Label:
+            text: "Use this plan" if root.has_subscription else "Subscription required"
+            color: TEXT_MAIN if root.has_subscription else TEXT_DIM
+            font_size: "10sp"
+            size_hint: None, None
+            size: self.texture_size
+            pos_hint: {"center_y": .5}
+
+        Widget:
+
+    # -- Subscribe ---------------------------------------------------------
+    AnchorLayout:
+        size_hint_y: None
+        height: "44dp"
+        anchor_x: "center"
+        anchor_y: "center"
+
+        Button:
+            text: "RENEW" if root.has_subscription else "SUBSCRIBE"
+            size_hint: None, None
+            size: "190dp", "40dp"
+            background_normal: ""
+            background_color: 0, 0, 0, 0
+            color: 0, 0, 0, 1
+            bold: True
+            font_size: "11sp"
+            on_release: root.open_subscribe()
+
+            canvas.before:
+                Color:
+                    rgba: MEILE_DIM if self.state == "down" else get_color_from_hex(root.accent)
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+                    radius: [10,]
+# Used for Subscription nodes            
 <NodeRow>:
     rows: 2
     cols: 5
@@ -1386,64 +1556,6 @@ WindowManager:
     HSeparator:
     HSeparator:
             
-<PlanDetails>:
-    rows: 3
-    cols: 5
-    height: 90
-	size_hint_y: None
-    #height: self.minimum_height
-    
-    MDLabel
-        text: "[b]UUID[/b]"
-        markup: True
-        size_hint_x: 2
-    MDLabel
-        text: "[b]ID[/b]"
-        markup: True
-        
-            
-    MDLabel
-        text: "[b]Expires[/b]"
-        markup: True
-        size_hint_x: 1.3
-        
-    MDLabel
-        text: "[b]Deposit[/b]"
-        markup: True    
-        
-    MDLabel
-        text: "[b]Coin[/b]"
-        markup: True
-    
-    MDLabel
-        text: root.uuid
-        markup: True
-        font_size: sp(10)
-        size_hint_x: 2
-    MDLabel
-        text: root.id
-        markup: True
-        font_size: sp(13)
-    MDLabel
-        text: root.expires
-        markup: True
-        font_size: sp(13)
-        size_hint_x: 1.3
-    MDLabel
-        text: root.deposit
-        markup: True
-        font_size: sp(13)
-    MDLabel
-        text: root.coin
-        markup: True
-        font_size: sp(13)
-        
-    MDLabel
-    MDLabel
-    MDLabel
-    MDLabel
-    MDLabel
-    
 <NodeDetails>:
     rows: 2
     cols: 8
@@ -1507,14 +1619,6 @@ WindowManager:
     height: 50
     adaptive_height: True
 
-<PlanAccordion>:
-    rows: 2
-    md_bg_color: get_color_from_hex(MeileColors.DIALOG_BG_COLOR2)
-    radius: [5, 5, 5, 5]
-    size_hint_y: None
-    height: self.minimum_height
-    
-    
 #:import get_color_from_hex kivy.utils.get_color_from_hex
 #:import sp kivy.metrics.sp
 #:import dp kivy.metrics.dp
@@ -3473,17 +3577,8 @@ WindowManager:
 #
 # Palette: MeileColors.MEILE is the primary/accent colour, every panel and
 # control sits on MeileColors.DIALOG_BG_COLOR2 or #191919 so the screen
-# matches the rest of the Meile GUI.
-
-#:set MEILE get_color_from_hex(MeileColors.MEILE)
-#:set MEILE_DIM get_color_from_hex("#c9940d")
-#:set BG_DARK get_color_from_hex(MeileColors.DIALOG_BG_COLOR2)
-#:set BG_CARD get_color_from_hex("#191919")
-#:set BG_INPUT get_color_from_hex(MeileColors.DIALOG_BG_COLOR2)
-#:set BG_HOVER get_color_from_hex("#2b2b2b")
-#:set BORDER get_color_from_hex("#2f2f2f")
-#:set TEXT_MAIN get_color_from_hex("#ededed")
-#:set TEXT_DIM get_color_from_hex("#8d8d8d")
+# matches the rest of the Meile GUI. The palette itself is declared at the
+# top of this file (see the `#:set` block) so the plan cards share it.
 
 <NeonLabel@Label>:
     color: TEXT_DIM
