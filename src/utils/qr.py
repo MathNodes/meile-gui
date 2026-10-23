@@ -39,10 +39,8 @@ class QRCode():
         here = path.dirname(path.abspath(__file__))
         candidates = [
             path.join(here, 'fonts', name),
-            self.MeileConfig.resource_path('utils/fonts/' + name),
-            self.MeileConfig.resource_path('fonts/' + name),
-            self.MeileConfig.resource_path('../utils/fonts/' + name),
-            self.MeileConfig.resource_path('../fonts/' + name),
+            self.MeileConfig.resource_path(MeileColors.FONTS_UTILS + name),
+            self.MeileConfig.resource_path(MeileColors.FONTS + name),
         ]
         for candidate in candidates:
             if not path.exists(candidate):
@@ -68,7 +66,9 @@ class QRCode():
 
         robotoFont = self._font(path.basename(MeileColors.FONT_FACE), 13)
    
-        wg_logo_path = self.MeileConfig.resource_path(MeileColors.WIREGUARD_ICON)
+        wg_logo_path = self.MeileConfig.resource_path(
+            MeileColors.COIN_IMGS + 'wireguard.png'
+        )
         has_logo = path.exists(wg_logo_path)
 
         QRcode = qrcode.QRCode(
@@ -132,7 +132,7 @@ class QRCode():
         DepositCoin    = coin
         DepositAddress = ADDRESS 
         
-        coinLogo = self.MeileConfig.resource_path('utils/coinimg/' + DepositCoin + '.png')
+        coinLogo = self.MeileConfig.resource_path(MeileColors.COIN_IMGS + DepositCoin + '.png')
         logo = Image.open(coinLogo)
         basewidth = 100
          
@@ -180,17 +180,20 @@ class QRCode():
         draw.text(((QRimg.size[0]+15 - w)/2,QRimg.size[1]-2),DepositAddress, (0,0,0), font=robotoFont)
         
         background.paste(QRimg, (0,0))
-
-        # eCryptFS (the filesystem of the encrypted data volume) rejects file
-        # names longer than 143 characters, so wallet URIs and config strings
-        # are sanitised and truncated before they are used as a file name -
-        # generate_payment_qr_code() does the same for its output.  Short
-        # alphanumeric addresses keep their name because
-        # get_qr_code_address() looks the wallet QR code up as
-        # "<address>.png".
-        name = ADDRESS[:5] if ADDRESS.startswith(("vmess", "vless")) else ADDRESS
-        safe_name = ''.join(c if c.isalnum() else '_' for c in name)[:100]
-        out_path = path.join(self.IMGDIR, safe_name + ".png")
+        
+        # eCryptFS rejects file names longer than 143 characters, prefix and
+        # ".png" included (see generate_qr_code), so the URI is cut down to
+        # 100 characters - the QR code itself still carries all of it.
+        safe_name = ''.join(c if c.isalnum() else '_' for c in ADDRESS)[:100]
+        out_path = path.join(self.IMGDIR, 'pay_' + safe_name + ".png")
+        try:
+            background.save(out_path)
+            return out_path
+        except Exception as e:
+            print("QR image %s could not be saved: %s" % (out_path, e))
+        # An unwritable image folder must not stop a payment: the dialog only
+        # needs a path that exists.
+        out_path = path.join(tempfile.gettempdir(), 'meile_pay_' + safe_name + ".png")
         background.save(out_path)
         return out_path
 
@@ -212,7 +215,7 @@ class QRCode():
         coinLogo = logo_path
 
         if not (coinLogo and path.exists(coinLogo)) and coin:
-            bundled = self.MeileConfig.resource_path('utils/coinimg/' + coin + '.png')
+            bundled = self.MeileConfig.resource_path(MeileColors.COIN_IMGS + coin + '.png')
             if path.exists(bundled):
                 coinLogo = bundled
 
