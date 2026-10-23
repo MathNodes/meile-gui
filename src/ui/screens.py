@@ -3428,7 +3428,7 @@ class SMSPoolScreen(Screen):
         coins = []
         for entry in SMSConf.BTCPAY_COINS:
             coin = dict(entry)
-            coin["icon_path"] = self._asset("utils/coinimg/%s.png" % coin["icon"])
+            coin["icon_path"] = self._asset(MeileColors.COIN_IMGS + "%s.png" % coin["icon"])
             coins.append(coin)
         return coins
 
