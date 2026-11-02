@@ -718,6 +718,23 @@ class IBCTokens():
             'divisor': 10 ** 6,
         },
     }
+
+    AMOUNT_DECIMALS = {
+        'zano': 4,
+        'fusd': 2,
+        'daix': 2,
+        'bchx': 6,
+        'bnbx': 6,
+        'ethx': 6,
+        'solx': 6,
+        'btcx': 8,
+        'tonx': 6,
+        'zsd': 2,
+        'zeph': 4,
+        'arrr': 4,
+        'firo': 4,
+        'pivx': 4,
+    }
     
     NOWCOINS     = ["dcr", "epic",
                     "bch","sol", "xaut", "eth",

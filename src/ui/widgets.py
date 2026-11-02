@@ -61,6 +61,17 @@ from fiat.stripe_pay.dist import scrtsxx
 from utils.qr import QRCode
 from utils.nowcurrencies import get_currency_logo_path, get_icon_url
 
+def coin_decimals(coin):
+    return IBCTokens.AMOUNT_DECIMALS.get(str(coin).lower(), 8)
+
+
+def format_coin_amount(amount, coin=None, decimals=None):
+    if decimals is None:
+        decimals = coin_decimals(coin)
+
+    return f"{float(amount):.{decimals}f}"
+
+
 class WalletInfoContent(BoxLayout):
     def __init__(self, seed_phrase, name, address, password, **kwargs):
         super(WalletInfoContent, self).__init__(**kwargs)
@@ -1079,6 +1090,10 @@ class PlanCard(MDCard):
 
     dialog = None
 
+    # 8 byte hex payment id /v1/zano/getaddress issued for ADDRESS, shown as
+    # the Payment ID of the Zano payment dialog.
+    zano_payment_id = None
+
     def __init__(self, plan_name,
                        num_of_nodes,
                        num_of_countries,
@@ -1480,6 +1495,7 @@ class PlanCard(MDCard):
                 arrrusd = price_api.get_usd(mu_coin)
                 cost = usd*ConfParams.BTCPAYADJ
                 total_arrr = round(float(cost) / float(arrrusd['price']),2)
+                total_arrr_text = format_coin_amount(total_arrr, mu_coin)
                 
                 
                 if self.dialog:
@@ -1489,14 +1505,14 @@ class PlanCard(MDCard):
                     
                 self.invoice_content = QRDialogContent()
                 self.invoice_content.ids.zaddress_field.text = zaddress
-                self.invoice_content.ids.price_field.text = f"{total_arrr} {mu_coin}"
+                self.invoice_content.ids.price_field.text = f"{total_arrr_text} {mu_coin}"
     
                 # Generate QR Code
                 QRcode = QRCode()
                 if mu_coin == "arrr":
-                    coin_uri = f"pirate:{zaddress}?amount={total_arrr}"
+                    coin_uri = f"pirate:{zaddress}?amount={total_arrr_text}"
                 else:
-                    coin_uri = f"{mu_coin}:{zaddress}?amount={total_arrr}"
+                    coin_uri = f"{mu_coin}:{zaddress}?amount={total_arrr_text}"
                 self.invoice_content.ids.qr_img.source = QRcode.generate_qr_code(coin_uri, mu_coin) 
     
                 self.dialog = MDDialog(
@@ -1524,6 +1540,7 @@ class PlanCard(MDCard):
                 arrrusd = price_api.get_usd("firo")
                 cost = usd*ConfParams.BTCPAYADJ
                 total_arrr = round(float(cost) / float(arrrusd['price']),2)
+                total_arrr_text = format_coin_amount(total_arrr, mu_coin)
                 
                 
                 if self.dialog:
@@ -1533,11 +1550,11 @@ class PlanCard(MDCard):
                     
                 self.invoice_content = QRDialogContent()
                 self.invoice_content.ids.zaddress_field.text = zaddress
-                self.invoice_content.ids.price_field.text = f"{total_arrr} Firo"
+                self.invoice_content.ids.price_field.text = f"{total_arrr_text} Firo"
     
                 # Generate QR Code
                 QRcode = QRCode()
-                coin_uri = f"{mu_coin}:{zaddress}?amount={total_arrr}"
+                coin_uri = f"{mu_coin}:{zaddress}?amount={total_arrr_text}"
                 self.invoice_content.ids.qr_img.source = QRcode.generate_qr_code(coin_uri, "firo") 
     
                 self.dialog = MDDialog(
@@ -1559,19 +1576,16 @@ class PlanCard(MDCard):
                 self.start_payment_thread_firo(total_arrr)
                 
             elif mu_coin in ["zano", "fusd", "bchx", "bnbx", "btcx", "daix", "ethx", "solx", "tonx"]:
-                zaddress = IBCTokens.ZANO_WALLET
+                zaddress = self.check_invoice_status_zano(address=True, coin=mu_coin)
                 
                 price_api = GetPriceAPI()
                 arrrusd = price_api.get_usd(mu_coin)
                 cost = usd*ConfParams.BTCPAYADJ
-                if mu_coin in ["zano", "ton"]:
-                    total_arrr = round(float(cost) / float(arrrusd['price']),4)
-                elif mu_coin in ["fusd", "daix"]:
-                    total_arrr = round(float(cost) / float(arrrusd['price']),2)
-                elif mu_coin in ["bchx", "bnbx", "ethx", "solx"]:
-                    total_arrr = round(float(cost) / float(arrrusd['price']),6)
-                else:
-                    total_arrr = round(float(cost) / float(arrrusd['price']),8)
+                # Round to the precision the amount is rendered with, so a
+                # small deposit is never shown in scientific notation.
+                decimals = coin_decimals(mu_coin)
+                total_arrr = round(float(cost) / float(arrrusd['price']), decimals)
+                total_arrr_text = format_coin_amount(total_arrr, mu_coin, decimals)
                 
                 if self.dialog:
                     self.dialog.dismiss()
@@ -1580,13 +1594,13 @@ class PlanCard(MDCard):
                     
                 self.invoice_content = QRDialogZanoContent()
                 self.invoice_content.ids.zaddress_field.text = zaddress
-                self.invoice_content.ids.price_field.text = f"{total_arrr} {mu_coin}"
-                self.invoice_content.ids.comment_field.text = self.ADDRESS
+                self.invoice_content.ids.price_field.text = f"{total_arrr_text} {mu_coin}"
+                self.invoice_content.ids.comment_field.text = self.zano_payment_id or self.ADDRESS
     
                 # Generate QR Code
                 QRcode = QRCode()
                 aid = IBCTokens.ZANO_ASSETS[mu_coin]['asset_id']
-                coin_uri = f"zano:{zaddress}?asset_id={aid}&tx_amount={total_arrr}&message={self.ADDRESS}"
+                coin_uri = f"zano:{zaddress}?asset_id={aid}&tx_amount={total_arrr_text}"
                 self.invoice_content.ids.qr_img.source = QRcode.generate_qr_code(coin_uri, mu_coin) 
     
                 self.dialog = MDDialog(
@@ -1614,6 +1628,7 @@ class PlanCard(MDCard):
                 arrrusd = price_api.get_usd(mu_coin)
                 cost = usd*ConfParams.BTCPAYADJ
                 total_arrr = round(float(cost) / float(arrrusd['price']),4)
+                total_arrr_text = format_coin_amount(total_arrr, mu_coin)
                 
                 if self.dialog:
                     self.dialog.dismiss()
@@ -1622,11 +1637,11 @@ class PlanCard(MDCard):
                     
                 self.invoice_content = QRDialogContent()
                 self.invoice_content.ids.zaddress_field.text = zaddress
-                self.invoice_content.ids.price_field.text = f"{total_arrr} {mu_coin}"
+                self.invoice_content.ids.price_field.text = f"{total_arrr_text} {mu_coin}"
     
                 # Generate QR Code
                 QRcode = QRCode()
-                coin_uri = f"zephyr:{zaddress}?tx_amount={total_arrr}"
+                coin_uri = f"zephyr:{zaddress}?tx_amount={total_arrr_text}"
                 self.invoice_content.ids.qr_img.source = QRcode.generate_qr_code(coin_uri, mu_coin) 
     
                 self.dialog = MDDialog(
@@ -2367,7 +2382,36 @@ class PlanCard(MDCard):
             except Exception as e:
                 print(str(e))
                 
-        if invoice == True:
+        if address == True:
+            print("Getting new Zano integrated address...")
+
+            try:
+                data = {'address': f"{self.ADDRESS}"}
+                print(data)
+                endpoint = '/v1/zano/getaddress'
+                response = http.post(
+                    HTTParams.PLAN_API + endpoint,
+                    json=data,
+                    auth=HTTPBasicAuth(USERNAME, PASSWORD)
+                )
+                result = response.json()
+                print(result)
+
+                if result.get('result'):
+                    # The payment id is generated server side and embedded in
+                    # the integrated address, so show the one that came back.
+                    self.zano_payment_id = result.get('payment_id')
+                    return result['result']
+                else:
+                    self.zano_payment_id = None
+                    return IBCTokens.ZANO_WALLET
+
+            except Exception as e:
+                print(str(e))
+                self.zano_payment_id = None
+                return IBCTokens.ZANO_WALLET
+
+        elif invoice == True:
             if not self.mempool:
                 print(f"Checking txs of : {IBCTokens.ZANO_WALLET}")
                 check_balance()
@@ -2494,7 +2538,7 @@ class PlanCard(MDCard):
         if self.invoice_content:
             self.invoice_content.ids.status.text = message
             if payment_status in (None, "partially_paid"):
-                self.invoice_content.ids.price_field.text = f"{remaining_amt} {coin}"
+                self.invoice_content.ids.price_field.text = f"{format_coin_amount(remaining_amt, coin)} {coin}"
             
     def update_ui_after_payment(self, canceled, invoice_ref=None, amount=None, coin=None):
         if canceled:
@@ -2524,7 +2568,7 @@ class PlanCard(MDCard):
         if invoice_ref:
             return f"Invoice {invoice_ref} has been marked as paid! Finishing up..."
         if amount is not None:
-            label = f"{amount} {coin}".strip() if coin else f"{amount}"
+            label = f"{format_coin_amount(amount, coin)} {coin}".strip() if coin else format_coin_amount(amount)
             return f"Payment of {label} received! Finishing up..."
         return "Payment received! Finishing up..."
             
