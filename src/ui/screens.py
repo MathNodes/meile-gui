@@ -1958,13 +1958,16 @@ class WalletScreen(Screen):
         conf = CONFIG.read_configuration(MeileGuiConfig.CONFFILE)
         self.ADDRESS = conf['wallet'].get("address")
         QRcode = QRCode()
-        if not path.isfile(path.join(MeileGuiConfig.BASEDIR, "img", f"{self.ADDRESS}.png")):
+        if not path.isfile(path.join(MeileGuiConfig.BASEDIR, "img", f"{self.ADDRESS}.png")) or not path.isfile(path.join(MeileGuiConfig.BASEDIR, "img", f"pay_{self.ADDRESS}.png")):
             print("Generating QR Code....")
-            QRcode.generate_qr_code(self.ADDRESS, "dvpn")
+            img_path = QRcode.generate_qr_code(self.ADDRESS, "dvpn")
         
-        img_path = path.join(MeileGuiConfig.BASEDIR, "img", f"{self.ADDRESS}.png")
+        if path.isfile(path.join(MeileGuiConfig.BASEDIR, "img", f"{self.ADDRESS}.png")):
+            img_path = path.join(MeileGuiConfig.BASEDIR, "img", f"{self.ADDRESS}.png")
+        else:
+            img_path = path.join(MeileGuiConfig.BASEDIR, "img", f"pay_{self.ADDRESS}.png")
         print(img_path)
-        return path.join(MeileGuiConfig.BASEDIR, "img", f"{self.ADDRESS}.png")
+        return img_path
 
     def SetBalances(self, CoinDict):
         if CoinDict:

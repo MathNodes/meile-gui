@@ -640,7 +640,7 @@ def disconnect(protocol):
             
             return proc1.returncode, False
         elif pltfrm == Arch.LINUX:
-            CONFFILE = path.join(ConfParams.KEYRINGDIR, 'wg99.conf')
+            CONFFILE = path.join('/etc/wireguard', 'wg99.conf')
             wg_downCMD = ['pkexec', 'env', 'PATH=%s' % ConfParams.PATH, 'wg-quick', 'down', CONFFILE]
                 
             proc1 = Popen(wg_downCMD)
