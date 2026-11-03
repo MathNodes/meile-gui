@@ -1551,7 +1551,9 @@ class HandleWalletFunctions():
                 else:
                     command = (
                         f"ip link delete {iface} 2>/dev/null || true; "
-                        f"wg-quick up {config_file}"
+                        f"install -d -m 700 /etc/wireguard; "
+                        f"cp {config_file} /etc/wireguard/{iface}.conf; "
+                        f"wg-quick up /etc/wireguard/{iface}.conf"
                     )
                     
                     result = subprocess.run(
