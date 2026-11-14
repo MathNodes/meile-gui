@@ -68,6 +68,8 @@ from threading import Thread, Event
 from unidecode import unidecode
 from datetime import datetime,timedelta
 import json
+import html
+import random
 from treelib.exceptions import NodeIDAbsentError
 import base64
 import subprocess
@@ -2905,6 +2907,21 @@ class SMSPoolScreen(Screen):
                        "provider's success rate show up here.")
     QUOTE_RATE_HINT = ("Success rate: how often this provider has actually "
                        "delivered an SMS for the selected service and country.")
+    # Shown next to the ready quote: the figure is a provider estimate, the
+    # real charge is whatever /request/price answers for the pool that the
+    # purchase actually pins (see purchase / _on_price).
+    QUOTE_ESTIMATE_HINT = ("* Estimate only - the pool is picked at purchase time, so the "
+                           "charged amount can differ. Success rate: how often this "
+                           "provider has actually delivered an SMS for this service "
+                           "and country.")
+    # Friendly status text for the documented "type" of a failed /purchase/sms
+    # answer (422 OUT_OF_STOCK / PRICE_NOT_FOUND / BALANCE_ERROR).  Anything
+    # else falls back to the cleaned provider message (see _order_error_text).
+    ORDER_ERROR_TYPES = {
+        "OUT_OF_STOCK"   : "Out of stock - try another service or country.",
+        "PRICE_NOT_FOUND": "No provider pool at the quoted price - try again.",
+        "BALANCE_ERROR"  : "SMSPool balance too low - contact support.",
+    }
     # Rate light colours (same green/red as the ACTIVE ORDER status dot).
     RATE_GOOD = "#3ecc6d"
     RATE_FAIR = "#e0a33a"
@@ -2951,6 +2968,7 @@ class SMSPoolScreen(Screen):
 
         self._pending_service = None
         self._pending_price   = 0.0
+        self._pending_pool    = None        # pool pinned for the order in flight
 
         # Pirate Chain (ARRR) top-up state
         self.stop_event        = Event()
@@ -3057,24 +3075,122 @@ class SMSPoolScreen(Screen):
         return price, rate
 
     @staticmethod
+    def _pools_from_payload(data):
+        '''Normalise a /pool/retrieve_valid answer into pool dicts.
+
+        Documented 200 body is a list of {"pool", "name", "custom_area",
+        "price"} entries.  A dict keyed by pool id (optionally wrapped in
+        "pools"/"data") is accepted too so a format change never breaks the
+        picker.  Each returned dict is {"id": int, "name": str, "price": float
+        or None} and entries without a usable id are dropped.
+        '''
+        if isinstance(data, dict):
+            for key in ("pools", "result", "data"):
+                if isinstance(data.get(key), (list, dict)):
+                    data = data[key]
+                    break
+        if isinstance(data, list):
+            entries = data
+        elif isinstance(data, dict):
+            entries = []
+            for key, value in data.items():
+                entry = dict(value) if isinstance(value, dict) else {"price": value}
+                entry.setdefault("pool", key)
+                entries.append(entry)
+        else:
+            return []
+
+        pools = []
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            pid = entry.get("pool", entry.get("id", entry.get("ID")))
+            if pid is None:
+                continue
+            try:
+                pid = int(pid)
+            except (TypeError, ValueError):
+                continue
+            price = None
+            for key in ("price", "cost", "cost_price"):
+                if entry.get(key) is not None:
+                    try:
+                        price = float(entry[key])
+                        break
+                    except (TypeError, ValueError):
+                        pass
+            pools.append({"id"   : pid,
+                          "name" : str(entry.get("name") or ""),
+                          "price": price})
+        return pools
+
+    @staticmethod
+    def _pick_random_pool(pools):
+        '''One pool at random, or None when nothing is in stock.
+
+        Every purchase draws a fresh pool so consecutive orders spread across
+        the providers SMSPool has available instead of always hitting the
+        default pool (see purchase / _on_price / _do_purchase).
+        '''
+        pools = [p for p in (pools or [])
+                 if isinstance(p, dict) and p.get("id") is not None]
+        if not pools:
+            return None
+        return random.choice(pools)
+
+    @staticmethod
+    def _clean_text(text):
+        '''Plain text of a provider message: drops HTML tags and entities.
+
+        SMSPool wraps its messages in markup (e.g. "<p>Pool <b>Foxtrot</b>:
+        Insufficient balance ...</p>") which must never reach a status label.
+        '''
+        text = re.sub(r"<[^>]*>", " ", str(text))
+        text = html.unescape(text)
+        text = re.sub(r"\s+([,.;:!?])", r"\1", text)
+        return " ".join(text.split())
+
+    @staticmethod
+    def _first_message(value):
+        '''First human readable string inside an errors/message/detail field.'''
+        if isinstance(value, str):
+            return value
+        if isinstance(value, dict):
+            return str(value.get("message") or value.get("msg")
+                       or value.get("error") or "")
+        if isinstance(value, list):
+            for item in value:
+                text = SMSPoolScreen._first_message(item)
+                if text:
+                    return text
+        return ""
+
+    @staticmethod
     def _error_message(data):
         '''Readable text of a documented SMSPool error payload.
 
         SMSPool answers with {"success": 0, "errors": [{"message": ...,
-        "param": ...}]} - or a plain "message" on the order endpoints.
+        "param": ...}]} - or a plain "message" on the order endpoints - and
+        wraps the text in HTML.  A parsed dict, a raw body (str) or a transport
+        exception are all accepted; the result is plain text, ready for a
+        status label.  Empty when the payload carries no message at all.
         '''
+        if isinstance(data, Exception):
+            return SMSPoolScreen._clean_text(str(data))
+        if isinstance(data, str):
+            try:
+                data = json.loads(data)
+            except Exception:
+                return SMSPoolScreen._clean_text(data)
+        if isinstance(data, list):
+            data = data[0] if data else {}
         if not isinstance(data, dict):
             return ""
-        errors = data.get("errors")
-        if isinstance(errors, list):
-            for item in errors:
-                if isinstance(item, dict) and item.get("message"):
-                    return str(item["message"])
-                if isinstance(item, str) and item:
-                    return item
-        elif isinstance(errors, str) and errors:
-            return errors
-        return str(data.get("message") or "")
+        for field in (data.get("errors"), data.get("message"), data.get("detail")):
+            text = SMSPoolScreen._first_message(field)
+            if text:
+                return SMSPoolScreen._clean_text(text)
+        return ""
 
     def _debug(self, text):
         try:
@@ -3121,7 +3237,9 @@ class SMSPoolScreen(Screen):
         )
 
     def _on_sms_error(self, request, error):
-        self._set_status("SMSPool error: %s" % str(error)[:120], ok=False)
+        # A 4xx/5xx body arrives here as a parsed dict - never dump it raw.
+        self._set_status("SMSPool error: %s" % (self._error_message(error) or "request failed"),
+                         ok=False)
         self._debug("SMSPool ERR: %s" % str(error))
 
     # ---------- Meile plan-rest API ----------
@@ -3147,7 +3265,8 @@ class SMSPoolScreen(Screen):
         UrlRequest(HTTParams.PLAN_API + path, **kwargs)
 
     def _on_plan_error(self, request, error):
-        self._set_status("Plan API error: %s" % str(error)[:120], ok=False)
+        self._set_status("Plan API error: %s" % (self._error_message(error) or "request failed"),
+                         ok=False)
         self._debug("Plan API ERR: %s" % str(error))
 
     # ------------------------------------------------------------------
@@ -4164,12 +4283,14 @@ class SMSPoolScreen(Screen):
     def request_quote(self, *args):
         '''Ask SMSPool what a number costs for the current selection.
 
-        POST /request/price (SMSPool docs, "Retrieve specific price & Success
-        Rate") answers with the pool price *and* the historic success rate of
-        that provider for the picked country/service - both are shown in the
-        PRICE QUOTE card.  The call is debounced so clicking through the lists
-        only fires once the user settles, and every new selection invalidates
-        answers still in flight (see quote_seq / _on_quote).
+        The screen first draws a pool from /pool/retrieve_valid and then asks
+        /request/price (SMSPool docs, "Retrieve specific price & Success Rate")
+        for *that* pool, so the answer carries a price the user could actually
+        buy plus the historic success rate of the provider for the picked
+        country/service - both are shown in the PRICE QUOTE card.  The call is
+        debounced so clicking through the lists only fires once the user
+        settles, and every new selection invalidates answers still in flight
+        (see quote_seq / _on_quote).
         '''
         self.quote_seq += 1
         if self.quote_event:
@@ -4202,13 +4323,47 @@ class SMSPoolScreen(Screen):
         if country is None or sid is None:
             return
         self._render_quote(loading=True)
-        self._sppost("/request/price", {
+        # Draw a pool from the ones SMSPool has in stock first, so the estimate
+        # is the price of a pool that could actually be bought (see
+        # _fetch_quote_price).  A failed list call falls back to the default.
+        self._sppost("/pool/retrieve_valid", {
             "key"    : self.API_KEY.strip(),
             "country": str(country["id"]),
             "service": str(sid),
-        }, lambda request, result: self._on_quote(token, request, result))
+            "web"    : "1",
+        }, lambda request, result: self._on_quote_pools(token, request, result),
+            lambda request, error: self._on_quote_pools_error(token, request, error))
 
-    def _on_quote(self, token, request, result):
+    def _on_quote_pools(self, token, request, result):
+        if token != self.quote_seq:
+            return
+        pool = self._pick_random_pool(self._pools_from_payload(self._parse(result)))
+        self._fetch_quote_price(token, pool)
+
+    def _on_quote_pools_error(self, token, request, error):
+        if token != self.quote_seq:
+            return
+        self._debug("quote pool list ERR: %s" % str(error)[:200])
+        self._fetch_quote_price(token, None)
+
+    def _fetch_quote_price(self, token, pool):
+        if token != self.quote_seq:
+            return
+        country = self.selected_country
+        sid     = self.service_id()
+        if country is None or sid is None:
+            return
+        form = {
+            "key"    : self.API_KEY.strip(),
+            "country": str(country["id"]),
+            "service": str(sid),
+        }
+        if pool:
+            form["pool"] = str(pool["id"])
+        self._sppost("/request/price", form,
+                     lambda request, result: self._on_quote(token, request, result, pool))
+
+    def _on_quote(self, token, request, result, pool=None):
         '''Paint the answer, unless a newer selection already replaced it.'''
         if token != self.quote_seq:
             return
@@ -4220,9 +4375,9 @@ class SMSPoolScreen(Screen):
             self._render_quote(error=message)
             self._debug("quote response: %s" % str(result)[:200])
             return
-        self._store_quote(price, rate)
+        self._store_quote(price, rate, pool)
 
-    def _store_quote(self, price, rate):
+    def _store_quote(self, price, rate, pool=None):
         '''Remember a provider price (SMSPool cost) and show it with markup.'''
         price = float(price)
         self.quote = {
@@ -4231,6 +4386,8 @@ class SMSPoolScreen(Screen):
             "success_rate": rate,
             "country"     : self.selected_country["name"] if self.selected_country else "",
             "service"     : self.selected_service or "",
+            "pool"        : pool.get("id") if isinstance(pool, dict) else None,
+            "pool_name"   : pool.get("name") if isinstance(pool, dict) else "",
         }
         self._render_quote()
 
@@ -4279,10 +4436,12 @@ class SMSPoolScreen(Screen):
             detail_text = "Provider cost + Meile markup"
             hint_text   = self.QUOTE_IDLE_HINT
         else:
-            total_text  = "$%.2f" % total
+            # The "*" flags the figure as an estimate: the pool - and with it
+            # the provider price - is drawn when the order is placed.
+            total_text  = "$%.2f*" % total
             rate_text, rate_word, rate_colour = self._rate_style(quote.get("success_rate"))
             detail_text = "Provider $%.2f" % (total)
-            hint_text   = self.QUOTE_RATE_HINT
+            hint_text   = self.QUOTE_ESTIMATE_HINT
             # Only compare against the wallet once a balance is actually known.
             if self.uuid:
                 if self.balance >= total:
@@ -4346,16 +4505,46 @@ class SMSPoolScreen(Screen):
             self._set_status("Not listed on SMSPool - contact support", ok=False)
             return
         self._pending_service = self.selected_service
+        self._pending_pool    = None
         self._set_status("Fetching price...", ok=None)
         try:
             self.ids.purchase_btn.disabled = True
         except Exception:
             pass
-        self._sppost("/request/price", {
+        # Pick a pool from the ones in stock first and quote *that* pool, so
+        # the balance check and the amount actually charged agree.  Each order
+        # draws a fresh pool (see _pick_random_pool) instead of always using
+        # SMSPool's default one.
+        self._sppost("/pool/retrieve_valid", {
             "key"    : self.API_KEY.strip(),
             "country": str(self.selected_country["id"]),
             "service": str(sid),
-        }, self._on_price)
+            "web"    : "1",
+        }, self._on_purchase_pools, self._on_purchase_pools_error)
+
+    def _on_purchase_pools(self, request, result):
+        self._pending_pool = self._pick_random_pool(self._pools_from_payload(self._parse(result)))
+        if self._pending_pool:
+            self._debug("purchase pool: #%s %s" % (self._pending_pool["id"],
+                                                   self._pending_pool["name"]))
+        self._request_purchase_price()
+
+    def _on_purchase_pools_error(self, request, error):
+        # No pool list: fall back to SMSPool's default pool rather than
+        # blocking the purchase.
+        self._debug("purchase pool list ERR: %s" % str(error)[:200])
+        self._pending_pool = None
+        self._request_purchase_price()
+
+    def _request_purchase_price(self):
+        form = {
+            "key"    : self.API_KEY.strip(),
+            "country": str(self.selected_country["id"]),
+            "service": str(self.service_id()),
+        }
+        if self._pending_pool:
+            form["pool"] = str(self._pending_pool["id"])
+        self._sppost("/request/price", form, self._on_price)
 
     def _on_price(self, request, result):
         try:
@@ -4373,7 +4562,7 @@ class SMSPoolScreen(Screen):
             return
         total = round(price * (1.0 + self.markup / 100.0), 6)
         # The price fetched for the purchase is the freshest quote there is.
-        self._store_quote(price, rate)
+        self._store_quote(price, rate, self._pending_pool)
         if self.balance < total:
             missing = total - self.balance
             self._set_status("Insufficient balance - top up $%.2f" % missing, ok=False)
@@ -4388,19 +4577,49 @@ class SMSPoolScreen(Screen):
             self.ids.purchase_btn.disabled = True
         except Exception:
             pass
-        self._sppost("/purchase/sms", {
+        form = {
             "key"    : self.API_KEY.strip(),
             "country": str(self.selected_country["id"]),
             "service": str(self.service_id()),
-        }, self._on_order_success, self._on_order_error)
+        }
+        if self._pending_pool:
+            form["pool"] = str(self._pending_pool["id"])
+        self._sppost("/purchase/sms", form, self._on_order_success, self._on_order_error)
+
+    def _order_error_text(self, data):
+        '''Short, plain status text for a failed /purchase/sms answer.
+
+        The provider tags hard failures with a machine readable "type" (422
+        OUT_OF_STOCK / PRICE_NOT_FOUND / BALANCE_ERROR) next to an HTML wrapped
+        message.  The tag wins so the user reads one actionable sentence
+        instead of the raw JSON body; unknown types fall back to the cleaned
+        provider message.
+        '''
+        payload = data
+        if isinstance(payload, str):
+            try:
+                payload = json.loads(payload)
+            except Exception:
+                payload = None
+        kind = ""
+        if isinstance(payload, dict):
+            kind = str(payload.get("type") or "").strip().upper()
+        if kind in self.ORDER_ERROR_TYPES:
+            return self.ORDER_ERROR_TYPES[kind]
+        return self._error_message(data) or "unknown error"
 
     def _on_order_error(self, request, error):
         try:
             self.ids.purchase_btn.disabled = False
         except Exception:
             pass
-        self._set_status("Order error: %s" % str(error)[:120], ok=False)
+        # A 422 body lands here as a parsed dict: turn it into one plain
+        # sentence instead of dumping the JSON under the status dot.
+        self._set_status("Order failed: %s" % self._order_error_text(error), ok=False)
         self._debug("Purchase ERR: %s" % str(error))
+        # The quote described a pool that just refused the order - refresh it
+        # so the card stops advertising a price that cannot be bought.
+        self.request_quote()
 
     def _on_order_success(self, request, result):
         try:
@@ -4413,8 +4632,9 @@ class SMSPoolScreen(Screen):
             self._set_status("Invalid order response", ok=False)
             return
         if str(data.get("success")) != "1":
-            message = data.get("message") or data.get("errors") or "unknown"
-            self._set_status("Order failed: %s" % message, ok=False)
+            # Same shape as the 422 body: one clean sentence, no JSON.
+            self._set_status("Order failed: %s" % self._order_error_text(data), ok=False)
+            self.request_quote()
             return
 
         try:
@@ -4429,6 +4649,8 @@ class SMSPoolScreen(Screen):
             "country_id": self.selected_country["id"],
             "service"   : self._pending_service,
             "service_id": self.service_id(),
+            "pool"      : data.get("pool") or (self._pending_pool["id"]
+                                               if self._pending_pool else None),
             "cost"      : cost,
             "refunded"  : False,
         }
@@ -4619,11 +4841,13 @@ class SMSPoolScreen(Screen):
             self._set_status("Order cancelled - refunding balance...", ok=None)
             self._refund_order()
         else:
-            message = data.get("message") if isinstance(data, dict) else None
-            self._set_status("Cancel failed: %s" % (message or "unknown"), ok=False)
+            self._set_status("Cancel failed: %s" % (self._error_message(data) or "unknown"),
+                             ok=False)
 
     def _on_cancel_error(self, request, error):
-        self._set_status("Cancel error: %s" % str(error)[:120], ok=False)
+        self._set_status("Cancel error: %s" % (self._error_message(error) or "request failed"),
+                         ok=False)
+        self._debug("Cancel ERR: %s" % str(error))
 
     def _refund_order(self):
         order = self.current_order

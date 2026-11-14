@@ -519,15 +519,21 @@ class PlanSubscribeContent(BoxLayout):
         self.price_api = GetPriceAPI()
         self.price_cache = {}
 
-        self.price_text = price
+        # None until a payment option is picked.  The deposit is only adjusted
+        # for the service fee once a rail other than the wallet is selected.
+        self.pay_with = None
+
+        # None until a payment option is picked.  The deposit is only adjusted
+        # for the service fee once a rail other than the wallet is selected.
+        self.pay_with = None
+
+        
         self.price_text = ' '.join([price.split("p2p")[0], 'p2p'])
         self.parse_coin_deposit("p2p")
 
         self.white_label = white_label
         self.nnodes = str(nnodes)
         self.logo_image = logo_image
-
-        self.pay_with = None
 
         menu_items = [
             {
@@ -665,12 +671,23 @@ class PlanSubscribeContent(BoxLayout):
                     p2p_price /
                     round(coin_price, 8), 8
                 )
-            if "btc" in mu_coin and value != 0:
-                deposit_text = f"{month * value:.8f}"
-            elif value != 0:
-                deposit_text = f"{month * value:.5f}"
-            else:
+            amount = month * value
+            if value != 0 and self.pay_with not in (None, "wallet"):
+                # Every rail but the wallet itself charges the service fee
+                # (ConfParams.BTCPAYADJ), so the deposit shown is the amount
+                # that is actually sent.  The fee is not applied a second time
+                # when the invoice is created (see subscribe()).
+                amount *= ConfParams.BTCPAYADJ
+            if value == 0:
                 deposit_text = "0"
+            elif self.pay_with == "btcpay":
+                # BTCPay coins are rendered with the precision declared in
+                # IBCTokens.AMOUNT_DECIMALS (8 decimals when unlisted).
+                deposit_text = format_coin_amount(amount, mu_coin)
+            elif "btc" in mu_coin:
+                deposit_text = f"{amount:.8f}"
+            else:
+                deposit_text = f"{amount:.5f}"
             self.ids.deposit.text = deposit_text
     
             if self.deposit_callback:
@@ -1389,6 +1406,9 @@ class PlanCard(MDCard):
             deposit = subscribe_dialog.ids.deposit.text
             nnodes = subscribe_dialog.nnodes
             mu_coin = subscribe_dialog.ids.drop_item.current_item
+            # ``deposit`` already carries the service fee for every rail but
+            # the wallet (see PlanSubscribeContent.after_both_prices_fetched),
+            # so ``usd`` is the amount to charge as-is.
             usd = round(float(deposit) * subscribe_dialog.price_cache[mu_coin]["price"], 5)
             
         else:
@@ -1468,7 +1488,7 @@ class PlanCard(MDCard):
                 )
             self.dialog.open()
             yield 0.6
-            self.start_payment_thread(usd*ConfParams.BTCPAYADJ)
+            self.start_payment_thread(usd)
             
         elif subscribe_dialog.pay_with == "pirate":
             
@@ -1477,7 +1497,7 @@ class PlanCard(MDCard):
                 
                 price_api = GetPriceAPI()
                 arrrusd = price_api.get_usd(mu_coin)
-                cost = usd*ConfParams.BTCPAYADJ
+                cost = usd
                 total_arrr = round(float(cost) / float(arrrusd['price']),2)
                 total_arrr_text = format_coin_amount(total_arrr, mu_coin)
                 
@@ -1522,7 +1542,7 @@ class PlanCard(MDCard):
                 
                 price_api = GetPriceAPI()
                 arrrusd = price_api.get_usd("firo")
-                cost = usd*ConfParams.BTCPAYADJ
+                cost = usd
                 total_arrr = round(float(cost) / float(arrrusd['price']),2)
                 total_arrr_text = format_coin_amount(total_arrr, mu_coin)
                 
@@ -1564,7 +1584,7 @@ class PlanCard(MDCard):
                 
                 price_api = GetPriceAPI()
                 arrrusd = price_api.get_usd(mu_coin)
-                cost = usd*ConfParams.BTCPAYADJ
+                cost = usd
                 # Round to the precision the amount is rendered with, so a
                 # small deposit is never shown in scientific notation.
                 decimals = coin_decimals(mu_coin)
@@ -1610,7 +1630,7 @@ class PlanCard(MDCard):
                 
                 price_api = GetPriceAPI()
                 arrrusd = price_api.get_usd(mu_coin)
-                cost = usd*ConfParams.BTCPAYADJ
+                cost = usd
                 total_arrr = round(float(cost) / float(arrrusd['price']),4)
                 total_arrr_text = format_coin_amount(total_arrr, mu_coin)
                 
@@ -1664,9 +1684,8 @@ class PlanCard(MDCard):
                 )
             self.dialog.open()
             yield 0.6
-            self.start_payment_thread_now(usd*ConfParams.BTCPAYADJ, mu_coin)
-                
-            
+            self.start_payment_thread_now(usd, mu_coin)
+
         else:
             MDDialog(text="[color=#FF0000]Please select a payment option[/color]").open()
 
