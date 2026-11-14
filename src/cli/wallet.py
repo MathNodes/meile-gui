@@ -6,8 +6,11 @@ import binascii
 import random
 import re
 import platform
+import shutil
 from time import sleep 
-from os import path, remove, chdir  
+from os import path, remove, chdir, mkdir  
+from importlib import import_module
+
 from urllib.parse import urlparse
 from urllib3.exceptions import NewConnectionError
 from grpc import RpcError, StatusCode
@@ -18,7 +21,8 @@ from conf.meile_config import MeileGuiConfig
 from typedef.konstants import IBCTokens, ConfParams, HTTParams, MEILE_PLAN_WALLET, Arch, NodeKeys
 from adapters import HTTPRequests, DNSRequests
 from cli.v2ray import V2RayHandler, V2RayConfiguration, V2RayFragmentConfiguration
-from helpers.wireguard import WgKey
+from helpers.wireguard import WgKey, is_amnezia_config
+from helpers.xray import is_xray_config
 from helpers.helpers import resolve_address, natural_gateway, wait_for_tunnel_iface
 
 import base64
@@ -34,6 +38,8 @@ from bip_utils import Bip39SeedGenerator, Bip44, Bip44Coins
 import mospy
 from mospy import Transaction
 from sentinel_protobuf.cosmos.base.v1beta1.coin_pb2 import Coin
+from google.protobuf.any_pb2 import Any as ProtoAny
+
 from sentinel_protobuf.sentinel.types.v1.price_pb2 import Price
 from sentinel_sdk.sdk import SDKInstance
 
@@ -56,6 +62,12 @@ asentinel_connect_bash         = path.join(ConfParams.KEYRINGDIR, "bin/asentinel
 v2ray_tun2routes_connect_bash  = path.join(ConfParams.KEYRINGDIR, "bin/tun2routes.sh")
 
 max_workers = 5
+
+# Every connect() keeps the credentials it fetched under the id of the session
+# they belong to, so the Sessions screen can bring that session up again
+# without creating (and paying for) a new one (see
+# HandleWalletFunctions.store_session_config / reconnect).
+SESSION_CONFIGS_DIR = path.join(MeileConfig.BASEDIR, "configs")
 
 class HandleWalletFunctions():
     connected =  {'v2ray_pid' : None, 'result' : False, 'status' : None}
@@ -1289,6 +1301,192 @@ class HandleWalletFunctions():
     
     
             
+    # ── Session credentials ────────────────────────────────────────────────
+    # The credentials of a session are kept in SESSION_CONFIGS_DIR under the
+    # id of that session (<session_id>.conf|.json|.yml), so a session that is
+    # already paid for on chain can be brought up again without buying a new
+    # one (see store_session_config / restore_session_config / reconnect).
+    SESSION_EXTENSIONS = {
+        NodeKeys.ProtocolTypes[0] : ".conf",   # WireGuard
+        NodeKeys.ProtocolTypes[1] : ".json",   # V2Ray
+        NodeKeys.ProtocolTypes[3] : ".json",   # XRay
+        NodeKeys.ProtocolTypes[4] : ".conf",   # AmneziaWG
+        NodeKeys.ProtocolTypes[5] : ".yml",    # Hysteria2
+    }
+    # File a live config of a protocol is written to and read from while the
+    # tunnel is up (see the write_*_config methods and cli.v2ray).
+    SESSION_CONFIG_FILES = {
+        NodeKeys.ProtocolTypes[0] : path.join(ConfParams.KEYRINGDIR, "wg99.conf"),
+        NodeKeys.ProtocolTypes[4] : path.join(ConfParams.KEYRINGDIR, "wg99.conf"),
+        NodeKeys.ProtocolTypes[1] : path.join(ConfParams.KEYRINGDIR, "v2ray_config.json"),
+        NodeKeys.ProtocolTypes[3] : path.join(ConfParams.KEYRINGDIR, "v2ray_config.json"),
+        NodeKeys.ProtocolTypes[5] : path.join(ConfParams.KEYRINGDIR, "hysteria.yml"),
+    }
+    # Helper file holding the address of the node the V2Ray/XRay/Hysteria2
+    # clients route to (see cli.v2ray and bin/routes.sh).
+    SESSION_PROXY_FILES = {
+        NodeKeys.ProtocolTypes[1] : path.join(ConfParams.KEYRINGDIR, "v2ray.proxy"),
+        NodeKeys.ProtocolTypes[3] : path.join(ConfParams.KEYRINGDIR, "xray.proxy"),
+        NodeKeys.ProtocolTypes[5] : path.join(ConfParams.KEYRINGDIR, "hysteria.proxy"),
+    }
+    # Messages a session of the chain arrives as, with the module defining
+    # them.  Current endpoints pack every session of an account in a
+    # google.protobuf.Any (sentinel.node.v3.Session, whose base_session holds
+    # id, node, status, traffic and duration), older ones answer with the
+    # concrete message (see session_from_any).
+    SESSION_MESSAGE_TYPES = (
+        ("sentinel.node.v3.Session",
+         "sentinel_protobuf.sentinel.node.v3.session_pb2", "Session"),
+        ("sentinel.session.v3.BaseSession",
+         "sentinel_protobuf.sentinel.session.v3.session_pb2", "BaseSession"),
+        ("sentinel.session.v2.Session",
+         "sentinel_protobuf.sentinel.session.v2.session_pb2", "Session"),
+    )
+    _SESSION_MESSAGES = None
+
+    @staticmethod
+    def session_configs_dir(create: bool = True) -> str:
+        '''
+        Directory holding the credentials of every session.
+
+        It is created on first use (MeileGuiConfig.BASEDIR/configs).
+        '''
+        if create and not path.isdir(SESSION_CONFIGS_DIR):
+            try:
+                mkdir(SESSION_CONFIGS_DIR)
+            except OSError as e:
+                print(f"session_configs_dir: {str(e)}")
+        return SESSION_CONFIGS_DIR
+
+    @classmethod
+    def detect_session_protocol(cls, config_file):
+        '''
+        Protocol of a stored session config, ``None`` when it cannot be told.
+
+        The extension says which family a config belongs to, its content which
+        member of that family: AmneziaWG writes its junk parameters into the
+        very same wg99.conf plain WireGuard uses, and the XRay client tags the
+        objects of the v2ray_config.json it shares with the V2Ray client.
+        '''
+        ext = path.splitext(config_file)[1].lower()
+        try:
+            with open(config_file, "r", encoding="utf-8") as f:
+                content = f.read()
+        except OSError as e:
+            print(f"detect_session_protocol: {str(e)}")
+            return None
+
+        if ext == ".conf":
+            return (NodeKeys.ProtocolTypes[4] if is_amnezia_config(content)
+                    else NodeKeys.ProtocolTypes[0])
+        if ext == ".yml":
+            return NodeKeys.ProtocolTypes[5]
+        if ext == ".json":
+            try:
+                config = json.loads(content)
+            except JSONDecodeError as e:
+                print(f"detect_session_protocol: {str(e)}")
+                return None
+            return (NodeKeys.ProtocolTypes[3] if is_xray_config(config)
+                    else NodeKeys.ProtocolTypes[1])
+        return None
+
+    @classmethod
+    def find_session_config(cls, session_id):
+        '''
+        ``(path, protocol)`` of the credentials stored for SESSION_ID.
+
+        ``(None, None)`` when the session has none - it was created by an
+        older build of Meile, or on another machine.
+        '''
+        directory = cls.session_configs_dir(create=False)
+        if not path.isdir(directory):
+            return None, None
+
+        for ext in (".conf", ".json", ".yml"):
+            stored = path.join(directory, f"{session_id}{ext}")
+            if not path.isfile(stored):
+                continue
+            protocol = cls.detect_session_protocol(stored)
+            if protocol is not None:
+                return stored, protocol
+        return None, None
+
+    def store_session_config(self, session_id, protocol, config_file):
+        '''
+        Keep a copy of the credentials of SESSION_ID in the configs directory.
+
+        The config is named after the session id and the extension of the
+        protocol (see SESSION_EXTENSIONS), the address of the node the
+        V2Ray/XRay/Hysteria2 clients route to is kept next to it as
+        <session_id>.proxy.  Returns the path of the stored config, ``None``
+        when nothing could be kept.
+        '''
+        if session_id is None or config_file is None:
+            return None
+
+        ext = self.SESSION_EXTENSIONS.get(protocol)
+        if ext is None:
+            print(f"store_session_config: no extension known for {protocol}")
+            return None
+        if not path.isfile(config_file):
+            print(f"store_session_config: {config_file} does not exist")
+            return None
+
+        directory = self.session_configs_dir()
+        stored = path.join(directory, f"{session_id}{ext}")
+        try:
+            shutil.copyfile(config_file, stored)
+        except OSError as e:
+            print(f"store_session_config: {str(e)}")
+            return None
+
+        proxy_file = self.SESSION_PROXY_FILES.get(protocol)
+        if proxy_file is not None and path.isfile(proxy_file):
+            try:
+                shutil.copyfile(proxy_file,
+                                path.join(directory, f"{session_id}.proxy"))
+            except OSError as e:
+                print(f"store_session_config: {str(e)}")
+
+        print(f"Stored the credentials of session {session_id} in {stored}")
+        return stored
+
+    def restore_session_config(self, session_id, protocol=None):
+        '''
+        Copy the credentials of SESSION_ID back where the protocol reads them.
+
+        Returns ``(protocol, config_file)``, ``(None, None)`` when the session
+        has no stored credentials or when PROTOCOL does not match the stored
+        ones.
+        '''
+        stored, stored_protocol = self.find_session_config(session_id)
+        if stored is None:
+            return None, None
+        if protocol is not None and protocol != stored_protocol:
+            print(f"restore_session_config: session {session_id} holds a "
+                  f"{stored_protocol} config, not a {protocol} one")
+            return None, None
+
+        protocol = stored_protocol
+        config_file = self.SESSION_CONFIG_FILES[protocol]
+        try:
+            shutil.copyfile(stored, config_file)
+        except OSError as e:
+            print(f"restore_session_config: {str(e)}")
+            return None, None
+
+        proxy_file = self.SESSION_PROXY_FILES.get(protocol)
+        stored_proxy = path.join(path.dirname(stored), f"{session_id}.proxy")
+        if proxy_file is not None and path.isfile(stored_proxy):
+            try:
+                shutil.copyfile(stored_proxy, proxy_file)
+            except OSError as e:
+                print(f"restore_session_config: {str(e)}")
+
+        print(f"Restored the credentials of session {session_id} into {config_file}")
+        return protocol, config_file
+
     def connect(self, 
                 ID, 
                 address, 
@@ -1299,7 +1497,14 @@ class HandleWalletFunctions():
                 plan: bool = False, 
                 units: int = 0, 
                 hourly: bool = False,
+                session_id: int = None,
                 ):
+       
+        if session_id is not None:
+            # Reconnect to a session that already exists on chain: its
+            # credentials are on disk (see store_session_config), so no
+            # transaction is sent and no new session is created.
+            return self.reconnect(session_id, type)
        
         print(f"connect() deposit: {deposit}")
         CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
@@ -1521,11 +1726,30 @@ class HandleWalletFunctions():
             print(self.connected)
             return
         
+        self.bring_up_tunnel(type, session_id, response, decode, wgkey, conndesc, pltfrm)
+
+    def bring_up_tunnel(self, type, session_id, response, decode, wgkey, conndesc, pltfrm):
+        '''
+        Bring up the tunnel of a protocol - the second half of connect().
+
+        RESPONSE/DECODE/WGKEY are the credentials of a session that was just
+        created.  They are None when reconnect() restored the credentials of an
+        existing session from the configs directory instead.
+        '''
+        import subprocess
+
         if type in [NodeKeys.ProtocolTypes[0],NodeKeys.ProtocolTypes[4]]:
             iface = "wg99" 
-            config_file = self.write_wireguard_config(
-                response, decode, wgkey, conndesc, iface, config_type=type
-            )
+            if response is not None and decode is not None:
+                config_file = self.write_wireguard_config(
+                    response, decode, wgkey, conndesc, iface, config_type=type
+                )
+                # Keep the credentials of this session for a later reconnect
+                self.store_session_config(session_id, type, config_file)
+            else:
+                # Reconnect: reconnect() restored the credentials of the
+                # session into the file the tunnel is brought up with.
+                config_file = self.SESSION_CONFIG_FILES[type]
             
             if config_file is None:
                 status = "Error writing WireGuard config. Terminating..."
@@ -1624,7 +1848,11 @@ class HandleWalletFunctions():
             conndesc.write("Bringing up V2Ray socks tunnel...\n")
             conndesc.flush()
             
-            self.write_v2ray_config(response, decode)
+            if response is not None and decode is not None:
+                self.write_v2ray_config(response, decode)
+                # Keep the credentials of this session for a later reconnect
+                self.store_session_config(session_id, type,
+                                          self.SESSION_CONFIG_FILES[type])
             
             tuniface = False
             v2ray_handler = V2RayHandler(f"{v2ray_tun2routes_connect_bash} up")
@@ -1697,13 +1925,17 @@ class HandleWalletFunctions():
             conndesc.write("Bringing up XRAY socks tunnel...\n")
             conndesc.flush()
         
-            if not self.write_xray_config(response, decode):
-                self.connected = {"v2ray_pid": None, "result": False,
-                                  "status": "Error writing XRAY config. Terminating...",
-                                  "session_id": session_id}
-                if pltfrm == Arch.OSX:
-                    chdir(MeileConfig.BASEDIR)
-                return
+            if response is not None and decode is not None:
+                if not self.write_xray_config(response, decode):
+                    self.connected = {"v2ray_pid": None, "result": False,
+                                      "status": "Error writing XRAY config. Terminating...",
+                                      "session_id": session_id}
+                    if pltfrm == Arch.OSX:
+                        chdir(MeileConfig.BASEDIR)
+                    return
+                # Keep the credentials of this session for a later reconnect
+                self.store_session_config(session_id, type,
+                                          self.SESSION_CONFIG_FILES[type])
         
             tuniface = False
             xray_handler = V2RayHandler(f"{v2ray_tun2routes_connect_bash} up")
@@ -1769,7 +2001,16 @@ class HandleWalletFunctions():
             conndesc.write("Bringing up Hysteria2 socks tunnel...\n")
             conndesc.flush()
         
-            if not self.write_hysteria_config(response, decode):
+            if response is not None and decode is not None:
+                written = self.write_hysteria_config(response, decode)
+                if written:
+                    # Keep the credentials of this session for a later reconnect
+                    self.store_session_config(session_id, type,
+                                              self.SESSION_CONFIG_FILES[type])
+            else:
+                # Reconnect: reconnect() restored the config of the session
+                written = path.isfile(self.SESSION_CONFIG_FILES[type])
+            if not written:
                 self.connected = {"v2ray_pid": None, "result": False,
                                   "status": "Error writing Hysteria2 config. Terminating...",
                                   "session_id": session_id}
@@ -1845,6 +2086,43 @@ class HandleWalletFunctions():
                           "session_id" : session_id}
         return
     
+    def reconnect(self, session_id, protocol=None):
+        '''
+        Bring up the tunnel of a session that already exists on chain.
+
+        The credentials connect() fetched for that session are copied back from
+        the configs directory (see store_session_config) and the very same code
+        that brings a fresh connection up runs, so nothing is bought and no
+        transaction is sent.  PROTOCOL is the protocol the caller expects the
+        session to use, the stored config decides when it is None.
+        '''
+        pltfrm = platform.system()
+
+        if pltfrm == Arch.OSX or pltfrm == Arch.WINDOWS:
+            import subprocess
+
+        conndesc = open(path.join(ConfParams.KEYRINGDIR, "connect.log"), 'w')
+        conndesc.write(f"Reconnecting to session {session_id}...\n")
+        conndesc.flush()
+
+        restored, config_file = self.restore_session_config(session_id, protocol)
+        if restored is None:
+            status = (f"No stored credentials for session {session_id}. "
+                      f"Connect to the node again to create a new session.")
+            self.connected = {"v2ray_pid" : None,
+                              "result" : False,
+                              "status" : status,
+                              "session_id" : session_id}
+            print(self.connected)
+            conndesc.write(f"{status}\n")
+            conndesc.flush()
+            conndesc.close()
+            return
+
+        print(f"Reconnecting to session {session_id} ({restored}) from {config_file}")
+        return self.bring_up_tunnel(restored, session_id, None, None, None,
+                                    conndesc, pltfrm)
+
     def check_tx_log(self, tx):
         if tx.get("log", None) is not None:
             self.connected = {"v2ray_pid" : None,  
@@ -1862,6 +2140,88 @@ class HandleWalletFunctions():
             print("NO LOG ERROR")
             return 0   
            
+    @classmethod
+    def session_message_types(cls):
+        '''Messages a session can arrive as, keyed by their full name.'''
+        if cls._SESSION_MESSAGES is None:
+            messages = {}
+            for name, module_name, attribute in cls.SESSION_MESSAGE_TYPES:
+                try:
+                    messages[name] = getattr(import_module(module_name),
+                                             attribute)
+                except (ImportError, AttributeError) as e:
+                    # An SDK older (or newer) than this build of Meile
+                    print(f"session_message_types: {name}: {str(e)}")
+            cls._SESSION_MESSAGES = messages
+        return cls._SESSION_MESSAGES
+
+    @classmethod
+    def session_from_any(cls, packed):
+        '''
+        The session carried by PACKED, a google.protobuf.Any of the chain.
+
+        ``None`` when the type of the message is not known to this build, so
+        one session of another chain version cannot hide the others.
+        '''
+        name = packed.type_url.rsplit("/", 1)[-1]
+        message_class = cls.session_message_types().get(name)
+        if message_class is None:
+            print(f"session_from_any: unknown session type {name}")
+            return None
+
+        message = message_class()
+        try:
+            packed.Unpack(message)
+        except Exception as e:
+            print(f"session_from_any: {str(e)}")
+            return None
+
+        # sentinel.node.v3.Session carries the session itself plus its price
+        base_session = getattr(message, "base_session", None)
+        if base_session is not None and base_session.id:
+            return base_session
+        return message
+
+    @classmethod
+    def unpack_sessions(cls, sessions):
+        '''
+        The sessions behind the items of QuerySessionsForAccount.
+
+        Items of a type this build does not know are left out, so a session of
+        another chain version cannot hide the others.
+        '''
+        unpacked = [cls.session_from_any(session)
+                    if isinstance(session, ProtoAny) else session
+                    for session in sessions]
+        return [session for session in unpacked if session is not None]
+
+    def get_sessions(self, address):
+        '''
+        The sessions of ADDRESS as they are on chain (QuerySessionsForAccount).
+
+        Reading the chain needs no key, so the SDK is built without the wallet
+        secret.  Returns ``None`` when the gRPC endpoint cannot be reached.
+        '''
+        CONFIG = MeileConfig.read_configuration(MeileConfig.CONFFILE)
+        self.GRPC = CONFIG['network'].get('grpc', HTTParams.GRPC)
+        grpcaddr, grpcport = self.GRPC.split(":")
+
+        if not self._ensure_sdk(grpcaddr, grpcport, None):
+            return None
+
+        try:
+            sessions = self.sdk.sessions.QuerySessionsForAccount(address)
+        except Exception as e:
+            print(f"get_sessions: {str(e)}")
+            return None
+
+        # The current chain packs every session in a google.protobuf.Any, the
+        # older one answers with the concrete message
+        sessions = self.unpack_sessions(sessions)
+
+        print(f"get_sessions: {len(sessions)} session(s) for {address}")
+        return sessions
+
     def get_balance(self, address):
         Request = HTTPRequests.MakeRequest()
         http = Request.hadapter()
@@ -1915,12 +2275,15 @@ class HandleWalletFunctions():
             else:
                 print("Error resolving ip-api.com... defaulting...")
                 with open(path.join(ConfParams.KEYRINGDIR, 'ip-api.json'), 'w') as f:
-                    f.write(json.dumps('{}'))
+                    # An empty *object*: json.dumps('{}') wrote the string "{}"
+                    # which made the GUI fail with "string indices must be
+                    # integers" when it read the file back
+                    f.write(json.dumps({}))
                 return False
         except Exception as e:
             print(str(e))
             with open(path.join(ConfParams.KEYRINGDIR, 'ip-api.json'), 'w') as f:
-                f.write(json.dumps('{}'))
+                f.write(json.dumps({}))
             return False
                 
     

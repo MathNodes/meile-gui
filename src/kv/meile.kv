@@ -16,6 +16,7 @@
 #:set TEXT_MAIN get_color_from_hex("#ededed")
 #:set TEXT_DIM get_color_from_hex("#8d8d8d")
 #:set ACCENT_BLUE get_color_from_hex(MeileColors.UPLOAD)
+#:set ACCENT_BLUE_DIM get_color_from_hex("#1f7bb0")
 #:set OK_GREEN get_color_from_hex(MeileColors.INDICATOR)
 
 
@@ -133,18 +134,47 @@ WindowManager:
                     padding: [dp(8), dp(16), dp(8), dp(4)]
                     spacing: dp(4)
 
-                    # Connect button — own row, centered, large
-                    TooltipMDFlatButton:
-                        size_hint: None, None
-                        size: dp(70), dp(40)
-                        pos_hint: {'center_x': .25}
-                        on_release: root.connect_routine()
-                        Image:
-                            id: connect_button
-                            size_hint: 2.2, 2.2
-                            pos: self.parent.pos
-                            size: self.parent.size
-                            source: root.return_connect_button("c")
+                    # Connect / Sessions row — the Connect button keeps its
+                    # place (70dp wide, centered at 25% of the row) and the
+                    # Sessions label is centered in the space right of it
+                    MDBoxLayout:
+                        orientation: 'horizontal'
+                        size_hint_y: None
+                        height: dp(40)
+
+                        # Spacer as wide as the gap left of the Connect button
+                        # (the button is 70dp wide and centered at 25% of the
+                        # row), so the button stays where it always was.
+                        Widget:
+                            size_hint_x: None
+                            width: self.parent.width * .25 - dp(35)
+
+                        # Connect / disconnect button
+                        TooltipMDFlatButton:
+                            size_hint: None, None
+                            size: dp(70), dp(40)
+                            on_release: root.connect_routine()
+                            Image:
+                                id: connect_button
+                                size_hint: 2.2, 2.2
+                                pos: self.parent.pos
+                                size: self.parent.size
+                                source: root.return_connect_button("c")
+
+                        # Sessions label, centered in the rest of the row
+                        AnchorLayout:
+                            anchor_x: 'center'
+                            anchor_y: 'center'
+
+                            TooltipMDFlatButton:
+                                id: sessions_button
+                                text: "Sessions"
+                                tooltip_text: "Sessions on chain"
+                                size_hint: None, None
+                                size: dp(84), dp(30)
+                                theme_text_color: 'Custom'
+                                text_color: get_color_from_hex(MeileColors.MEILE)
+                                on_release: root.build_sessions_interface()
 
                     # Search row: text field + clear button
                     MDBoxLayout:
@@ -217,15 +247,7 @@ WindowManager:
                         icon: "cog-outline"
                         theme_text_color: "Custom"
                         text_color: get_color_from_hex(MeileColors.MEILE)
-                        on_release: root.build_settings_screen_interface()
-
-                    ToolTipMDIconButton:
-                        tooltip_text: "Help"
-                        icon: "help-circle-outline"
-                        theme_text_color: "Custom"
-                        text_color: get_color_from_hex(MeileColors.MEILE)
-                        on_release: root.build_help_screen_interface()
-                
+                        on_release: root.build_settings_screen_interface()                
     
 <TooltipMDRaisedButton@MDRaisedButton+MDTooltip>
 <TooltipMDFlatButton@MDFlatButton+MDTooltip>
@@ -513,20 +535,34 @@ WindowManager:
 	                    keep_ratio: True
 	                    mipmap: True
 	
-	            # Centre — RecycleView
-	            RecycleView:
-	                id: rv
-	                viewclass: "RowContainer"
+	            # Centre — RecycleView with a spinner on top of it while the
+	            # balances are fetched from the API
+	            FloatLayout:
 	                size_hint_x: 0.5
 	                pos_hint: {"center_y": 0.5}
 	
-	                RecycleBoxLayout:
-	                    default_size: None, sp(56)
-	                    default_size_hint: 1, None
-	                    size_hint_y: None
-	                    height: self.minimum_height
-	                    orientation: "vertical"
-	                    spacing: "10sp"
+	                RecycleView:
+	                    id: rv
+	                    viewclass: "RowContainer"
+	                    size_hint: 1, 1
+	                    pos_hint: {"center_x": 0.5, "center_y": 0.5}
+	
+	                    RecycleBoxLayout:
+	                        default_size: None, sp(56)
+	                        default_size_hint: 1, None
+	                        size_hint_y: None
+	                        height: self.minimum_height
+	                        orientation: "vertical"
+	                        spacing: "10sp"
+	
+	                # Shown while root.balances_loading is True, so the screen
+	                # opens instantly instead of waiting for the balance API
+	                LoadingSpinner:
+	                    id: balances_spinner
+	                    size_hint: None, None
+	                    size: "60dp", "60dp"
+	                    pos_hint: {"center_x": 0.5, "center_y": 0.5}
+	                    opacity: 1 if root.balances_loading else 0
 	
 	            # Right affiliate banner — SimpleSwap
 	            #TooltipMDFlatButton:
@@ -785,7 +821,7 @@ WindowManager:
 
             HyperlinkLabel:
                 text: "Read more"
-                url: "https://dvpn.cc/resolvers"
+                url: "https://dvpn.my/resolvers"
 
         
         BoxLayout:
@@ -1215,6 +1251,98 @@ WindowManager:
             padding: 0, 0, 0, dp(12)
             adaptive_height: True
 
+<SessionsScreen>:
+    orientation: "vertical"
+    size_hint_x: .99
+    pos_hint: {"center_x": 0.5}
+    padding: dp(4), dp(6)
+    spacing: "10dp"
+
+    # -- Header: back arrow, title, refresh --------------------------------
+    MDBoxLayout:
+        orientation: "horizontal"
+        size_hint_y: None
+        height: "52dp"
+        spacing: "10dp"
+
+        TooltipMDIconButton:
+            icon: "arrow-left"
+            tooltip_text: "Back"
+            pos_hint: {"center_y": .5}
+            theme_text_color: "Custom"
+            text_color: MEILE
+            on_release: root.set_previous_screen()
+
+        MDBoxLayout:
+            orientation: "vertical"
+            spacing: "2dp"
+
+            Label:
+                text: "Sessions"
+                color: MEILE
+                bold: True
+                font_size: "20sp"
+                halign: "left"
+                valign: "bottom"
+                text_size: self.size
+
+            Label:
+                text: "Sessions of this wallet on chain - an ACTIVE one can be brought back up"
+                color: TEXT_DIM
+                font_size: "10sp"
+                halign: "left"
+                valign: "top"
+                text_size: self.size
+                shorten: True
+                shorten_from: "right"
+
+        TooltipMDIconButton:
+            icon: "refresh"
+            tooltip_text: "Refresh"
+            pos_hint: {"center_y": .5}
+            theme_text_color: "Custom"
+            text_color: MEILE
+            on_release: root.refresh_sessions()
+
+    # -- Loading / status line ---------------------------------------------
+    MDBoxLayout:
+        id: status_row
+        orientation: "horizontal"
+        size_hint_y: None
+        height: "40dp"
+        spacing: "8dp"
+
+        LoadingSpinner:
+            id: spinner
+            size_hint: None, None
+            size: "40dp", "40dp"
+            pos_hint: {"center_y": .5}
+            opacity: 1 if root.loading else 0
+
+        Label:
+            text: root.status_text
+            color: TEXT_DIM
+            font_size: "11sp"
+            halign: "left"
+            valign: "middle"
+            text_size: self.size
+
+    # -- Session cards, two per row ----------------------------------------
+    ScrollView:
+        do_scroll_x: False
+        do_scroll_y: True
+        bar_width: dp(8)
+
+        # A grid, not a box: two cards share a row and the sessions keep
+        # their order from left to right, top to bottom (see finished)
+        MDGridLayout:
+            id: sessions_box
+            cols: 2
+            size_hint_y: None
+            height: self.minimum_height
+            spacing: "10dp"
+            padding: 0, 0, 0, dp(12)
+
 <NodeScreen>:
 	size_hint_x: .95
 	pos_hint: {"center_x": 0.5}
@@ -1514,6 +1642,184 @@ WindowManager:
                     size: self.size
                     radius: [10,]
 # Used for Subscription nodes            
+# One caption + value pair of a session card (see <SessionCard>)
+<CardField@MDBoxLayout>:
+    orientation: "vertical"
+    spacing: 0
+    caption: ""
+    value: ""
+
+    Label:
+        text: root.caption
+        color: TEXT_DIM
+        font_size: "9sp"
+        halign: "left"
+        valign: "bottom"
+        text_size: self.size
+
+    Label:
+        text: root.value
+        color: TEXT_MAIN
+        font_size: "12sp"
+        halign: "left"
+        valign: "top"
+        text_size: self.size
+        shorten: True
+        shorten_from: "right"
+
+# One session of the wallet as it is on chain (see SessionsScreen)
+<SessionCard>:
+    orientation: "vertical"
+    size_hint_x: 1
+    size_hint_y: None
+    height: self.minimum_height
+    padding: "16dp", "14dp"
+    spacing: "8dp"
+    radius: [16,]
+    elevation: 0
+    ripple_behavior: False
+    md_bg_color: BG_CARD
+
+    # A session that can be brought up again is ringed in the UPLOAD colour,
+    # the same colour as its RECONNECT button.
+    canvas.after:
+        Color:
+            rgba: ACCENT_BLUE if root.can_reconnect else BORDER
+        Line:
+            width: 2 if root.can_reconnect else 1
+            rounded_rectangle: self.x, self.y, self.width, self.height, 16
+
+    # -- Status, session id and the reconnect button -----------------------
+    MDBoxLayout:
+        orientation: "horizontal"
+        size_hint_y: None
+        height: "44dp"
+        spacing: "10dp"
+
+        StatusDot:
+            dot_color: root.status_color
+            pos_hint: {"center_y": .5}
+
+        MDBoxLayout:
+            orientation: "vertical"
+            spacing: 0
+
+            Label:
+                text: "SESSION #" + root.session_id
+                color: TEXT_MAIN
+                bold: True
+                font_size: "15sp"
+                halign: "left"
+                valign: "bottom"
+                text_size: self.size
+
+            Label:
+                text: root.status
+                color: get_color_from_hex(root.status_color)
+                bold: True
+                font_size: "10sp"
+                halign: "left"
+                valign: "top"
+                text_size: self.size
+
+        Widget:
+
+        # Only an ACTIVE session whose credentials are stored can come back
+        Button:
+            text: "RECONNECT"
+            size_hint: None, None
+            size: "150dp", "38dp"
+            background_normal: ""
+            background_color: 0, 0, 0, 0
+            color: 0, 0, 0, 1
+            bold: True
+            font_size: "11sp"
+            disabled: not root.can_reconnect
+            opacity: 1 if root.can_reconnect else 0
+            pos_hint: {"center_y": .5}
+            on_release: root.request_reconnect()
+
+            canvas.before:
+                Color:
+                    rgba: ACCENT_BLUE_DIM if self.state == "down" else ACCENT_BLUE
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+                    radius: [10,]
+
+    # -- Divider -----------------------------------------------------------
+    Widget:
+        size_hint_y: None
+        height: "1dp"
+        canvas:
+            Color:
+                rgba: BORDER
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+    # -- Node of the session: its flag, its moniker and its country --------
+    MDBoxLayout:
+        orientation: "horizontal"
+        size_hint_y: None
+        height: "40dp"
+        spacing: "10dp"
+
+        # Flag of the country the node is in (see country_flag_source); a node
+        # without a country does not spend the space of a flag
+        Image:
+            source: root.flag_source
+            size_hint: None, None
+            size: ("32dp" if root.flag_source else "0dp"), "22dp"
+            pos_hint: {"center_y": .5}
+            allow_stretch: True
+            keep_ratio: True
+
+        CardField:
+            caption: "NODE"
+            value: root.node_label
+            size_hint_x: 3
+
+        CardField:
+            caption: "COUNTRY"
+            value: root.country
+            size_hint_x: 2
+
+    # -- Protocol, data and time -------------------------------------------
+    MDGridLayout:
+        cols: 3
+        size_hint_y: None
+        height: self.minimum_height
+        row_default_height: "36dp"
+        row_force_default: True
+        spacing: "10dp", "4dp"
+
+        CardField:
+            caption: "PROTOCOL"
+            value: root.protocol
+
+        CardField:
+            caption: "DATA"
+            value: root.data_text
+
+        CardField:
+            caption: "TIME"
+            value: root.duration_text
+
+    # -- Address of the node -----------------------------------------------
+    Label:
+        text: root.node_address
+        color: TEXT_DIM
+        font_size: "10sp"
+        halign: "left"
+        valign: "middle"
+        text_size: self.size
+        shorten: True
+        # "center" keeps both ends of the address (there is no "middle")
+        shorten_from: "center"
+        size_hint_y: None
+        height: "16dp"
+
 <NodeRow>:
     rows: 2
     cols: 5
@@ -3528,7 +3834,10 @@ WindowManager:
     orientation: "vertical"
     spacing: "1sp"
     size_hint_y: None
-    height: "130sp"
+    # Title plus one row per protocol, all centred on the same fractions of
+    # this height (see the center_y values below) so the rows stay evenly
+    # spaced: .16 between the rows, .10 between the title and the first row.
+    height: "250sp"
     price_text: ""
     naddress: " "
     moniker: " "
@@ -3541,7 +3850,7 @@ WindowManager:
             font_style: "Subtitle2"
             font_size: "20sp"
             text_color: get_color_from_hex(MeileColors.MEILE)
-            pos_hint: {"x" : 0, "top" : 1.35}
+            pos_hint: {"x": 0, "center_y": .84}
         MDLabel:
             id: bandwidth_text
             text: "Wireguard"
@@ -3549,13 +3858,11 @@ WindowManager:
             font_style: "Subtitle2"
             font_size: "14sp"
             text_color: get_color_from_hex("#ffffff")
-            pos_hint: {"x" : 0, "top" : 1}        
+            pos_hint: {"x": 0, "center_y": .74}
         Check:
-        	group: 'proto'
-        	on_active: root.select_share_type(self, self.active, "wg")
-            pos_hint: {"x": .5, "y" : .30}
-        MDLabel:
-        	pos_hint: {"x" : 0, "top" : .9}
+            group: 'proto'
+            on_active: root.select_share_type(self, self.active, "wg")
+            pos_hint: {"x": .5, "center_y": .74}
         MDLabel:
             id: hourly_text
             text: "V2Ray"
@@ -3563,11 +3870,47 @@ WindowManager:
             font_style: "Subtitle2"
             font_size: "14sp"
             text_color: get_color_from_hex("#ffffff")
-            pos_hint: {"x" : 0, "top" : .7}    
+            pos_hint: {"x": 0, "center_y": .58}
         Check:
-        	group: 'proto'
-        	on_active: root.select_share_type(self, self.active, "v2")
-            pos_hint: {"x": .5, "y" : .025}	
+            group: 'proto'
+            on_active: root.select_share_type(self, self.active, "v2")
+            pos_hint: {"x": .5, "center_y": .58}
+        MDLabel:
+            id: xr_text
+            text: "XRay"
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "14sp"
+            text_color: get_color_from_hex("#ffffff")
+            pos_hint: {"x": 0, "center_y": .42}
+        Check:
+            group: 'proto'
+            on_active: root.select_share_type(self, self.active, "xr")
+            pos_hint: {"x": .5, "center_y": .42}
+        MDLabel:
+            id: awg_text
+            text: "AmneziaWG"
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "14sp"
+            text_color: get_color_from_hex("#ffffff")
+            pos_hint: {"x": 0, "center_y": .26}
+        Check:
+            group: 'proto'
+            on_active: root.select_share_type(self, self.active, "awg")
+            pos_hint: {"x": .5, "center_y": .26}
+        MDLabel:
+            id: hy2_text
+            text: "Hysteria2"
+            theme_text_color: "Custom"
+            font_style: "Subtitle2"
+            font_size: "14sp"
+            text_color: get_color_from_hex("#ffffff")
+            pos_hint: {"x": 0, "center_y": .10}
+        Check:
+            group: 'proto'
+            on_active: root.select_share_type(self, self.active, "hy2")
+            pos_hint: {"x": .5, "center_y": .10}
             
             
 # SMS POOL SCREEN

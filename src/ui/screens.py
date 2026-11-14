@@ -5,7 +5,7 @@ from cli.sentinel import  NodeTreeData
 from typedef.konstants import NodeKeys, TextStrings, MeileColors, HTTParams, IBCTokens, ConfParams, SMSConf
 from cli.sentinel import disconnect as Disconnect
 import main.main as Meile
-from ui.widgets import WalletInfoContent, SeedInfoContent, MDMapCountryButton, RatingContent, NodeRV, NodeRV2, NodeAccordion, NodeRow, NodeDetails, PlanCard, NodeCarousel, SubTypeDialog, SubscribeContent, LoadingSpinner, ShareTypeDialog
+from ui.widgets import WalletInfoContent, SeedInfoContent, MDMapCountryButton, RatingContent, NodeRV, NodeRV2, NodeAccordion, NodeRow, NodeDetails, PlanCard, NodeCarousel, SubTypeDialog, SubscribeContent, LoadingSpinner, ShareTypeDialog, SessionCard
 from utils.qr import QRCode
 from cli.wallet import HandleWalletFunctions
 from cli.btcpay import BTCPayDB
@@ -20,10 +20,11 @@ from adapters.DNSCryptproxy import HandleDNSCryptProxy as dcp
 from helpers.helpers import format_byte_size
 from helpers.bandwidth import compute_consumed_data, compute_consumed_hours, init_GetConsumedWhileConnected, GetConsumedWhileConnected, GetTotalDataWhileConnected
 from helpers.aes import SecureSeed
-from helpers.v2ray import generate_v2ray_uri
+from helpers.share import share_details
 from helpers.update_checker import UpdateChecker, format_update_message
 from ui.update_dialog import UpdateDialog
 from coin_api.get_price import GetPriceAPI
+from sentinel_sdk.types import Status
 
 from kivy.properties import BooleanProperty, StringProperty, ColorProperty, NumericProperty
 from kivy.uix.screenmanager import Screen, SlideTransition
@@ -477,6 +478,7 @@ class MainWindow(Screen):
                         units: int = 0,
                         hourly: bool = False,
                         price: dict = {},
+                        session_id: int = None,
                         ):
         
         
@@ -499,7 +501,18 @@ class MainWindow(Screen):
             self.hwf = HandleWalletFunctions()
             thread = Thread(target=lambda: self.ping())
             thread.start()
-            if not self.SubCaller:
+            if session_id is not None:
+                # Reconnect to a session that is already on chain (Sessions
+                # screen): its credentials are on disk, so no new session is
+                # created and nothing is paid for (see
+                # HandleWalletFunctions.reconnect).
+                t = Thread(target=lambda: self.hwf.connect(0, 
+                                                      node, 
+                                                      protocol, 
+                                                      sub_deposit,
+                                                      session_id=session_id))
+                t.start()
+            elif not self.SubCaller:
                 t = Thread(target=lambda: self.hwf.connect(ID, 
                                                       naddress, 
                                                       proto, 
@@ -556,27 +569,18 @@ class MainWindow(Screen):
                     # Here change the Connection button to a "Disconnect" button then display dialog
                     self.set_protected_icon(True, Moniker)
                     self.toggle_time_widget()
-                    #if "V2Ray" in [proto, protocol]:
                     connected_content = QRDialogV2RayContent()
-                    QRcode = QRCode()
-                    if "V2Ray" in [proto, protocol]:
-                        uri = generate_v2ray_uri(path.join(ConfParams.KEYRINGDIR,"v2ray_config.json"))
-                        connected_content.ids.uri.text = uri
-                        connected_content.ids.warning_comment.text = "Scan the QR code or import the URI string into the V2RayNG mobile app. You must do this before you disconnect in Meile. https://dvpn.my/v2ray"
-                        connected_content.ids.qr_img.source = QRcode.generate_qr_code(uri, "v2ray")
-                    elif "WireGuard" in [proto, protocol]:
-                        WG_PATH = path.join(ConfParams.KEYRINGDIR,"wg99.conf")
-                        with open(WG_PATH, "r") as f:
-                            wg_config = f.read()
-                        wg_config = wg_config.replace("127.0.0.1,", "")
-                        connected_content.ids.uri.text = wg_config
-                        connected_content.ids.warning_comment.text = "Scan the QR code or input the config with the official Wireguard app. You must do this before you disconnect in Meile. https://dvpn.my/wireguard"
-                        connected_content.ids.qr_img.source = QRcode.generate_wg_qr_code(WG_PATH, self.NodeCarouselData['moniker'])
-                    else:
-                        uri = "NULL"
-                        connected_content.ids.uri.text = uri
-                        connected_content.ids.warning_comment.text = "Hysteria2, XRay, and AmneziaWG quick-connect QR-codes are not available at this time"
-                        connected_content.ids.qr_img.source = QRcode.generate_qr_code(uri, "v2ray")
+                    # proto holds the protocol of the node that was just
+                    # connected, protocol the one of a subscription (and is
+                    # None for plan nodes). helpers.share turns whichever is
+                    # set into the shareable string, QR code and hint.
+                    uri, qr_img, warning = share_details(
+                        proto or protocol,
+                        self.NodeCarouselData['moniker'],
+                    )
+                    connected_content.ids.uri.text = uri
+                    connected_content.ids.qr_img.source = qr_img
+                    connected_content.ids.warning_comment.text = warning
                             
                     self.dialog = MDDialog(
                         title="Connected!",
@@ -627,6 +631,15 @@ class MainWindow(Screen):
                                 on_release=partial(self.call_ip_get, False, "")
                             ),])
                 self.dialog.open()
+        
+        if session_id is not None:
+            # The Sessions screen only reconnects while no tunnel is up (it
+            # checks MainWindow.CONNECTED itself), so the state of the Connect
+            # button is not consulted here.  `proto` keeps the share string of
+            # the connected dialog on the protocol of the session.
+            proto = None
+            connect()
+            return
         
         if self.ids.connect_button.source == self.return_connect_button("c"):
             #print(self.NodeCarouselData)
@@ -1241,6 +1254,12 @@ class MainWindow(Screen):
         self.map_widget_1.text = self.ip
     
     def nonblock_get_ip_address(self, callback, start: bool = False):
+        '''Look the public IP up in a worker thread.
+
+        The callback is handed over to the Clock instead of being called from
+        this thread: it builds widgets (map zoom, location marker) and Kivy
+        crashes in its GL layer (segfault) when a widget/texture is created
+        from a thread that is not the main one.'''
         try:
             resolver = DNSRequests.MakeDNSRequest(domain=HTTParams.IPAPIDNS, timeout=5, lifetime=6.5)
             ifconfig = resolver.DNSRequest()
@@ -1253,18 +1272,21 @@ class MainWindow(Screen):
                 print(ifJSON)
                 with open(path.join(ConfParams.KEYRINGDIR, 'ip-api.json'), 'w') as f:
                     f.write(json.dumps(ifJSON))
-                callback(None, start)
+                Clock.schedule_once(lambda dt: callback(None, start), 0)
                 return True
                 
             else:
                 print("Error resolving ip-api.com... defaulting...")
                 with open(path.join(ConfParams.KEYRINGDIR, 'ip-api.json'), 'w') as f:
-                    f.write(json.dumps('{}'))
+                    # An empty *object*: json.dumps('{}') used to write the
+                    # string "{}", which made the readers fail with
+                    # "string indices must be integers"
+                    f.write(json.dumps({}))
                 return False
         except Exception as e:
             print(str(e))
             with open(path.join(ConfParams.KEYRINGDIR, 'ip-api.json'), 'w') as f:
-                f.write(json.dumps('{}'))
+                f.write(json.dumps({}))
             return False
         
     def get_ip_address(self, dt, startup: bool = False):
@@ -1274,7 +1296,9 @@ class MainWindow(Screen):
                 data = f.read()
                 
             ifJSON = json.loads(data)
-            if not ifJSON:
+            # Older builds wrote the string "{}" instead of an empty object,
+            # anything that is not a non empty dict means "no data"
+            if not isinstance(ifJSON, dict) or not ifJSON:
                 return False
             
             self.ip = str(ifJSON['query'])
@@ -1558,6 +1582,19 @@ class MainWindow(Screen):
         Meile.app.root.transition = SlideTransition(direction = "up")
         Meile.app.root.current = WindowNames.SMS
 
+    def build_sessions_interface(self):
+        '''Open the Sessions screen as a new slide of the node carousel.'''
+        # Clear out any previous Carousel Data
+        self.clear_node_carousel()
+        try:
+            while len(self.carousel.slides) > 1:
+                self.carousel.remove_widget(self.carousel.slides[-1])
+        except Exception as e:
+            print(str(e))
+        self.NodeWidget = SessionsScreen(name=WindowNames.SESSIONS)
+        self.carousel.add_widget(self.NodeWidget)
+        self.carousel.load_slide(self.NodeWidget)
+
     def switch_window(self, window):
         # Clear out any previous Carousel Data
         self.clear_node_carousel()
@@ -1604,6 +1641,7 @@ class MainWindow(Screen):
             
         self.carousel.load_slide(self.carousel.slides[0])
 
+    @mainthread
     def zoom_country_map(self):
         try:
             self.MeileMap.zoom = 7
@@ -1657,12 +1695,18 @@ class MainWindow(Screen):
             
         if not self.get_ip_address(None):
             self.remove_loading_widget(None)
-            self.change_dns()
+            if result:
+                # The tunnel is up but the lookup failed: the resolver is the
+                # usual suspect, so switching it is worth a try.  Without a
+                # tunnel there is nothing to resolve and rewriting the system
+                # DNS would only break the machine's own connectivity.
+                self.change_dns()
             self.close_sub_window()
         else:
             self.remove_loading_widget(None)
             self.close_sub_window()
             
+    @mainthread
     def add_location_marker(self):
         self.remove_location_marker()
         Config = MeileGuiConfig()
@@ -1671,11 +1715,14 @@ class MainWindow(Screen):
             data = f.read()
             
         ifJSON = json.loads(data)
-        if not ifJSON:
+        # Same as in get_ip_address: a legacy "{}" string (or any non dict)
+        # means there is nothing to show, and indexing it raised
+        # "string indices must be integers"
+        if not isinstance(ifJSON, dict) or not ifJSON:
             return False
         
         self.location_marker = MapMarkerPopup(lat=self.LatLong[0], lon=self.LatLong[1], source=Config.resource_path(MeileColors.LOC_MARKER))
-        self.location_marker.add_widget(MDMapCountryButton(text='%s, %s' %(ifJSON['city'], ifJSON['country']),
+        self.location_marker.add_widget(MDMapCountryButton(text='%s, %s' %(ifJSON.get('city', ''), ifJSON.get('country', '')),
                                                    theme_text_color="Custom",
                                                    md_bg_color=get_color_from_hex(MeileColors.BLACK),
                                                    text_color=(1,1,1,1),
@@ -1693,9 +1740,16 @@ class MainWindow(Screen):
         self.MeileMap.add_marker(self.location_marker)
     
     def remove_location_marker(self):
-        if self.location_marker:
+        if not self.location_marker:
+            return
+        try:
             self.MeileMap.remove_marker(self.location_marker)
-            self.Markers.remove(self.Markers[-1])
+        except Exception as e:
+            print(str(e))
+        if self.location_marker in self.Markers:
+            self.Markers.remove(self.location_marker)
+        # Forget the marker, otherwise the next call removes it a second time
+        self.location_marker = None
             
     def set_protected_icon(self, setbool, moniker):
         try: 
@@ -1760,6 +1814,7 @@ class WalletScreen(Screen):
     MeileConfig = None
     dialog = None
     qr_address = StringProperty()
+    balances_loading = BooleanProperty(True)
     MenuOptions = ["Refresh", "New Wallet", "View Seed"]
 
     def __init__(self, ADDRESS,  **kwargs):
@@ -1786,11 +1841,42 @@ class WalletScreen(Screen):
                                    position="center",
                                    max_height=max_height,
                                    md_bg_color=get_color_from_hex(MeileColors.BLACK))
+        # Counts the balance requests so a slow answer of an old request can be
+        # dropped instead of overwriting the balances of a newer one
+        self._balance_request = 0
+        self._screen_closed = False
         Clock.schedule_once(self.build)
 
-    def build(self, dt):
-        Wallet = HandleWalletFunctions()
-        self.SetBalances(Wallet.get_balance(self.ADDRESS))
+    def build(self, dt=None):
+        '''
+        Load the balances on a worker thread: the wallet screen is drawn right
+        away (the coin rows are replaced by a spinner) and is filled in as soon
+        as the balance API answers, so the app never freezes on the way in.
+        '''
+        self.balances_loading = True
+        # Drop the rows of a previous request so only the spinner is visible
+        recycle_view = self.ids.get('rv')
+        if recycle_view is not None:
+            recycle_view.data = []
+
+        self._balance_request += 1
+        request_id = self._balance_request
+
+        Thread(target=self.fetch_balances, args=(request_id,), daemon=True).start()
+
+    def fetch_balances(self, request_id):
+        '''
+        Worker thread: query the balance API (blocking) and hand the result
+        over to the main thread, which stops the spinner and shows the coins.
+        '''
+        try:
+            Wallet = HandleWalletFunctions()
+            CoinDict = Wallet.get_balance(self.ADDRESS)
+        except Exception as e:
+            print(f"WalletScreen.fetch_balances: {str(e)}")
+            CoinDict = None
+
+        self.SetBalances(CoinDict, request_id)
         
     def copy_to_clipboard(self, text):
         Clipboard.copy(text)
@@ -1893,6 +1979,8 @@ class WalletScreen(Screen):
         Meile.app.manager.get_screen(WindowNames.MAIN_WINDOW).NewWallet = copy.deepcopy(new_wallet)
         self.closeDialog(None)  # arg is required (?)
 
+        # A balance request still in flight must not touch this screen anymore
+        self._screen_closed = True
         Meile.app.root.remove_widget(self)
         Meile.app.manager.add_widget(WalletRestore(name=WindowNames.WALLET_RESTORE))
         Meile.app.root.transition = SlideTransition(direction = "right")
@@ -1971,7 +2059,20 @@ class WalletScreen(Screen):
         print(img_path)
         return img_path
 
-    def SetBalances(self, CoinDict):
+    @mainthread
+    def SetBalances(self, CoinDict, request_id=None):
+        # The user left the wallet screen before the answer arrived
+        if self._screen_closed:
+            return
+
+        # An answer of a request that got superseded by a newer one (Refresh)
+        # must not overwrite the balances that are already on screen
+        if request_id is not None and request_id != self._balance_request:
+            return
+
+        # The answer arrived, the spinner is replaced by the coin rows
+        self.balances_loading = False
+
         if CoinDict:
             self.dec_text  = str(CoinDict['dec'])  + " dec"
             self.scrt_text = str(CoinDict['scrt']) + " scrt"
@@ -1998,6 +2099,11 @@ class WalletScreen(Screen):
             self.dvpn_text = str("0.0") + " p2p"
             self.nam_text = str("0.0") + " nam"
             #self.dvpn_text = str("0.0") + " tsent"
+
+            # Nothing was loaded, don't leave the loading rows behind
+            recycle_view = self.ids.get('rv')
+            if recycle_view is not None:
+                recycle_view.data = []
             
             
             self.dialog = MDDialog(
@@ -2024,6 +2130,8 @@ class WalletScreen(Screen):
 
     def set_previous_screen(self):
 
+        # A balance request still in flight must not touch this screen anymore
+        self._screen_closed = True
         Meile.app.root.remove_widget(self)
         Meile.app.root.transistion = SlideTransition(direction="down")
         Meile.app.root.current = WindowNames.MAIN_WINDOW
@@ -2532,6 +2640,440 @@ class PlanScreen(MDBoxLayout):
         else:
             self.load_failed = False
             self.status_text = "%d plans available" % len(self.cards)
+
+
+def resource_asset(relative):
+    '''Absolute path of a bundled asset (image, font, ...).
+
+    MeileGuiConfig.resource_path() points into the frozen bundle
+    (sys._MEIPASS) once the application is packaged and at src/conf while it
+    runs from a checkout, so a development run falls back to the src directory
+    this module lives in.
+    '''
+    resolved = MeileGuiConfig().resource_path(relative)
+    if path.exists(resolved):
+        return resolved
+    absolute = path.join(path.dirname(path.dirname(path.abspath(__file__))),
+                         relative)
+    return absolute if path.exists(absolute) else resolved
+
+
+def country_flag_path(iso2):
+    '''
+    File of the flag of the country with the ISO2 code ISO2, "" when the code
+    is not known.
+
+    The flags are shipped in the imgs/flags directory of the app (see
+    MeileColors.FLOC) and are named after the ISO2 code of their country.
+    '''
+    if not iso2:
+        return ""
+    return resource_asset(path.join(MeileColors.FLOC, "flags", "%s.png" % iso2))
+
+
+def country_flag_source(country):
+    '''Flag of the country named COUNTRY, "" when the country is not known.'''
+    if not country:
+        return ""
+    try:
+        iso2 = OurWorld.our_world.get_country_ISO2(country).lower()
+    except Exception:
+        # A node of a country the world map does not know has no flag
+        return ""
+    return country_flag_path(iso2)
+
+
+class SessionsScreen(MDBoxLayout):
+    '''The sessions of the wallet as they are on chain.
+
+    Opened from the Sessions button next to the Connect button of the main
+    screen (see MainWindow.build_sessions_interface).  Every session is listed
+    as a card, the ACTIVE ones first, and an ACTIVE session whose credentials
+    are still on disk can be brought up again with the RECONNECT button of its
+    card (see HandleWalletFunctions.reconnect): that neither buys anything nor
+    creates a new session.
+    '''
+
+    status_text = StringProperty("Loading sessions...")
+    loading     = BooleanProperty(True)
+
+    # Status of a session on chain (sentinel.types.v1.Status) in the order the
+    # cards are listed, so the sessions that can still be used come first.
+    STATUS_ORDER = ("ACTIVE", "INACTIVE_PENDING", "INACTIVE", "UNSPECIFIED")
+    STATUS_COLORS = {
+        "ACTIVE"           : MeileColors.INDICATOR,
+        "INACTIVE_PENDING" : MeileColors.MEILE,
+        "INACTIVE"         : MeileColors.INACTIVE_DIALOG_BG_COLOR,
+    }
+
+    def __init__(self, **kwargs):
+        # `name` is handed over by the carousel but is not a BoxLayout
+        # property, so the kwargs are intentionally not forwarded.
+        super(SessionsScreen, self).__init__()
+        self.mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
+        self.sessions = []
+        self.cards = []
+        self.load_failed = False
+        self.dialog = None
+        self._request = 0
+
+        self.start_load()
+
+    # ── Loading ────────────────────────────────────────────────────────────
+    def start_load(self):
+        '''Read the sessions of the wallet on a worker thread.'''
+        self._request += 1
+        request_id = self._request
+        self.loading = True
+        Thread(target=self.build, args=(request_id,), daemon=True).start()
+
+    def build(self, request_id):
+        '''
+        Ask the chain for the sessions of the wallet and always finish the
+        screen, even when it cannot be reached, so the spinner never runs
+        forever.
+        '''
+        try:
+            sessions = self._load_sessions()
+        except Exception as e:
+            print(f"SessionsScreen.build: {type(e).__name__}: {str(e)}")
+            sessions = None
+        Clock.schedule_once(lambda dt: self.finished(request_id, sessions))
+
+    def _load_sessions(self):
+        MeileConfig = MeileGuiConfig()
+        CONFIG = MeileConfig.read_configuration(MeileGuiConfig.CONFFILE)
+        address = CONFIG['wallet'].get('address', None)
+        if not address:
+            return []
+
+        sessions = HandleWalletFunctions().get_sessions(address)
+        if sessions is None:
+            return None
+
+        rows = [self.session_row(session) for session in sessions]
+        # ACTIVE first, the newest session of a status first
+        rows.sort(key=lambda row: (self.STATUS_ORDER.index(row['status'])
+                                   if row['status'] in self.STATUS_ORDER
+                                   else len(self.STATUS_ORDER),
+                                   -row['id']))
+        return rows
+
+    def session_row(self, session):
+        '''One session of the chain as the dict the cards are built from.'''
+        session_id = int(session.id)
+        stored, protocol = HandleWalletFunctions.find_session_config(session_id)
+        status = self.status_name(session.status)
+        moniker, country, node_type = self.node_info(session.node_address)
+        return {
+            "id"           : session_id,
+            "status"       : status,
+            "status_color" : self.STATUS_COLORS.get(
+                status, MeileColors.INACTIVE_DIALOG_BG_COLOR),
+            "node_address" : session.node_address,
+            "moniker"      : moniker,
+            "country"      : country,
+            "flag_source"  : country_flag_source(country),
+            # The protocol the credentials on disk were fetched with, the one
+            # the node serves until they are known
+            "protocol"     : protocol or "",
+            "protocol_text": protocol or node_type,
+            "data"         : self.session_data(session),
+            "duration"     : self.session_time(session, status),
+            # A session can only be brought up again while it is ACTIVE and
+            # its credentials are still on disk (see store_session_config)
+            "can_reconnect": status == "ACTIVE" and stored is not None,
+        }
+
+    @staticmethod
+    def status_name(status):
+        '''Name of the status of a session (see sentinel_sdk.types.Status).'''
+        try:
+            return Status(status).name
+        except ValueError:
+            return "UNSPECIFIED"
+
+    def node_info(self, address):
+        '''
+        Moniker, country and service type of the node ADDRESS as the node tree
+        of the main screen knows them (see NodeTreeData.get_nodes).
+
+        The address itself and empty strings are answered while the node is
+        not in the tree - the tree holds the nodes of the chain, so it only
+        misses a node while it is loading or filtered by a search.
+        '''
+        try:
+            tree = self.mw.NodeTree.NodeTree
+            node = tree.get_node(address) if tree is not None else None
+            if node is not None and node.data:
+                data = node.data
+                return (data.get('Moniker') or address,
+                        data.get('Country') or "",
+                        data.get('Type') or "")
+        except Exception as e:
+            print(f"SessionsScreen.node_info: {str(e)}")
+        return address, "", ""
+
+    @staticmethod
+    def session_allowance(session):
+        '''Bytes a session is allowed to use, 0 when the chain does not say.
+
+        The v3 sessions of sentinel-sdk carry `max_bytes`, the older v2 ones
+        the upload/download pair of a Bandwidth message.
+        '''
+        value = getattr(session, 'max_bytes', None)
+        if value not in (None, ""):
+            try:
+                return int(value)
+            except (TypeError, ValueError):
+                print(f"SessionsScreen.session_allowance: {value!r}")
+                return 0
+
+        bandwidth = getattr(session, 'bandwidth', None)
+        if bandwidth is not None:
+            try:
+                return int(bandwidth.upload) + int(bandwidth.download)
+            except (AttributeError, TypeError, ValueError):
+                return 0
+        return 0
+
+    @staticmethod
+    def session_consumed(session):
+        '''Bytes a session has used, 0 when the chain does not say.'''
+        consumed = 0
+        for name in ('download_bytes', 'upload_bytes'):
+            try:
+                consumed += int(getattr(session, name, 0) or 0)
+            except (TypeError, ValueError):
+                continue
+        return consumed
+
+    def session_data(self, session):
+        '''"12.00 MiB of 1.00 GiB" used by a session, empty when unknown.'''
+        used = self.session_consumed(session)
+        allowance = self.session_allowance(session)
+        if allowance:
+            return "%s of %s" % (format_byte_size(used),
+                                 format_byte_size(allowance))
+        if used:
+            return format_byte_size(used)
+        return ""
+
+    @staticmethod
+    def format_duration(duration):
+        '''Duration of a session as "1d 2h", "3h 20m" or "45m".'''
+        seconds = getattr(duration, 'seconds', duration)
+        try:
+            seconds = int(seconds)
+        except (TypeError, ValueError):
+            return ""
+        if seconds <= 0:
+            return ""
+        days, rest = divmod(seconds, 86400)
+        hours, rest = divmod(rest, 3600)
+        minutes = rest // 60
+        if days:
+            return "%dd %dh" % (days, hours)
+        if hours:
+            return "%dh %dm" % (hours, minutes)
+        if not minutes:
+            return "<1m"
+        return "%dm" % minutes
+
+    @staticmethod
+    def timestamp_seconds(timestamp):
+        '''Seconds of a google.protobuf.Timestamp, 0 when it is not set.'''
+        try:
+            return int(timestamp.seconds) + int(timestamp.nanos) / 1e9
+        except (AttributeError, TypeError, ValueError):
+            return 0
+
+    def session_time(self, session, status):
+        '''
+        How long a session ran, or has been running, as "1d 2h".
+
+        The chain only fills `duration` once a session is over, so the time
+        from `start_at` to `inactive_at` is used for the others, and the time
+        that passed since `start_at` for a session that is still ACTIVE.
+        '''
+        duration = self.format_duration(getattr(session, 'duration', None))
+        if duration:
+            return duration
+
+        start = self.timestamp_seconds(getattr(session, 'start_at', None))
+        if not start:
+            return ""
+        if status == "ACTIVE":
+            return self.format_duration(int(time() - start))
+
+        end = self.timestamp_seconds(getattr(session, 'inactive_at', None))
+        if not end:
+            return ""
+        return self.format_duration(int(end - start))
+
+    # ── Rendering ──────────────────────────────────────────────────────────
+    @mainthread
+    def finished(self, request_id, sessions):
+        '''Fill the screen once the answer of the chain arrived.'''
+        if request_id != self._request:
+            # A refresh superseded this answer
+            return
+
+        self.loading = False
+        box = self.ids.get('sessions_box')
+        if box is not None:
+            box.clear_widgets()
+        self.cards = []
+        self.sessions = sessions or []
+
+        if sessions is None:
+            self.load_failed = True
+            self.status_text = "Could not read the sessions of this wallet"
+            return
+
+        for row in self.sessions:
+            card = SessionCard(session_id=str(row['id']),
+                               status=row['status'],
+                               status_color=row['status_color'],
+                               node_address=row['node_address'],
+                               node_label=row['moniker'],
+                               country=row['country'],
+                               flag_source=row['flag_source'],
+                               protocol=row['protocol_text'],
+                               data_text=row['data'],
+                               duration_text=row['duration'],
+                               can_reconnect=row['can_reconnect'],
+                               session=row,
+                               sessions_screen=self)
+            self.cards.append(card)
+            if box is not None:
+                box.add_widget(card)
+
+        if not self.cards:
+            self.status_text = "No sessions for this wallet yet"
+            return
+
+        active = sum(1 for row in self.sessions if row['status'] == 'ACTIVE')
+        self.status_text = "%d session(s), %d active" % (len(self.cards), active)
+        if not any(row['can_reconnect'] for row in self.sessions):
+            # Nothing of this wallet can be brought back up: the credentials
+            # of a session are only handed out when it is bought (see
+            # HandleWalletFunctions.store_session_config)
+            self.status_text += " - none of them can be reconnected here"
+
+    def refresh_sessions(self):
+        '''Read the sessions of the wallet again (Refresh button of the header).'''
+        self.status_text = "Refreshing sessions..."
+        self.load_failed = False
+        self.start_load()
+
+    # ── Reconnect ──────────────────────────────────────────────────────────
+    def reconnect(self, session):
+        '''
+        Bring the tunnel of SESSION up again.
+
+        A session can only be brought up while no other tunnel is running, so
+        the user is asked to disconnect first when Meile is already connected
+        (see MainWindow.CONNECTED).
+        '''
+        if self.mw.CONNECTED:
+            self.ask_to_disconnect(session)
+            return
+        self.start_reconnect(session)
+
+    def ask_to_disconnect(self, session):
+        '''Warn that the running tunnel has to go before SESSION can be used.'''
+        self.closeDialog(None)
+        self.dialog = MDDialog(
+            title="Already connected",
+            text=("Meile is already connected to a dVPN tunnel. Disconnect "
+                  "first to reconnect to session #%d." % session['id']),
+            md_bg_color=get_color_from_hex(MeileColors.BLACK),
+            buttons=[
+                MDFlatButton(
+                    text="CANCEL",
+                    theme_text_color="Custom",
+                    text_color=get_color_from_hex(MeileColors.MEILE),
+                    on_release=self.closeDialog,
+                ),
+                MDRaisedButton(
+                    text="DISCONNECT",
+                    theme_text_color="Custom",
+                    text_color=get_color_from_hex(MeileColors.BLACK),
+                    on_release=partial(self.disconnect_and_reconnect, session),
+                ),
+            ])
+        self.dialog.open()
+
+    def disconnect_and_reconnect(self, session, inst=None):
+        '''Run the disconnect routine of the main screen, then reconnect.'''
+        self.closeDialog(None)
+        self.mw.disconnect_from_node()
+        # The disconnect routine opens the node rating dialog; close it, the
+        # connection dialog of connect_routine is the one that matters here.
+        try:
+            if self.mw.dialog is not None:
+                self.mw.dialog.dismiss()
+                self.mw.dialog = None
+        except Exception as e:
+            print(f"SessionsScreen.disconnect_and_reconnect: {str(e)}")
+        self.start_reconnect(session)
+
+    def start_reconnect(self, session):
+        '''Hand SESSION over to the connect routine of the main screen.'''
+        if not session.get('can_reconnect'):
+            # Not ACTIVE any more, or the credentials of the session are not
+            # on this machine: only a new session can be opened in that case.
+            self.error_dialog(
+                "Session #%d is not ACTIVE any more or its credentials are "
+                "not stored on this machine. Connect to the node again to "
+                "create a new session." % session['id'])
+            return
+
+        if not session.get('protocol'):
+            self.error_dialog(
+                "No credentials are stored for session #%d. Connect to the "
+                "node again to create a new session." % session['id'])
+            return
+
+        # The connect routine reports the node it connected to from
+        # NodeCarouselData, so the session is described there first.
+        self.mw.NodeCarouselData = {
+            "moniker"  : session.get('moniker') or session['node_address'],
+            "address"  : session['node_address'],
+            "gb_prices": None,
+            "hr_prices": None,
+            "protocol" : session['protocol'],
+        }
+        self.mw.connect_routine(node=session['node_address'],
+                                protocol=session['protocol'],
+                                session_id=session['id'])
+
+    def error_dialog(self, message):
+        '''Report why a session cannot be brought up again.'''
+        self.closeDialog(None)
+        self.dialog = MDDialog(
+            title="Cannot reconnect",
+            text=message,
+            md_bg_color=get_color_from_hex(MeileColors.BLACK),
+            buttons=[
+                MDFlatButton(
+                    text="OK",
+                    theme_text_color="Custom",
+                    text_color=get_color_from_hex(MeileColors.MEILE),
+                    on_release=self.closeDialog,
+                ),])
+        self.dialog.open()
+
+    def closeDialog(self, inst):
+        if self.dialog is not None:
+            self.dialog.dismiss()
+            self.dialog = None
+
+    def set_previous_screen(self):
+        self.mw.carousel.remove_widget(self.mw.NodeWidget)
+        self.mw.carousel.load_previous()
+
 '''
 This is the card class of the country cards on the left panel
 '''
@@ -3064,20 +3606,13 @@ class SMSPoolScreen(Screen):
         except Exception:
             return None
 
-    def _asset(self, relative):
-        '''Absolute path of a bundled asset (image, font, ...).
+    @staticmethod
+    def _asset(relative):
+        '''Absolute path of a bundled asset (image, font, ...), see
 
-        MeileGuiConfig.resource_path() points into the frozen bundle
-        (sys._MEIPASS) once the application is packaged and at src/conf while
-        it runs from a checkout, so a development run falls back to the src
-        directory this module lives in - the same fallback _flag_source uses.
+        resource_asset() - kept as the method the screen already uses.
         '''
-        resolved = MeileGuiConfig().resource_path(relative)
-        if path.exists(resolved):
-            return resolved
-        absolute = path.join(path.dirname(path.dirname(path.abspath(__file__))),
-                             relative)
-        return absolute if path.exists(absolute) else resolved
+        return resource_asset(relative)
 
     @staticmethod
     def _price_from_payload(data):
@@ -4200,19 +4735,7 @@ class SMSPoolScreen(Screen):
         return ""
 
     def _flag_source(self, raw):
-        MeileConfig = MeileGuiConfig()
-        from typedef.konstants import MeileColors
-        iso2 = self._country_iso2(raw)
-        if not iso2:
-            return ""
-        relative = MeileConfig.resource_path(path.join(MeileColors.FLOC, "flags", "%s.png" % iso2))
-        if path.exists(relative):
-            return relative
-        absolute = path.join(path.dirname(path.dirname(path.abspath(__file__))),
-                             "imgs", "flags", "%s.png" % iso2)
-        if path.exists(absolute):
-            return absolute
-        return relative
+        return country_flag_path(self._country_iso2(raw))
 
     # ------------------------------------------------------------------
     # Services (searchable list + "Not Listed / Other" fallback)
