@@ -129,6 +129,27 @@ class QRCode():
         background.save(out_path)
         return out_path
 
+    def _fit_caption(self, draw, text, font, max_width):
+        """``text`` shortened until it fits ``max_width``, with an ellipsis.
+
+        A caption wider than the image is cut off by the texture it is drawn
+        into, so the text is trimmed from the right until it fits.  Fonts that
+        cannot be measured keep the first characters instead of raising.
+        """
+        caption = str(text)
+        try:
+            while len(caption) > 8:
+                if draw.textbbox((0, 0), caption + '...', font=font)[2] <= max_width:
+                    break
+                caption = caption[:-1]
+        except Exception as e:
+            print("QR caption could not be measured: %s" % e)
+            caption = str(text)[:32]
+        if caption != str(text):
+            caption = caption + '...'
+        return caption
+
+
     def generate_qr_code(self, ADDRESS, coin):
         DepositCoin    = coin
         DepositAddress = ADDRESS 
@@ -176,9 +197,13 @@ class QRCode():
         draw = ImageDraw.Draw(background)
         
         # The caption has to be centred with the metrics of the font it is
-        # drawn with (the default font metrics would put it off centre).
-        _, _, w, h = draw.textbbox((0, 0), text=str(DepositAddress), font=robotoFont)
-        draw.text(((QRimg.size[0]+15 - w)/2,QRimg.size[1]-2),DepositAddress, (0,0,0), font=robotoFont)
+        # drawn with (the default font metrics would put it off centre).  A
+        # shared config or URI is far wider than the QR code itself, so it is
+        # shortened to fit the image before it is drawn (the QR code still
+        # carries all of it).
+        caption = self._fit_caption(draw, DepositAddress, robotoFont, QRimg.size[0] - 10)
+        _, _, w, h = draw.textbbox((0, 0), text=caption, font=robotoFont)
+        draw.text(((QRimg.size[0]+15 - w)/2,QRimg.size[1]-2),caption, (0,0,0), font=robotoFont)
         
         background.paste(QRimg, (0,0))
         
@@ -277,17 +302,7 @@ class QRCode():
         # shortened until it fits the image - a caption wider than the image
         # would leave a wide white strip next to the code in the dialog.  The
         # complete address/URI is the text field of the dialog.
-        caption = str(ADDRESS)
-        try:
-            while len(caption) > 8:
-                if draw.textbbox((0, 0), caption + '...', font=robotoFont)[2] <= QRimg.size[0] - 10:
-                    break
-                caption = caption[:-1]
-        except Exception as e:
-            print("QR caption could not be measured: %s" % e)
-            caption = str(ADDRESS)[:32]
-        if caption != str(ADDRESS):
-            caption = caption + '...'
+        caption = self._fit_caption(draw, ADDRESS, robotoFont, QRimg.size[0] - 10)
         _, _, w, h = draw.textbbox((0, 0), text=caption, font=robotoFont)
         draw.text(((QRimg.size[0] + 15 - w) / 2, QRimg.size[1] - 2), caption, (0, 0, 0), font=robotoFont)
 

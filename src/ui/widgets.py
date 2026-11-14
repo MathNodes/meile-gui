@@ -57,7 +57,7 @@ from coin_api.get_price import GetPriceAPI
 from adapters.ChangeDNS import ChangeDNS
 from kivy.uix.recyclegridlayout import RecycleGridLayout
 from helpers.helpers import format_byte_size
-from helpers.v2ray import generate_v2ray_uri
+from helpers.share import share_details
 from fiat.stripe_pay.dist import scrtsxx
 from utils.qr import QRCode
 from utils.nowcurrencies import get_currency_logo_path, get_icon_url
@@ -208,33 +208,16 @@ class ShareTypeDialog(BoxLayout):
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
         mw.closeDialog(None)
         #self.closeDialog()
-        iface = "wg99"
-        WG_PATH = path.join(ConfParams.KEYRINGDIR,f"{iface}.conf")
-        V2_PATH = path.join(ConfParams.KEYRINGDIR, "v2ray_config.json")
+        # proto is the code of the radio button ("wg", "awg", "v2", "xr",
+        # "hy2"); helpers.share builds the string, the QR code and the hint
+        # for it. The main screen knows the node the user is connected to, its
+        # name ends up in the shared string / QR code.
+        moniker = getattr(mw, 'NodeCarouselData', {}).get('moniker')
         connected_content = QRDialogV2RayContent()
-        QRcode = QRCode()
-        if proto == "wg":
-            if path.isfile(WG_PATH):       
-                with open(WG_PATH, "r") as f:
-                    wg_config = f.read()
-                wg_config = wg_config.replace("127.0.0.1,", "")
-                connected_content.ids.uri.text = wg_config
-                connected_content.ids.qr_img.source = QRcode.generate_wg_qr_code(WG_PATH, "WireGuard")
-        
-            else:
-                connected_content.ids.uri.text = "Start a WireGuard connection in Meile first."
-                connected_content.ids.qr_img.source = QRcode.generate_qr_code("NULL", "wireguard")
-            connected_content.ids.warning_comment.text = 'Scan the QR code or import the wireguard config strings into the official WireGuard mobile app. You MUST first disconnect from the Wireguard node in Meile before connecting on mobile. https://dvpn.my/wireguard'
-            
-        else:
-            if path.isfile(V2_PATH):
-                uri = generate_v2ray_uri(path.join(ConfParams.KEYRINGDIR, "v2ray_config.json"))
-            else:
-                uri = "Start a V2Ray connection in Meile first."
-                
-            connected_content.ids.uri.text = uri
-            connected_content.ids.qr_img.source = QRcode.generate_qr_code(uri, "v2ray")
-            connected_content.ids.warning_comment.text = 'Scan the QR code or import the URI string into the V2RayNG mobile app. You must do this before you disconnect in Meile. https://dvpn.my/v2ray'
+        uri, qr_img, warning = share_details(proto, moniker)
+        connected_content.ids.uri.text = uri
+        connected_content.ids.qr_img.source = qr_img
+        connected_content.ids.warning_comment.text = warning
            
         
         self.dialog = MDDialog(
@@ -3042,3 +3025,45 @@ class LoadingSpinner(MDFloatLayout):
     def get_spinner_image(self):
         Config = MeileGuiConfig()
         return Config.resource_path(MeileColors.SPINNER)
+
+
+class SessionCard(MDCard):
+    '''
+    One session of the wallet as it is on chain (see SessionsScreen).
+
+    The card renders what QuerySessionsForAccount answers for a session (the
+    answer of the current chain is unpacked by
+    HandleWalletFunctions.get_sessions) and, while the session is still ACTIVE
+    and its credentials are stored on disk, offers the RECONNECT button that
+    brings that session up again without creating (and paying for) a new one.
+
+    The node of the session is described with the moniker, country and flag
+    the node tree of the main screen holds for it.
+    '''
+
+    session_id      = StringProperty("")
+    # Upper case status of the session: ACTIVE, INACTIVE_PENDING, INACTIVE
+    status          = StringProperty("")
+    status_color    = StringProperty(MeileColors.INACTIVE_DIALOG_BG_COLOR)
+    # Moniker of the session's node, its address while the node tree does not
+    # know the node (see SessionsScreen.node_info)
+    node_label      = StringProperty("")
+    node_address    = StringProperty("")
+    # Country of the node and the flag shipped for it (imgs/flags), both empty
+    # while the country is unknown
+    country         = StringProperty("")
+    flag_source     = StringProperty("")
+    protocol        = StringProperty("")
+    # Rendered strings: "12.00 MiB of 1.00 GiB" used and "3h 20m" left
+    data_text       = StringProperty("")
+    duration_text   = StringProperty("")
+    # Only a session that can be brought up again gets the button
+    can_reconnect   = BooleanProperty(False)
+
+    session         = ObjectProperty(None, allownone=True)
+    sessions_screen = ObjectProperty(None, allownone=True)
+
+    def request_reconnect(self):
+        '''Ask the Sessions screen to reconnect to this session.'''
+        if self.sessions_screen is not None and self.session is not None:
+            self.sessions_screen.reconnect(self.session)
