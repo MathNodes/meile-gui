@@ -724,6 +724,12 @@ class IBCTokens():
 
     AMOUNT_DECIMALS = {
         'zano': 4,
+        'btc' : 8,
+        'ltc' : 5,
+        'zec' : 6,
+        'doge': 6,
+        'dash': 5,
+        'xmr' : 6,
         'fusd': 2,
         'daix': 2,
         'bchx': 6,
@@ -732,7 +738,7 @@ class IBCTokens():
         'solx': 6,
         'btcx': 8,
         'tonx': 6,
-        'zsd': 2,
+        'zsd' : 2,
         'zeph': 4,
         'arrr': 4,
         'firo': 4,
@@ -743,7 +749,9 @@ class IBCTokens():
                     "bch","sol", "xaut", "eth",
                     "ada", "inj", "dot","bsud-bsc",
                     "usdt-bsc","usdt-erc20","usdt-matic","usdt-sol","usdc-trc20","usdc-bsc","usdc","usdc-matic","usdc-sol","usdc-arc20", "usdc-base" ]
-    BTCPAYCOINS  = ["xmr", "btc", "ltc", "zec", "doge", "dash"]
+    BTCPAYCOINS  = ["xmr", "btc", "ltc", "zec", "doge", "dash",
+                    "zano", "fusd", "bchx", "bnbx", "btcx",
+                    "daix", "ethx", "solx", "tonx"]
     PRIVACYCOINS = ["arrr", "firo", "pivx", "zano", "fusd", "zeph", "zsd", "bchx", "bnbx", "btcx", "daix", "ethx", "solx", "tonx"]
     #mu_coins     = ["tsent", "udvpn", "uscrt", "uosmo", "uatom", "udec"]
     

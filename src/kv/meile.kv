@@ -2680,7 +2680,7 @@ WindowManager:
                 TooltipMDIconButton:
                     size_hint: None, 1
                     icon: "help-circle"
-                    tooltip_text: "Pay an invoice in BTC, BTC ⚡, XMR, LTC, LTC (MWEB), ZEC (shielded), DASH, or DOGE"
+                    tooltip_text: "Pay an invoice in BTC, BTC ⚡, XMR, LTC (MWEB), ZEC (shielded), ZANO & ZANO CAs, or DASH"
 
             MDBoxLayout:
                 orientation: "horizontal"
@@ -3634,6 +3634,8 @@ WindowManager:
     cursor_color: MEILE
     hint_text_color: TEXT_DIM
     selection_color: MEILE_DIM
+    #theme_text_color: 'Custom'
+    #text_color: TEXT_BOX
     padding: ['10dp', '8dp']
     font_size: '13sp'
     size_hint_y: None
@@ -4068,6 +4070,7 @@ WindowManager:
                             id: service_search
                             hint_text: 'Search service...'
                             on_text: root.filter_services(self.text)
+                            
                         BoxLayout:
                             size_hint_y: None
                             height: '22dp'
@@ -4111,7 +4114,10 @@ WindowManager:
     
                 # ── Price quote: what a number costs + provider success rate ──
                 # Filled by SMSPoolScreen._render_quote() the moment a country
-                # *and* a service are selected (POST /request/price).
+                # *and* a service are selected.  The screen draws a pool from
+                # /pool/retrieve_valid and quotes that pool (/request/price);
+                # the "*" on the total marks the figure as an estimate because
+                # the order itself pins its own random pool.
                 Card:
                     size_hint_y: None
                     height: '96dp'
