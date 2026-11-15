@@ -1,5 +1,6 @@
 param (
-    [string]$Version
+    [string]$Version,
+    [switch]$Debug
 )
 
 # Calculate milliseconds since Unix epoch
@@ -43,6 +44,16 @@ foreach ($exe in $exeFiles) {
 # Activate virtual environment so pyinstaller and dependencies are available
 $venvPath = "C:\Users\freqn\Projects\Meile 2.0\meile2.0"
 . "$venvPath\Scripts\Activate.ps1"
+
+# Set console mode in spec file based on -Debug flag
+Write-Host "Setting console=$Debug in meile_gui.spec ..."
+$specContent = Get-Content -Path "meile_gui.spec" -Raw
+if ($Debug) {
+    $specContent = $specContent -replace 'console\s*=\s*(True|False)', 'console=True'
+} else {
+    $specContent = $specContent -replace 'console\s*=\s*(True|False)', 'console=False'
+}
+Set-Content -Path "meile_gui.spec" -Value $specContent
 
 pyinstaller meile_gui.spec
 
