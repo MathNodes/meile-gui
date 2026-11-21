@@ -30,6 +30,7 @@ from subprocess import Popen, TimeoutExpired
 from urllib3.exceptions import InsecureRequestWarning
 from copy import deepcopy
 from datetime import datetime, timedelta
+from email.utils import parsedate_to_datetime
 from os import path
 from time import sleep 
 from threading import Thread, Event
@@ -1035,7 +1036,49 @@ class NodeAccordion(ButtonBehavior, MDGridLayout):
         if self.content:
             self.content.y = dp(72)
             self.add_widget(self.content)
-            
+
+
+def parse_expiry(value):
+    '''
+    Parse the `expires` value of a plan subscription into a datetime, or None
+    when it cannot be understood.
+
+    The plan API stores the expiry as a MySQL timestamp and serializes it
+    through Flask, which renders a datetime as an RFC 822 string
+    ("Thu, 26 Mar 2026 19:37:52 GMT"). Other deployments / older payloads may
+    carry an ISO string or a unix timestamp, so every known spelling is tried
+    and an unknown value simply yields None.
+    '''
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value
+    text = str(value).strip()
+    if not text:
+        return None
+
+    # RFC 822 / HTTP date, e.g. "Thu, 26 Mar 2026 19:37:52 GMT"
+    try:
+        return parsedate_to_datetime(text)
+    except (TypeError, ValueError):
+        pass
+
+    # ISO / MySQL timestamp, with or without microseconds
+    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S",
+                "%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%dT%H:%M:%S.%f",
+                "%Y-%m-%d", "%b %d %Y, %I:%M %p"):
+        try:
+            return datetime.strptime(text, fmt)
+        except ValueError:
+            continue
+
+    # Unix timestamp in seconds
+    try:
+        return datetime.fromtimestamp(float(text))
+    except (TypeError, ValueError, OSError, OverflowError):
+        return None
+
+
 class PlanCard(MDCard):
     '''
     Subscription plan card of the PlanScreen.
@@ -1078,6 +1121,12 @@ class PlanCard(MDCard):
     amount_denom = StringProperty()
 
     has_subscription = BooleanProperty(False)
+    # True while the wallet has a subscription record whose expiry is in the
+    # future. `has_subscription` alone only says a record exists, which the
+    # backend keeps around for a while after the plan has lapsed.
+    is_active        = BooleanProperty(False)
+    # True when a subscription record exists but its expiry has passed.
+    expired          = BooleanProperty(False)
     selected         = BooleanProperty(False)
 
     plan_screen = ObjectProperty(None, allownone=True)
@@ -1139,7 +1188,34 @@ class PlanCard(MDCard):
 
     def on_sub_id(self, instance, value):
         '''An empty `sub_id` means the wallet is not subscribed to the plan.'''
-        self.has_subscription = bool(value)
+        self._refresh_subscription_state()
+
+    def on_expires(self, instance, value):
+        '''Re-evaluate the subscription state when the expiry date changes.'''
+        self._refresh_subscription_state()
+
+    def _refresh_subscription_state(self):
+        '''
+        Derive `has_subscription`, `expired` and `is_active` from the
+        subscription id and the expiry date.
+
+        A subscription whose expiry has passed is no longer active even while
+        the plan API still reports it (the backend only purges the record on
+        its own hourly schedule), so the card must not show the green ACTIVE
+        badge for it.
+        '''
+        self.has_subscription = bool(self.sub_id)
+        self.expired = self.has_subscription and self._expiry_passed(self.expires)
+        self.is_active = self.has_subscription and not self.expired
+
+    def _expiry_passed(self, value):
+        '''True when the expiry date VALUE lies in the past.'''
+        expiry = parse_expiry(value)
+        if expiry is None:
+            # A missing / unreadable date must not hide a working subscription
+            return False
+        now = datetime.now(expiry.tzinfo) if expiry.tzinfo else datetime.now()
+        return expiry < now
 
     def on_plan_name(self, instance, value):
         self.plan_title = (value or "").upper()
@@ -1189,8 +1265,12 @@ class PlanCard(MDCard):
         Single place that keeps the checkbox, the card styling and the node
         filter in sync. `notify_map` is False when another card takes over the
         selection, so the node list is filtered only once.
+
+        Selecting a plan is allowed even without an active subscription: it
+        only previews the nodes that belong to the plan, which is how a user
+        can compare the plans before buying one.
         '''
-        active = bool(active) and self.has_subscription
+        active = bool(active)
         self.selected = active
 
         if 'selector' in self.ids:
@@ -1206,7 +1286,10 @@ class PlanCard(MDCard):
             return
 
         if active:
-            mw.PlanID = self.sub_id
+            # Only a subscribed wallet can connect through the plan, so a
+            # preview selection (no active subscription) leaves PlanID empty
+            # and just filters the node list.
+            mw.PlanID = self.sub_id if self.has_subscription else None
             t = Thread(target=lambda: self.filter_nodes(), daemon=True)
             t.start()
         else:

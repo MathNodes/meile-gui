@@ -18,6 +18,7 @@
 #:set ACCENT_BLUE get_color_from_hex(MeileColors.UPLOAD)
 #:set ACCENT_BLUE_DIM get_color_from_hex("#1f7bb0")
 #:set OK_GREEN get_color_from_hex(MeileColors.INDICATOR)
+#:set WARN get_color_from_hex(MeileColors.CONN_STAGE_FAILED)
 
 
 
@@ -1454,7 +1455,7 @@ WindowManager:
             font_size: "18sp"
             theme_text_color: "Custom"
             text_color: OK_GREEN
-            opacity: 1 if root.has_subscription else 0
+            opacity: 1 if root.is_active else 0
             pos_hint: {"center_y": .5}
 
     # -- Price -------------------------------------------------------------
@@ -1553,8 +1554,8 @@ WindowManager:
         md_bg_color: BG_DARK
 
         Label:
-            text: "SUBSCRIPTION ACTIVE" if root.has_subscription else "NO ACTIVE SUBSCRIPTION"
-            color: OK_GREEN if root.has_subscription else TEXT_DIM
+            text: "SUBSCRIPTION ACTIVE" if root.is_active else ("SUBSCRIPTION EXPIRED" if root.expired else "NO ACTIVE SUBSCRIPTION")
+            color: OK_GREEN if root.is_active else (WARN if root.expired else TEXT_DIM)
             bold: True
             font_size: "9sp"
             size_hint_y: None
@@ -1564,8 +1565,8 @@ WindowManager:
             text_size: self.size
 
         Label:
-            text: ("Expires " + root.expires) if root.has_subscription else "Subscribe to connect to these nodes"
-            color: TEXT_MAIN if root.has_subscription else TEXT_DIM
+            text: ("Expires " + root.expires) if root.is_active else (("Expired " + root.expires) if root.expired else "Subscribe to connect to these nodes")
+            color: TEXT_MAIN if root.is_active else (WARN if root.expired else TEXT_DIM)
             font_size: "11sp"
             size_hint_y: None
             height: "18dp"
@@ -1601,14 +1602,13 @@ WindowManager:
             size_hint: None, None
             size: "30dp", "30dp"
             pos_hint: {"center_y": .5}
-            disabled: not root.has_subscription
             color_active: get_color_from_hex(root.accent)
             color_inactive: BORDER
             on_active: root.on_selector_active(self.active)
 
         Label:
-            text: "Use this plan" if root.has_subscription else "Subscription required"
-            color: TEXT_MAIN if root.has_subscription else TEXT_DIM
+            text: "Use this plan" if root.has_subscription else "Preview nodes"
+            color: TEXT_MAIN
             font_size: "10sp"
             size_hint: None, None
             size: self.texture_size
