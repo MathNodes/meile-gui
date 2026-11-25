@@ -53,12 +53,10 @@ from kivy.core.clipboard import Clipboard
 from kivy.network.urlrequest import UrlRequest
 
 
-from requests.auth import HTTPBasicAuth
 import sys
 import copy
 from copy import deepcopy
 import re
-from urllib.parse import unquote
 from time import sleep, time
 from functools import partial
 from shutil import rmtree
@@ -75,8 +73,6 @@ import base64
 import subprocess
 import traceback
 from pathlib import Path
-
-BASE_URL = "https://api.smspool.net"
 
 class WalletRestore(Screen):
     screemanager = ObjectProperty()
@@ -3491,12 +3487,16 @@ class SMSServiceRow(MDCard, HoverBehavior):
 class SMSPoolScreen(Screen):
     '''SMS Pool ("Virtual Number Terminal").
 
-    Two services are combined here:
+    The Meile plan-rest API is the only backend this screen talks to
+    (see meile-plan-rest/meile_plan_api.py):
 
-      * SMSPool (https://api.smspool.net) buys and tracks the virtual numbers.
-      * The Meile plan-rest API keeps the user's USD SMS balance ledger
-        (see meile-plan-rest/meile_plan_api.py) so every top-up (Pirate Chain),
-        purchase debit and cancel/refund is accounted for server side.
+      * it keeps the user's USD SMS balance ledger, so every top-up (Pirate
+        Chain / BTCPay), purchase debit and cancel/refund is accounted for
+        server side, and
+      * it holds the SMSPool key and proxies the provider calls (countries,
+        services, quotes, orders, polling, cancels) for the wallet UUID, so
+        the app itself never talks to api.smspool.net and a deciphered client
+        cannot spend the key.
     '''
 
     # Static copy of the PRICE QUOTE card (see <SMSPoolScreen> in meile.kv).
@@ -3533,9 +3533,9 @@ class SMSPoolScreen(Screen):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        # SMSPool credentials (kept in the git-ignored secrets module)
-        self.API_KEY = getattr(scrtsxx, "SMSPOOL_API_KEY", "") or ""
-
+        # The SMSPool key lives in the plan API (meile-plan-rest/scrtxxs.py):
+        # every provider call is proxied for this wallet UUID, so nothing
+        # secret is shipped inside the app.
         self.uuid             = None
         self.balance          = 0.0
         self.markup           = float(SMSConf.MARKUP_PERCENT)
@@ -3603,7 +3603,8 @@ class SMSPoolScreen(Screen):
     # Generic helpers
     # ------------------------------------------------------------------
     def _plan_auth(self):
-        return HTTPBasicAuth(scrtsxx.PLANUSERNAME, scrtsxx.PLANPASSWORD)
+        '''Auth of a plan API call: the bearer token of this install.'''
+        return MeilePlanAPI.auth()
 
     def _get_uuid(self):
         try:
@@ -3663,70 +3664,6 @@ class SMSPoolScreen(Screen):
                     except Exception:
                         pass
         return price, rate
-
-    @staticmethod
-    def _pools_from_payload(data):
-        '''Normalise a /pool/retrieve_valid answer into pool dicts.
-
-        Documented 200 body is a list of {"pool", "name", "custom_area",
-        "price"} entries.  A dict keyed by pool id (optionally wrapped in
-        "pools"/"data") is accepted too so a format change never breaks the
-        picker.  Each returned dict is {"id": int, "name": str, "price": float
-        or None} and entries without a usable id are dropped.
-        '''
-        if isinstance(data, dict):
-            for key in ("pools", "result", "data"):
-                if isinstance(data.get(key), (list, dict)):
-                    data = data[key]
-                    break
-        if isinstance(data, list):
-            entries = data
-        elif isinstance(data, dict):
-            entries = []
-            for key, value in data.items():
-                entry = dict(value) if isinstance(value, dict) else {"price": value}
-                entry.setdefault("pool", key)
-                entries.append(entry)
-        else:
-            return []
-
-        pools = []
-        for entry in entries:
-            if not isinstance(entry, dict):
-                continue
-            pid = entry.get("pool", entry.get("id", entry.get("ID")))
-            if pid is None:
-                continue
-            try:
-                pid = int(pid)
-            except (TypeError, ValueError):
-                continue
-            price = None
-            for key in ("price", "cost", "cost_price"):
-                if entry.get(key) is not None:
-                    try:
-                        price = float(entry[key])
-                        break
-                    except (TypeError, ValueError):
-                        pass
-            pools.append({"id"   : pid,
-                          "name" : str(entry.get("name") or ""),
-                          "price": price})
-        return pools
-
-    @staticmethod
-    def _pick_random_pool(pools):
-        '''One pool at random, or None when nothing is in stock.
-
-        Every purchase draws a fresh pool so consecutive orders spread across
-        the providers SMSPool has available instead of always hitting the
-        default pool (see purchase / _on_price / _do_purchase).
-        '''
-        pools = [p for p in (pools or [])
-                 if isinstance(p, dict) and p.get("id") is not None]
-        if not pools:
-            return None
-        return random.choice(pools)
 
     @staticmethod
     def _clean_text(text):
@@ -3810,38 +3747,32 @@ class SMSPoolScreen(Screen):
         except Exception:
             pass
 
-    # ---------- SMSPool (api.smspool.net) ----------
-    def _sppost(self, path, form, on_success, on_error=None):
-        if on_error is None:
-            on_error = self._on_sms_error
-        body = "&".join("%s=%s" % (k, v) for k, v in form.items())
-        UrlRequest(
-            BASE_URL + path,
-            on_success=on_success,
-            on_failure=on_error,
-            on_error=on_error,
-            req_headers={"Content-Type": "application/x-www-form-urlencoded"},
-            req_body=body,
-            method='POST',
-            timeout=20,
-        )
-
-    def _on_sms_error(self, request, error):
-        # A 4xx/5xx body arrives here as a parsed dict - never dump it raw.
-        self._set_status("SMSPool error: %s" % (self._error_message(error) or "request failed"),
-                         ok=False)
-        self._debug("SMSPool ERR: %s" % str(error))
-
-    # ---------- Meile plan-rest API ----------
+    # ---------- Meile plan-rest API (SMS provider proxy) ----------
     def _plan_call(self, method, path, payload, on_success, on_error=None):
+        '''Call the plan API with the bearer token of this install.
+
+        The token is fetched on a worker thread - it may have to register this
+        install and mint a token first - and the request itself is issued from
+        the main thread, where the UrlRequest callbacks are safe to run.
+        '''
         if on_error is None:
             on_error = self._on_plan_error
-        headers = {
-            "Content-Type" : "application/json",
-            "Authorization": "Basic " + base64.b64encode(
-                ("%s:%s" % (scrtsxx.PLANUSERNAME, scrtsxx.PLANPASSWORD)).encode()
-            ).decode(),
-        }
+
+        def worker():
+            try:
+                headers = MeilePlanAPI.headers()
+            except Exception as e:
+                Clock.schedule_once(lambda dt: on_error(None, e), 0)
+                return
+            headers["Content-Type"] = "application/json"
+            Clock.schedule_once(
+                lambda dt: self._plan_request(method, path, payload, headers,
+                                              on_success, on_error), 0)
+
+        Thread(target=worker, daemon=True).start()
+
+    def _plan_request(self, method, path, payload, headers, on_success, on_error):
+        '''Issue one plan API request (main thread, see _plan_call).'''
         kwargs = {
             "on_success" : on_success,
             "on_failure" : on_error,
@@ -3869,11 +3800,13 @@ class SMSPoolScreen(Screen):
         # Artwork of the "Pay with BTCPay" button (kv binds root.btcpay_icon).
         self.btcpay_icon = self._asset(SMSConf.BTCPAY_ICON)
         if self.uuid:
-            self.fetch_balance()
+            # /v1/sms/account is idempotent and answers with the balance, so a
+            # single call opens the ledger and reads it.  The provider lists
+            # are only served for a UUID that already has a row, so they are
+            # loaded from its answer (see _on_account_ready).
+            self.create_account(on_success=self._on_account_ready)
         else:
             self._set_status("No wallet UUID - balances unavailable", ok=False)
-        self.load_countries()
-        self.load_services()
         self._update_topup_button()
 
     # ------------------------------------------------------------------
@@ -3888,15 +3821,27 @@ class SMSPoolScreen(Screen):
         self._plan_call("GET", HTTParams.API_SMS_BALANCE % self.uuid, None,
                         self._on_balance_ok, on_error=self._on_balance_failure)
 
-    def create_account(self):
+    def create_account(self, on_success=None):
+        '''Open (or read) this wallet's ledger; idempotent server side.'''
         self._plan_call("POST", HTTParams.API_SMS_ACCOUNT, {"uuid": self.uuid},
-                        self._on_balance_ok)
+                        on_success or self._on_balance_ok)
+
+    def _on_account_ready(self, request, result):
+        '''Ledger opened at start up: apply the balance, load the lists.
+
+        The provider lists are only served for a UUID that already has a
+        balance row, so they are fetched once the account call came back.
+        '''
+        self._on_balance_ok(request, result)
+        self.load_countries()
+        self.load_services()
 
     def _on_balance_failure(self, request, error):
         status = getattr(request, "resp_status", None)
         if status == 404:
-            # No ledger yet for this wallet: create it on the fly.
-            self.create_account()
+            # No ledger yet for this wallet: create it on the fly (and load
+            # the provider lists, which need the row to exist).
+            self.create_account(on_success=self._on_account_ready)
         else:
             self._set_status("Balance error (HTTP %s)" % str(status), ok=False)
             self._debug("Balance failure: %s" % str(error)[:200])
@@ -4497,10 +4442,16 @@ class SMSPoolScreen(Screen):
     # Countries (searchable list with flags)
     # ------------------------------------------------------------------
     def load_countries(self):
-        self._sppost("/country/retrieve_all", {}, self._on_countries)
+        '''Countries come from the plan API (it holds the provider key).'''
+        if not self.uuid:
+            return
+        self._plan_call("GET", HTTParams.API_SMS_COUNTRIES % self.uuid, None,
+                        self._on_countries)
 
     def _on_countries(self, request, result):
         data = self._parse(result)
+        if isinstance(data, dict):
+            data = data.get("countries") or data.get("data")
         if not isinstance(data, list):
             self._debug("Country load error: %s" % str(result)[:200])
             return
@@ -4589,10 +4540,16 @@ class SMSPoolScreen(Screen):
     # Services (searchable list + "Not Listed / Other" fallback)
     # ------------------------------------------------------------------
     def load_services(self):
-        self._sppost("/service/retrieve_all", {}, self._on_services)
+        '''Services come from the plan API (it holds the provider key).'''
+        if not self.uuid:
+            return
+        self._plan_call("GET", HTTParams.API_SMS_SERVICES % self.uuid, None,
+                        self._on_services)
 
     def _on_services(self, request, result):
         data = self._parse(result)
+        if isinstance(data, dict):
+            data = data.get("services") or data.get("data")
         if not isinstance(data, list):
             self._debug("Service load error: %s" % str(result)[:200])
             return
@@ -4684,12 +4641,11 @@ class SMSPoolScreen(Screen):
     # Price quote (country + service -> cost & success rate)
     # ------------------------------------------------------------------
     def request_quote(self, *args):
-        '''Ask SMSPool what a number costs for the current selection.
+        '''Ask the plan API what a number costs for the current selection.
 
-        The screen first draws a pool from /pool/retrieve_valid and then asks
-        /request/price (SMSPool docs, "Retrieve specific price & Success Rate")
-        for *that* pool, so the answer carries a price the user could actually
-        buy plus the historic success rate of the provider for the picked
+        The plan API holds the SMSPool key: it draws a pool from the ones in
+        stock, asks /request/price for *that* pool and answers with the price
+        plus the historic success rate of the provider for the picked
         country/service - both are shown in the PRICE QUOTE card.  The call is
         debounced so clicking through the lists only fires once the user
         settles, and every new selection invalidates answers still in flight
@@ -4702,10 +4658,6 @@ class SMSPoolScreen(Screen):
         if self.selected_country is None or self.service_id() is None:
             self.quote = None
             self._render_quote()
-            return
-        if not self.API_KEY.strip():
-            self.quote = None
-            self._render_quote(error="SMSPool key missing in secrets")
             return
         # Drop the previous combination's numbers right away: they no longer
         # describe what the user has picked.
@@ -4726,47 +4678,22 @@ class SMSPoolScreen(Screen):
         if country is None or sid is None:
             return
         self._render_quote(loading=True)
-        # Draw a pool from the ones SMSPool has in stock first, so the estimate
-        # is the price of a pool that could actually be bought (see
-        # _fetch_quote_price).  A failed list call falls back to the default.
-        self._sppost("/pool/retrieve_valid", {
-            "key"    : self.API_KEY.strip(),
+        self._plan_call("POST", HTTParams.API_SMS_QUOTE, {
+            "uuid"   : self.uuid,
             "country": str(country["id"]),
             "service": str(sid),
-            "web"    : "1",
-        }, lambda request, result: self._on_quote_pools(token, request, result),
-            lambda request, error: self._on_quote_pools_error(token, request, error))
+        }, lambda request, result: self._on_quote(token, request, result),
+            lambda request, error: self._on_quote_error(token, request, error))
 
-    def _on_quote_pools(self, token, request, result):
+    def _on_quote_error(self, token, request, error):
+        '''A selection the plan API could not price (provider/transport).'''
         if token != self.quote_seq:
             return
-        pool = self._pick_random_pool(self._pools_from_payload(self._parse(result)))
-        self._fetch_quote_price(token, pool)
+        self.quote = None
+        self._render_quote(error=self._error_message(error) or "request failed")
+        self._debug("quote ERR: %s" % str(error)[:200])
 
-    def _on_quote_pools_error(self, token, request, error):
-        if token != self.quote_seq:
-            return
-        self._debug("quote pool list ERR: %s" % str(error)[:200])
-        self._fetch_quote_price(token, None)
-
-    def _fetch_quote_price(self, token, pool):
-        if token != self.quote_seq:
-            return
-        country = self.selected_country
-        sid     = self.service_id()
-        if country is None or sid is None:
-            return
-        form = {
-            "key"    : self.API_KEY.strip(),
-            "country": str(country["id"]),
-            "service": str(sid),
-        }
-        if pool:
-            form["pool"] = str(pool["id"])
-        self._sppost("/request/price", form,
-                     lambda request, result: self._on_quote(token, request, result, pool))
-
-    def _on_quote(self, token, request, result, pool=None):
+    def _on_quote(self, token, request, result):
         '''Paint the answer, unless a newer selection already replaced it.'''
         if token != self.quote_seq:
             return
@@ -4778,10 +4705,18 @@ class SMSPoolScreen(Screen):
             self._render_quote(error=message)
             self._debug("quote response: %s" % str(result)[:200])
             return
-        self._store_quote(price, rate, pool)
+        self._store_quote(price, rate, data.get("pool"), data.get("pool_name"))
 
-    def _store_quote(self, price, rate, pool=None):
-        '''Remember a provider price (SMSPool cost) and show it with markup.'''
+    def _store_quote(self, price, rate, pool=None, pool_name=""):
+        '''Remember a provider price (SMSPool cost) and show it with markup.
+
+        `pool` is the pool the price belongs to - the plan API picks one and
+        hands its id back so the purchase can pin the very same pool.  A
+        {"id", "name"} dict is accepted as well.
+        '''
+        if isinstance(pool, dict):
+            pool_name = pool_name or pool.get("name") or ""
+            pool = pool.get("id")
         price = float(price)
         self.quote = {
             "price"       : price,
@@ -4789,8 +4724,8 @@ class SMSPoolScreen(Screen):
             "success_rate": rate,
             "country"     : self.selected_country["name"] if self.selected_country else "",
             "service"     : self.selected_service or "",
-            "pool"        : pool.get("id") if isinstance(pool, dict) else None,
-            "pool_name"   : pool.get("name") if isinstance(pool, dict) else "",
+            "pool"        : pool,
+            "pool_name"   : pool_name or "",
         }
         self._render_quote()
 
@@ -4894,9 +4829,6 @@ class SMSPoolScreen(Screen):
         return self.services.get(self.selected_service)
 
     def purchase(self):
-        if not self.API_KEY.strip():
-            self._set_status("SMSPool key missing in secrets", ok=False)
-            return
         if self.selected_country is None:
             self._set_status("Select a country first", ok=False)
             return
@@ -4914,40 +4846,26 @@ class SMSPoolScreen(Screen):
             self.ids.purchase_btn.disabled = True
         except Exception:
             pass
-        # Pick a pool from the ones in stock first and quote *that* pool, so
-        # the balance check and the amount actually charged agree.  Each order
-        # draws a fresh pool (see _pick_random_pool) instead of always using
-        # SMSPool's default one.
-        self._sppost("/pool/retrieve_valid", {
-            "key"    : self.API_KEY.strip(),
+        # The plan API draws a pool from the ones in stock and quotes *that*
+        # pool, so the balance check and the amount actually charged agree.
+        # Each order draws a fresh pool instead of always using the provider's
+        # default one (see /v1/sms/quote in meile-plan-rest).
+        self._plan_call("POST", HTTParams.API_SMS_QUOTE, {
+            "uuid"   : self.uuid,
             "country": str(self.selected_country["id"]),
             "service": str(sid),
-            "web"    : "1",
-        }, self._on_purchase_pools, self._on_purchase_pools_error)
+        }, self._on_price, self._on_purchase_price_error)
 
-    def _on_purchase_pools(self, request, result):
-        self._pending_pool = self._pick_random_pool(self._pools_from_payload(self._parse(result)))
-        if self._pending_pool:
-            self._debug("purchase pool: #%s %s" % (self._pending_pool["id"],
-                                                   self._pending_pool["name"]))
-        self._request_purchase_price()
-
-    def _on_purchase_pools_error(self, request, error):
-        # No pool list: fall back to SMSPool's default pool rather than
-        # blocking the purchase.
-        self._debug("purchase pool list ERR: %s" % str(error)[:200])
-        self._pending_pool = None
-        self._request_purchase_price()
-
-    def _request_purchase_price(self):
-        form = {
-            "key"    : self.API_KEY.strip(),
-            "country": str(self.selected_country["id"]),
-            "service": str(self.service_id()),
-        }
-        if self._pending_pool:
-            form["pool"] = str(self._pending_pool["id"])
-        self._sppost("/request/price", form, self._on_price)
+    def _on_purchase_price_error(self, request, error):
+        '''The purchase quote could not be priced: re-arm the button.'''
+        try:
+            self.ids.purchase_btn.disabled = False
+        except Exception:
+            pass
+        self._set_status("Price unavailable: %s"
+                         % (self._error_message(error) or "request failed"),
+                         ok=False)
+        self._debug("purchase price ERR: %s" % str(error)[:200])
 
     def _on_price(self, request, result):
         try:
@@ -4965,7 +4883,8 @@ class SMSPoolScreen(Screen):
             return
         total = round(price * (1.0 + self.markup / 100.0), 6)
         # The price fetched for the purchase is the freshest quote there is.
-        self._store_quote(price, rate, self._pending_pool)
+        self._pending_pool = data.get("pool")
+        self._store_quote(price, rate, self._pending_pool, data.get("pool_name"))
         if self.balance < total:
             missing = total - self.balance
             self._set_status("Insufficient balance - top up $%.2f" % missing, ok=False)
@@ -4974,20 +4893,28 @@ class SMSPoolScreen(Screen):
         self._do_purchase(price)
 
     def _do_purchase(self, price):
+        '''Buy the number and let the plan API debit the balance for it.
+
+        The price is not sent: the API fetches it from the provider itself and
+        charges that, so a tampered client cannot buy below cost.
+        '''
         self._pending_price = price
         self._set_status("Ordering number...", ok=None)
         try:
             self.ids.purchase_btn.disabled = True
         except Exception:
             pass
-        form = {
-            "key"    : self.API_KEY.strip(),
-            "country": str(self.selected_country["id"]),
-            "service": str(self.service_id()),
+        payload = {
+            "uuid"         : self.uuid,
+            "country"      : str(self.selected_country["id"]),
+            "service"      : str(self.service_id()),
+            "country_name" : self.selected_country["name"],
+            "service_name" : str(self._pending_service or ""),
         }
-        if self._pending_pool:
-            form["pool"] = str(self._pending_pool["id"])
-        self._sppost("/purchase/sms", form, self._on_order_success, self._on_order_error)
+        if self._pending_pool is not None:
+            payload["pool"] = str(self._pending_pool)
+        self._plan_call("POST", HTTParams.API_SMS_ORDER, payload,
+                        self._on_order_success, self._on_order_error)
 
     def _order_error_text(self, data):
         '''Short, plain status text for a failed /purchase/sms answer.
@@ -5052,8 +4979,7 @@ class SMSPoolScreen(Screen):
             "country_id": self.selected_country["id"],
             "service"   : self._pending_service,
             "service_id": self.service_id(),
-            "pool"      : data.get("pool") or (self._pending_pool["id"]
-                                               if self._pending_pool else None),
+            "pool"      : data.get("pool") or self._pending_pool,
             "cost"      : cost,
             "refunded"  : False,
         }
@@ -5078,57 +5004,17 @@ class SMSPoolScreen(Screen):
                 expires_in = 0.0
             if expires_in > 0:
                 self._order_expiration = time() + expires_in
-        self._set_status("Order #%s active" % str(self.current_order["id"]), ok=True)
-        # Debit the Meile ledger, then start the countdown/inbox polling.
-        self._debit_order(cost)
-        self._start_order_tracking()
-
-    def _debit_order(self, cost):
-        order = self.current_order
-        if not order:
-            return
-        self._plan_call("POST", HTTParams.API_SMS_PURCHASE, {
-            "uuid"      : self.uuid,
-            "order_id"  : str(order["id"]),
-            "country_id": str(order["country_id"]),
-            "country"   : order["country"],
-            "service_id": str(order["service_id"]),
-            "service"   : str(order["service"]),
-            "phone"     : str(order["number"]),
-            "cost"      : cost,
-        }, self._on_order_debited, on_error=self._on_order_debit_error)
-
-    def _on_order_debited(self, request, result):
-        data = self._parse(result) or {}
-        if isinstance(data, dict) and data.get("balance") is not None:
-            self._apply_balance_payload(data)
-        # SMSPool may charge a different price than quoted; remember it so a
-        # refund credits back exactly what was taken.
-        if isinstance(data, dict) and data.get("charged") is not None:
+        # The plan API debited the ledger for this number already: apply the
+        # balance it answered with (and the amount it really charged, which can
+        # differ from the quote) before the countdown/inbox polling starts.
+        self._apply_balance_payload(data)
+        if data.get("charged") is not None:
             try:
                 self.current_order["charged"] = float(data["charged"])
             except Exception:
                 pass
-
-    def _on_order_debit_error(self, request, error):
-        self._debug("Debit failed: %s" % str(error)[:200])
-        self._set_status("Balance debit failed - releasing number...", ok=False)
-        # Never leave a provider order running that was not paid for.
-        if self.current_order and self.current_order.get("id"):
-            self._sppost("/sms/cancel", {
-                "key"    : self.API_KEY.strip(),
-                "orderid": str(self.current_order["id"]),
-            }, self._on_rollback_cancel, self._on_rollback_cancel_error)
-        else:
-            self._reset_order()
-
-    def _on_rollback_cancel(self, request, result):
-        self._reset_order()
-        self._set_status("Order cancelled (balance debit failed)", ok=False)
-
-    def _on_rollback_cancel_error(self, request, error):
-        self._reset_order()
-        self._set_status("Debit failed and provider release failed", ok=False)
+        self._set_status("Order #%s active" % str(self.current_order["id"]), ok=True)
+        self._start_order_tracking()
 
     # ------------------------------------------------------------------
     # Order tracking (countdown + inbox polling)
@@ -5174,12 +5060,9 @@ class SMSPoolScreen(Screen):
         if not self.current_order or not self.current_order.get("id"):
             self.sms_check_event = None
             return False
-        if not self.API_KEY.strip():
-            self.sms_check_event = None
-            return False
-        self._sppost("/sms/check", {
-            "key"    : self.API_KEY.strip(),
-            "orderid": str(self.current_order["id"]),
+        self._plan_call("POST", HTTParams.API_SMS_CHECK, {
+            "uuid"    : self.uuid,
+            "order_id": str(self.current_order["id"]),
         }, self._on_sms_received, self._on_sms_check_error)
         return True
 
@@ -5224,14 +5107,13 @@ class SMSPoolScreen(Screen):
         if not self.current_order or not self.current_order.get("id"):
             self._set_status("No active order", ok=False)
             return
-        if not self.API_KEY.strip():
-            self._set_status("SMSPool key missing in secrets", ok=False)
-            return
         self._set_status("Cancelling order...", ok=None)
         self._stop_polling()
-        self._sppost("/sms/cancel", {
-            "key"    : self.API_KEY.strip(),
-            "orderid": str(self.current_order["id"]),
+        # The plan API releases the number at the provider and refunds the
+        # ledger in one call, so the balance comes back with the answer.
+        self._plan_call("POST", HTTParams.API_SMS_CANCEL, {
+            "uuid"    : self.uuid,
+            "order_id": str(self.current_order["id"]),
         }, self._on_cancel_success, self._on_cancel_error)
 
     def _on_cancel_success(self, request, result):
@@ -5241,8 +5123,12 @@ class SMSPoolScreen(Screen):
                 self.ids.sms_output.text = "[CANCELLED]\n\n" + (self.ids.sms_output.text or "")
             except Exception:
                 pass
-            self._set_status("Order cancelled - refunding balance...", ok=None)
-            self._refund_order()
+            if data.get("balance") is not None:
+                self._apply_balance_payload(data)
+            if data.get("amount") is not None:
+                self._toast("Refunded $%s" % str(data["amount"]))
+            self._set_status("Order cancelled & refunded", ok=None)
+            self._reset_order()
         else:
             self._set_status("Cancel failed: %s" % (self._error_message(data) or "unknown"),
                              ok=False)
@@ -5253,6 +5139,12 @@ class SMSPoolScreen(Screen):
         self._debug("Cancel ERR: %s" % str(error))
 
     def _refund_order(self):
+        '''Credit a number the provider closed itself (expired/cancelled).
+
+        The provider already released the number, so only the ledger has to be
+        credited - that is what /v1/sms/refund does (cancel_order() uses
+        /v1/sms/cancel, which releases the number *and* refunds).
+        '''
         order = self.current_order
         if not order or not order.get("id") or order.get("refunded"):
             return

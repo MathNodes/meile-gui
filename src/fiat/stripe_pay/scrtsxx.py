@@ -9,8 +9,6 @@ USERNAME           = 'username'
 PASSWORD           = 'password'
 CCOMPAREAPI        = '...'
 CCOMPARE_API_URL   = "https://min-api.cryptocompare.com/data/price?fsym=%s&tsyms=USD&extraParams=Meile"
-PLANUSERNAME       = 'username'
-PLANPASSWORD       = 'password'
 # The plan API account is not shipped any more: every install registers its own
 # username/password once with this key (POST /register) and keeps them in the
 # [network] section of config.ini, then calls the API with a short lived bearer

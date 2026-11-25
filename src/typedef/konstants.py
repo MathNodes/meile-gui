@@ -205,6 +205,15 @@ class HTTParams():
     API_SMS_TOPUP          = "/v1/sms/topup"
     API_SMS_PURCHASE       = "/v1/sms/purchase"
     API_SMS_REFUND         = "/v1/sms/refund"
+    # SMSPool is never called by the app: the plan API holds the provider key
+    # and proxies these calls for a UUID that already has a balance row, so a
+    # deciphered client cannot spend the key (see meile-plan-rest).
+    API_SMS_COUNTRIES      = "/v1/sms/countries/%s"    # variable is the app UUID
+    API_SMS_SERVICES       = "/v1/sms/services/%s"     # variable is the app UUID
+    API_SMS_QUOTE          = "/v1/sms/quote"
+    API_SMS_ORDER          = "/v1/sms/order"
+    API_SMS_CHECK          = "/v1/sms/check"
+    API_SMS_CANCEL         = "/v1/sms/cancel"
     # State of a BTCPay invoice the app created: the app carries a create-only
     # key of the store, so only the plan API (which holds the view-only key)
     # can read an invoice - see cli/btcpay.py and /v1/invoice/status in
