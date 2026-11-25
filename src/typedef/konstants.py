@@ -90,8 +90,21 @@ class SMSConf():
         "BTC-LIGHTNINGNETWORK" : "BTC-LN",
         "BTC-LIGHTNING"        : "BTC-LN",
     }
-    BTCPAY_POLL     = 7             
-    BTCPAY_PAID     = ("paid", "confirmed", "complete")
+    # Payment method a new invoice opens on (the store names its methods
+    # "XMR-CHAIN", "BTC-LN", ...); the checkout page still offers every coin
+    # the store accepts.
+    BTCPAY_DEFAULT_METHOD = "XMR-CHAIN"
+    # A fresh invoice can answer without its payment methods (the store adds
+    # them a moment later) and the store can answer with an error, so the
+    # address of the picked coin is looked up again before the top-up is given
+    # up on it.
+    BTCPAY_DETAIL_TRIES = 4
+    BTCPAY_DETAIL_WAIT  = 2
+    BTCPAY_POLL     = 7
+    # States the plan API reports as paid ("processing" is a payment that is
+    # not settled yet - the 0 confirmation state of the store - and "settled"
+    # is a paid and settled invoice), and the states an invoice is given up on.
+    BTCPAY_PAID     = ("processing", "settled")
     BTCPAY_DEAD     = ("expired", "invalid")
 
     ARRR_EXCHANGE_URL = "https://nonkyc.io?ref=695e014fe07f1444fdceaff6"
@@ -109,6 +122,9 @@ class SMSConf():
 class HTTParams():
     # Note http://128.199.90.172:26657 is testnet ONLY!
     TIMEOUT                = 5
+    # A BTCPay Greenfield call carries an invoice over the internet and is not
+    # part of the node/RPC polling, so it may take longer than TIMEOUT.
+    BTCPAY_TIMEOUT         = 30
     APIURL                 = {"Name" : "MathNodes", "Country" : "Global", "url" : "https://api.sentinel.mathnodes.com"}
     APIS_URL = [APIURL,
         {"Name" : "Ungovernable", "Country" : "Canada", "url" : "https://api.ungovernable.dev"},
@@ -189,6 +205,11 @@ class HTTParams():
     API_SMS_TOPUP          = "/v1/sms/topup"
     API_SMS_PURCHASE       = "/v1/sms/purchase"
     API_SMS_REFUND         = "/v1/sms/refund"
+    # State of a BTCPay invoice the app created: the app carries a create-only
+    # key of the store, so only the plan API (which holds the view-only key)
+    # can read an invoice - see cli/btcpay.py and /v1/invoice/status in
+    # meile-plan-rest.
+    API_INVOICE_STATUS     = "/v1/invoice/status"
     # Account of this install on the plan API: the app registers one per
     # install (see cli/plan_api.py) and calls the API with a short lived bearer
     # token minted from it, instead of the single static account that used to

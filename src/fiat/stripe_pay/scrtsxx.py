@@ -20,6 +20,13 @@ PLANPASSWORD       = 'password'
 # not be.
 REGISTRATION_KEY   = 'registrationkey...'
 BTCPAYSERVER       = "https://btcpay.foo.bar"
+# Store the app creates its invoices in, and the fine-grained API key it does it
+# with.  The key must be limited to btcpay.store.cancreateinvoice: the app never
+# reads an invoice back (it asks the plan API, which holds a view-only key of
+# the same store), so a key recovered from the obfuscated app cannot look up who
+# paid what, and it cannot modify, refund or pay anything either.
+BTCPAY_STORE_ID    = "storeid..."
+BTCPAY_API_KEY     = "apikey..."
 BTCPayEmail        = "btcpay@foo.bar"
 MEILE_PLAN_API     = "https://api.meile.foo.bar"
 MEILE_PLAN_ADD     = "/v1/add"

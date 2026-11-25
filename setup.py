@@ -51,7 +51,6 @@ setup(
         "bip_utils",
         "toml",
         "netifaces",
-        "btcpay",
 
         # "cosmpy",  # Replaced by sentinel-python-sdk + mospy
 

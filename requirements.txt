@@ -8,7 +8,6 @@ bcrypt==4.1.2
 bech32==1.2.0
 bip-utils==2.9.0
 blspy==2.0.2
-btcpay==1.0.3
 cachetools==5.3.1
 cairocffi==1.7.1
 CairoSVG==2.9.1

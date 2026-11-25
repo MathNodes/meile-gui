@@ -43,12 +43,12 @@ import webbrowser
 import sys
 from timeit import default_timer as timer
 
-from typedef.konstants import IBCTokens, HTTParams, MeileColors, NodeKeys, ConfParams
+from typedef.konstants import IBCTokens, HTTParams, MeileColors, NodeKeys, ConfParams, SMSConf
 from typedef.win import WindowNames
 from conf.meile_config import MeileGuiConfig
 from cli.wallet import HandleWalletFunctions
 from cli.sentinel import NodeTreeData
-from cli.btcpay import BTCPayDB
+from cli.btcpay import BTCPayGreenfield
 from cli.plan_api import MeilePlanAPI
 import main.main as Meile
 from adapters import HTTPRequests
@@ -1164,6 +1164,12 @@ class PlanCard(MDCard):
 
         self.invoice_result = {"success" : False, "id": None }
         self.now_invoice_id = None
+        # BTCPay invoice of a plan subscription: its id, the wallet it was
+        # created for (the plan API only credits a payment of that wallet) and
+        # the invoice itself (see pay_meile_plan_with_btcpay).
+        self.btcpay_tx_id = ""
+        self.btcpay_buyer = ""
+        self.new_invoice = {}
 
         self.dialog = None
         self.invoice_content = None
@@ -1866,65 +1872,64 @@ class PlanCard(MDCard):
             self.dialog.open()
 
     def pay_meile_plan_with_btcpay(self, usd):
+        '''Create the BTCPay invoice of the plan and wait for its payment.
+
+        The invoice is created with the create-only key of the store (see
+        cli/btcpay.py) and quoted in USD, and its checkout page is opened in
+        the browser of the user.  The app cannot read an invoice back, so the
+        state is polled at the plan API, which holds the view-only key of the
+        store (see check_invoice_status), and the subscription is added once
+        the API answers that the invoice was paid.
+        '''
         print(f"Method: 'pay_meile_plan_with_btcpay', usd: {usd}")
-        
-        mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
-        
-        BTCPay = BTCPayDB()
-        
-        pickled_client_data = BTCPay.get_remote_btcpay_client()
-        
-        if pickled_client_data:
-            self.client = BTCPay.unpickle_btc_client(pickled_client_data)
-        else:
-            return (False, "No pickeled client data")
-        
-        print(self.client)
-            
-        buyer = {"name" : mw.address, "email" : "freqnik@mathnodes.com", "notify" : True}
-        print(f"buyer: {buyer}")
-        
-        data = {"price": usd,
-              "currency": "USD",
-              "token" : "XMR",
-              "merchantName" : "Meile dVPN",
-              "itemDesc" : "MathNodes Subscription Plan",
-              "notificationEmail" : scrtsxx.BTCPayEmail,
-              "transactionSpeed" : "high",
-              "buyer" : buyer}
-        
-        print(f"data: {data}")
-        
-        self.new_invoice = self.client.create_invoice(data)
-        
-        print(self.new_invoice)
-        print(self.new_invoice['url'])
-        self.btcpay_tx_id = self.new_invoice['id']
-        
-        webbrowser.open(self.new_invoice['url'])
-        self.fetched_invoice = self.client.get_invoice(self.btcpay_tx_id)
-        
+
+        # The wallet the subscription is for (the one /v1/add is called with,
+        # see subscribe) is the buyer of the invoice: the plan API only credits
+        # a BTCPay payment it can see on an invoice created for that wallet.
+        self.btcpay_buyer = str(getattr(self, "ADDRESS", "") or "")
+
+        btcpay = BTCPayGreenfield()
+        try:
+            self.new_invoice = btcpay.create_invoice(
+                usd,
+                metadata={"itemDesc"  : "MathNodes Subscription Plan",
+                          "buyerName" : self.btcpay_buyer,
+                          "buyerEmail": getattr(scrtsxx, "BTCPayEmail", "") or ""},
+                checkout={"speedPolicy"         : "HighSpeed",
+                          "defaultPaymentMethod": SMSConf.BTCPAY_DEFAULT_METHOD})
+        except Exception as e:
+            # Without an invoice there is nothing the user could pay.
+            print("BTCPay invoice error: %s" % str(e))
+            self.stop_event.set()
+            Clock.schedule_once(lambda dt: self.update_ui_after_payment(True), 0)
+            return
+
+        self.btcpay_tx_id = str(self.new_invoice.get("id") or "")
+        print("BTCPay invoice %s: %s"
+              % (self.btcpay_tx_id, self.new_invoice.get("checkoutLink")))
+        webbrowser.open(self.new_invoice.get("checkoutLink") or "")
+
         while not self.stop_event.is_set():
             sleep(10)
             self.check_invoice_status()
-            
+
             if self.invoice_result['success']:
                 self.stop_event.set()
-                invoice_ref = self.new_invoice['id']
+                invoice_ref = self.btcpay_tx_id
                 print(self.invoice_result)
                 self.invoice_result = {"success" : False, "id": None }
                 Clock.schedule_once(
                     lambda dt, ref=invoice_ref: self.update_ui_after_payment(False, invoice_ref=ref), 0)
                 return
-        
+
         if self.stop_event.is_set() and self.invoice_result['success']:
             print("Invoice has been paid.")
             Clock.schedule_once(
-                lambda dt: self.update_ui_after_payment(False, invoice_ref=self.new_invoice['id']), 0)
+                lambda dt: self.update_ui_after_payment(False, invoice_ref=self.btcpay_tx_id), 0)
         elif self.stop_event.is_set():
             print("Payment process was canceled.")
             Clock.schedule_once(lambda dt: self.update_ui_after_payment(True), 0)
-        
+
     def pay_meile_plan_with_now(self, usd, coin):
         print(f"Method: 'pay_meile_plan_with_now', usd: {usd}")
         mw = Meile.app.root.get_screen(WindowNames.MAIN_WINDOW)
@@ -2210,15 +2215,38 @@ class PlanCard(MDCard):
     '''
         
     def check_invoice_status(self):
+        '''Ask the plan API whether the BTCPay invoice was paid.
+
+        The app carries a create-only key of the store, so it cannot read the
+        invoice it just created; the plan API holds the view-only key and
+        answers "paid" for an invoice in "Processing" (paid in full, but not
+        settled yet - the 0 confirmation state of a HighSpeed store) or
+        "Settled" that was created for this wallet.  Runs on the payment
+        worker thread.
+        '''
         print("Checking if invoice is paid...")
-        if self.fetched_invoice['status'] not in ["confirmed", "complete"]:
-            print("invoice not yet confirmed....")
-            self.fetched_invoice = self.client.get_invoice(self.btcpay_tx_id)
-            print(self.fetched_invoice)
-        else:
-            print(self.fetched_invoice)
-            self.invoice_result = {"success" : True, "id": self.new_invoice['id'] }
-            
+        Request = HTTPRequests.MakeRequest(TIMEOUT=HTTParams.BTCPAY_TIMEOUT)
+        http = Request.hadapter()
+
+        data = {"data": {"invoice": self.btcpay_tx_id,
+                         "buyer"  : self.btcpay_buyer}}
+        try:
+            response = http.post(HTTParams.PLAN_API + HTTParams.API_INVOICE_STATUS,
+                                 json=data,
+                                 auth=MeilePlanAPI.auth())
+            status = response.json()
+        except Exception as e:
+            print("BTCPay invoice check error: %s" % str(e))
+            return
+
+        print(status)
+        if not isinstance(status, dict):
+            return
+
+        state = str(status.get("state") or "").lower()
+        if status.get("paid") or state in SMSConf.BTCPAY_PAID:
+            self.invoice_result = {"success" : True, "id": self.btcpay_tx_id}
+
     def check_invoice_status_now(self):
         print("Checking if invoice is paid...")
         Request = HTTPRequests.MakeRequest(TIMEOUT=120)
