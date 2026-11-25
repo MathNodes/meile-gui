@@ -9,6 +9,7 @@ from ui.widgets import WalletInfoContent, SeedInfoContent, MDMapCountryButton, R
 from utils.qr import QRCode
 from cli.wallet import HandleWalletFunctions
 from cli.btcpay import BTCPayDB
+from cli.plan_api import MeilePlanAPI
 from conf.meile_config import MeileGuiConfig
 from cli.warp import WarpHandler
 from adapters import HTTPRequests, DNSRequests
@@ -249,6 +250,7 @@ class PreLoadWindow(Screen):
         self.NodeTree = NodeTreeData(None)
         self.RewriteBIN()
         self.GenerateUUID()
+        self.RegisterAPIUser()
         #self.CreateWarpConfig()
         #self.CopyBin()
 
@@ -306,6 +308,27 @@ class PreLoadWindow(Screen):
             CONFIG.set('wallet', 'uuid', "%s" % self.UUID)
             CONFIG.write(FILE)
             FILE.close()
+
+    def RegisterAPIUser(self):
+        '''Give this install its own account on the Meile plan API.
+
+        The credentials are kept in the [network] section of config.ini and are
+        only requested once: every call to the plan API then carries a short
+        lived bearer token minted from them (see cli/plan_api.py), so a single
+        install can be banned without touching the others - the app used to
+        share one static account that was embedded in the obfuscated client.
+        Runs on a worker thread so the preload screen keeps animating, and a
+        failure is not fatal: the API calls ask for the credentials again when
+        they need them and report the error themselves.
+        '''
+        def worker():
+            try:
+                user, _ = MeilePlanAPI.credentials()
+                print("Meile API user: %s" % user)
+            except Exception as e:
+                print("Meile API registration failed: %s" % str(e))
+
+        Thread(target=worker, daemon=True).start()
 
     def get_logo(self):
         Config = MeileGuiConfig()
@@ -2488,20 +2511,20 @@ class PlanScreen(MDBoxLayout):
         Request = HTTPRequests.MakeRequest()
         http = Request.hadapter()
 
-        req = http.get(HTTParams.PLAN_API + HTTParams.API_PLANS, auth=HTTPBasicAuth(scrtsxx.PLANUSERNAME, scrtsxx.PLANPASSWORD))
+        req = http.get(HTTParams.PLAN_API + HTTParams.API_PLANS, auth=MeilePlanAPI.auth())
         plan_data = req.json() if req.ok and req.status_code != 404 else []
         print(plan_data)
 
         # Prevent plan parsing when wallet is not initialized
         self.user_enrolled_plans = []
         if wallet not in [None, ""]:
-            req2 = http.get(HTTParams.PLAN_API + HTTParams.API_PLANS_SUBS % wallet, auth=HTTPBasicAuth(scrtsxx.PLANUSERNAME, scrtsxx.PLANPASSWORD))
+            req2 = http.get(HTTParams.PLAN_API + HTTParams.API_PLANS_SUBS % wallet, auth=MeilePlanAPI.auth())
 
             # If the request failed please don't .json() or will raised a exception
             self.user_enrolled_plans = req2.json() if req2.ok and req2.status_code != 404 else []
 
         for pd in plan_data:
-            req3 = http.get(HTTParams.PLAN_API + HTTParams.API_PLANS_NODES % pd['uuid'], auth=HTTPBasicAuth(scrtsxx.PLANUSERNAME, scrtsxx.PLANPASSWORD))
+            req3 = http.get(HTTParams.PLAN_API + HTTParams.API_PLANS_NODES % pd['uuid'], auth=MeilePlanAPI.auth())
             plan_nodes = req3.json() if req3.ok and req3.status_code != 404 else []
             no_of_nodes = 0
             countries = []

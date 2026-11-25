@@ -11,6 +11,14 @@ CCOMPAREAPI        = '...'
 CCOMPARE_API_URL   = "https://min-api.cryptocompare.com/data/price?fsym=%s&tsyms=USD&extraParams=Meile"
 PLANUSERNAME       = 'username'
 PLANPASSWORD       = 'password'
+# The plan API account is not shipped any more: every install registers its own
+# username/password once with this key (POST /register) and keeps them in the
+# [network] section of config.ini, then calls the API with a short lived bearer
+# token minted from them (see cli/plan_api.py).  A single account - or a single
+# token - can therefore be banned server side without locking out the rest of
+# the fleet, which the shared static account of PLANUSERNAME/PLANPASSWORD could
+# not be.
+REGISTRATION_KEY   = 'registrationkey...'
 BTCPAYSERVER       = "https://btcpay.foo.bar"
 BTCPayEmail        = "btcpay@foo.bar"
 MEILE_PLAN_API     = "https://api.meile.foo.bar"

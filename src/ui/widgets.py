@@ -38,7 +38,6 @@ import requests
 import re
 import psutil
 import time
-from requests.auth import HTTPBasicAuth
 import json
 import webbrowser
 import sys
@@ -50,6 +49,7 @@ from conf.meile_config import MeileGuiConfig
 from cli.wallet import HandleWalletFunctions
 from cli.sentinel import NodeTreeData
 from cli.btcpay import BTCPayDB
+from cli.plan_api import MeilePlanAPI
 import main.main as Meile
 from adapters import HTTPRequests
 from ui.interfaces import TXContent, ConnectionDialog, QRDialogContent, QRDialogZanoContent, QRDialogV2RayContent
@@ -1304,7 +1304,7 @@ class PlanCard(MDCard):
         try:
             Request = HTTPRequests.MakeRequest()
             http = Request.hadapter()
-            req = http.get(HTTParams.PLAN_API + HTTParams.API_PLANS_NODES % self.uuid, auth=HTTPBasicAuth(scrtsxx.PLANUSERNAME, scrtsxx.PLANPASSWORD))
+            req = http.get(HTTParams.PLAN_API + HTTParams.API_PLANS_NODES % self.uuid, auth=MeilePlanAPI.auth())
 
             plan_nodes_data = req.json() if req.status_code == 200 else None
 
@@ -1353,8 +1353,6 @@ class PlanCard(MDCard):
         print(plan_details)
         SERVER_ADDRESS = scrtsxx.MEILE_PLAN_API
         API            = scrtsxx.MEILE_PLAN_ADD
-        USERNAME       = scrtsxx.PLANUSERNAME
-        PASSWORD       = scrtsxx.PLANPASSWORD
 
         def worker():
             # The API adds the subscription on-chain which can take a while,
@@ -1364,7 +1362,7 @@ class PlanCard(MDCard):
                 Request = HTTPRequests.MakeRequest(TIMEOUT=120)
                 http = Request.hadapter()
                 print("Sending plan add request...")
-                tx = http.post(SERVER_ADDRESS + API, json=plan_details, auth=HTTPBasicAuth(USERNAME, PASSWORD))
+                tx = http.post(SERVER_ADDRESS + API, json=plan_details, auth=MeilePlanAPI.auth())
                 txJSON = tx.json()
                 success = bool(txJSON.get('status'))
             except Exception as e:
@@ -1407,8 +1405,6 @@ class PlanCard(MDCard):
         print(plan_details)
         SERVER_ADDRESS = HTTParams.PLAN_API
         API            = "/v1/allocate"
-        USERNAME       = scrtsxx.PLANUSERNAME
-        PASSWORD       = scrtsxx.PLANPASSWORD
 
         def worker():
             # The API allocates the subscription on-chain which can take a
@@ -1418,7 +1414,7 @@ class PlanCard(MDCard):
                 Request = HTTPRequests.MakeRequest(TIMEOUT=120)
                 http = Request.hadapter()
                 print("Sending allocate add request...")
-                tx = http.post(SERVER_ADDRESS + API, json=plan_details, auth=HTTPBasicAuth(USERNAME, PASSWORD))
+                tx = http.post(SERVER_ADDRESS + API, json=plan_details, auth=MeilePlanAPI.auth())
                 txJSON = tx.json()
                 success = bool(txJSON.get('status'))
             except Exception as e:
@@ -2262,8 +2258,6 @@ class PlanCard(MDCard):
     def check_invoice_status_pirate(self, address=False, coin="arrr", invoice=False, arrr=0):
         Request = HTTPRequests.MakeRequest(TIMEOUT=120)
         http = Request.hadapter()
-        USERNAME       = scrtsxx.PLANUSERNAME
-        PASSWORD       = scrtsxx.PLANPASSWORD
         
         def check_balance(conf: int):
             try: 
@@ -2274,7 +2268,7 @@ class PlanCard(MDCard):
                     endpoint = '/v1/pirate/getbalance'
                 elif coin == "pivx":
                     endpoint = '/v1/pivx/getbalance'
-                response = http.post(HTTParams.PLAN_API + endpoint, json=data, auth=HTTPBasicAuth(USERNAME, PASSWORD))
+                response = http.post(HTTParams.PLAN_API + endpoint, json=data, auth=MeilePlanAPI.auth())
                 self.zaddress_balance = float(response.json()['result'])
                 
                 if self.zaddress_balance > 0:
@@ -2293,7 +2287,7 @@ class PlanCard(MDCard):
                     endpoint = '/v1/pirate/newaddress'
                 elif coin == "pivx":
                     endpoint = '/v1/pivx/newaddress'
-                response = http.get(HTTParams.PLAN_API + endpoint, auth=HTTPBasicAuth(USERNAME, PASSWORD))
+                response = http.get(HTTParams.PLAN_API + endpoint, auth=MeilePlanAPI.auth())
                 self.zaddress = response.json()['result']
                 return self.zaddress
             except Exception as e:
@@ -2322,8 +2316,6 @@ class PlanCard(MDCard):
     def check_invoice_status_firo(self, address=False, invoice=False, firo=0):
         Request = HTTPRequests.MakeRequest(TIMEOUT=120)
         http = Request.hadapter()
-        USERNAME = scrtsxx.PLANUSERNAME
-        PASSWORD = scrtsxx.PLANPASSWORD
     
         def check_balance():
             try: 
@@ -2333,7 +2325,7 @@ class PlanCard(MDCard):
                 response = http.post(
                     HTTParams.PLAN_API + endpoint,
                     json=data,
-                    auth=HTTPBasicAuth(USERNAME, PASSWORD)
+                    auth=MeilePlanAPI.auth()
                 )
                 if response.status_code == 200:
                     self.saddress_unconfirmed_balance = float(
@@ -2363,7 +2355,7 @@ class PlanCard(MDCard):
                 response = http.post(
                     HTTParams.PLAN_API + endpoint,
                     json=data,
-                    auth=HTTPBasicAuth(USERNAME, PASSWORD)
+                    auth=MeilePlanAPI.auth()
                 )
                 if response.status_code == 200:
                     result = response.json()
@@ -2380,7 +2372,7 @@ class PlanCard(MDCard):
                 endpoint = '/v1/firo/newsparkaddress'
                 response = http.get(
                     HTTParams.PLAN_API + endpoint,
-                    auth=HTTPBasicAuth(USERNAME, PASSWORD)
+                    auth=MeilePlanAPI.auth()
                 )
                 if response.status_code == 200:
                     self.saddress = response.json()['result'][0]
@@ -2436,8 +2428,6 @@ class PlanCard(MDCard):
         THRESHOLD = 0.00001
         Request = HTTPRequests.MakeRequest(TIMEOUT=120)
         http = Request.hadapter()
-        USERNAME       = scrtsxx.PLANUSERNAME
-        PASSWORD       = scrtsxx.PLANPASSWORD
         
         def check_balance():
             try: 
@@ -2446,7 +2436,7 @@ class PlanCard(MDCard):
                         'coin'    : coin}
                 print(data)    
                 endpoint = '/v1/zano/gettxs'
-                response = http.post(HTTParams.PLAN_API + endpoint, json=data, auth=HTTPBasicAuth(USERNAME, PASSWORD))
+                response = http.post(HTTParams.PLAN_API + endpoint, json=data, auth=MeilePlanAPI.auth())
                 print(response.json())
                 self.zaddress_balance = float(response.json()['result'])
                 
@@ -2471,7 +2461,7 @@ class PlanCard(MDCard):
                 response = http.post(
                     HTTParams.PLAN_API + endpoint,
                     json=data,
-                    auth=HTTPBasicAuth(USERNAME, PASSWORD)
+                    auth=MeilePlanAPI.auth()
                 )
                 result = response.json()
                 print(result)
@@ -2510,8 +2500,6 @@ class PlanCard(MDCard):
     def check_invoice_status_zephyr(self, address=False, coin="zsd", invoice=False, zeph=0):
         Request = HTTPRequests.MakeRequest(TIMEOUT=120)
         http = Request.hadapter()
-        USERNAME = scrtsxx.PLANUSERNAME
-        PASSWORD = scrtsxx.PLANPASSWORD
     
         def check_balance(conf: int):
             try:
@@ -2526,7 +2514,7 @@ class PlanCard(MDCard):
                 response = http.post(
                     HTTParams.PLAN_API + endpoint,
                     json=data,
-                    auth=HTTPBasicAuth(USERNAME, PASSWORD)
+                    auth=MeilePlanAPI.auth()
                 )
     
                 result = response.json()
@@ -2549,7 +2537,7 @@ class PlanCard(MDCard):
                 endpoint = '/v1/zephyr/newaddress'
                 response = http.get(
                     HTTParams.PLAN_API + endpoint,
-                    auth=HTTPBasicAuth(USERNAME, PASSWORD)
+                    auth=MeilePlanAPI.auth()
                 )
                 result = response.json()
     

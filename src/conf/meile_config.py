@@ -231,6 +231,28 @@ class MeileGuiConfig():
     def rewrite_bin(self):
         self.update_bin(self.resource_path("bin"), self.BASEBINDIR)
         
+    def write_configuration(self, section, values):
+        '''Persist a {key: value} mapping into one section of the config file.
+
+        The whole file is rewritten (the same way read_configuration and the
+        UUID of GenerateUUID are written), so every other value of the
+        configuration is kept.  Used by cli/plan_api.py for the account of this
+        install and the bearer token minted from it.
+        '''
+        self.CONFIG.read(self.CONFFILE)
+
+        if not self.CONFIG.has_section(section):
+            self.CONFIG.add_section(section)
+
+        for key, value in values.items():
+            self.CONFIG.set(section, str(key), str(value))
+
+        FILE = open(self.CONFFILE, 'w')
+        self.CONFIG.write(FILE)
+        FILE.close()
+
+        return self.CONFIG
+
     def read_configuration(self, confpath):
         """Read the configuration file at given path."""
         # copy our default config file

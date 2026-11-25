@@ -36,6 +36,29 @@ class ConfParams():
     SUBFEE           = 0.1
     SUBFEEMULT       = 10
 
+class PlanAPI():
+    '''Account of this install on the Meile plan API (see cli/plan_api.py).
+
+    Every install registers its own username/password once and keeps them in
+    the [network] section of config.ini; the short lived bearer token minted
+    from them is cached in the same section, with its expiry, so a restart
+    reuses the token until it lapses.  The API accepts the token on every data
+    endpoint while multi_auth is still in place, so a token (or an account) can
+    be banned server side without shipping a new app.
+    '''
+    SECTION          = 'network'
+    USER             = 'muser'
+    PASSWORD         = 'mpassword'
+    TOKEN            = 'mtoken'
+    EXPIRES          = 'mexpire'
+    # Renew the token this many seconds before it lapses, so a request that is
+    # in flight when it expires is still accepted.
+    SKEW             = 60
+    # /api/token answers with the lifetime of the token it issued; this is only
+    # the fallback for an API that does not send one.
+    DURATION         = 600
+    TIMEOUT          = 20
+
 class SMSConf():
     # Configuration for the MEILESMS ("Virtual Number Terminal") screen.
     
@@ -166,6 +189,12 @@ class HTTParams():
     API_SMS_TOPUP          = "/v1/sms/topup"
     API_SMS_PURCHASE       = "/v1/sms/purchase"
     API_SMS_REFUND         = "/v1/sms/refund"
+    # Account of this install on the plan API: the app registers one per
+    # install (see cli/plan_api.py) and calls the API with a short lived bearer
+    # token minted from it, instead of the single static account that used to
+    # be compiled into the obfuscated client.
+    API_REGISTER           = "/register"
+    API_TOKEN              = "/api/token"
     SESSIONS_API_URL       = ' /sentinel/session/v3/accounts/%s/sessions'
     BALANCES_ENDPOINT      = "/cosmos/bank/v1beta1/balances/"
     ICANHAZURL             = "https://icanhazip.com"
